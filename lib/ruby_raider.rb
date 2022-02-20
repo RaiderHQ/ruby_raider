@@ -1,0 +1,4 @@
+class RubyRaider
+
+end
+
