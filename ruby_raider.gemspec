@@ -10,5 +10,8 @@ Gem::Specification.new do |s|
     'https://rubygems.org/gems/ruby_raider'
   s.license = 'MIT'
 
+  s.add_development_dependency 'rspec'
+
+  s.add_runtime_dependency 'highline'
   s.add_runtime_dependency 'thor'
 end
