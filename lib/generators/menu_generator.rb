@@ -6,9 +6,9 @@ module RubyRaider
       cli = HighLine.new
       cli.choose do |menu|
         menu.prompt = 'Please select your automation framework'
-        menu.choice(:Selenium) { choose_test_framework }
-        menu.choice(:Watir) { choose_test_framework }
-        menu.choice(:Appium) { choose_test_framework }
+        menu.choice(:Selenium) { @automation = 'selenium', choose_test_framework }
+        menu.choice(:Watir) { @automation = 'watir', choose_test_framework }
+        menu.choice(:Appium) { @automation = 'appium', choose_test_framework }
         menu.choice(:Quit, 'Exit program.') { exit }
       end
     end
@@ -19,8 +19,8 @@ module RubyRaider
       cli = HighLine.new
       cli.choose do |menu|
         menu.prompt = 'Please select your test framework'
-        menu.choice(:Rspec) { pp 'You choose this' }
-        menu.choice(:Cucumber) { pp 'You choose this' }
+        menu.choice(:Rspec) { @test = 'rspec', 'You choose this' }
+        menu.choice(:Cucumber) { @test = 'cucumber', 'You choose this' }
         menu.choice(:Quit, 'Exit program.') { exit }
       end
     end

@@ -1,4 +1,4 @@
-require_relative '../lib/menu_generator'
+require_relative '../lib/generators/menu_generator'
 
 describe 'A menu is generated' do
   it 'generates a menu' do
