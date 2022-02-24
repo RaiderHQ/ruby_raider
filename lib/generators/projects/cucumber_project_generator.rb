@@ -1,7 +1,7 @@
 require_relative 'project_generator'
 
 module RubyRaider
-  class CucumberGenerator
+  class CucumberProjectGenerator
     def cucumber_folder_structure(name)
       Dir.mkdir name.to_s
       Dir.mkdir "#{name}/features"
