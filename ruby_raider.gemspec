@@ -5,10 +5,10 @@ Gem::Specification.new do |s|
   s.description = 'This gem contents everything you need to start doing web automation in one simple package'
   s.authors     = ['Agustin Pequeno']
   s.email       = 'agustin.pe94@gmail.com'
+  s.homepage = 'http://github.com/aguspe/ruby_raider'
   s.files       = ['lib/ruby_raider.rb']
-  s.homepage    =
-    'https://rubygems.org/gems/ruby_raider'
   s.license = 'MIT'
+  s.required_ruby_version = '>= 3.0.0'
 
   s.add_development_dependency 'rspec'
 

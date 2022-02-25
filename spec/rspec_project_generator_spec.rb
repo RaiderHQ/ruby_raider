@@ -21,6 +21,10 @@ describe RubyRaider::RspecProjectGenerator do
     expect(Dir.exist?("#{@project_name}/page_objects/pages")).to be_truthy
   end
 
+  it 'creates a components folder' do
+    expect(Dir.exist?("#{@project_name}/page_objects/components")).to be_truthy
+  end
+
   it 'creates a helper folder' do
     expect(Dir.exist?("#{@project_name}/helpers")).to be_truthy
   end

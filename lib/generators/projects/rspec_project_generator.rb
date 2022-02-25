@@ -12,7 +12,7 @@ module RubyRaider
       Dir.mkdir name.to_s
       folders = %w[config data page_objects helpers spec]
       create_children_folders(name, folders)
-      pages = %w[pages abstract]
+      pages = %w[pages components abstract]
       create_children_folders("#{name}/page_objects", pages)
     end
 

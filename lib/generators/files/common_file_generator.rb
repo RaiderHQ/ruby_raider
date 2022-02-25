@@ -112,7 +112,7 @@ module RubyRaider
 
     def self.config_file
       config_file = ERB.new <<~EOF
-        browser: chrome
+        browser: :chrome
       EOF
       config_file.result(binding)
     end

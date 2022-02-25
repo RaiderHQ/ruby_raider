@@ -11,6 +11,7 @@ module RubyRaider
         WatirFileGenerator.generate_watir_files(name)
         HelpersFileGenerator.generate_helper_files(name)
         generate_file('login_page_spec.rb', "#{name}/spec", generate_example_spec)
+        generate_file('base_spec.rb', "#{name}/spec", generate_base_spec)
       else
         pp 'here goes selenium'
       end
@@ -41,6 +42,17 @@ module RubyRaider
               end
             end
           end
+        end
+      EOF
+      spec.result(binding)
+    end
+
+    def self.generate_base_spec
+      spec = ERB.new <<~EOF
+         require_relative '../helpers/raider'
+
+        class BaseSpec
+          include Raider::SpecHelper
         end
       EOF
       spec.result(binding)

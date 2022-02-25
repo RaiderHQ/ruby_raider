@@ -29,6 +29,7 @@ module RubyRaider
 
     def self.set_rspec_framework(automation, project_name)
       RspecProjectGenerator.generate_rspec_project(project_name, automation: automation)
+      ProjectGenerator.install_gems(project_name)
     end
   end
 end

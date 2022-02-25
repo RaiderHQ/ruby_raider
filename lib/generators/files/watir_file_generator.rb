@@ -3,8 +3,10 @@ require_relative 'file_generator'
 module RubyRaider
   class WatirFileGenerator < FileGenerator
     def self.generate_watir_files(name)
-      generate_file('abstract_page.rb', "#{name}/page_objects/abstract", example_abstract)
+      generate_file('abstract_page.rb', "#{name}/page_objects/abstract", abstract_page)
+      generate_file('abstract_component.rb', "#{name}/page_objects/abstract", abstract_component)
       generate_file('login_page.rb', "#{name}/page_objects/pages", example_page)
+      generate_file('header_component.rb', "#{name}/page_objects/components", example_component)
       generate_file('Gemfile', name.to_s, gemfile_template)
     end
 
@@ -69,11 +71,11 @@ module RubyRaider
       page_file.result(binding)
     end
 
-    def self.example_abstract
+    def self.abstract_page
       abstract_file = ERB.new <<~EOF
-        require_relative '../components/header_component'
         require 'rspec'
-        require_relative '../../spec/helpers/raider'
+        require_relative '../components/header_component'
+        require_relative '../../helpers/raider'
 
         class BasePage
 
@@ -101,6 +103,40 @@ module RubyRaider
             raise 'Url must be defined on child pages'
           end
         end
+      EOF
+      abstract_file.result(binding)
+    end
+
+    def self.example_component
+      page_file = ERB.new <<~EOF
+        require_relative '../abstract/abstract_component'
+
+        module HeaderComponent
+
+          include BaseComponent
+
+          def customer_name
+            sleep 2
+            customer_menu.text
+          end
+
+          private
+
+          # Elements
+
+          def customer_menu
+            browser.element(id: 'customer_menu_top')
+          end
+        end
+      EOF
+      page_file.result(binding)
+    end
+
+    def self.abstract_component
+      abstract_file = ERB.new <<~EOF
+        require_relative '../../helpers/raider'
+
+        module BaseComponent; end
       EOF
       abstract_file.result(binding)
     end
