@@ -3,8 +3,8 @@ require_relative 'file_generator'
 module RubyRaider
   class WatirFileGenerator < FileGenerator
     def self.generate_watir_files(name)
-      generate_file('asbstract_page.rb', "#{name}/page_objects/abstract", example_abstract)
-      generate_file('login_page.rb', "#{name}/page_objects", example_page)
+      generate_file('abstract_page.rb', "#{name}/page_objects/abstract", example_abstract)
+      generate_file('login_page.rb', "#{name}/page_objects/pages", example_page)
       generate_file('Gemfile', name.to_s, gemfile_template)
     end
 
@@ -30,12 +30,12 @@ module RubyRaider
 
     def self.example_page
       page_file = ERB.new <<~EOF
-        require_relative '../abstract/base_page'
+        require_relative '../abstract/abstract_page'
         require_relative '../components/header_component'
 
         class LoginPage < BasePage
 
-          using Flaske::WatirHelper
+          using Raider::WatirHelper
 
           def url(_page)
             'index.php?rt=account/login'
@@ -73,16 +73,16 @@ module RubyRaider
       abstract_file = ERB.new <<~EOF
         require_relative '../components/header_component'
         require 'rspec'
-        require_relative '../../spec/helpers/flaske'
+        require_relative '../../spec/helpers/raider'
 
         class BasePage
 
           include HeaderComponent
           include RSpec::Matchers
-          extend Flaske::PomHelper
+          extend Raider::PomHelper
 
           def browser
-            Flaske::BrowserHelper.browser
+            Raider::BrowserHelper.browser
           end
 
           def visit(*page)

@@ -1,15 +1,12 @@
+require_relative 'generators/menu_generator'
 require_relative 'generators/projects/cucumber_project_generator'
 require_relative 'generators/projects/project_generator'
 require_relative 'generators/projects/rspec_project_generator'
 
 module RubyRaider
   class << self
-    def generate_menu
-      MenuGenerator.generate_choice_menu
-    end
-
-    def generate_rspec_project(name)
-      RspecProjectGenerator.generate_rspec_project(name)
+    def generate_project(project_name)
+      MenuGenerator.generate_choice_menu(project_name)
     end
   end
 end

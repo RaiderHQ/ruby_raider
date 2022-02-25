@@ -1,9 +1,6 @@
-require 'ruby_raider'
-
-include RubyRaider
+require_relative 'lib/ruby_raider'
 
 desc 'Create a new test projects'
 task :new, [:name] do |_t, args|
-  pp args.name
-  RubyRaider.generate_menu
+  RubyRaider.generate_menu(args.name)
 end

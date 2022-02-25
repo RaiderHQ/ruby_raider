@@ -3,7 +3,7 @@ require_relative '../files/rspec_file_generator'
 
 module RubyRaider
   class RspecProjectGenerator < ProjectGenerator
-    def self.generate_rspec_project(name, automation = 'watir')
+    def self.generate_rspec_project(name, automation: 'watir')
       rspec_folder_structure(name)
       rspec_files(name, automation)
     end

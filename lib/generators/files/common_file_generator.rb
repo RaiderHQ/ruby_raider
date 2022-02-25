@@ -10,10 +10,11 @@ module RubyRaider
 
     def self.readme_file
       rake_file = ERB.new <<~EOF
-        What is Flaske?
+        What is Raider?
         ===========
 
-        Flaske is a web automation framework based on rspec, watir and ruby, I'm currently working on a gem with the same name, to make the generation and building of test frameworks like this one easier and more accessible.
+        Raider is a tool to make the setup and start of automation projects in ruby easier, with one command you are
+        ready to go
 
         # Pre-requisites:
 
@@ -21,8 +22,6 @@ module RubyRaider
         https://rvm.io/rvm/install
 
         # How to use the framework:
-
-        Clone the github repository, and in that folder run bundle or bundle install to install all the gem dependencies
 
         If you want to run all the tests from your terminal do:
         *rspec spec/*
@@ -76,7 +75,7 @@ module RubyRaider
 
         class MainPage < BasePage
 
-          using Flaske::WatirHelper
+          using Raider::WatirHelper
 
           def url(_page)
             '/'
