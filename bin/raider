@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
 
-require "ruby_raider"
+require_relative '../lib/ruby_raider'
 
-RubyRaider.generate_project('test')
+RubyRaider.generate_project ARGV[0]
