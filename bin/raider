@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require "ruby_raider"
+
+RubyRaider.generate_project('test')
