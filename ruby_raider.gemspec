@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'ruby_raider'
-  s.version     = '0.1.0'
+  s.version     = '0.1.1'
   s.summary     = 'A gem to make setup and start of UI automation projects easier'
   s.description = 'This gem contents everything you need to start doing web automation in one simple package'
   s.authors     = ['Agustin Pequeno']
