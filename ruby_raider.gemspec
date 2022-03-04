@@ -9,10 +9,9 @@ Gem::Specification.new do |s|
   s.files = %w[bin/* lib/* lib/**/*]
   s.license = 'MIT'
   s.required_ruby_version = '>= 3.0.0'
-  s.files  = `git ls-files -Z`.split("\x0")
+  s.files  = `git ls-files -z`.split("\x0")
   s.bindir = 'bin'
-  s.executables << 'hello'
-
+  s.executables << 'raider'
   s.add_development_dependency 'rspec'
 
   s.add_runtime_dependency 'highline'
