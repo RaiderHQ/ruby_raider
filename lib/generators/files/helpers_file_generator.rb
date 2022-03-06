@@ -2,20 +2,24 @@ require_relative 'file_generator'
 
 module RubyRaider
   class HelpersFileGenerator < FileGenerator
-    def self.generate_helper_files(name)
-      generate_file('raider.rb', "#{name}/helpers", generate_raider_helper)
+    def self.generate_helper_files(name, automation)
+      generate_file('raider.rb', "#{name}/helpers", generate_raider_helper((automation)))
       generate_file('allure_helper.rb', "#{name}/helpers", generate_allure_helper)
       generate_file('browser_helper.rb', "#{name}/helpers", generate_browser_helper)
       generate_file('pom_helper.rb', "#{name}/helpers", generate_pom_helper)
-      generate_file('watir_helper.rb', "#{name}/helpers", generate_watir_helper)
       generate_file('spec_helper.rb', "#{name}/helpers", generate_spec_helper)
+      if automation == 'watir'
+        generate_file('watir_helper.rb', "#{name}/helpers", generate_watir_helper)
+      else
+        generate_file('selenium_helper.rb', "#{name}/helpers", generate_selenium_helper)
+      end
     end
 
-    def self.generate_raider_helper
+    def self.generate_raider_helper(automation)
       spec = ERB.new <<~EOF
         module Raider
           require_relative 'spec_helper'
-          require_relative 'watir_helper'
+          require_relative '#{automation}_helper'
           require_relative 'pom_helper'
           require_relative 'browser_helper'
           require_relative 'allure_helper'
@@ -156,6 +160,47 @@ module RubyRaider
             end
           end
         end
+      EOF
+      spec.result(binding)
+    end
+
+    def self.generate_selenium_helper
+      spec = ERB.new <<~EOF
+        require 'selenium-webdriver'
+        require_relative 'driver_helper'
+
+        module ExampleDsl
+          module SeleniumHelper
+            def click_when_present
+              # This is an example of an implicit wait in selenium
+              wait = Selenium::WebDriver::Wait.new(timeout: 15)
+              wait.until { present? }
+              click
+            end
+
+            def select_by(key, value)
+              # Creates new Select object to use the select by method
+              dropdown = Selenium::WebDriver::Support::Select.new self
+              dropdown.select_by(key, value)
+            end
+
+            def hover
+              # Using actions to move the mouse over an element
+              DriverHelper.driver.action.move_to(self).perform
+            end
+
+            # How to perform right click through the context click method
+            def right_click
+              DriverHelper.driver.action.context_click(self).perform
+            end
+          end
+
+          # Here we are opening the selenium class and adding our custom method
+          class Selenium::WebDriver::Element
+            include SeleniumHelper
+          end
+        end
+
       EOF
       spec.result(binding)
     end
