@@ -1,19 +1,20 @@
 require_relative 'common_file_generator'
 require_relative 'file_generator'
 require_relative 'helpers_file_generator'
+require_relative 'selenium_file_generator'
 require_relative 'watir_file_generator'
 
 module RubyRaider
   class RspecFileGenerator < FileGenerator
     def self.generate_rspec_files(name, automation)
+      CommonFileGenerator.generate_common_files(name)
+      HelpersFileGenerator.generate_helper_files(name, automation)
+      generate_file('login_page_spec.rb', "#{name}/spec", generate_example_spec)
+      generate_file('base_spec.rb', "#{name}/spec", generate_base_spec)
       if automation == 'watir'
-        CommonFileGenerator.generate_common_files(name)
         WatirFileGenerator.generate_watir_files(name)
-        HelpersFileGenerator.generate_helper_files(name)
-        generate_file('login_page_spec.rb', "#{name}/spec", generate_example_spec)
-        generate_file('base_spec.rb', "#{name}/spec", generate_base_spec)
       else
-        pp 'here goes selenium'
+        SeleniumFileGenerator.generate_selenium_files(name)
       end
     end
 
@@ -32,13 +33,14 @@ module RubyRaider
             describe 'A user can' do
               it 'login with the right credentials', :JIRA_123 do
                 LoginPage.login('aguspe', '12341234')
-                expect(LoginPage.customer_name).to eq 'Welcome back Agustin'
+                expect(LoginPage.header.customer_name).to eq 'Welcome back Agustin'
               end
             end
 
             describe 'A user cannot' do
               it 'login with the wrong credentials', :JIRA_123 do
-                expect(LoginPage.customer_name).to eq 'Login or register'
+                LoginPage.login('aguspe', 'wrongPassword')
+                expect(LoginPage.header.customer_name).to be_empty
               end
             end
           end

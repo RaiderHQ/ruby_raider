@@ -7,8 +7,8 @@ module RubyRaider
       cli = HighLine.new
       cli.choose do |menu|
         menu.prompt = 'Please select your automation framework'
-        menu.choice(:Selenium) { 'We are still working on supporting this' }
-        menu.choice(:Watir) {choose_test_framework('watir', project_name) }
+        menu.choice(:Selenium) { choose_test_framework('selenium', project_name) }
+        menu.choice(:Watir) { choose_test_framework('watir', project_name) }
         menu.choice(:Quit, 'Exit program.') { exit }
       end
     end
