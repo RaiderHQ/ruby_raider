@@ -35,7 +35,7 @@ module RubyRaider
         require_relative '../abstract/abstract_page'
         require_relative '../components/header_component'
 
-        class LoginPage < BasePage
+        class LoginPage < AbstractPage
 
           using Raider::WatirHelper
 
@@ -49,6 +49,12 @@ module RubyRaider
             username_field.set username
             password_field.set password
             login_button.click_when_present
+          end
+
+          # Components
+
+          def header
+            HeaderComponent.new(browser.element(class: 'menu_text'))
           end
 
           private
@@ -74,12 +80,10 @@ module RubyRaider
     def self.abstract_page
       abstract_file = ERB.new <<~EOF
         require 'rspec'
-        require_relative '../components/header_component'
         require_relative '../../helpers/raider'
 
-        class BasePage
+        class AbstractPage
 
-          include HeaderComponent
           include RSpec::Matchers
           extend Raider::PomHelper
 
@@ -103,6 +107,7 @@ module RubyRaider
             raise 'Url must be defined on child pages'
           end
         end
+
       EOF
       abstract_file.result(binding)
     end
@@ -111,20 +116,10 @@ module RubyRaider
       page_file = ERB.new <<~EOF
         require_relative '../abstract/abstract_component'
 
-        module HeaderComponent
-
-          include BaseComponent
+        class HeaderComponent < AbstractComponent
 
           def customer_name
-            customer_menu.text
-          end
-
-          private
-
-          # Elements
-
-          def customer_menu
-            browser.element(id: 'customer_menu_top')
+            @component.text
           end
         end
       EOF
@@ -135,7 +130,11 @@ module RubyRaider
       abstract_file = ERB.new <<~EOF
         require_relative '../../helpers/raider'
 
-        module BaseComponent; end
+         class AbstractComponent
+           def initialize(component)
+             @component = component
+           end
+         end
       EOF
       abstract_file.result(binding)
     end

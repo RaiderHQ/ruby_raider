@@ -33,13 +33,14 @@ module RubyRaider
             describe 'A user can' do
               it 'login with the right credentials', :JIRA_123 do
                 LoginPage.login('aguspe', '12341234')
-                expect(LoginPage.customer_name).to eq 'Welcome back Agustin'
+                expect(LoginPage.header.customer_name).to eq 'Welcome back Agustin'
               end
             end
 
             describe 'A user cannot' do
               it 'login with the wrong credentials', :JIRA_123 do
-                expect(LoginPage.customer_name).to eq 'Login or register'
+                LoginPage.login('aguspe', 'wrongPassword')
+                expect(LoginPage.header.customer_name).to be_empty
               end
             end
           end
