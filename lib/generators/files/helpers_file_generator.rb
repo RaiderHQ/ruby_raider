@@ -5,13 +5,14 @@ module RubyRaider
     def self.generate_helper_files(name, automation)
       generate_file('raider.rb', "#{name}/helpers", generate_raider_helper((automation)))
       generate_file('allure_helper.rb', "#{name}/helpers", generate_allure_helper)
-      generate_file('browser_helper.rb', "#{name}/helpers", generate_browser_helper)
       generate_file('pom_helper.rb', "#{name}/helpers", generate_pom_helper)
-      generate_file('spec_helper.rb', "#{name}/helpers", generate_spec_helper)
+      generate_file('spec_helper.rb', "#{name}/helpers", generate_spec_helper((automation)))
       if automation == 'watir'
         generate_file('watir_helper.rb', "#{name}/helpers", generate_watir_helper)
+        generate_file('browser_helper.rb', "#{name}/helpers", generate_browser_helper)
       else
         generate_file('selenium_helper.rb', "#{name}/helpers", generate_selenium_helper)
+        generate_file('driver_helper.rb', "#{name}/helpers", generate_driver_helper)
       end
     end
 
@@ -21,10 +22,11 @@ module RubyRaider
           require_relative 'spec_helper'
           require_relative '#{automation}_helper'
           require_relative 'pom_helper'
-          require_relative 'browser_helper'
+          require_relative '#{automation == 'watir' ? 'browser_helper' : 'driver_helper'}'
           require_relative 'allure_helper'
         end
       EOF
+
       spec.result(binding)
     end
 
@@ -109,12 +111,12 @@ module RubyRaider
       spec.result(binding)
     end
 
-    def self.generate_spec_helper
+    def self.generate_spec_helper(automation)
       spec = ERB.new <<~EOF
         require 'active_support/all'
         require 'rspec'
         require_relative 'allure_helper'
-        require_relative 'browser_helper'
+        require_relative '#{automation == 'watir' ? 'browser_helper' : 'driver_helper'}'
 
         module Raider
           module SpecHelper
@@ -124,16 +126,16 @@ module RubyRaider
             RSpec.configure do |config|
               config.formatter = AllureHelper.formatter
               config.before(:each) do
-                BrowserHelper.new_browser
+                #{automation == 'watir' ? 'BrowserHelper.new_browser' : 'DriverHelper.new_driver'}
               end
 
               config.after(:each) do
-                browser = BrowserHelper.browser
+                #{automation == 'watir' ? 'browser = BrowserHelper.browser' : 'driver = DriverHelper.driver'}
                 example_name = self.class.descendant_filtered_examples.first.description
                 status = self.class.descendant_filtered_examples.first.execution_result.status
-                browser.save_screenshot("allure-results/screenshots/#\{example_name}.png") if status == :failed
+                #{automation == 'watir' ? 'browser' : 'driver'}.save_screenshot("allure-results/screenshots/#\{example_name}.png") if status == :failed
                 AllureHelper.add_screenshot example_name if status == :failed
-                browser.quit
+                #{automation == 'watir' ? 'browser.quit' : 'driver.quit'}
               end
             end
           end
@@ -200,6 +202,30 @@ module RubyRaider
             include SeleniumHelper
           end
         end
+
+      EOF
+      spec.result(binding)
+    end
+
+    def self.generate_driver_helper
+      spec = ERB.new <<~EOF
+        require 'selenium-webdriver'
+        require 'watir'
+        require 'webdrivers'
+        require 'yaml'
+
+        module Raider
+          module DriverHelper
+            class << self
+              attr_reader :driver
+
+              def new_driver
+                @driver = Selenium::WebDriver.for :chrome
+              end
+            end
+          end
+        end
+
 
       EOF
       spec.result(binding)

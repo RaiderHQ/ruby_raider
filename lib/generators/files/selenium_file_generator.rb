@@ -35,7 +35,7 @@ module RubyRaider
       gemfile = ERB.new <<~EOF
         require_relative '../abstract/abstract_page'
         require_relative '../components/header_component'
-        require_relative '../../spec/helpers/selenium_helper'
+        require_relative '../../helpers/selenium_helper'
 
         class LoginPage < AbstractPage
 
@@ -49,6 +49,10 @@ module RubyRaider
             username_field.send_keys username
             password_field.send_keys password
             login_button.click_when_present
+          end
+
+          def header
+            HeaderComponent.new(driver.find_element(class: 'menu_text'))
           end
 
           private
@@ -67,6 +71,8 @@ module RubyRaider
             driver.find_element(xpath: "//button[@title='Login']")
           end
         end
+
+
 
       EOF
       gemfile.result(binding)
@@ -108,7 +114,7 @@ module RubyRaider
 
     def self.abstract_component
       abstract_file = ERB.new <<~EOF
-        require_relative '../../spec/helpers/example_dsl'
+        require_relative '../../helpers/raider'
 
          class AbstractComponent
            def initialize(component)
@@ -121,13 +127,13 @@ module RubyRaider
 
     def self.abstract_page_object
       abstract_file = ERB.new <<~EOF
-        require_relative '../../spec/helpers/example_dsl'
+        require_relative '../../helpers/raider'
 
         class AbstractPageObject
-          extend ExampleDsl::PomHelper
+          extend Raider::PomHelper
 
           def driver
-            ExampleDsl::DriverHelper.driver
+            Raider::DriverHelper.driver
           end
         end
 
@@ -139,22 +145,13 @@ module RubyRaider
       page_file = ERB.new <<~EOF
         require_relative '../abstract/abstract_component'
 
-        module HeaderComponent
-
-          include BaseComponent
+        class HeaderComponent < AbstractComponent
 
           def customer_name
-            customer_menu.text
-          end
-
-          private
-
-          # Elements
-
-          def customer_menu
-            browser.element(id: 'customer_menu_top')
+            @component.text
           end
         end
+
       EOF
       page_file.result(binding)
     end
