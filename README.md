@@ -9,7 +9,10 @@ then do raider [name_of_project]
 
 and you will have a new project in the folder you are in
 
-Currently we only support Watir with Rspec.
+Currently we only support:
+
+* Gerating a Selenium with Rspec framework
+* Gerating a Watir with Rspec framework
 
 We have only tested this in mac and linux, so it works in both platforms.
 
