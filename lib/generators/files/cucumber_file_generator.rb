@@ -19,7 +19,7 @@ module RubyRaider
         Feature: Login Page
 
         Scenario:
-          Given I'm a registered user
+          Given I'm a registered user on the login page
           When I login with my credentials
           Then I can see the main page
 
@@ -39,7 +39,7 @@ module RubyRaider
           LoginPage.login('aguspe', '12341234')
         end
 
-        When('Then I can see the main page') do
+        When('I can see the main page') do
           expect(LoginPage.header.customer_name).to eq 'Welcome back Agustin'
         end
       EOF

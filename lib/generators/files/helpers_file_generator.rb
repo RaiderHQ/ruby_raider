@@ -4,10 +4,10 @@ module RubyRaider
   class HelpersFileGenerator < FileGenerator
     def self.generate_helper_files(name, automation, framework)
       path = framework == 'rspec' ? "#{name}/helpers" : "#{name}/features/support/helpers"
-      generate_file('raider.rb', path, generate_raider_helper((automation)))
+      generate_file('raider.rb', path, generate_raider_helper(automation, framework))
       generate_file('allure_helper.rb', path, generate_allure_helper)
       generate_file('pom_helper.rb', path, generate_pom_helper)
-      generate_file('spec_helper.rb', path, generate_spec_helper((automation)))
+      generate_file('spec_helper.rb', path, generate_spec_helper((automation))) if framework == 'rspec'
       if automation == 'watir'
         generate_file('watir_helper.rb', path, generate_watir_helper)
         generate_file('browser_helper.rb', path, generate_browser_helper)
@@ -17,10 +17,10 @@ module RubyRaider
       end
     end
 
-    def self.generate_raider_helper(automation)
+    def self.generate_raider_helper(automation, framework)
       spec = ERB.new <<~EOF
         module Raider
-          require_relative 'spec_helper'
+          #{"require_relative 'spec_helper'" if framework == 'rspec'}
           require_relative '#{automation}_helper'
           require_relative 'pom_helper'
           require_relative '#{automation == 'watir' ? 'browser_helper' : 'driver_helper'}'
