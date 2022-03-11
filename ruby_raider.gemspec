@@ -12,7 +12,8 @@ Gem::Specification.new do |s|
   s.files  = `git ls-files -z`.split("\x0")
   s.bindir = 'bin'
   s.executables << 'raider'
-  s.add_development_dependency 'rspec'
+  s.add_development_dependency 'rake', '~> 13.0.6'
+  s.add_development_dependency 'rspec', '~> 3.11.0'
 
-  s.add_runtime_dependency 'highline'
+  s.add_runtime_dependency 'highline', '~> 2.0.3'
 end

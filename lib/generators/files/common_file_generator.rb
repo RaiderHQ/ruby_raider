@@ -145,6 +145,7 @@ module RubyRaider
         gem 'parallel_tests'
         gem 'rake'
         gem '#{framework}'
+        '#{'gem rspec' if framework == 'cucumber'}'
         gem 'selenium-webdriver'
         gem 'watir'
         gem 'webdrivers'
