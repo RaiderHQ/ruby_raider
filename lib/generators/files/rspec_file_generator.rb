@@ -7,8 +7,8 @@ require_relative 'watir_file_generator'
 module RubyRaider
   class RspecFileGenerator < FileGenerator
     def self.generate_rspec_files(name, automation)
-      CommonFileGenerator.generate_common_files(name)
-      HelpersFileGenerator.generate_helper_files(name, automation)
+      CommonFileGenerator.generate_common_files(name, 'rspec')
+      HelpersFileGenerator.generate_helper_files(name, automation, 'rspec')
       generate_file('login_page_spec.rb', "#{name}/spec", generate_example_spec)
       generate_file('base_spec.rb', "#{name}/spec", generate_base_spec)
       if automation == 'watir'

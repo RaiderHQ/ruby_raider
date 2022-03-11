@@ -7,27 +7,6 @@ module RubyRaider
       generate_file('abstract_component.rb', "#{name}/page_objects/abstract", abstract_component)
       generate_file('login_page.rb', "#{name}/page_objects/pages", example_page)
       generate_file('header_component.rb', "#{name}/page_objects/components", example_component)
-      generate_file('Gemfile', name.to_s, gemfile_template)
-    end
-
-    def self.gemfile_template
-      gemfile = ERB.new <<~EOF
-        # frozen_string_literal: true
-
-        source 'https://rubygems.org'
-
-        gem 'activesupport'
-        gem 'allure-rspec'
-        gem 'allure-ruby-commons'
-        gem 'parallel_split_test'
-        gem 'parallel_tests'
-        gem 'rake'
-        gem 'rspec'
-        gem 'selenium-webdriver'
-        gem 'watir'
-        gem 'webdrivers'
-      EOF
-      gemfile.result(binding)
     end
 
     def self.example_page

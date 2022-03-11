@@ -2,9 +2,16 @@ require_relative 'file_generator'
 
 module RubyRaider
   class CucumberFileGenerator < FileGenerator
-    def self.generate_selenium_files(name)
-      generate_file('login_page.feature', "#{name}/features", example_feature)
-      generate_file('login_steps.rb', "#{name}/features/steps_definitions", example_steps)
+    def self.generate_cucumber_files(name, automation)
+      CommonFileGenerator.generate_common_files(name, 'cucumber')
+      HelpersFileGenerator.generate_helper_files(name, automation, 'cucumber')
+      generate_file('login.feature', "#{name}/features", example_feature)
+      generate_file('login_steps.rb', "#{name}/features/step_definitions", example_steps)
+      if automation == 'watir'
+        WatirFileGenerator.generate_watir_files(name)
+      else
+        SeleniumFileGenerator.generate_selenium_files(name)
+      end
     end
 
     def self.example_feature

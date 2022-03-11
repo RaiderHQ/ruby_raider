@@ -2,17 +2,18 @@ require_relative 'file_generator'
 
 module RubyRaider
   class HelpersFileGenerator < FileGenerator
-    def self.generate_helper_files(name, automation)
-      generate_file('raider.rb', "#{name}/helpers", generate_raider_helper((automation)))
-      generate_file('allure_helper.rb', "#{name}/helpers", generate_allure_helper)
-      generate_file('pom_helper.rb', "#{name}/helpers", generate_pom_helper)
-      generate_file('spec_helper.rb', "#{name}/helpers", generate_spec_helper((automation)))
+    def self.generate_helper_files(name, automation, framework)
+      path = framework == 'rspec' ? "#{name}/helpers" : "#{name}/features/support/helpers"
+      generate_file('raider.rb', path, generate_raider_helper((automation)))
+      generate_file('allure_helper.rb', path, generate_allure_helper)
+      generate_file('pom_helper.rb', path, generate_pom_helper)
+      generate_file('spec_helper.rb', path, generate_spec_helper((automation)))
       if automation == 'watir'
-        generate_file('watir_helper.rb', "#{name}/helpers", generate_watir_helper)
-        generate_file('browser_helper.rb', "#{name}/helpers", generate_browser_helper)
+        generate_file('watir_helper.rb', path, generate_watir_helper)
+        generate_file('browser_helper.rb', path, generate_browser_helper)
       else
-        generate_file('selenium_helper.rb', "#{name}/helpers", generate_selenium_helper)
-        generate_file('driver_helper.rb', "#{name}/helpers", generate_driver_helper)
+        generate_file('selenium_helper.rb', path, generate_selenium_helper)
+        generate_file('driver_helper.rb', path, generate_driver_helper)
       end
     end
 
