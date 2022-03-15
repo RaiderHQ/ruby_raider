@@ -1,8 +1,7 @@
 require_relative 'common_file_generator'
 require_relative 'file_generator'
 require_relative 'helpers_file_generator'
-require_relative 'selenium_file_generator'
-require_relative 'watir_file_generator'
+require_relative 'automation_file_generator'
 
 module RubyRaider
   class RspecFileGenerator < FileGenerator
@@ -11,11 +10,7 @@ module RubyRaider
       HelpersFileGenerator.generate_helper_files(name, automation, 'rspec')
       generate_file('login_page_spec.rb', "#{name}/spec", generate_example_spec)
       generate_file('base_spec.rb', "#{name}/spec", generate_base_spec)
-      if automation == 'watir'
-        WatirFileGenerator.generate_watir_files(name)
-      else
-        SeleniumFileGenerator.generate_selenium_files(name)
-      end
+      AutomationFileGenerator.generate_automation_files(name, automation, 'rspec')
     end
 
     def self.generate_example_spec

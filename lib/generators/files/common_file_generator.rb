@@ -133,6 +133,11 @@ module RubyRaider
     end
 
     def self.gemfile_template(framework)
+      if framework == 'cucumber'
+        allure_cucumber = "gem 'allure-cucumber'"
+        rspec = "gem 'rspec'"
+      end
+
       gemfile = ERB.new <<~EOF
         # frozen_string_literal: true
 
@@ -141,11 +146,12 @@ module RubyRaider
         gem 'activesupport'
         gem 'allure-rspec'
         gem 'allure-ruby-commons'
+        #{allure_cucumber}
         gem 'parallel_split_test'
         gem 'parallel_tests'
         gem 'rake'
         gem '#{framework}'
-        '#{'gem rspec' if framework == 'cucumber'}'
+        #{rspec}
         gem 'selenium-webdriver'
         gem 'watir'
         gem 'webdrivers'
