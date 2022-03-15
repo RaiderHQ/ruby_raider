@@ -37,7 +37,7 @@ module RubyRaider
         allure = 'AllureCucumber'
       else
         gems = "require 'allure-ruby-commons'
-                require 'allure-rspec'"
+require 'allure-rspec'"
         allure = 'AllureRspec'
       end
       spec = ERB.new <<~EOF
@@ -62,6 +62,13 @@ module RubyRaider
                   test_case: true
                 )
               end
+
+              #{
+        if framework == 'rspec'
+          'def formatter
+        AllureRspecFormatter
+      end'
+        end }
             end
           end
         end
