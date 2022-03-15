@@ -5,7 +5,7 @@ require_relative 'generators/projects/rspec_project_generator'
 
 module RubyRaider
   extend self
-    def generate_project(project_name)
-      MenuGenerator.generate_choice_menu(project_name)
-    end
+  def generate_project(project_name)
+    MenuGenerator.generate_choice_menu(project_name)
+  end
 end
