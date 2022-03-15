@@ -11,13 +11,14 @@ module RubyRaider
 
     def self.cucumber_folder_structure(name)
       Dir.mkdir name.to_s
-      folders = %w[features config page_objects]
+      folders = %w[features config page_objects allure-results]
       create_children_folders("#{name}", folders)
       folders = %w[step_definitions support]
       create_children_folders("#{name}/features", folders)
       Dir.mkdir "#{name}/features/support/helpers"
       folders = %w[abstract pages components]
       create_children_folders("#{name}/page_objects", folders)
+      Dir.mkdir "#{name}/allure-results/screenshots"
     end
   end
 end

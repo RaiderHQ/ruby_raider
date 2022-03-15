@@ -5,7 +5,7 @@ module RubyRaider
     def self.generate_helper_files(name, automation, framework)
       path = framework == 'rspec' ? "#{name}/helpers" : "#{name}/features/support/helpers"
       generate_file('raider.rb', path, generate_raider_helper(automation, framework))
-      generate_file('allure_helper.rb', path, generate_allure_helper)
+      generate_file('allure_helper.rb', path, generate_allure_helper(framework))
       generate_file('pom_helper.rb', path, generate_pom_helper)
       generate_file('spec_helper.rb', path, generate_spec_helper((automation))) if framework == 'rspec'
       if automation == 'watir'
@@ -31,33 +31,36 @@ module RubyRaider
       spec.result(binding)
     end
 
-    def self.generate_allure_helper
+    def self.generate_allure_helper(framework)
+      if framework == 'cucumber'
+        gems = "require 'allure-cucumber'"
+        allure = 'AllureCucumber'
+      else
+        gems = "require 'allure-ruby-commons'
+                require 'allure-rspec'"
+        allure = 'AllureRspec'
+      end
       spec = ERB.new <<~EOF
-        require 'allure-ruby-commons'
-        require 'allure-rspec'
+        #{gems}
 
         module Raider
           module AllureHelper
             class << self
 
               def configure
-                AllureRspec.configure do |config|
+                #{allure}.configure do |config|
                   config.results_directory = 'allure-results'
                   config.clean_results_directory = true
                 end
               end
 
-              def add_screenshot(name)
+              def add_screenshot(screenshot_name)
                 Allure.add_attachment(
                   name: name,
-                  source: File.open("allure-results/screenshots/#{name}.png"),
+                  source: "File.open(allure-results/screenshots/\#{screenshot_name}.png)",
                   type: Allure::ContentType::PNG,
                   test_case: true
                 )
-              end
-
-              def formatter
-                AllureRspecFormatter
               end
             end
           end
@@ -85,6 +88,7 @@ module RubyRaider
             end
           end
         end
+
       EOF
       spec.result(binding)
     end
@@ -172,7 +176,7 @@ module RubyRaider
         require 'selenium-webdriver'
         require_relative 'driver_helper'
 
-        module ExampleDsl
+        module Raider
           module SeleniumHelper
             def click_when_present
               # This is an example of an implicit wait in selenium
@@ -226,8 +230,6 @@ module RubyRaider
             end
           end
         end
-
-
       EOF
       spec.result(binding)
     end
