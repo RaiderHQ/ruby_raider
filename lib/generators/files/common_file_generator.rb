@@ -2,10 +2,11 @@ require_relative 'file_generator'
 
 module RubyRaider
   class CommonFileGenerator < FileGenerator
-    def self.generate_common_files(name)
+    def self.generate_common_files(name, framework)
       generate_file('config.yml', "#{name}/config", config_file)
       generate_file('Rakefile', name.to_s, rake_file)
       generate_file('Readme.md', name.to_s, readme_file)
+      generate_file('Gemfile', name.to_s, gemfile_template((framework)))
     end
 
     def self.readme_file
@@ -129,6 +130,33 @@ module RubyRaider
         end
       EOF
       rake_file.result(binding)
+    end
+
+    def self.gemfile_template(framework)
+      if framework == 'cucumber'
+        allure_cucumber = "gem 'allure-cucumber'"
+        rspec = "gem 'rspec'"
+      end
+
+      gemfile = ERB.new <<~EOF
+        # frozen_string_literal: true
+
+        source 'https://rubygems.org'
+
+        gem 'activesupport'
+        gem 'allure-rspec'
+        gem 'allure-ruby-commons'
+        #{allure_cucumber}
+        gem 'parallel_split_test'
+        gem 'parallel_tests'
+        gem 'rake'
+        gem '#{framework}'
+        #{rspec}
+        gem 'selenium-webdriver'
+        gem 'watir'
+        gem 'webdrivers'
+      EOF
+      gemfile.result(binding)
     end
   end
 end

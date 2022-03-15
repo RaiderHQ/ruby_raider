@@ -5,7 +5,8 @@ module RubyRaider
   class RspecProjectGenerator < ProjectGenerator
     def self.generate_rspec_project(name, automation: 'watir')
       rspec_folder_structure(name)
-      rspec_files(name, automation)
+      RspecFileGenerator.generate_rspec_files(name, automation)
+      ProjectGenerator.install_gems(name)
     end
 
     def self.rspec_folder_structure(name)
@@ -14,10 +15,6 @@ module RubyRaider
       create_children_folders(name, folders)
       pages = %w[pages components abstract]
       create_children_folders("#{name}/page_objects", pages)
-    end
-
-    def self.rspec_files(name, automation)
-      RspecFileGenerator.generate_rspec_files(name, automation)
     end
   end
 end

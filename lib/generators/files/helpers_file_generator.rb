@@ -2,24 +2,25 @@ require_relative 'file_generator'
 
 module RubyRaider
   class HelpersFileGenerator < FileGenerator
-    def self.generate_helper_files(name, automation)
-      generate_file('raider.rb', "#{name}/helpers", generate_raider_helper((automation)))
-      generate_file('allure_helper.rb', "#{name}/helpers", generate_allure_helper)
-      generate_file('pom_helper.rb', "#{name}/helpers", generate_pom_helper)
-      generate_file('spec_helper.rb', "#{name}/helpers", generate_spec_helper((automation)))
+    def self.generate_helper_files(name, automation, framework)
+      path = framework == 'rspec' ? "#{name}/helpers" : "#{name}/features/support/helpers"
+      generate_file('raider.rb', path, generate_raider_helper(automation, framework))
+      generate_file('allure_helper.rb', path, generate_allure_helper(framework))
+      generate_file('pom_helper.rb', path, generate_pom_helper)
+      generate_file('spec_helper.rb', path, generate_spec_helper((automation))) if framework == 'rspec'
       if automation == 'watir'
-        generate_file('watir_helper.rb', "#{name}/helpers", generate_watir_helper)
-        generate_file('browser_helper.rb', "#{name}/helpers", generate_browser_helper)
+        generate_file('watir_helper.rb', path, generate_watir_helper)
+        generate_file('browser_helper.rb', path, generate_browser_helper)
       else
-        generate_file('selenium_helper.rb', "#{name}/helpers", generate_selenium_helper)
-        generate_file('driver_helper.rb', "#{name}/helpers", generate_driver_helper)
+        generate_file('selenium_helper.rb', path, generate_selenium_helper)
+        generate_file('driver_helper.rb', path, generate_driver_helper)
       end
     end
 
-    def self.generate_raider_helper(automation)
+    def self.generate_raider_helper(automation, framework)
       spec = ERB.new <<~EOF
         module Raider
-          require_relative 'spec_helper'
+          #{"require_relative 'spec_helper'" if framework == 'rspec'}
           require_relative '#{automation}_helper'
           require_relative 'pom_helper'
           require_relative '#{automation == 'watir' ? 'browser_helper' : 'driver_helper'}'
@@ -30,33 +31,36 @@ module RubyRaider
       spec.result(binding)
     end
 
-    def self.generate_allure_helper
+    def self.generate_allure_helper(framework)
+      if framework == 'cucumber'
+        gems = "require 'allure-cucumber'"
+        allure = 'AllureCucumber'
+      else
+        gems = "require 'allure-ruby-commons'
+                require 'allure-rspec'"
+        allure = 'AllureRspec'
+      end
       spec = ERB.new <<~EOF
-        require 'allure-ruby-commons'
-        require 'allure-rspec'
+        #{gems}
 
         module Raider
           module AllureHelper
             class << self
 
               def configure
-                AllureRspec.configure do |config|
+                #{allure}.configure do |config|
                   config.results_directory = 'allure-results'
                   config.clean_results_directory = true
                 end
               end
 
-              def add_screenshot(name)
+              def add_screenshot(screenshot_name)
                 Allure.add_attachment(
                   name: name,
-                  source: File.open("allure-results/screenshots/#{name}.png"),
+                  source: "File.open(allure-results/screenshots/\#{screenshot_name}.png)",
                   type: Allure::ContentType::PNG,
                   test_case: true
                 )
-              end
-
-              def formatter
-                AllureRspecFormatter
               end
             end
           end
@@ -84,6 +88,7 @@ module RubyRaider
             end
           end
         end
+
       EOF
       spec.result(binding)
     end
@@ -171,7 +176,7 @@ module RubyRaider
         require 'selenium-webdriver'
         require_relative 'driver_helper'
 
-        module ExampleDsl
+        module Raider
           module SeleniumHelper
             def click_when_present
               # This is an example of an implicit wait in selenium
@@ -225,8 +230,6 @@ module RubyRaider
             end
           end
         end
-
-
       EOF
       spec.result(binding)
     end
