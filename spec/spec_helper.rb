@@ -7,27 +7,11 @@ RSpec.configure do |config|
 
   @project_name = 'test'
 
-  config.before(:cucumber_selenium) do
-    RubyRaider::CucumberProjectGenerator.generate_cucumber_project(@project_name, automation: 'selenium')
+  config.before(:each) do
+    RubyRaider::RspecProjectGenerator.generate_rspec_project(@project_name, automation: 'selenium')
   end
 
-  config.before(:cucumber_watir) do
-    RubyRaider::CucumberProjectGenerator.generate_cucumber_project(@project_name)
-  end
-
-  config.before(:rspec_selenium) do
-    RubyRaider::CucumberProjectGenerator.generate_cucumber_project(@project_name)
-  end
-
-  config.before(:rspec_watir) do
-    RubyRaider::CucumberProjectGenerator.generate_cucumber_project(@project_name, automation: 'selenium')
-  end
-
-  config.before(:common) do
-    RubyRaider::CucumberProjectGenerator.generate_cucumber_project(@project_name, automation: 'selenium')
-  end
-
-  config.after(:all) do
-    FileUtils.rm_rf(@project_name)
-  end
+  #config.after(:each) do
+  # FileUtils.rm_rf(@project_name)
+  # end
 end

@@ -1,96 +1,38 @@
 require_relative 'file_generator'
+require_relative '../templates/abstract_page_template'
+require_relative '../templates/abstract_component_template'
+require_relative '../templates/component_template'
+require_relative '../templates/page_template'
 
 module RubyRaider
   class AutomationFileGenerator < FileGenerator
-    def self.generate_automation_files(name, automation, framework)
-      generate_file('abstract_page.rb', "#{name}/page_objects/abstract", abstract_page(automation, framework))
-      generate_file('abstract_component.rb', "#{name}/page_objects/abstract", abstract_component(framework))
-      generate_file('login_page.rb', "#{name}/page_objects/pages", example_page(automation))
-      generate_file('header_component.rb', "#{name}/page_objects/components", example_component)
-    end
+    class << self
+      def generate_automation_files(name, automation, framework)
+        generate_example_page(automation, name)
+        generate_abstract_page(automation, framework, name)
+        generate_example_component(name)
+        generate_abstract_component(framework, name)
+      end
 
-    def self.example_page(automation)
-      element = automation == 'watir' ? 'browser.element' : 'driver.find_element'
-      helper = automation == 'watir' ? 'Raider::WatirHelper' : 'Raider::SeleniumHelper'
-      page_content = ERB.new('../templates/page_template.erb')
-      page_content.result(binding)
-    end
+      def generate_example_page(automation, name)
+        generate_file('login_page.rb', "#{name}/page_objects/pages",
+                      PageTemplate.new(automation: automation, name: name).parsed_body,)
+      end
 
-    def self.abstract_page(automation, framework)
-      browser = "def browser
-    Raider::BrowserHelper.browser
-  end"
-      driver = "def driver
-    Raider::DriverHelper.driver
-  end"
-      visit = automation == 'watir' ? 'browser.goto full_url(page.first)' : 'driver.navigate.to full_url(page.first)'
-      raider = if framework == 'rspec'
-                 "require_relative '../../helpers/raider'"
-               else
-                 "require_relative '../../features/support/helpers/raider'"
-               end
-      abstract_file = ERB.new <<~EOF
-        require 'rspec'
-        #{raider}
+      def generate_abstract_page(automation, framework, name)
+        generate_file('abstract_page.rb', "#{name}/page_objects/abstract",
+                      AbstractPageTemplate.new(automation: automation, framework: framework, name: name).parsed_body)
+      end
 
-        class AbstractPage
+      def generate_example_component(name)
+        generate_file('header_component.rb',"#{name}/page_objects/components",
+        ComponentTemplate.new.parsed_body)
+      end
 
-          include RSpec::Matchers
-          extend Raider::PomHelper
-
-          #{automation == 'watir' ? browser : driver}
-
-          def visit(*page)
-            #{visit}
-          end
-
-          def full_url(*page)
-            "#\{base_url}#\{url(*page)}"
-          end
-
-          def base_url
-            'https://automationteststore.com/'
-          end
-
-          def url(_page)
-            raise 'Url must be defined on child pages'
-          end
-        end
-      EOF
-      abstract_file.result(binding)
-    end
-
-    def self.example_component
-      page_file = ERB.new <<~EOF
-        require_relative '../abstract/abstract_component'
-
-        class HeaderComponent < AbstractComponent
-
-          def customer_name
-            @component.text
-          end
-        end
-      EOF
-      page_file.result(binding)
-    end
-
-    def self.abstract_component(framework)
-      raider = if framework == 'rspec'
-                 "require_relative '../../helpers/raider'"
-               else
-                 "require_relative '../../features/support/helpers/raider'"
-               end
-      abstract_file = ERB.new <<~EOF
-        #{raider}
-
-        class AbstractComponent
-
-            def initialize(component)
-              @component = component
-            end
-        end
-      EOF
-      abstract_file.result(binding)
+      def generate_abstract_component(framework, name)
+        generate_file('abstract_component.rb',"#{name}/page_objects/abstract",
+                      AbstractComponentTemplate.new(framework: framework).parsed_body)
+      end
     end
   end
 end
