@@ -2,7 +2,7 @@ require_relative '../lib/generators/files/automation_file_generator'
 require_relative 'spec_helper'
 
 describe RubyRaider::AutomationFileGenerator do
-  it 'creates a login page file' do
+  it 'creates a login page file', :rspec_watir do
     expect(File.exist?("#{@project_name}/page_objects/pages/login_page.rb")).to be_truthy
   end
 

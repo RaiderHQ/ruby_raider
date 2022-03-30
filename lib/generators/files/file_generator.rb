@@ -1,5 +1,3 @@
-require 'thor'
-
 module RubyRaider
   class FileGenerator
     def self.generate_file(name, path, content)
