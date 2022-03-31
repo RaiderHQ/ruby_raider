@@ -1,4 +1,4 @@
-require_relative 'template'
+require_relative '../template'
 
 class AbstractPageTemplate < Template
   def body

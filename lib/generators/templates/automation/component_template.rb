@@ -1,4 +1,4 @@
-require_relative 'template'
+require_relative '../template'
 
 class ComponentTemplate < Template
   def body

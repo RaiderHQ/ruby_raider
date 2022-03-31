@@ -1,8 +1,8 @@
 require_relative 'file_generator'
-require_relative '../templates/abstract_page_template'
-require_relative '../templates/abstract_component_template'
-require_relative '../templates/component_template'
-require_relative '../templates/page_template'
+require_relative '../templates/automation/abstract_page_template'
+require_relative '../templates/automation/abstract_component_template'
+require_relative '../templates/automation/component_template'
+require_relative '../templates/automation/page_template'
 
 module RubyRaider
   class AutomationFileGenerator < FileGenerator
@@ -16,7 +16,7 @@ module RubyRaider
 
       def generate_example_page(automation, name)
         generate_file('login_page.rb', "#{name}/page_objects/pages",
-                      PageTemplate.new(automation: automation, name: name).parsed_body,)
+                      PageTemplate.new(automation: automation, name: name).parsed_body)
       end
 
       def generate_abstract_page(automation, framework, name)
