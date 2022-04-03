@@ -2,28 +2,70 @@ require_relative '../lib/generators/files/helpers_file_generator'
 require_relative 'spec_helper'
 
 describe RubyRaider::HelpersFileGenerator do
-  it 'creates a raider file' do
-    expect(File.exist?("#{@project_name}/helpers/raider.rb")).to be_truthy
+  context 'When the users selects rspec' do
+    before(:all) do
+      @name = 'Rspec-watir-2'
+      RubyRaider::RspecProjectGenerator.generate_rspec_project(@name, automation: 'selenium')
+    end
+
+    it 'creates a raider file' do
+      expect(File.exist?("#{@name}/helpers/raider.rb")).to be_truthy
+    end
+
+    it 'creates an allure helper file' do
+      expect(File.exist?("#{@name}/helpers/allure_helper.rb")).to be_truthy
+    end
+
+    it 'creates a driver helper file', :watir do
+      expect(File.exist?("#{@name}/helpers/driver_helper.rb")).to be_truthy
+    end
+
+    it 'creates a pom helper file' do
+      expect(File.exist?("#{@name}/helpers/pom_helper.rb")).to be_truthy
+    end
+
+    it 'creates a spec helper file' do
+      expect(File.exist?("#{@name}/helpers/spec_helper.rb")).to be_truthy
+    end
+
+    it 'creates a watir helper file' do
+      expect(File.exist?("#{@name}/helpers/allure_helper.rb")).to be_truthy
+    end
+
+    after(:all) do
+      FileUtils.rm_rf(@name)
+    end
   end
 
-  it 'creates an allure helper file' do
-    expect(File.exist?("#{@project_name}/helpers/allure_helper.rb")).to be_truthy
-  end
+  context 'when the user selects cucumber' do
+    before(:all) do
+      @name = 'Cucumber-watir-3'
+      RubyRaider::CucumberProjectGenerator.generate_cucumber_project(@name, automation: 'watir')
+    end
 
-  it 'creates a browser helper file' do
-    expect(File.exist?("#{@project_name}/helpers/browser_helper.rb")).to be_truthy
-  end
+    it 'creates a raider file' do
+      expect(File.exist?("#{@name}/features/support/helpers/raider.rb")).to be_truthy
+    end
 
-  it 'creates a pom helper file' do
-    expect(File.exist?("#{@project_name}/helpers/pom_helper.rb")).to be_truthy
-  end
+    it 'creates an allure helper file' do
+      expect(File.exist?("#{@name}/features/support/helpers/allure_helper.rb")).to be_truthy
+    end
 
-  it 'creates a spec helper file' do
-    expect(File.exist?("#{@project_name}/helpers/spec_helper.rb")).to be_truthy
-  end
+    it 'creates a browser helper file', :watir do
+      expect(File.exist?("#{@name}/features/support/helpers/browser_helper.rb")).to be_truthy
+    end
 
-  it 'creates a watir helper file' do
-    expect(File.exist?("#{@project_name}/helpers/allure_helper.rb")).to be_truthy
+    it 'creates a pom helper file' do
+      expect(File.exist?("#{@name}/features/support/helpers/pom_helper.rb")).to be_truthy
+    end
+
+    it 'creates a watir helper file' do
+      expect(File.exist?("#{@name}/features/support/helpers/allure_helper.rb")).to be_truthy
+    end
+
+    after(:all) do
+      FileUtils.rm_rf(@name)
+    end
   end
 end
 
