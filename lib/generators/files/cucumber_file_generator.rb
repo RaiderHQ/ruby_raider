@@ -10,7 +10,7 @@ module RubyRaider
         AutomationFileGenerator.generate_automation_files(name, automation, 'framework')
         CommonFileGenerator.generate_common_files(name, 'cucumber')
         HelpersFileGenerator.generate_helper_files(name, automation, 'cucumber')
-        generate_env_file(name, automation)
+        generate_env_file(automation, name)
         generate_example_feature(name)
         generate_example_steps(name)
       end
@@ -26,7 +26,7 @@ module RubyRaider
 
       def generate_env_file(automation, name)
         generate_file('env.rb', "#{name}/features/support",
-                      ExampleStepsTemplate.new(automation: automation).parsed_body)
+                      EnvTemplate.new(automation: automation).parsed_body)
       end
     end
   end

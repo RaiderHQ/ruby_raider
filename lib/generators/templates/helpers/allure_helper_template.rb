@@ -1,3 +1,5 @@
+require_relative '../template'
+
 class AllureHelperTemplate < Template
   def body
     if @framework == 'cucumber'

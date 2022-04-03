@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'ruby_raider'
-  s.version     = '0.1.6'
+  s.version     = '0.1.7'
   s.summary     = 'A gem to make setup and start of UI automation projects easier'
   s.description = 'This gem contents everything you need to start doing web automation in one simple package'
   s.authors     = ['Agustin Pequeno']
@@ -16,5 +16,4 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rspec', '~> 3.11.0'
 
   s.add_runtime_dependency 'highline', '~> 2.0.3'
-  s.add_runtime_dependency 'thor', '~> 1.2.1'
 end
