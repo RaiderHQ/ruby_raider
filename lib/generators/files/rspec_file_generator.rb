@@ -8,16 +8,17 @@ require_relative 'helpers_file_generator'
 module RubyRaider
   class RspecFileGenerator < FileGenerator
     class << self
-      def generate_rspec_files(name, automation)
-        AutomationFileGenerator.generate_automation_files(name, automation, 'rspec')
-        CommonFileGenerator.generate_common_files(name, 'rspec')
-        HelpersFileGenerator.generate_helper_files(name, automation, 'rspec')
+      def generate_rspec_files(automation, name)
+        AutomationFileGenerator.generate_automation_files(automation, name,'rspec')
+        CommonFileGenerator.generate_common_files(automation, name, 'rspec')
+        HelpersFileGenerator.generate_helper_files(automation, name, 'rspec')
         generate_base_spec(name)
-        generate_example_spec(name)
+        generate_example_spec(automation, name)
       end
 
-      def generate_example_spec(name)
-        generate_file('login_page_spec.rb', "#{name}/spec", ExampleSpecTemplate.new.parsed_body)
+      def generate_example_spec(automation, name)
+        generate_file('login_page_spec.rb', "#{name}/spec",
+                      ExampleSpecTemplate.new(automation: automation).parsed_body)
       end
 
       def generate_base_spec(name)

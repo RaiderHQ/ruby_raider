@@ -3,7 +3,7 @@ require_relative 'spec_helper'
 describe RubyRaider::CucumberProjectGenerator do
   before(:all) do
     @name = 'Cucumber'
-    RubyRaider::CucumberProjectGenerator.generate_cucumber_project(@name, automation: 'selenium')
+    RubyRaider::CucumberProjectGenerator.generate_cucumber_project('selenium', @name)
   end
 
   it 'creates a project folder' do

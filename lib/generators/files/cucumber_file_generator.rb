@@ -6,10 +6,10 @@ require_relative 'file_generator'
 module RubyRaider
   class CucumberFileGenerator < FileGenerator
     class << self
-      def generate_cucumber_files(name, automation)
-        AutomationFileGenerator.generate_automation_files(name, automation, 'framework')
-        CommonFileGenerator.generate_common_files(name, 'cucumber')
-        HelpersFileGenerator.generate_helper_files(name, automation, 'cucumber')
+      def generate_cucumber_files(automation, name)
+        AutomationFileGenerator.generate_automation_files(automation, name, 'framework')
+        CommonFileGenerator.generate_common_files(automation, name, 'cucumber')
+        HelpersFileGenerator.generate_helper_files(automation, name, 'cucumber')
         generate_env_file(automation, name)
         generate_example_feature(name)
         generate_example_steps(name)

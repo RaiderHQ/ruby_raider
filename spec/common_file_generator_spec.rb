@@ -4,7 +4,7 @@ require_relative 'spec_helper'
 describe RubyRaider::CommonFileGenerator do
   before(:all) do
     @name = 'Cucumber-watir-1'
-    RubyRaider::CucumberProjectGenerator.generate_cucumber_project(@name, automation: 'watir')
+    RubyRaider::CucumberProjectGenerator.generate_cucumber_project('watir', @name)
   end
 
   it 'creates a config file' do
