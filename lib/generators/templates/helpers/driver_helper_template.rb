@@ -3,18 +3,18 @@ require_relative '../template'
 class DriverHelperTemplate < Template
   def new_driver
     if @automation == 'selenium'
-      <<~EOF
-        def new_driver
-          @driver = Selenium::WebDriver.for :chrome
-        end
+      <<-EOF.chomp
+def new_driver
+        @driver = Selenium::WebDriver.for :chrome
+      end
       EOF
     else
-      <<~EOF
-        def new_driver
-          appium_file = File.join(Dir.pwd, 'appium.txt')
-          caps = Appium.load_appium_txt(file: appium_file)
-          @driver = Appium::Driver.new(caps)
-        end
+      <<-EOF.chomp
+def new_driver
+        appium_file = File.join(Dir.pwd, 'appium.txt')
+        caps = Appium.load_appium_txt(file: appium_file)
+        @driver = Appium::Driver.new(caps)
+      end
       EOF
     end
   end

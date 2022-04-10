@@ -13,13 +13,14 @@ class SpecHelperTemplate < Template
     driver_setup = if %w[selenium watir].include?(@automation)
                      select_helper
                    else
-                     <<~EOF
-                       #{select_helper}
-                       DriverHelper.driver.start_driver
+                     <<-EOF.chomp
+#{select_helper}
+         DriverHelper.driver.start_driver
                      EOF
                    end
 
-    <<~EOF
+    <<-EOF.chomp
+
       config.before(:each) do
         #{driver_setup}
       end

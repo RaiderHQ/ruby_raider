@@ -24,8 +24,8 @@ class LoginPageTemplate < Template
     if %w[selenium watir].include?(@automation)
       <<~EOF
         def url(_page)
-         'index.php?rt=account/login' 
-        end
+            'index.php?rt=account/login' 
+          end
       EOF
     end
   end
@@ -73,7 +73,7 @@ class LoginPageTemplate < Template
   end
 
   def body
-    <<~EOF
+    <<~EOF.gsub(/\n{2}\s{2}\n/, '')
       require_relative '../abstract/abstract_page'
       #{require_header}
 
