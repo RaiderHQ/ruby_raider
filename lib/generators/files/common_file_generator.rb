@@ -26,7 +26,7 @@ module RubyRaider
       end
 
       def generate_rake_file(name)
-        generate_file('Rakefile', name.to_s, ConfigTemplate.new.parsed_body)
+        generate_file('Rakefile', name.to_s, RakeFileTemplate.new.parsed_body)
       end
 
       def generate_gemfile(automation, framework, name)
