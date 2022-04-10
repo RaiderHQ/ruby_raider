@@ -4,9 +4,9 @@ class AbstractPageTemplate < Template
 
   def raider
     if @framework == 'rspec'
-      "require_relative '../../helpers/raider'"
+      "require_relative '../../helpers/raider'\n"
     else
-      "require_relative '../../features/support/helpers/raider'"
+      "require_relative '../../features/support/helpers/raider'\n"
     end
   end
 
@@ -14,56 +14,59 @@ class AbstractPageTemplate < Template
     if @automation == 'watir'
       <<~EOF
 
-        def browser
-          Raider::BrowserHelper.browser
-        end
+    def browser
+      Raider::BrowserHelper.browser
+    end
+
       EOF
     else
-      <<~EOF
+      <<-EOF
 
-        def driver
-          Raider::DriverHelper.driver
-        end
+  def driver
+    Raider::DriverHelper.driver
+  end
+
+
       EOF
     end
   end
 
   def visit
     if %w[selenium watir].include?(@automation)
-      <<~EOF
+      <<-EOF
 
-        def visit(*page)
-          #{@automation == 'selenium' ? 'driver.navigate.to full_url(page.first)' : 'browser.goto full_url(page.first)'}
-        end
+
+  def visit(*page)
+    #{@automation == 'selenium' ? 'driver.navigate.to full_url(page.first)' : 'browser.goto full_url(page.first)'}
+  end
+
       EOF
     end
   end
 
   def url_methods
-    methods = <<~EOF
+    methods = <<-EOF
+  
 
-      def full_url(*page)
-        "#\{base_url}#\{url(*page)}"
-      end
+  def full_url(*page)
+    "#\{base_url}#\{url(*page)}"
+  end
 
-      def base_url
-        'https://automationteststore.com/'
-      end
+  def base_url
+    'https://automationteststore.com/'
+  end
 
-      def url(_page)
-        raise 'Url must be defined on child pages'
-      end
+  def url(_page)
+    raise 'Url must be defined on child pages'
+  end
     EOF
 
-    if %w[selenium watir].include?(@automation)
-      methods
-    else
-      ''
-    end
+
+    methods if %w[selenium watir].include?(@automation)
   end
 
   def body
-    <<~EOF
+    <<~EOF.gsub(/\n{2}\s{4}/, '')
       require 'rspec'
       #{raider}
       class AbstractPage
