@@ -1,12 +1,54 @@
 require_relative '../template'
 
 class SpecHelperTemplate < Template
+  def require_driver
+    "require_relative '#{@automation == 'watir' ? 'browser_helper' : 'driver_helper'}'"
+  end
+
+  def select_helper
+    @automation == 'watir' ? 'BrowserHelper.new_browser' : 'DriverHelper.new_driver'
+  end
+
+  def before_configuration
+    driver_setup = if %w[selenium watir].include?(@automation)
+                     select_helper
+                   else
+                     <<-EOF.chomp
+#{select_helper}
+         DriverHelper.driver.start_driver
+                     EOF
+                   end
+
+    <<-EOF.chomp
+
+      config.before(:each) do
+        #{driver_setup}
+      end
+    EOF
+  end
+
+  def quit_driver
+    case @automation
+    when 'selenium'
+      'DriverHelper.driver.quit'
+    when 'watir'
+      'BrowserHelper.browser.quit'
+    else
+      'DriverHelper.driver.quit_driver'
+    end
+  end
+
+  def save_screenshot
+    driver = @automation == 'watir' ? 'browser' : 'driver'
+    "#{driver}.save_screenshot(\"allure-results/screenshots/\#{example_name}.png\") if status == :failed"
+  end
+
   def body
     <<~EOF
       require 'active_support/all'
       require 'rspec'
       require_relative 'allure_helper'
-      require_relative '#{@automation == 'watir' ? 'browser_helper' : 'driver_helper'}'
+      #{require_driver}
 
       module Raider
         module SpecHelper
@@ -15,17 +57,14 @@ class SpecHelperTemplate < Template
 
           RSpec.configure do |config|
             config.formatter = AllureHelper.formatter
-            config.before(:each) do
-              #{@automation == 'watir' ? 'BrowserHelper.new_browser' : 'DriverHelper.new_driver'}
-            end
+            #{before_configuration}
 
             config.after(:each) do
-              #{@automation == 'watir' ? 'browser = BrowserHelper.browser' : 'driver = DriverHelper.driver'}
               example_name = self.class.descendant_filtered_examples.first.description
               status = self.class.descendant_filtered_examples.first.execution_result.status
-              #{@automation == 'watir' ? 'browser' : 'driver'}.save_screenshot("allure-results/screenshots/#\{example_name}.png") if status == :failed
+              #{save_screenshot}
               AllureHelper.add_screenshot example_name if status == :failed
-              #{@automation == 'watir' ? 'browser.quit' : 'driver.quit'}
+              #{quit_driver}
             end
           end
         end

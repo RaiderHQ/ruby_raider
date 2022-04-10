@@ -1,48 +1,82 @@
 require_relative '../template'
 
 class AbstractPageTemplate < Template
-  def body
-    browser = "def browser
-    Raider::BrowserHelper.browser
-  end"
-    driver = "def driver
+
+  def raider
+    if @framework == 'rspec'
+      "require_relative '../../helpers/raider'\n"
+    else
+      "require_relative '../../features/support/helpers/raider'\n"
+    end
+  end
+
+  def helper_selector
+    if @automation == 'watir'
+      <<~EOF
+
+    def browser
+      Raider::BrowserHelper.browser
+    end
+
+      EOF
+    else
+      <<-EOF
+
+  def driver
     Raider::DriverHelper.driver
-  end"
+  end
 
-    visit = @automation == 'watir' ? 'browser.goto full_url(page.first)' : 'driver.navigate.to full_url(page.first)'
-    raider = if @framework == 'rspec'
-               "require_relative '../../helpers/raider'"
-             else
-               "require_relative '../../features/support/helpers/raider'"
-             end
 
-    <<~EOF
-        require 'rspec'
-        #{raider}
+      EOF
+    end
+  end
 
-        class AbstractPage
+  def visit
+    if %w[selenium watir].include?(@automation)
+      <<-EOF
 
-          include RSpec::Matchers
-          extend Raider::PomHelper
 
-          #{@automation == 'watir' ? browser : driver}
+  def visit(*page)
+    #{@automation == 'selenium' ? 'driver.navigate.to full_url(page.first)' : 'browser.goto full_url(page.first)'}
+  end
 
-          def visit(*page)
-            #{visit}
-          end
+      EOF
+    end
+  end
 
-          def full_url(*page)
-            "#\{base_url}#\{url(*page)}"
-          end
+  def url_methods
+    methods = <<-EOF
+  
 
-          def base_url
-            'https://automationteststore.com/'
-          end
+  def full_url(*page)
+    "#\{base_url}#\{url(*page)}"
+  end
 
-          def url(_page)
-            raise 'Url must be defined on child pages'
-          end
-        end
+  def base_url
+    'https://automationteststore.com/'
+  end
+
+  def url(_page)
+    raise 'Url must be defined on child pages'
+  end
+    EOF
+
+
+    methods if %w[selenium watir].include?(@automation)
+  end
+
+  def body
+    <<~EOF.gsub(/\n{2}\s{4}/, '')
+      require 'rspec'
+      #{raider}
+      class AbstractPage
+
+        include RSpec::Matchers
+        extend Raider::PomHelper
+        #{helper_selector}
+        #{visit}
+        #{url_methods}
+      end
     EOF
   end
 end

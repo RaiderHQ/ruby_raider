@@ -4,18 +4,22 @@ require_relative '../files/rspec_file_generator'
 module RubyRaider
   class RspecProjectGenerator < ProjectGenerator
     class << self
-      def generate_rspec_project(name, automation: 'watir')
-        rspec_folder_structure(name)
-        RspecFileGenerator.generate_rspec_files(name, automation)
+      def generate_rspec_project(automation, name)
+        rspec_folder_structure(automation, name)
+        RspecFileGenerator.generate_rspec_files(automation, name)
         ProjectGenerator.install_gems(name)
       end
 
-      def rspec_folder_structure(name)
-        Dir.mkdir name.to_s
-        folders = %w[config data page_objects helpers spec]
+      def rspec_folder_structure(automation, name)
+        create_project_folder(name)
+        create_base_folders(automation, name)
+        create_po_child_folders(automation, name)
+      end
+
+      def create_base_folders(automation, name)
+        folders = %w[data page_objects helpers spec]
         create_children_folders(name, folders)
-        pages = %w[pages components abstract]
-        create_children_folders("#{name}/page_objects", pages)
+        Dir.mkdir "#{name}/config" if %w[selenium watir].include?(automation)
       end
     end
   end
