@@ -4,7 +4,7 @@ require_relative 'spec_helper'
 describe RubyRaider::RspecFileGenerator do
   before(:all) do
     @name = 'Rspec-watir-3'
-    RubyRaider::RspecProjectGenerator.generate_rspec_project(@name, automation: 'watir')
+    RubyRaider::RspecProjectGenerator.generate_rspec_project('watir', @name)
   end
 
   it 'creates a spec file' do

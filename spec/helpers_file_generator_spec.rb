@@ -5,7 +5,7 @@ describe RubyRaider::HelpersFileGenerator do
   context 'When the users selects rspec' do
     before(:all) do
       @name = 'Rspec-watir-2'
-      RubyRaider::RspecProjectGenerator.generate_rspec_project(@name, automation: 'selenium')
+      RubyRaider::RspecProjectGenerator.generate_rspec_project('selenium', @name)
     end
 
     it 'creates a raider file' do
@@ -40,7 +40,7 @@ describe RubyRaider::HelpersFileGenerator do
   context 'when the user selects cucumber' do
     before(:all) do
       @name = 'Cucumber-watir-3'
-      RubyRaider::CucumberProjectGenerator.generate_cucumber_project(@name, automation: 'watir')
+      RubyRaider::CucumberProjectGenerator.generate_cucumber_project('watir', @name)
     end
 
     it 'creates a raider file' do
