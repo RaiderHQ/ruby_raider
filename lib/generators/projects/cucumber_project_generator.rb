@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative '../files/cucumber_file_generator'
 require_relative 'project_generator'
 
@@ -21,7 +23,7 @@ module RubyRaider
 
       def create_base_folders(automation, name)
         folders = %w[features page_objects allure-results]
-        create_children_folders("#{name}", folders)
+        create_children_folders(name.to_s, folders)
         Dir.mkdir "#{name}/config" if %w[selenium watir].include?(automation)
       end
 

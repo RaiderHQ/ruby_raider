@@ -1,8 +1,11 @@
+# frozen_string_literal: true
+
 require_relative '../template'
 
+# Template for the module watir helper
 class WatirHelperTemplate < Template
   def body
-    <<~EOF
+    <<~RUBY
       require 'watir'
 
       module Raider
@@ -19,6 +22,6 @@ class WatirHelperTemplate < Template
           end
         end
       end
-    EOF
+    RUBY
   end
 end

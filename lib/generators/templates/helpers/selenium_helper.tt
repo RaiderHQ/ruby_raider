@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 require_relative '../template'
 
 class SeleniumHelperTemplate < Template
   def body
-    <<~EOF
+    <<~RUBY
       require 'selenium-webdriver'
       require_relative 'driver_helper'
 
@@ -37,6 +39,6 @@ class SeleniumHelperTemplate < Template
           include SeleniumHelper
         end
       end
-    EOF
+    RUBY
   end
 end

@@ -1,14 +1,16 @@
+# frozen_string_literal: true
+
 require_relative '../template'
 
 class AbstractComponentTemplate < Template
   def body
-    raider = if @framework == 'rspec'
+    raider = if framework == 'rspec'
                "require_relative '../../helpers/raider'"
              else
                "require_relative '../../features/support/helpers/raider'"
              end
 
-    <<~EOF
+    <<~RUBY
       #{raider}
 
       class AbstractComponent
@@ -17,6 +19,6 @@ class AbstractComponentTemplate < Template
             @component = component
           end
       end
-    EOF
+    RUBY
   end
 end

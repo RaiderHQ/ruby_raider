@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 require_relative '../template'
 
 class BrowserHelperTemplate < Template
   def body
-    <<~EOF
+    <<~RUBY
       require 'yaml'
       require 'selenium-webdriver'
       require 'watir'
@@ -21,6 +23,6 @@ class BrowserHelperTemplate < Template
         end
       end
 
-    EOF
+    RUBY
   end
 end

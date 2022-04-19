@@ -1,9 +1,6 @@
-require_relative '../template'
-
-class AbstractPageTemplate < Template
-
+class AbstractPage
   def raider
-    if @framework == 'rspec'
+    if framework == 'rspec'
       "require_relative '../../helpers/raider'\n"
     else
       "require_relative '../../features/support/helpers/raider'\n"
@@ -11,42 +8,42 @@ class AbstractPageTemplate < Template
   end
 
   def helper_selector
-    if @automation == 'watir'
-      <<~EOF
+    if automation == 'watir'
+      <<~RUBY
 
-    def browser
-      Raider::BrowserHelper.browser
-    end
+        def browser
+          Raider::BrowserHelper.browser
+        end
 
-      EOF
+      RUBY
     else
-      <<-EOF
+      <<-RUBY
 
   def driver
     Raider::DriverHelper.driver
   end
 
 
-      EOF
+      RUBY
     end
   end
 
   def visit
-    if %w[selenium watir].include?(@automation)
-      <<-EOF
+    return unless %w[selenium watir].include? automation
+
+    <<-RUBY
 
 
   def visit(*page)
-    #{@automation == 'selenium' ? 'driver.navigate.to full_url(page.first)' : 'browser.goto full_url(page.first)'}
+    #{automation == 'selenium' ? 'driver.navigate.to full_url(page.first)' : 'browser.goto full_url(page.first)'}
   end
 
-      EOF
-    end
+    RUBY
   end
 
   def url_methods
-    methods = <<-EOF
-  
+    methods = <<-RUBY
+
 
   def full_url(*page)
     "#\{base_url}#\{url(*page)}"
@@ -59,14 +56,13 @@ class AbstractPageTemplate < Template
   def url(_page)
     raise 'Url must be defined on child pages'
   end
-    EOF
+    RUBY
 
-
-    methods if %w[selenium watir].include?(@automation)
+    methods if %w[selenium watir].include?(automation)
   end
 
   def body
-    <<~EOF.gsub(/\n{2}\s{4}/, '')
+    <<~RUBY.gsub(/\n{2}\s{4}/, '')
       require 'rspec'
       #{raider}
       class AbstractPage
@@ -77,6 +73,6 @@ class AbstractPageTemplate < Template
         #{visit}
         #{url_methods}
       end
-    EOF
+    RUBY
   end
 end

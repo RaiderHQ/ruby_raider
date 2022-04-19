@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative '../lib/generators/files/rspec_file_generator'
 require_relative 'spec_helper'
 
@@ -23,4 +25,3 @@ describe RubyRaider::RspecFileGenerator do
     FileUtils.rm_rf(@name)
   end
 end
-

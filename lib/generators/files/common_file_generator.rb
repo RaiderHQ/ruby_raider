@@ -1,38 +1,23 @@
-require_relative '../templates/common/config_template'
-require_relative '../templates/common/gemfile_template'
-require_relative '../templates/common/rake_file_template'
-require_relative '../templates/common/read_me_template'
+# frozen_string_literal: true
+
 require_relative 'file_generator'
 
 module RubyRaider
   class CommonFileGenerator < FileGenerator
-    class << self
-      def generate_common_files(automation, name, framework)
-        if %w[selenium watir].include?(automation)
-          generate_config_file(name)
-          generate_rake_file(name)
-        end
-
-        generate_readme_file(name)
-        generate_gemfile(automation, framework, name)
+      def generate_readme_file
+        template('templates/common/read_me.tt', "#{name}/Readme.md")
       end
 
-      def generate_readme_file(name)
-        generate_file('Readme.md', name.to_s, ReadMeTemplate.new.parsed_body)
+      def generate_config_file
+        template('templates/common/config.tt', "#{name}/config.yml")
       end
 
-      def generate_config_file(name)
-        generate_file('config.yml', "#{name}/config", ConfigTemplate.new.parsed_body)
+      def generate_rake_file
+        template('templates/common/rakefile.tt', "#{name}/Rakefile")
       end
 
-      def generate_rake_file(name)
-        generate_file('Rakefile', name.to_s, RakeFileTemplate.new.parsed_body)
-      end
-
-      def generate_gemfile(automation, framework, name)
-        generate_file('Gemfile',name.to_s,
-                      GemfileTemplate.new(automation: automation, framework: framework).parsed_body)
+      def generate_gemfile
+        template('templates/common/gemfile.tt', "#{name}/Gemfile")
       end
     end
-  end
 end

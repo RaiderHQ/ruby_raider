@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative 'project_generator'
 require_relative '../files/rspec_file_generator'
 
@@ -6,8 +8,8 @@ module RubyRaider
     class << self
       def generate_rspec_project(automation, name)
         rspec_folder_structure(automation, name)
-        RspecFileGenerator.generate_rspec_files(automation, name)
-        ProjectGenerator.install_gems(name)
+        RspecFileGenerator.new
+        RspecFileGenerator.invoke_all
       end
 
       def rspec_folder_structure(automation, name)

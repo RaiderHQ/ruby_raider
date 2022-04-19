@@ -1,11 +1,16 @@
+# frozen_string_literal: true
+require 'thor'
+
 module RubyRaider
-  class FileGenerator
-    class << self
-      def generate_file(name, path, content)
-        file_path = "#{path}/#{name}"
-        File.new(file_path, 'w+')
-        File.write(file_path, content)
-      end
+  class FileGenerator < Thor::Group
+    include Thor::Actions
+
+    argument :automation
+    argument :framework
+    argument :name
+
+    def self.source_root
+      File.dirname(__FILE__)
     end
   end
 end

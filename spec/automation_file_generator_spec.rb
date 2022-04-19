@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative '../lib/generators/files/automation_file_generator'
 require_relative 'spec_helper'
 
@@ -56,4 +58,3 @@ describe RubyRaider::AutomationFileGenerator do
     end
   end
 end
-

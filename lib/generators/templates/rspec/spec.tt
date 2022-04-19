@@ -1,9 +1,12 @@
+# frozen_string_literal: true
+
 require_relative '../template'
 
+# Generates an rspec test file
 class ExampleSpecTemplate < Template
   def examples
-    if %w[selenium watir].include? @automation
-      <<-EOF.chomp
+    if %w[selenium watir].include? automation
+      <<-RUBY.chomp
   describe 'Login' do
     before(:each) do
       LoginPage.visit
@@ -19,38 +22,38 @@ class ExampleSpecTemplate < Template
       expect(LoginPage.header.customer_name).to be_empty
     end
   end
-      EOF
+      RUBY
     else
-      <<-EOF.chomp
-  describe 'Login' do          
+      <<-RUBY.chomp
+  describe 'Login' do#{'          '}
     it 'Login with valid credentials' do
       HomePage.go_to_login
       LoginPage.login('alice', 'mypassword')
       expect(ConfirmationPage.login_message).to eq 'You are logged in as alice'
     end
   end
-      EOF
+      RUBY
     end
   end
 
   def requirements
-    unless %w[selenium watir].include? @automation
-      <<~EOF.chomp
-        require_relative '../page_objects/pages/confirmation_page'
-        require_relative '../page_objects/pages/home_page'
-      EOF
-    end
+    return if %w[selenium watir].include? automation
+
+    <<~RUBY.chomp
+      require_relative '../page_objects/pages/confirmation_page'
+      require_relative '../page_objects/pages/home_page'
+    RUBY
   end
 
   def body
-    <<~EOF
+    <<~RUBY
       #{requirements}
       require_relative 'base_spec'
       require_relative '../page_objects/pages/login_page'
-      
+
       class LoginSpec < BaseSpec
       #{examples}
       end
-    EOF
+    RUBY
   end
 end
