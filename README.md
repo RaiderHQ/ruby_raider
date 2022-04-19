@@ -13,11 +13,8 @@ and you will have a new project in the folder you are in
 
 Currently we only support:
 
-* Gerating a Selenium with Rspec framework
-* Gerating a Watir with Rspec framework
+* Gerating a Selenium with both Cucumber and Rspec framework
+* Gerating a Watir with both Cucumber and Rspec framework
+* Generating an Appium project with Rspec on IOS
 
-We have only tested this in mac and linux, so it works in both platforms.
-
-If you wanna follow the development progress 
-
-https://trello.com/b/Nj7UPy0w/ruby-raider
+This works in all the platforms (Tested on Mac OS, Linux and Windows)
