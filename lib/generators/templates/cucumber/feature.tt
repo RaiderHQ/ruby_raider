@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 require_relative '../template'
 
 class ExampleFeatureTemplate < Template
   def body
-    <<~EOF
+    <<~RUBY
       Feature: Login Page
 
       Scenario: A user can login
@@ -10,6 +12,6 @@ class ExampleFeatureTemplate < Template
         When I login with my credentials
         Then I can see the main page
 
-    EOF
+    RUBY
   end
 end

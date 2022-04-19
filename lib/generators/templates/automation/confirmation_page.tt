@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 require_relative '../template'
 
 class ConfirmationPageTemplate < Template
   def body
-    <<~EOF
+    <<~RUBY
       require_relative '../abstract/abstract_page'
 
       class ConfirmationPage < AbstractPage
@@ -21,6 +23,6 @@ class ConfirmationPageTemplate < Template
           driver.find_element(accessibility_id: 'You are logged in as alice')
         end
       end
-    EOF
+    RUBY
   end
 end

@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 require_relative '../template'
 
 class HomePageTemplate < Template
   def body
-    <<~EOF
+    <<~RUBY
       require_relative '../abstract/abstract_page'
 
       class HomePage < AbstractPage
@@ -21,6 +23,6 @@ class HomePageTemplate < Template
           driver.find_element(accessibility_id: 'Login Screen')
         end
       end
-    EOF
+    RUBY
   end
 end

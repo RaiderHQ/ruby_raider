@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'highline'
 require_relative '../generators/projects/cucumber_project_generator'
 require_relative '../generators/projects/rspec_project_generator'
@@ -23,7 +25,10 @@ module RubyRaider
         framework = ''
         @cli.choose do |menu|
           menu.prompt = 'Please select your test framework'
-          menu.choice('Rspec') { framework = 'rspec'; set_framework(automation, framework, project_name) }
+          menu.choice('Rspec') do
+            framework = 'rspec'
+            set_framework(automation, framework, project_name)
+          end
           menu.choice('Cucumber') do
             if %w[selenium watir].include? automation
               framework = 'cucumber'
@@ -50,8 +55,14 @@ module RubyRaider
         @cli.choose do |menu|
           menu.prompt = 'Please select your mobile platform'
           menu.choice('iOS') { 'appium_ios' }
-          menu.choice('Android') { pp 'Android appium is coming soon. Thank you for the interest'; exit }
-          menu.choice('Cross Platform') { pp 'Cross platform appium is coming soon. Thank you for the interest'; exit }
+          menu.choice('Android') do
+            pp 'Android appium is coming soon. Thank you for the interest'
+            exit
+          end
+          menu.choice('Cross Platform') do
+            pp 'Cross platform appium is coming soon. Thank you for the interest'
+            exit
+          end
           menu.choice('Quit') { exit }
         end
       end

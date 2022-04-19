@@ -1,34 +1,36 @@
+# frozen_string_literal: true
+
 require_relative '../template'
 
 class SpecHelperTemplate < Template
   def require_driver
-    "require_relative '#{@automation == 'watir' ? 'browser_helper' : 'driver_helper'}'"
+    "require_relative '#{automation == 'watir' ? 'browser_helper' : 'driver_helper'}'"
   end
 
   def select_helper
-    @automation == 'watir' ? 'BrowserHelper.new_browser' : 'DriverHelper.new_driver'
+    automation == 'watir' ? 'BrowserHelper.new_browser' : 'DriverHelper.new_driver'
   end
 
   def before_configuration
-    driver_setup = if %w[selenium watir].include?(@automation)
+    driver_setup = if %w[selenium watir].include? automation
                      select_helper
                    else
-                     <<-EOF.chomp
-#{select_helper}
-         DriverHelper.driver.start_driver
-                     EOF
+                     <<~RUBY.chomp
+                       #{select_helper}
+                                DriverHelper.driver.start_driver
+                     RUBY
                    end
 
-    <<-EOF.chomp
+    <<-RUBY.chomp
 
       config.before(:each) do
         #{driver_setup}
       end
-    EOF
+    RUBY
   end
 
   def quit_driver
-    case @automation
+    case automation
     when 'selenium'
       'DriverHelper.driver.quit'
     when 'watir'
@@ -39,12 +41,12 @@ class SpecHelperTemplate < Template
   end
 
   def save_screenshot
-    driver = @automation == 'watir' ? 'browser' : 'driver'
+    driver = automation == 'watir' ? 'browser' : 'driver'
     "#{driver}.save_screenshot(\"allure-results/screenshots/\#{example_name}.png\") if status == :failed"
   end
 
   def body
-    <<~EOF
+    <<~RUBY
       require 'active_support/all'
       require 'rspec'
       require_relative 'allure_helper'
@@ -69,6 +71,6 @@ class SpecHelperTemplate < Template
           end
         end
       end
-    EOF
+    RUBY
   end
 end

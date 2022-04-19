@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 require_relative '../template'
 
 class AllureHelperTemplate < Template
   def body
-    if @framework == 'cucumber'
+    if framework == 'cucumber'
       gems = "require 'allure-cucumber'"
       allure = 'AllureCucumber'
     else
@@ -10,7 +12,7 @@ class AllureHelperTemplate < Template
 require 'allure-rspec'"
       allure = 'AllureRspec'
     end
-    <<~EOF
+    <<~RUBY
             #{gems}
 
             module Raider
@@ -34,7 +36,7 @@ require 'allure-rspec'"
                   end
 
                   #{
-      if @framework == 'rspec'
+      if framework == 'rspec'
         'def formatter
             AllureRspecFormatter
           end'
@@ -42,6 +44,6 @@ require 'allure-rspec'"
                 end
               end
             end
-    EOF
+    RUBY
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module RubyRaider
   class ProjectGenerator
     class << self

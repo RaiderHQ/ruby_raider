@@ -1,9 +1,12 @@
+# frozen_string_literal: true
+
 require_relative '../template'
 
+# Template for the config file
 class ConfigTemplate < Template
   def body
-    <<~EOF
+    <<~RUBY
       browser: :chrome
-    EOF
+    RUBY
   end
 end
