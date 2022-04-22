@@ -9,7 +9,6 @@ module RubyRaider
       def generate_rspec_project(automation, name)
         rspec_folder_structure(automation, name)
         RspecFileGenerator.new
-        RspecFileGenerator.invoke_all
       end
 
       def rspec_folder_structure(automation, name)

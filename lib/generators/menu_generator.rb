@@ -2,7 +2,7 @@
 
 require 'highline'
 require_relative '../generators/projects/cucumber_project_generator'
-require_relative '../generators/projects/rspec_project_generator'
+require_relative '../generators/files/rspec_file_generator'
 
 module RubyRaider
   class MenuGenerator
@@ -45,7 +45,7 @@ module RubyRaider
 
       def set_framework(automation, framework, project_name)
         if framework == 'rspec'
-          RspecProjectGenerator.generate_rspec_project(automation, project_name)
+          RspecFileGenerator.new([automation, framework, project_name]).invoke_all
         else
           CucumberProjectGenerator.generate_cucumber_project(automation, project_name)
         end
