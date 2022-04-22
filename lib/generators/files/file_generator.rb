@@ -5,12 +5,8 @@ module RubyRaider
   class FileGenerator < Thor::Group
     include Thor::Actions
 
-    argument :automation
-    argument :framework
-    argument :name
-
     def self.source_root
-      File.dirname(__FILE__)
+      File.dirname(__FILE__) + '/../templates'
     end
   end
 end

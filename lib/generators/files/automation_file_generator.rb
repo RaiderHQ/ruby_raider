@@ -5,19 +5,19 @@ require_relative 'file_generator'
 module RubyRaider
   class AutomationFileGenerator < FileGenerator
     def generate_login_page
-      template('templates/automation/login_page.tt', "#{name}/page_objects/pages/login_page.rb")
+      template('automation/login_page.tt', "#{name}/page_objects/pages/login_page.rb")
     end
 
     def generate_abstract_page
-      template('templates/automation/abstract_page.tt', "#{name}/page_objects/abstract/abstract_page.rb")
+      template('automation/abstract_page.tt', "#{name}/page_objects/abstract/abstract_page.rb")
     end
 
     def generate_home_page
-      template('templates/automation/home_page.tt', "#{name}/page_objects/pages/home_page.rb")
+      template('automation/home_page.tt', "#{name}/page_objects/pages/home_page.rb")
     end
 
     def generate_confirmation_page
-      template('templates/automation/confirmation_page.tt',
+      template('automation/confirmation_page.tt',
                "#{name}/page_objects/pages/confirmation_page.rb")
     end
 
