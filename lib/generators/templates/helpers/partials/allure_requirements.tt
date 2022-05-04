@@ -1,0 +1,5 @@
+<% if framework == 'cucumber' %>
+require 'allure-cucumber'
+<% else %>
+require 'allure-ruby-commons'
+<% end %>

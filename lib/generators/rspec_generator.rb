@@ -1,13 +1,9 @@
 # frozen_string_literal: true
 
-require_relative 'file_generator'
+require_relative 'generator'
 
 module RubyRaider
-  class RspecFileGenerator < FileGenerator
-
-    argument :automation
-    argument :framework
-    argument :name
+  class RspecGenerator < Generator
 
     def generate_spec
       template('rspec/spec.tt', "#{name}/spec/login_page_spec.rb")

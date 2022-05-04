@@ -1,0 +1,5 @@
+<% if framework == 'rspec' %>
+require_relative '../../helpers/raider'
+<% else %>
+require_relative '../../features/support/helpers/raider'
+<% end %>

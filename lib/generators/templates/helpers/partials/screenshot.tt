@@ -1,0 +1,5 @@
+<% if automation == 'watir' %>
+    browser.save_screenshot("allure-results/screenshots/#{example_name}.png") if status == :failed
+<% else %>
+    driver.save_screenshot("allure-results/screenshots/#{example_name}.png") if status == :failed
+<% end %>

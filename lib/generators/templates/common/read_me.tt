@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require_relative '../template'
-
-class ReadMe < Template
-  def body
-    <<~RUBY
       What is Raider?
       ===========
 
@@ -100,7 +95,3 @@ class ReadMe < Template
 
       Pages are organized in Actions (things a user can perform on the page), Validations (assertions), and Elements.
       Each page has to have a url define, and each page is using the module WatirHelper to add methods on runtime to the Watir elements
-
-    RUBY
-  end
-end

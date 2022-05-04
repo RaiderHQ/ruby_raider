@@ -1,0 +1,5 @@
+<% if %w[selenium appium_ios].include?(automation) %>
+    driver.find_element
+<% else %>
+    browser.element
+<% end %>

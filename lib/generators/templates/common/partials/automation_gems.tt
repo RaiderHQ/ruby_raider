@@ -1,0 +1,10 @@
+<% case automation
+ when 'watir' %>
+gem 'selenium-webdriver'
+gem 'watir'
+<% when 'selenium' %>
+gem 'selenium-webdriver'
+<% else %>
+gem 'appium_lib'
+gem 'appium_console'
+<% end %>

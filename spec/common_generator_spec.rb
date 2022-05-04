@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../lib/generators/files/common_file_generator'
+require_relative '../lib/generators/files/_file_generator'
 require_relative 'spec_helper'
 
 describe RubyRaider::CommonFileGenerator do

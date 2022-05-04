@@ -1,12 +1,1 @@
-# frozen_string_literal: true
-
-require_relative '../template'
-
-# Template for the config file
-class ConfigTemplate < Template
-  def body
-    <<~RUBY
-      browser: :chrome
-    RUBY
-  end
-end
+browser: :chrome

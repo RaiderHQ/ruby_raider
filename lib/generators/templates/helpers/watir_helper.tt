@@ -1,16 +1,8 @@
 # frozen_string_literal: true
 
-require_relative '../template'
-
-# Template for the module watir helper
-class WatirHelperTemplate < Template
-  def body
-    <<~RUBY
-      require 'watir'
-
-      module Raider
-        module WatirHelper
-          refine Watir::Element do
+module Raider
+    module WatirHelper
+        refine Watir::Element do
             def click_when_present
               wait_until_present
               self.click
@@ -19,9 +11,6 @@ class WatirHelperTemplate < Template
             def wait_until_present
               self.wait_until(&:present?)
             end
-          end
         end
-      end
-    RUBY
-  end
+   end
 end

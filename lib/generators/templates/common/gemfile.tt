@@ -1,55 +1,21 @@
 # frozen_string_literal: true
 
-require_relative '../template'
+source 'https://rubygems.org'
 
-# Template for an example Gemfile
-class GemfileTemplate < Template
-  def automation_gems
-    case automation
-    when 'watir'
-      <<~RUBY
-        gem 'selenium-webdriver'
-        gem 'watir'
-      RUBY
-    when 'selenium'
-      "gem 'selenium-webdriver'"
-    else
-      <<~RUBY
-        gem 'appium_lib'
-        gem 'appium_console'
-      RUBY
-    end
-  end
-
-  def webdrivers
-    "gem 'webdrivers'" if %w[selenium watir].include? automation
-  end
-
-  def allure_cucumber
-    "gem 'allure-cucumber'" if framework == 'cucumber'
-  end
-
-  def rspec_gem
-    "gem 'rspec'" if framework == 'cucumber'
-  end
-
-  def body
-    <<~RUBY
-      # frozen_string_literal: true
-
-      source 'https://rubygems.org'
-
-      gem 'activesupport'
-      gem 'allure-rspec'
-      gem 'allure-ruby-commons'
-      #{allure_cucumber}
-      gem 'parallel_split_test'
-      gem 'parallel_tests'
-      gem 'rake'
-      gem '#{framework}'
-      #{rspec_gem}
-      #{automation_gems}
-      #{webdrivers}
-    RUBY
-  end
-end
+gem 'activesupport'
+gem 'allure-rspec'
+gem 'allure-ruby-commons'
+<% if framework == 'cucumber' %>
+gem 'allure-cucumber'
+<% end %>
+gem 'parallel_split_test'
+gem 'parallel_tests'
+gem 'rake'
+gem '<%= framework %>'
+<% if framework == 'cucumber' %>
+gem 'rspec'
+<% end %>
+<%= ERB.new(File.read(File.expand_path('./partials/automation_gems.tt', __dir__))).result(binding).strip! %>
+<% if %w[selenium watir].include? automation %>
+gem 'webdrivers'
+<% end %>

@@ -1,0 +1,8 @@
+<% case automation
+ when 'selenium' %>
+DriverHelper.driver.quit
+<% when 'watir' %>
+BrowserHelper.browser.quit
+<% else %>
+DriverHelper.driver.quit_driver
+<% end %>
