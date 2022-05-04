@@ -1,0 +1,14 @@
+require_relative '../page_objects/pages/confirmation_page'
+require_relative '../page_objects/pages/home_page'
+require_relative 'base_spec'
+require_relative '../page_objects/pages/login_page'
+
+ class LoginSpec < BaseSpec
+  describe 'Login' do
+    it 'Login with valid credentials' do
+      HomePage.go_to_login
+      LoginPage.login('alice', 'mypassword')
+      expect(ConfirmationPage.login_message).to eq 'You are logged in as alice'
+    end
+  end
+  end
