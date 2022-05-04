@@ -1,24 +1,7 @@
 # frozen_string_literal: true
-
-require_relative '../template'
-
-class AbstractComponentTemplate < Template
-  def body
-    raider = if framework == 'rspec'
-               "require_relative '../../helpers/raider'"
-             else
-               "require_relative '../../features/support/helpers/raider'"
-             end
-
-    <<~RUBY
-      #{raider}
-
-      class AbstractComponent
-
-          def initialize(component)
-            @component = component
-          end
-      end
-    RUBY
-  end
+<%= ERB.new(File.read(File.expand_path('./partials/require_raider.tt', __dir__))).result(binding) %>
+class AbstractComponent
+    def initialize(component)
+        @component = component
+    end
 end

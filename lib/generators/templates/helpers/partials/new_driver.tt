@@ -1,0 +1,13 @@
+  def new_driver
+    if automation == 'selenium'
+        def new_driver
+                @driver = Selenium::WebDriver.for :chrome
+              end
+    else
+        def new_driver
+                appium_file = File.join(Dir.pwd, 'appium.txt')
+                caps = Appium.load_appium_txt(file: appium_file)
+                @driver = Appium::Driver.new(caps)
+              end
+    end
+  end

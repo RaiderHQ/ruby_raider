@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
 require_relative 'generators/menu_generator'
-require_relative 'generators/projects/cucumber_project_generator'
-require_relative 'generators/projects/project_generator'
-require_relative 'generators/files/rspec_file_generator'
 
 # Main module to load all the generators
 module RubyRaider

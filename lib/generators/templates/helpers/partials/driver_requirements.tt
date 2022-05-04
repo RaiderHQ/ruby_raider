@@ -1,0 +1,14 @@
+  def requirements
+    case automation
+    when 'selenium'
+        require 'selenium-webdriver'
+        require 'webdrivers'
+
+    when 'watir'
+
+        require 'watir'
+        require 'webdrivers'
+    else
+      "require 'appium_lib'"
+    end
+  end

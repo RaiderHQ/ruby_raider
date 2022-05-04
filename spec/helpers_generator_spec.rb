@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../lib/generators/files/helpers_file_generator'
+require_relative '../lib/generators/files/s_file_generator'
 require_relative 'spec_helper'
 
 describe RubyRaider::HelpersFileGenerator do

@@ -1,0 +1,13 @@
+require_relative 'helpers/browser_helper'
+
+Before do
+    Raider::AllureHelper.configure
+    Raider::BrowserHelper.new_browser
+end
+
+After do |scenario|
+    browser = Raider::BrowserHelper.browser
+    browser.screenshot.save("allure-results/screenshots/#{scenario.name}.png")
+    Raider::AllureHelper.add_screenshot(scenario.name)
+    browser.quit
+end

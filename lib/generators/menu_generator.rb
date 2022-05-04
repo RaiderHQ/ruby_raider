@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 
 require 'highline'
-require_relative '../generators/projects/cucumber_project_generator'
-require_relative '../generators/files/rspec_file_generator'
+require_relative 'automation_generator'
+require_relative 'common_generator'
+require_relative 'cucumber_generator'
+require_relative 'helper_generator'
+require_relative 'rspec_generator'
 
 module RubyRaider
   class MenuGenerator
@@ -45,10 +48,13 @@ module RubyRaider
 
       def set_framework(automation, framework, project_name)
         if framework == 'rspec'
-          RspecFileGenerator.new([automation, framework, project_name]).invoke_all
+          RspecGenerator.new([automation, framework, project_name]).invoke_all
         else
-          CucumberProjectGenerator.generate_cucumber_project(automation, project_name)
+          CucumberGenerator.new([automation, framework, project_name]).invoke_all
         end
+        AutomationGenerator.new([automation, framework, project_name]).invoke_all
+        CommonGenerator.new([automation, framework, project_name]).invoke_all
+        HelpersGenerator.new([automation, framework, project_name]).invoke_all
       end
 
       def choose_mobile_platform
