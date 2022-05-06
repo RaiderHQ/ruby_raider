@@ -26,14 +26,16 @@ module RubyRaider
                "#{name}/page_objects/abstract/abstract_component.rb")
     end
 
-
-      def generate_confirmation_page
-        template('automation/confirmation_page.tt',
-                 "#{name}/page_objects/pages/confirmation_page.rb") if @_initializer.first.include?('appium_ios')
+    def generate_confirmation_page
+      if @_initializer.first.include?('appium_ios')
+        template('automation/confirmation_page.tt', "#{name}/page_objects/pages/confirmation_page.rb")
       end
+    end
 
-      def generate_appium_settings
-        template('automation/appium_settings.tt', "#{name}/appium.txt") if @_initializer.first.include?('appium_ios')
+    def generate_appium_settings
+      if @_initializer.first.include?('appium_ios')
+        template('automation/appium_settings.tt', "#{name}/appium.txt")
       end
+    end
   end
 end

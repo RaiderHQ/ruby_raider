@@ -55,6 +55,7 @@ module RubyRaider
         AutomationGenerator.new([automation, framework, project_name]).invoke_all
         CommonGenerator.new([automation, framework, project_name]).invoke_all
         HelpersGenerator.new([automation, framework, project_name]).invoke_all
+        system "cd #{project_name} && gem install bundler && bundle install"
       end
 
       def choose_mobile_platform

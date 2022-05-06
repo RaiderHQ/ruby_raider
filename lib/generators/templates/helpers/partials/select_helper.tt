@@ -1,5 +1,0 @@
-<% if automation == 'watir' %>
-    BrowserHelper.new_browser
-<% else %>
-    DriverHelper.new_driver
-<% end %>
