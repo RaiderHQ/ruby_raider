@@ -6,6 +6,10 @@ module Raider
     <% end %>
     <%= ERB.new(File.read(File.expand_path('./partials/require_automation.tt', __dir__))).result(binding).strip! %>
     require_relative 'pom_helper'
-    <%= ERB.new(File.read(File.expand_path('./partials/require_driver.tt', __dir__))).result(binding).strip! %>
+    <% if automation == 'watir' %>
+       require_relative 'browser_helper'
+    <% else %>
+       require_relative 'driver_helper'
+    <% end %>
     require_relative 'allure_helper'
 end

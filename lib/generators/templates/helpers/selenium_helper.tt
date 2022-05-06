@@ -8,7 +8,7 @@ module Raider
         def click_when_present
             # This is an example of an implicit wait in selenium
             wait = Selenium::WebDriver::Wait.new(timeout: 15)
-            wait.until { present? }
+            wait.until { displayed? }
             click
         end
 

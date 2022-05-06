@@ -2,4 +2,5 @@
 require 'allure-cucumber'
 <% else %>
 require 'allure-ruby-commons'
+require 'allure-rspec'
 <% end %>

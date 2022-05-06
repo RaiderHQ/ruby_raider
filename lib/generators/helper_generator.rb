@@ -6,7 +6,7 @@ module RubyRaider
   class HelpersGenerator < Generator
 
     def generate_raider_helper
-      template('helpers/raider_helper.tt', "#{name}/helpers/raider_helper.rb")
+      template('helpers/raider_helper.tt', "#{name}/helpers/raider.rb")
     end
 
     def generate_allure_helper
@@ -26,11 +26,15 @@ module RubyRaider
     end
 
     def generate_watir_helper
-      template('helpers/watir_helper.tt', "#{name}/helpers/watir_helper.rb")
+      if @_initializer.first.include?('watir')
+        template('helpers/watir_helper.tt', "#{name}/helpers/watir_helper.rb")
+      end
     end
 
     def generate_selenium_helper
-      template('helpers/selenium_helper.tt', "#{name}/helpers/selenium_helper.rb")
+      if @_initializer.first.include?('selenium')
+        template('helpers/selenium_helper.tt', "#{name}/helpers/selenium_helper.rb")
+      end
     end
 
     def generate_driver_helper

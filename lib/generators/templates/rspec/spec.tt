@@ -1,5 +1,37 @@
 <% if %w[selenium watir].include? automation %>
-<%= ERB.new(File.read(File.expand_path('./partials/web_examples.tt', __dir__))).result(binding).strip! %>
+require_relative 'base_spec'
+require_relative '../page_objects/pages/login_page'
+
+class LoginSpec < BaseSpec
+  describe 'Login' do
+    before(:each) do
+      LoginPage.visit
+    end
+
+    it 'can login with valid credentials' do
+      LoginPage.login('aguspe', '12341234')
+      expect(LoginPage.header.customer_name).to eq 'Welcome back Agustin'
+    end
+
+    it 'cannot login with wrong credentials' do
+      LoginPage.login('aguspe', 'wrongPassword')
+      expect(LoginPage.header.customer_name).to be_empty
+    end
+  end
+end
 <% else %>
-<%= ERB.new(File.read(File.expand_path('./partials/mobile_examples.tt', __dir__))).result(binding).strip! %>
+require_relative '../page_objects/pages/confirmation_page'
+require_relative '../page_objects/pages/home_page'
+require_relative 'base_spec'
+require_relative '../page_objects/pages/login_page'
+
+class LoginSpec < BaseSpec
+  describe 'Login' do
+    it 'Login with valid credentials' do
+      HomePage.go_to_login
+      LoginPage.login('alice', 'mypassword')
+      expect(ConfirmationPage.login_message).to eq 'You are logged in as alice'
+    end
+  end
+end
 <% end %>

@@ -1,5 +1,0 @@
-<% if automation == 'watir' %>
-   require_relative 'browser_helper'
-<% else %>
-   require_relative 'driver_helper'
-<% end %>
