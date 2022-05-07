@@ -3,35 +3,35 @@
 require 'rspec'
 require_relative 'allure_helper'
 <% if automation == 'watir' %>
-   require_relative 'browser_helper'
+require_relative 'browser_helper'
 <% else %>
-   require_relative 'driver_helper'
+require_relative 'driver_helper'
 <% end %>
 
 module Raider
-    module SpecHelper
+  module SpecHelper
 
     AllureHelper.configure
     RSpec.configure do |config|
-        config.formatter = AllureHelper.formatter
-        config.before(:each) do
-            <% if automation == 'watir' %>
-                BrowserHelper.new_browser
-            <% else %>
-                DriverHelper.new_driver
-            <% end %>
-            <% if %w[appium_ios].include? automation %>
-            DriverHelper.driver.start_driver
-            <% end %>
-        end
+      config.formatter = AllureHelper.formatter
+      config.before(:each) do
+        <% if automation == 'watir' %>
+        BrowserHelper.new_browser
+        <% else %>
+        DriverHelper.new_driver
+        <% end %>
+        <% if %w[appium_ios].include? automation %>
+        DriverHelper.driver.start_driver
+        <% end %>
+      end
 
-        config.after(:each) do
-            example_name = self.class.descendant_filtered_examples.first.description
-            status = self.class.descendant_filtered_examples.first.execution_result.status
-            <%= ERB.new(File.read(File.expand_path('./partials/screenshot.tt', __dir__))).result(binding).strip! %>
-            AllureHelper.add_screenshot example_name if status == :failed
-            <%= ERB.new(File.read(File.expand_path('./partials/quit_driver.tt', __dir__))).result(binding).strip! %>
-            end
-          end
+      config.after(:each) do
+        example_name = self.class.descendant_filtered_examples.first.description
+        status = self.class.descendant_filtered_examples.first.execution_result.status
+        <%= ERB.new(File.read(File.expand_path('./partials/screenshot.tt', __dir__))).result(binding).strip! %>
+        AllureHelper.add_screenshot example_name if status == :failed
+        <%= ERB.new(File.read(File.expand_path('./partials/quit_driver.tt', __dir__))).result(binding).strip! %>
+      end
     end
+  end
 end

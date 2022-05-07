@@ -3,18 +3,17 @@
 require_relative '../abstract/abstract_page'
 
 class ConfirmationPage < AbstractPage
-    #Values
+  #Values
 
-    def login_message
-        driver.wait { message_element }.text
-    end
+  def login_message
+    driver.wait { message_element }.text
+  end
 
-    private
+  private
 
-    # Elements
+  # Elements
 
-    def message_element
-        driver.find_element(accessibility_id: 'You are logged in as alice')
-    end
+  def message_element
+    driver.find_element(accessibility_id: 'You are logged in as alice')
+  end
 end
-
