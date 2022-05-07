@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-<%= ERB.new(File.read(File.expand_path('./partials/require_raider.tt', __dir__))).result(binding) %>
+
 class AbstractComponent
-    def initialize(component)
-        @component = component
-    end
+  def initialize(component)
+    @component = component
+  end
 end

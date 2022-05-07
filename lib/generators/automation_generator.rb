@@ -17,13 +17,15 @@ module RubyRaider
     end
 
     def generate_header_component
-      template('automation/component.tt',
-               "#{name}/page_objects/components/header_component.rb")
+      unless @_initializer.first.include?('appium_ios')
+        template('automation/component.tt', "#{name}/page_objects/components/header_component.rb")
+      end
     end
 
     def generate_abstract_component
-      template('automation/abstract_component.tt',
-               "#{name}/page_objects/abstract/abstract_component.rb")
+      unless @_initializer.first.include?('appium_ios')
+        template('automation/abstract_component.tt', "#{name}/page_objects/abstract/abstract_component.rb")
+      end
     end
 
     def generate_confirmation_page

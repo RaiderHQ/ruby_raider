@@ -9,7 +9,7 @@ module RubyRaider
       end
 
       def generate_config_file
-        template('common/config.tt', "#{name}/config.yml")
+        template('common/config.tt', "#{name}/config/config.yml")
       end
 
       def generate_rake_file
@@ -18,6 +18,14 @@ module RubyRaider
 
       def generate_gemfile
         template('common/gemfile.tt', "#{name}/Gemfile")
+      end
+
+      def create_allure_folder
+        empty_directory "#{name}/allure-results"
+      end
+
+      def create_screenshots_folder
+        empty_directory "#{name}/allure-results/screenshots"
       end
     end
 end

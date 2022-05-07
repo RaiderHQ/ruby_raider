@@ -1,9 +1,9 @@
 <% if automation == 'watir' %>
-    def browser
-        Raider::BrowserHelper.browser
-    end
+  def browser
+    Raider::BrowserHelper.browser
+  end
 <% else %>
-    def driver
-        Raider::DriverHelper.driver
-    end
+  def driver
+    Raider::DriverHelper.driver
+  end
 <% end %>

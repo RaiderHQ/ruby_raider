@@ -9,7 +9,7 @@ module RubyRaider
     end
 
     def generate_steps
-      template('cucumber/steps.tt', "#{name}/features/step_definitions/login_steps")
+      template('cucumber/steps.tt', "#{name}/features/step_definitions/login_steps.rb")
     end
 
     def generate_env_file

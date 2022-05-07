@@ -18,9 +18,9 @@ class LoginPage < AbstractPage
 
   # Components
 
-    def header
-      HeaderComponent.new(driver.find_element(class: 'menu_text'))
-    end
+  def header
+    HeaderComponent.new(driver.find_element(class: 'menu_text'))
+  end
 
   private
 

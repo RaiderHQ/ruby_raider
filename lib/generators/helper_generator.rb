@@ -14,7 +14,9 @@ module RubyRaider
     end
 
     def generate_browser_helper
-      template('helpers/browser_helper.tt', "#{name}/helpers/browser_helper.rb")
+      if @_initializer.first.include?('watir')
+        template('helpers/browser_helper.tt', "#{name}/helpers/browser_helper.rb")
+      end
     end
 
     def generate_pom_helper
@@ -38,7 +40,9 @@ module RubyRaider
     end
 
     def generate_driver_helper
-      template('helpers/driver_helper.tt', "#{name}/helpers/driver_helper.rb")
+      unless @_initializer.first.include?('watir')
+        template('helpers/driver_helper.tt', "#{name}/helpers/driver_helper.rb")
+      end
     end
   end
 end

@@ -14,7 +14,7 @@ describe RubyRaider::RspecFileGenerator do
   end
 
   it 'creates a step definitions file' do
-    expect(File.exist?("#{@name}/features/step_definitions/login_steps.rb")).to be_truthy
+    expect(File.exist?("#{@name}/features/step_definitions/login_steps.rb.rb")).to be_truthy
   end
 
   it 'creates an env file' do

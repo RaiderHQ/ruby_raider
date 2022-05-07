@@ -4,17 +4,17 @@ require_relative '../abstract/abstract_page'
 
 class HomePage < AbstractPage
 
-    #Actions
+  #Actions
 
-    def go_to_login
-        driver.wait { login_button_navigator }.click
-    end
+  def go_to_login
+    driver.wait { login_button_navigator }.click
+  end
 
-    private
+  private
 
-    # Elements
+  # Elements
 
-    def login_button_navigator
-        driver.find_element(accessibility_id: 'Login Screen')
-    end
+  def login_button_navigator
+    driver.find_element(accessibility_id: 'Login Screen')
+  end
 end
