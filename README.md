@@ -17,5 +17,6 @@ Currently we only support:
 * Gerating a Watir with both Cucumber and Rspec framework
 * Generating an Appium project with Rspec and Cucumber on IOS
 
+In order to run the appium tests, download the example [app](https://github.com/cloudgrey-io/the-app/releases/tag/v1.10.0)
 
 This works in all the platforms (Tested on Mac OS, Linux and Windows)
