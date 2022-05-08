@@ -1,0 +1,15 @@
+# frozen_string_literal: true
+
+module Raider
+  <% if framework == 'rspec' %>
+  require_relative 'spec_helper'
+  <% end %>
+  <%= ERB.new(File.read(File.expand_path('./partials/require_automation.tt', __dir__))).result(binding).strip! %>
+  require_relative 'pom_helper'
+  <% if automation == 'watir' %>
+  require_relative 'browser_helper'
+  <% else %>
+  require_relative 'driver_helper'
+  <% end %>
+  require_relative 'allure_helper'
+end

@@ -1,0 +1,41 @@
+require_relative '../abstract/abstract_page'
+require_relative '../components/header_component'
+
+class LoginPage < AbstractPage
+  using Raider::WatirHelper
+
+  def url(_page)
+    'index.php?rt=account/login'
+  end
+
+  # Actions
+
+  def login(username, password)
+    username_field.send_keys username
+    password_field.send_keys password
+    login_button.click_when_present
+  end
+
+  # Components
+
+
+  def header
+    HeaderComponent.new(browser.element(class: 'menu_text'))
+  end
+
+  private
+
+  # Elements
+
+  def username_field
+    browser.element(id: 'loginFrm_loginname')
+  end
+
+  def password_field
+    browser.element(id: 'loginFrm_password')
+  end
+
+  def login_button
+    browser.element(xpath: "//button[@title='Login']")
+  end
+end

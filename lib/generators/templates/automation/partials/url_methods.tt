@@ -1,0 +1,13 @@
+<% if %w[selenium watir].include?(automation) %>
+  def full_url(*page)
+    "#{base_url}#{url(*page)}"
+  end
+
+  def base_url
+    'https://automationteststore.com/'
+  end
+
+  def url(_page)
+    raise 'Url must be defined on child pages'
+  end
+<% end %>

@@ -1,0 +1,28 @@
+require_relative '../abstract/abstract_page'
+
+class LoginPage < AbstractPage
+
+  # Actions
+
+  def login(username, password)
+    username_field.send_keys username
+    password_field.send_keys password
+    login_button.click
+  end
+
+  private
+
+  # Elements
+
+  def username_field
+    driver.find_element(xpath: "//XCUIElementTypeTextField[@name=\"username\"]")
+  end
+
+  def password_field
+    driver.find_element(xpath: "//XCUIElementTypeSecureTextField[@name=\"password\"]")
+  end
+
+  def login_button
+    driver.find_elements(xpath: "//XCUIElementTypeOther[@name=\"loginBtn\"]").last
+  end
+end
