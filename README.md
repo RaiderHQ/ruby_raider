@@ -15,6 +15,7 @@ Currently we only support:
 
 * Gerating a Selenium with both Cucumber and Rspec framework
 * Gerating a Watir with both Cucumber and Rspec framework
-* Generating an Appium project with Rspec on IOS
+* Generating an Appium project with Rspec and Cucumber on IOS
+
 
 This works in all the platforms (Tested on Mac OS, Linux and Windows)
