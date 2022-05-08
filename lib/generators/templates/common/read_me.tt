@@ -92,3 +92,8 @@ end
 
 Pages are organized in Actions (things a user can perform on the page), Validations (assertions), and Elements.
 Each page has to have a url define, and each page is using the module WatirHelper to add methods on runtime to the Watir elements
+
+# Mobile:
+
+For the appium base project to work you need to have [appium](https://appium.io)
+and download [the example app](https://github.com/cloudgrey-io/the-app/releases/tag/v1.10.0)

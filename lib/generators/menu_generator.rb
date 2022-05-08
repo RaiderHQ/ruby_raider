@@ -33,13 +33,8 @@ module RubyRaider
             set_framework(automation, framework, project_name)
           end
           menu.choice('Cucumber') do
-            if %w[selenium watir].include? automation
-              framework = 'cucumber'
-              set_framework(automation, framework, project_name)
-            else
-              pp 'We will support iOS with cucumber on the next release'
-              exit
-            end
+            framework = 'cucumber'
+            set_framework(automation, framework, project_name)
           end
           menu.choice('Quit') { exit }
         end
