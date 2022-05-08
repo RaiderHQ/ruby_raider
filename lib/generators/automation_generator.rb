@@ -13,7 +13,9 @@ module RubyRaider
     end
 
     def generate_home_page
-      template('automation/home_page.tt', "#{name}/page_objects/pages/home_page.rb")
+      if @_initializer.first.include?('appium_ios')
+        template('automation/home_page.tt', "#{name}/page_objects/pages/home_page.rb")
+      end
     end
 
     def generate_header_component
