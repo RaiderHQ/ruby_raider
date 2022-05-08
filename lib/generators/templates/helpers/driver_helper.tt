@@ -1,0 +1,18 @@
+# frozen_string_literal: true
+
+<% if automation == 'selenium' %>
+require 'webdrivers'
+<% else %>
+require 'appium_lib'
+<% end %>
+require_relative 'driver_helper'
+
+module Raider
+  module DriverHelper
+    class << self
+      attr_reader :driver
+
+      <%= ERB.new(File.read(File.expand_path('./partials/new_driver.tt', __dir__))).result(binding).strip! %>
+    end
+  end
+end

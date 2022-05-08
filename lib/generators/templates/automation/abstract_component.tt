@@ -1,0 +1,7 @@
+# frozen_string_literal: true
+
+class AbstractComponent
+  def initialize(component)
+    @component = component
+  end
+end

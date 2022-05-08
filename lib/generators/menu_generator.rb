@@ -1,6 +1,11 @@
+# frozen_string_literal: true
+
 require 'highline'
-require_relative '../generators/projects/cucumber_project_generator'
-require_relative '../generators/projects/rspec_project_generator'
+require_relative 'automation_generator'
+require_relative 'common_generator'
+require_relative 'cucumber_generator'
+require_relative 'helper_generator'
+require_relative 'rspec_generator'
 
 module RubyRaider
   class MenuGenerator
@@ -23,15 +28,13 @@ module RubyRaider
         framework = ''
         @cli.choose do |menu|
           menu.prompt = 'Please select your test framework'
-          menu.choice('Rspec') { framework = 'rspec'; set_framework(automation, framework, project_name) }
+          menu.choice('Rspec') do
+            framework = 'rspec'
+            set_framework(automation, framework, project_name)
+          end
           menu.choice('Cucumber') do
-            if %w[selenium watir].include? automation
-              framework = 'cucumber'
-              set_framework(automation, framework, project_name)
-            else
-              pp 'We will support iOS with cucumber on the next release'
-              exit
-            end
+            framework = 'cucumber'
+            set_framework(automation, framework, project_name)
           end
           menu.choice('Quit') { exit }
         end
@@ -40,18 +43,28 @@ module RubyRaider
 
       def set_framework(automation, framework, project_name)
         if framework == 'rspec'
-          RspecProjectGenerator.generate_rspec_project(automation, project_name)
+          RspecGenerator.new([automation, framework, project_name]).invoke_all
         else
-          CucumberProjectGenerator.generate_cucumber_project(automation, project_name)
+          CucumberGenerator.new([automation, framework, project_name]).invoke_all
         end
+        AutomationGenerator.new([automation, framework, project_name]).invoke_all
+        CommonGenerator.new([automation, framework, project_name]).invoke_all
+        HelpersGenerator.new([automation, framework, project_name]).invoke_all
+        system "cd #{project_name} && gem install bundler && bundle install"
       end
 
       def choose_mobile_platform
         @cli.choose do |menu|
           menu.prompt = 'Please select your mobile platform'
           menu.choice('iOS') { 'appium_ios' }
-          menu.choice('Android') { pp 'Android appium is coming soon. Thank you for the interest'; exit }
-          menu.choice('Cross Platform') { pp 'Cross platform appium is coming soon. Thank you for the interest'; exit }
+          menu.choice('Android') do
+            pp 'Android appium is coming soon. Thank you for the interest'
+            exit
+          end
+          menu.choice('Cross Platform') do
+            pp 'Cross platform appium is coming soon. Thank you for the interest'
+            exit
+          end
           menu.choice('Quit') { exit }
         end
       end
