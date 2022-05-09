@@ -57,10 +57,7 @@ module RubyRaider
         @cli.choose do |menu|
           menu.prompt = 'Please select your mobile platform'
           menu.choice('iOS') { 'appium_ios' }
-          menu.choice('Android') do
-            pp 'Android appium is coming soon. Thank you for the interest'
-            exit
-          end
+          menu.choice('Android') { 'appium_android' }
           menu.choice('Cross Platform') do
             pp 'Cross platform appium is coming soon. Thank you for the interest'
             exit
