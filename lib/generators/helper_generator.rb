@@ -24,7 +24,9 @@ module RubyRaider
     end
 
     def generate_spec_helper
-      template('helpers/spec_helper.tt', "#{name}/helpers/spec_helper.rb")
+      if @_initializer.first.include?('rspec')
+        template('helpers/spec_helper.tt', "#{name}/helpers/spec_helper.rb")
+      end
     end
 
     def generate_watir_helper
