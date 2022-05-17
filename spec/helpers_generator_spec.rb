@@ -106,6 +106,10 @@ describe RubyRaider::HelpersGenerator do
         expect(File.exist?("#{@name}/helpers/driver_helper.rb")).to be_truthy
       end
 
+      it 'does not create a spec helper' do
+        expect(File.exist?("#{@name}/helpers/spec_helper.rb")).to be_falsey
+      end
+
       after(:all) do
         FileUtils.rm_rf(@name)
       end
@@ -123,6 +127,10 @@ describe RubyRaider::HelpersGenerator do
 
       it 'creates a raider file' do
         expect(File.exist?("#{@name}/helpers/raider.rb")).to be_truthy
+      end
+
+      it 'does not create a spec helper' do
+        expect(File.exist?("#{@name}/helpers/spec_helper.rb")).to be_falsey
       end
 
       after(:all) do
