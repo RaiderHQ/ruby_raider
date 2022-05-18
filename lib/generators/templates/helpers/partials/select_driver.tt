@@ -1,0 +1,8 @@
+<% if automation == 'watir' %>
+@browser = BrowserHelper.new_browser
+<% else %>
+@driver = DriverHelper.new_driver
+<% end %>
+<% if %w[appium_ios].include? automation %>
+@driver.start_driver
+<% end %>

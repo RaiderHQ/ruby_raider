@@ -1,6 +1,6 @@
 [caps]
 platformName = "iOS"
-platformVersion = "15.4"
+platformVersion = "15.5"
 deviceName = "iPhone SE (3rd generation)"
 app = "TheApp.app"
 
