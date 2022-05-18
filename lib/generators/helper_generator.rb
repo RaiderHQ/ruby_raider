@@ -19,17 +19,9 @@ module RubyRaider
       end
     end
 
-    def generate_pom_helper
-      template('helpers/pom_helper.tt', "#{name}/helpers/pom_helper.rb")
-    end
-
     def generate_spec_helper
-      template('helpers/spec_helper.tt', "#{name}/helpers/spec_helper.rb")
-    end
-
-    def generate_watir_helper
-      if @_initializer.first.include?('watir')
-        template('helpers/watir_helper.tt', "#{name}/helpers/watir_helper.rb")
+      if @_initializer.first.include?('rspec')
+        template('helpers/spec_helper.tt', "#{name}/helpers/spec_helper.rb")
       end
     end
 

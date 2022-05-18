@@ -1,0 +1,9 @@
+<% if automation == 'watir' %>
+  def initialize(browser)
+    @browser = browser
+  end
+<% else %>
+  def initialize(driver)
+    @driver = driver
+  end
+<% end %>

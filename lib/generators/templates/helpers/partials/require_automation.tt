@@ -1,5 +1,3 @@
 <% if automation == 'selenium' %>
     require_relative 'selenium_helper'
-<% elsif automation == 'watir' %>
-    require_relative 'watir_helper'
 <% end %>

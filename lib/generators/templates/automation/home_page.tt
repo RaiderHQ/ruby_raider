@@ -7,7 +7,7 @@ class HomePage < AbstractPage
   #Actions
 
   def go_to_login
-    driver.wait { login_button_navigator }.click
+    @driver.wait { login_button_navigator }.click
   end
 
   private
@@ -15,6 +15,6 @@ class HomePage < AbstractPage
   # Elements
 
   def login_button_navigator
-    driver.find_element(accessibility_id: 'Login Screen')
+    @driver.find_element(accessibility_id: 'Login Screen')
   end
 end

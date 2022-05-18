@@ -14,10 +14,6 @@ describe RubyRaider::HelpersGenerator do
       expect(File.exist?("#{@name}/helpers/raider.rb")).to be_truthy
     end
 
-    it 'creates a pom helper file' do
-      expect(File.exist?("#{@name}/helpers/pom_helper.rb")).to be_truthy
-    end
-
     it 'creates an allure helper file' do
       expect(File.exist?("#{@name}/helpers/allure_helper.rb")).to be_truthy
     end
@@ -45,10 +41,6 @@ describe RubyRaider::HelpersGenerator do
       expect(File.exist?("#{@name}/helpers/browser_helper.rb")).to be_truthy
     end
 
-    it 'creates a pom helper file' do
-      expect(File.exist?("#{@name}/helpers/pom_helper.rb")).to be_truthy
-    end
-
     it 'creates a raider file' do
       expect(File.exist?("#{@name}/helpers/raider.rb")).to be_truthy
     end
@@ -72,10 +64,6 @@ describe RubyRaider::HelpersGenerator do
       expect(File.exist?("#{@name}/helpers/raider.rb")).to be_truthy
     end
 
-    it 'creates a pom helper file' do
-      expect(File.exist?("#{@name}/helpers/pom_helper.rb")).to be_truthy
-    end
-
     it 'creates an allure helper file' do
       expect(File.exist?("#{@name}/helpers/allure_helper.rb")).to be_truthy
     end
@@ -94,16 +82,16 @@ describe RubyRaider::HelpersGenerator do
         RubyRaider::HelpersGenerator.new(['selenium', 'cucumber', @name]).invoke_all
       end
 
-      it 'creates a pom helper file' do
-        expect(File.exist?("#{@name}/helpers/pom_helper.rb")).to be_truthy
-      end
-
       it 'creates an allure helper file' do
         expect(File.exist?("#{@name}/helpers/allure_helper.rb")).to be_truthy
       end
 
       it 'creates a driver helper file', :watir do
         expect(File.exist?("#{@name}/helpers/driver_helper.rb")).to be_truthy
+      end
+
+      it 'does not create a spec helper' do
+        expect(File.exist?("#{@name}/helpers/spec_helper.rb")).to be_falsey
       end
 
       after(:all) do
@@ -123,6 +111,10 @@ describe RubyRaider::HelpersGenerator do
 
       it 'creates a raider file' do
         expect(File.exist?("#{@name}/helpers/raider.rb")).to be_truthy
+      end
+
+      it 'does not create a spec helper' do
+        expect(File.exist?("#{@name}/helpers/spec_helper.rb")).to be_falsey
       end
 
       after(:all) do
