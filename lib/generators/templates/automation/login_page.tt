@@ -1,8 +1,8 @@
 <% case automation
- when 'selenium' %>
+ when 'selenium' -%>
 <%= ERB.new(File.read(File.expand_path('./partials/selenium_login.tt', __dir__))).result(binding) %>
-<% when 'watir' %>
+<% when 'watir' -%>
 <%= ERB.new(File.read(File.expand_path('./partials/watir_login.tt', __dir__))).result(binding) %>
-<% else %>
+<% else -%>
 <%= ERB.new(File.read(File.expand_path('./partials/appium_login.tt', __dir__))).result(binding) %>
-<% end %>
+<% end -%>

@@ -3,17 +3,17 @@ source 'https://rubygems.org'
 gem 'activesupport'
 gem 'allure-rspec'
 gem 'allure-ruby-commons'
-<% if framework == 'cucumber' %>
+<% if framework == 'cucumber' -%>
 gem 'allure-cucumber'
-<% end %>
+<% end -%>
 gem 'parallel_split_test'
 gem 'parallel_tests'
 gem 'rake'
 gem '<%= framework %>'
-<% if framework == 'cucumber' %>
+<% if framework == 'cucumber' -%>
 gem 'rspec'
-<% end %>
+<% end -%>
 <%= ERB.new(File.read(File.expand_path('./partials/automation_gems.tt', __dir__))).result(binding).strip! %>
-<% if %w[selenium watir].include? automation %>
+<% if %w[selenium watir].include? automation -%>
 gem 'webdrivers'
-<% end %>
+<% end -%>

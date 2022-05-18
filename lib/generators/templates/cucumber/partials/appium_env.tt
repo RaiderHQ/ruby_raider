@@ -2,12 +2,12 @@ require_relative '../../helpers/driver_helper'
 
 Before do
   Raider::AllureHelper.configure
-  Raider::DriverHelper.new_driver
-  Raider::DriverHelper.driver.start_driver
+  @driver = Raider::DriverHelper.new_driver
+  @driver.start_driver
 end
 
 After do |scenario|
-  Raider::DriverHelper.driver.screenshot("allure-results/screenshots/#{scenario.name}.png")
+  @driver.screenshot("allure-results/screenshots/#{scenario.name}.png")
   Raider::AllureHelper.add_screenshot(scenario.name)
-  Raider::DriverHelper.driver.quit_driver
+  @driver.quit_driver
 end

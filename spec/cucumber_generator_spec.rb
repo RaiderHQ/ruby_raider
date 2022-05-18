@@ -22,6 +22,10 @@ describe RubyRaider::CucumberGenerator do
       expect(File.exist?("#{@name}/features/support/env.rb")).to be_truthy
     end
 
+    it 'does not create a spec file' do
+      expect(File.exist?("#{@name}/spec/login_spec.rb")).to be_falsey
+    end
+
     after(:all) do
       FileUtils.rm_rf(@name)
     end
@@ -43,6 +47,10 @@ describe RubyRaider::CucumberGenerator do
 
     it 'creates an env file' do
       expect(File.exist?("#{@name}/features/support/env.rb")).to be_truthy
+    end
+
+    after(:all) do
+      FileUtils.rm_rf(@name)
     end
   end
 
