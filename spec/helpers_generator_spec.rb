@@ -14,10 +14,6 @@ describe RubyRaider::HelpersGenerator do
       expect(File.exist?("#{@name}/helpers/raider.rb")).to be_truthy
     end
 
-    it 'creates a pom helper file' do
-      expect(File.exist?("#{@name}/helpers/pom_helper.rb")).to be_truthy
-    end
-
     it 'creates an allure helper file' do
       expect(File.exist?("#{@name}/helpers/allure_helper.rb")).to be_truthy
     end
@@ -45,10 +41,6 @@ describe RubyRaider::HelpersGenerator do
       expect(File.exist?("#{@name}/helpers/browser_helper.rb")).to be_truthy
     end
 
-    it 'creates a pom helper file' do
-      expect(File.exist?("#{@name}/helpers/pom_helper.rb")).to be_truthy
-    end
-
     it 'creates a raider file' do
       expect(File.exist?("#{@name}/helpers/raider.rb")).to be_truthy
     end
@@ -72,10 +64,6 @@ describe RubyRaider::HelpersGenerator do
       expect(File.exist?("#{@name}/helpers/raider.rb")).to be_truthy
     end
 
-    it 'creates a pom helper file' do
-      expect(File.exist?("#{@name}/helpers/pom_helper.rb")).to be_truthy
-    end
-
     it 'creates an allure helper file' do
       expect(File.exist?("#{@name}/helpers/allure_helper.rb")).to be_truthy
     end
@@ -92,10 +80,6 @@ describe RubyRaider::HelpersGenerator do
       before(:all) do
         @name = 'cucumber-selenium'
         RubyRaider::HelpersGenerator.new(['selenium', 'cucumber', @name]).invoke_all
-      end
-
-      it 'creates a pom helper file' do
-        expect(File.exist?("#{@name}/helpers/pom_helper.rb")).to be_truthy
       end
 
       it 'creates an allure helper file' do

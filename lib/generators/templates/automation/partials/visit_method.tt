@@ -1,9 +1,5 @@
 <% if %w[selenium watir].include? automation %>
   def visit(*page)
-<% if automation == 'selenium' %>
-    driver.navigate.to full_url(page.first)
-<% else %>
-    browser.goto full_url(page.first)
-<% end %>
+    <% if automation == 'selenium' %>@driver.navigate.to full_url(page.first) <% else %>@browser.goto full_url(page.first)<% end %>
   end
 <% end %>

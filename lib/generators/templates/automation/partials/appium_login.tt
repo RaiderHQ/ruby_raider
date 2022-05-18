@@ -15,14 +15,14 @@ class LoginPage < AbstractPage
   # Elements
 
   def username_field
-    driver.find_element(xpath: "//XCUIElementTypeTextField[@name=\"username\"]")
+    @driver.find_element(xpath: "//XCUIElementTypeTextField[@name=\"username\"]")
   end
 
   def password_field
-    driver.find_element(xpath: "//XCUIElementTypeSecureTextField[@name=\"password\"]")
+    @driver.find_element(xpath: "//XCUIElementTypeSecureTextField[@name=\"password\"]")
   end
 
   def login_button
-    driver.find_elements(xpath: "//XCUIElementTypeOther[@name=\"loginBtn\"]").last
+    @driver.find_elements(xpath: "//XCUIElementTypeOther[@name=\"loginBtn\"]").last
   end
 end
