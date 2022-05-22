@@ -1,12 +1,39 @@
-# frozen_string_literal: true
-
+require 'thor'
 require_relative 'generators/menu_generator'
 
-# Main module to load all the generators
-module RubyRaider
-  module_function
-
-  def generate_project(project_name)
+class RubyRaider < Thor
+  desc "new [PROJECT_NAME]", "Creates a new framework based on settings"
+  def new(project_name)
     MenuGenerator.generate_choice_menu(project_name)
+  end
+
+  desc "page [PAGE_NAME]", "Creates a new page object"
+  def page(name)
+    Scaffolding.generate_page(name)
+  end
+
+  desc "feature [FEATURE_NAME]", "Creates a new feature"
+  def feature(name)
+    Scaffolding.generate_page(name)
+  end
+
+  desc "spec [SPEC_NAME]", "Creates a new spec"
+  def spec(name)
+    Scaffolding.generate_page(name)
+  end
+
+  desc "path [PATH]", "Sets the default path for scaffolding"
+  def path(default_path)
+    Utilities.path = default_path
+  end
+
+  desc "url [URL]", "Sets the default url for a project"
+  def url(default_url)
+    Utilities.url = default_url
+  end
+
+  desc "browser [BROWSER]", "Sets the default browser for a project"
+  def browser(default_browser)
+    Utilities.browser = default_browser
   end
 end
