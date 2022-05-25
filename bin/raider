@@ -3,4 +3,4 @@
 
 require_relative '../lib/ruby_raider'
 
-RubyRaider.generate_project ARGV[0]
+RubyRaider.start
