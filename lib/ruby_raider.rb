@@ -1,25 +1,27 @@
 require 'thor'
 require_relative 'generators/menu_generator'
+require_relative '../lib/scaffolding/scaffolding'
+require_relative '../lib/utilities/utilities'
 
 class RubyRaider < Thor
-  desc "new [PROJECT_NAME]", "Creates a new framework based on settings"
+  desc "new [PROJECT_NAME]", "Creates a new framework based on settings picked"
   def new(project_name)
     MenuGenerator.generate_choice_menu(project_name)
   end
 
   desc "page [PAGE_NAME]", "Creates a new page object"
   def page(name)
-    Scaffolding.generate_page(name)
+    Scaffolding.new([name]).generate_class
   end
 
   desc "feature [FEATURE_NAME]", "Creates a new feature"
   def feature(name)
-    Scaffolding.generate_page(name)
+    Scaffolding.new([name]).generate_feature
   end
 
   desc "spec [SPEC_NAME]", "Creates a new spec"
   def spec(name)
-    Scaffolding.generate_page(name)
+    Scaffolding.new([name]).generate_spec
   end
 
   desc "path [PATH]", "Sets the default path for scaffolding"
