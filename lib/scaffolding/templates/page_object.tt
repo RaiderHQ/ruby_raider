@@ -1,0 +1,12 @@
+# frozen_string_literal: true
+
+require_relative '../abstract/abstract_page'
+
+class <%= name.split('_').map {|word| word.capitalize }.join + 'Page' %> < AbstractPage
+
+  #Actions
+
+  private
+
+  # Elements
+end
