@@ -1,5 +1,6 @@
 # ruby_raider
-This is a gem to make setup and start of UI automation projects easier
+This is a gem to make setup and start of UI automation projects easier 
+You can find more information and updates on releaseas in : https://ruby-raider.com/
 
 Just do:
 
@@ -7,7 +8,7 @@ Just do:
 
 then do: 
 
-**raider [name_of_project]** 
+**raider new [name_of_project]** 
 
 and you will have a new project in the folder you are in
 
