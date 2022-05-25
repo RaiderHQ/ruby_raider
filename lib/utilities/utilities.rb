@@ -1,6 +1,8 @@
 require 'thor'
 
-class Utilities < Generator
+class Utilities < Thor::Group
+  include Thor::Actions
+
   def browser=(browser)
 
   end
