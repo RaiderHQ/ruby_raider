@@ -40,6 +40,11 @@ class RubyRaider < Thor
     Utilities.new.browser = default_browser
   end
 
+  desc "raid", "It runs all the tests in a project"
+  def raid
+    Utilities.new.run
+  end
+
   no_commands do
     def load_config_path
       YAML.load_file('config/config.yml')['path']
