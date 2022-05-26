@@ -1,6 +1,7 @@
 <% if automation == 'selenium' %>
       def new_driver(caps = {})
-        @driver = Selenium::WebDriver.for(YAML.load_file('config/config.yml')['browser'], desired_capabilities: caps)
+        browser = YAML.load_file('config/config.yml')['browser'].to_sym
+        @driver = Selenium::WebDriver.for(browser, desired_capabilities: caps)
       end
 <% else %>
       def new_driver
