@@ -12,8 +12,8 @@ gem 'rake'
 gem '<%= framework %>'
 <% if framework == 'cucumber' -%>
 gem 'rspec'
-gem 'ruby_raider'
 <% end -%>
+gem 'ruby_raider'
 <%= ERB.new(File.read(File.expand_path('./partials/automation_gems.tt', __dir__))).result(binding).strip! %>
 <% if %w[selenium watir].include? automation -%>
 gem 'webdrivers'
