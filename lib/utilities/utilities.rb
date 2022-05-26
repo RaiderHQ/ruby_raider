@@ -22,6 +22,14 @@ class Utilities
     overwrite_yaml
   end
 
+  def run
+    if File.directory? 'spec'
+      system 'rspec spec/'
+    else
+      system 'cucumber features'
+    end
+  end
+
   def overwrite_yaml
     File.open(@path, 'w') { |file| YAML.dump(@config, file) }
   end
