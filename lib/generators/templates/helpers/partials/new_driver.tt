@@ -1,6 +1,6 @@
 <% if automation == 'selenium' %>
-      def new_driver
-        @driver = Selenium::WebDriver.for :chrome
+      def new_driver(caps = {})
+        @driver = Selenium::WebDriver.for(YAML.load_file('config/config.yml')['browser'], desired_capabilities: caps)
       end
 <% else %>
       def new_driver

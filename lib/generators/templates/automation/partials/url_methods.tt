@@ -4,7 +4,7 @@
   end
 
   def base_url
-    'https://automationteststore.com/'
+    YAML.load_file('config/config.yml')['url']
   end
 
   def url(_page)

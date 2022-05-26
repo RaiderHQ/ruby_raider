@@ -1,17 +1,28 @@
-require 'thor'
+require 'yaml'
 
-class Utilities < Thor::Group
-  include Thor::Actions
+class Utilities
+
+  def initialize
+    @path = 'config/config.yml'
+    @config = YAML.load_file(@path)
+  end
 
   def browser=(browser)
-
+    @config['browser'] = browser
+    overwrite_yaml
   end
 
   def path=(path)
-
+    @config['path'] = path
+    overwrite_yaml
   end
 
   def url=(url)
+    @config['url'] = url
+    overwrite_yaml
+  end
 
+  def overwrite_yaml
+    File.open(@path, 'w') { |file| YAML.dump(@config, file) }
   end
 end
