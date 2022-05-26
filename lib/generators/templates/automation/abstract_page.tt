@@ -1,4 +1,4 @@
-require 'rspec'
+require 'yaml'
 <%= ERB.new(File.read(File.expand_path('./partials/require_raider.tt', __dir__)), nil, '-').result(binding) -%>
 
 class AbstractPage
