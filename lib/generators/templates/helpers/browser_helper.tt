@@ -10,9 +10,9 @@ module Raider
     class << self
       attr_reader :browser
 
-      def new_browser
+      def new_browser(options = {})
         config = YAML.load_file('config/config.yml')
-        @browser = Watir::Browser.new config['browser']
+        @browser = Watir::Browser.new(config['browser'], options: browser_opts)
       end
     end
   end
