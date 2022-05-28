@@ -11,8 +11,10 @@ class RubyRaider < Thor
   end
 
   desc "page [PAGE_NAME]", "Creates a new page object"
+  option :path, :type => :string, :required => false, :desc => 'The path were your page will be created'
   def page(name)
-    Scaffolding.new([name, load_config_path]).generate_class
+    path = options[:path].nil? ? load_config_path : options[:path]
+    Scaffolding.new([name, path]).generate_class
   end
 
   desc "feature [FEATURE_NAME]", "Creates a new feature"
