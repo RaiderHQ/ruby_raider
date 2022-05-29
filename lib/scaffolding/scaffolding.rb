@@ -22,7 +22,11 @@ class Scaffolding < Thor::Group
     template('spec.tt', default_path("./spec/#{name}_page.rb"))
   end
 
+  def delete_class
+    File.delete(default_path("page_objects/pages/#{name}_page.rb")) if File.exists? default_path("page_objects/pages/#{name}_page.rb")
+  end
+
   def default_path(standard_path)
-    path.nil? ? standard_path : "#{path}/#{name}"
+    path.nil? ? standard_path : "#{path}/#{name}_page.rb"
   end
 end
