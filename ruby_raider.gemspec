@@ -2,12 +2,12 @@
 
 Gem::Specification.new do |s|
   s.name        = 'ruby_raider'
-  s.version     = '0.3.0'
+  s.version     = '0.3.1'
   s.summary     = 'A gem to make setup and start of UI automation projects easier'
   s.description = 'This gem has everything you need to start working with test automation'
   s.authors     = ['Agustin Pequeno']
   s.email       = 'agustin.pe94@gmail.com'
-  s.homepage = 'http://github.com/aguspe/ruby_raider'
+  s.homepage = 'https://github.com/RubyRaider/ruby_raider'
   s.files = %w[bin/* lib/* lib/**/*]
   s.license = 'MIT'
   s.required_ruby_version = '>= 3.0.0'
