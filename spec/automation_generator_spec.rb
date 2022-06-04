@@ -3,11 +3,11 @@
 require_relative '../lib/generators/automation_generator'
 require_relative 'spec_helper'
 
-describe RubyRaider::AutomationGenerator do
+describe AutomationGenerator do
   context 'with selenium' do
     before(:all) do
       @name = 'rspec-selenium'
-      RubyRaider::AutomationGenerator.new(['selenium', 'rspec', @name]).invoke_all
+      AutomationGenerator.new(['selenium', 'rspec', @name]).invoke_all
     end
 
     it 'creates a login page file' do
@@ -34,7 +34,7 @@ describe RubyRaider::AutomationGenerator do
   context 'with watir' do
     before(:all) do
       @name = 'rspec-watir'
-      RubyRaider::AutomationGenerator.new(['watir', 'rspec', @name]).invoke_all
+      AutomationGenerator.new(['watir', 'rspec', @name]).invoke_all
     end
 
     it 'creates a login page file' do
@@ -61,7 +61,7 @@ describe RubyRaider::AutomationGenerator do
   context 'with appium' do
     before(:all) do
       @name = 'rspec-appium'
-      RubyRaider::AutomationGenerator.new(['appium_ios', 'rspec', @name]).invoke_all
+      AutomationGenerator.new(['appium_ios', 'rspec', @name]).invoke_all
     end
 
     it 'creates a login page file' do
@@ -99,7 +99,7 @@ describe RubyRaider::AutomationGenerator do
     context 'with cucumber and selenium' do
       before(:all) do
         @name = 'cucumber-selenium'
-        RubyRaider::AutomationGenerator.new(['selenium', 'cucumber', @name]).invoke_all
+        AutomationGenerator.new(['selenium', 'cucumber', @name]).invoke_all
       end
 
       it 'creates a login page file' do
@@ -126,7 +126,7 @@ describe RubyRaider::AutomationGenerator do
     context 'with cucumber and watir' do
       before(:all) do
         @name = 'cucumber-watir'
-        RubyRaider::AutomationGenerator.new(['watir', 'cucumber', @name]).invoke_all
+        AutomationGenerator.new(['watir', 'cucumber', @name]).invoke_all
       end
 
       it 'creates a login page file' do
@@ -153,7 +153,7 @@ describe RubyRaider::AutomationGenerator do
     context 'with cucumber and appium' do
       before(:all) do
         @name = 'cucumber-appium'
-        RubyRaider::AutomationGenerator.new(['appium_ios', 'cucumber', @name]).invoke_all
+        AutomationGenerator.new(['appium_ios', 'cucumber', @name]).invoke_all
       end
 
       it 'creates a login page file' do

@@ -3,11 +3,11 @@
 require_relative '../lib/generators/rspec_generator'
 require_relative 'spec_helper'
 
-describe RubyRaider::RspecGenerator do
+describe RspecGenerator do
   context 'with selenium' do
     before(:all) do
       @name = 'rspec-selenium'
-      RubyRaider::RspecGenerator.new(['selenium', 'rspec', @name]).invoke_all
+      RspecGenerator.new(['selenium', 'rspec', @name]).invoke_all
     end
 
     it 'creates a spec file' do
@@ -26,7 +26,7 @@ describe RubyRaider::RspecGenerator do
   context 'with watir' do
     before(:all) do
       @name = 'rspec-watir'
-      RubyRaider::RspecGenerator.new(['watir', 'rspec', @name]).invoke_all
+      RspecGenerator.new(['watir', 'rspec', @name]).invoke_all
     end
 
     it 'creates a spec file' do
@@ -45,7 +45,7 @@ describe RubyRaider::RspecGenerator do
   context 'with appium' do
     before(:all) do
       @name = 'rspec-appium'
-      RubyRaider::RspecGenerator.new(['appium_ios', 'rspec', @name]).invoke_all
+      RspecGenerator.new(['appium_ios', 'rspec', @name]).invoke_all
     end
 
     it 'creates a spec file' do

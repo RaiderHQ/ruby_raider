@@ -4,7 +4,7 @@ require_relative '../abstract/abstract_page'
 
 class <%= name.split('_').map {|word| word.capitalize }.join + 'Page' %> < AbstractPage
 
-  #Actions
+  # Actions
 
   private
 
