@@ -1,4 +1,5 @@
 # Ruby Raider
+
 This is a gem to make setup and start of UI automation projects easier
 You can find more information and updates on releases in : https://ruby-raider.com/
 
@@ -54,6 +55,3 @@ raider path [PATH_NAME] --spec or -s
 ```
 
 If you don't specify an option path will assume you want to change the default path for pages
-
-If you want information on every release and usage you can visit:
-https://ruby-raider.com/home/
