@@ -22,17 +22,26 @@ In order to run the appium tests, download the example [app](https://github.com/
 
 This works in all the platforms (Tested on Mac OS, Linux and Windows)
 
-** Ruby raider provides the following list of commands
-
+**Ruby raider provides the following list of commands
+```
   raider browser [BROWSER]       # Sets the default browser for a project
+
   raider feature [FEATURE_NAME]  # Creates a new feature
+  
   raider help [COMMAND]          # Describe available commands or one specific command
+  
   raider new [PROJECT_NAME]      # Creates a new framework based on settings picked
+  
   raider page [PAGE_NAME]        # Creates a new page object
+  
   raider path [PATH]             # Sets the default path for scaffolding
+  
   raider raid                    # It runs all the tests in a project
+  
   raider spec [SPEC_NAME]        # Creates a new spec
+  
   raider url [URL]               # Sets the default url for a project
+```
 
 It's possible to add the option --path or -p if you want to specify where to create your features, pages and specs.
 And also it's possible to delete them using --delete or -d.
