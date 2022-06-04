@@ -3,11 +3,11 @@
 require_relative '../lib/generators/cucumber_generator'
 require_relative 'spec_helper'
 
-describe RubyRaider::CucumberGenerator do
+describe CucumberGenerator do
   context 'with selenium' do
     before(:all) do
       @name = 'cucumber-selenium'
-      RubyRaider::CucumberGenerator.new(['selenium', 'cucumber', @name]).invoke_all
+      CucumberGenerator.new(['selenium', 'cucumber', @name]).invoke_all
     end
 
     it 'creates a feature file' do
@@ -34,7 +34,7 @@ describe RubyRaider::CucumberGenerator do
   context 'with watir' do
     before(:all) do
       @name = 'cucumber-watir'
-      RubyRaider::CucumberGenerator.new(['watir', 'cucumber', @name]).invoke_all
+      CucumberGenerator.new(['watir', 'cucumber', @name]).invoke_all
     end
 
     it 'creates a feature file' do
@@ -57,7 +57,7 @@ describe RubyRaider::CucumberGenerator do
   context 'with appium' do
     before(:all) do
       @name = 'cucumber-appium'
-      RubyRaider::CucumberGenerator.new(['appium_ios', 'cucumber', @name]).invoke_all
+      CucumberGenerator.new(['appium_ios', 'cucumber', @name]).invoke_all
     end
 
     it 'creates a feature file' do
