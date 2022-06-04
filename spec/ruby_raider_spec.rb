@@ -29,6 +29,11 @@ describe RubyRaider do
       expect(Pathname.new("spec/#{name}_spec.rb")).to be_file
     end
 
+    it 'creates a helper' do
+      raider.new.invoke(:helper, nil, %W[#{name}])
+      expect(Pathname.new("helpers/#{name}_helper.rb")).to be_file
+    end
+
     it 'deletes a page' do
       raider.new.invoke(:page, nil, %W[#{name}])
       raider.new.invoke(:page, nil, %W[#{name} --delete])
@@ -47,8 +52,14 @@ describe RubyRaider do
       expect(Pathname.new("spec/#{name}_spec.rb")).to_not be_file
     end
 
+    it 'deletes a helper' do
+      raider.new.invoke(:helper, nil, %W[#{name}])
+      raider.new.invoke(:helper, nil, %W[#{name} --delete])
+      expect(Pathname.new("helpers/#{name}_helper.rb")).to_not be_file
+    end
+
     after(:all) do
-      folders = %w[test config page_objects features]
+      folders = %w[test config page_objects features helpers]
       folders.each do |folder|
         FileUtils.rm_rf(folder)
       end
@@ -72,6 +83,11 @@ describe RubyRaider do
     it 'creates a spec' do
       raider.new.invoke(:spec, nil, %W[#{name} --path #{path}])
       expect(Pathname.new("#{path}/#{name}_spec.rb")).to be_file
+    end
+
+    it 'creates a helper' do
+      raider.new.invoke(:helper, nil, %W[#{name} --path #{path}])
+      expect(Pathname.new("#{path}/#{name}_helper.rb")).to be_file
     end
 
     after(:each) do
@@ -117,10 +133,16 @@ describe RubyRaider do
       expect(Pathname.new("#{path}/#{name}.feature")).to be_file
     end
 
-    it 'creates feature' do
+    it 'creates spec' do
       raider.new.invoke(:path, nil, %W[#{path} -s])
       raider.new.invoke(:spec, nil, %W[#{name}])
       expect(Pathname.new("#{path}/#{name}_spec.rb")).to be_file
+    end
+
+    it 'creates spec' do
+      raider.new.invoke(:path, nil, %W[#{path} -h])
+      raider.new.invoke(:helper, nil, %W[#{name}])
+      expect(Pathname.new("#{path}/#{name}_helper.rb")).to be_file
     end
 
     after(:all) do

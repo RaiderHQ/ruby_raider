@@ -31,6 +31,8 @@ This works in all the platforms (Tested on Mac OS, Linux and Windows)
   
   raider help [COMMAND]          # Describe available commands or one specific command
   
+  raider helper [HELPER_NAME]    # Creates a new helper
+  
   raider new [PROJECT_NAME]      # Creates a new framework based on settings picked
   
   raider page [PAGE_NAME]        # Creates a new page object
@@ -44,14 +46,15 @@ This works in all the platforms (Tested on Mac OS, Linux and Windows)
   raider url [URL]               # Sets the default url for a project
 ```
 
-It's possible to add the option --path or -p if you want to specify where to create your features, pages and specs.
-And also it's possible to delete them using --delete or -d.
+It's possible to add the option --path or -p if you want to specify where to create your features, pages, helpers and
+specs.
 
-If you want to set the default path for the creation of your features, specs or pages you can do:
+If you want to set the default path for the creation of your features, helpers and specs:
 
 ```
 raider path [PATH_NAME] --feature or -f
 raider path [PATH_NAME] --spec or -s
+raider path [PATH_NAME] --helper or -h
 ```
 
 If you don't specify an option path will assume you want to change the default path for pages

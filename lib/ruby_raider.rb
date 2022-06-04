@@ -56,9 +56,26 @@ class RubyRaider < Thor
     end
   end
 
+  desc "helper [HELPER_NAME]", "Creates a new helper"
+  option :path,
+         :type => :string, :required => false, :desc => 'The path where your helper will be created', :aliases => '-p'
+  option :delete,
+         :type => :boolean, :required => false, :desc => 'This will delete the selected helper', :aliases => '-d'
+
+  def helper(name)
+    path = options[:path].nil? ? load_config_path('helper') : options[:path]
+    if options[:delete]
+      Scaffolding.new([name, path]).delete_helper
+    else
+      Scaffolding.new([name, path]).generate_helper
+    end
+  end
+
   desc "path [PATH]", "Sets the default path for scaffolding"
   option :feature,
          :type => :boolean, :required => false, :desc => 'The default path for your features', :aliases => '-f'
+  option :helper,
+         :type => :boolean, :required => false, :desc => 'The default path for your helpers', :aliases => '-h'
   option :spec,
          :type => :boolean, :required => false, :desc => 'The default path for your specs', :aliases => '-s'
   def path(default_path)
