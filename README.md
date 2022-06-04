@@ -31,6 +31,8 @@ This works in all the platforms (Tested on Mac OS, Linux and Windows)
   
   raider help [COMMAND]          # Describe available commands or one specific command
   
+  raider helper [HELPER_NAME]    # Creates a new helper
+  
   raider new [PROJECT_NAME]      # Creates a new framework based on settings picked
   
   raider page [PAGE_NAME]        # Creates a new page object
