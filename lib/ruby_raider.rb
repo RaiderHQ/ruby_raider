@@ -18,7 +18,7 @@ class RubyRaider < Thor
          :type => :boolean, :required => false, :desc => 'This will delete the selected page', :aliases => '-d'
 
   def page(name)
-    path = options[:path].nil? ? load_config_path : options[:path]
+    path = options[:path].nil? ? load_config_path('page') : options[:path]
     if options[:delete]
       Scaffolding.new([name, path]).delete_class
     else
@@ -33,7 +33,7 @@ class RubyRaider < Thor
          :type => :boolean, :required => false, :desc => 'This will delete the selected feature', :aliases => '-d'
 
   def feature(name)
-    path = options[:path].nil? ? load_config_path : options[:path]
+    path = options[:path].nil? ? load_config_path('feature') : options[:path]
     if options[:delete]
       Scaffolding.new([name, path]).delete_feature
     else
@@ -48,7 +48,7 @@ class RubyRaider < Thor
          :type => :boolean, :required => false, :desc => 'This will delete the selected spec', :aliases => '-d'
 
   def spec(name)
-    path = options[:path].nil? ? load_config_path : options[:path]
+    path = options[:path].nil? ? load_config_path('spec') : options[:path]
     if options[:delete]
       Scaffolding.new([name, path]).delete_spec
     else
@@ -57,9 +57,13 @@ class RubyRaider < Thor
   end
 
   desc "path [PATH]", "Sets the default path for scaffolding"
-
+  option :feature,
+         :type => :boolean, :required => false, :desc => 'The default path for your features', :aliases => '-f'
+  option :spec,
+         :type => :boolean, :required => false, :desc => 'The default path for your specs', :aliases => '-s'
   def path(default_path)
-    Utilities.new.path = default_path
+    type = options.empty? ? 'page' : options.keys.first
+    Utilities.new.send("#{type}_path=", default_path)
   end
 
   desc "url [URL]", "Sets the default url for a project"
@@ -81,8 +85,8 @@ class RubyRaider < Thor
   end
 
   no_commands do
-    def load_config_path
-      YAML.load_file('config/config.yml')['path'] unless YAML.load_file('config/config.yml').nil?
+    def load_config_path(type)
+      YAML.load_file('config/config.yml')["#{type}_path"] unless YAML.load_file('config/config.yml').nil?
     end
   end
 end
