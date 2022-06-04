@@ -1,4 +1,5 @@
 # Ruby Raider
+
 This is a gem to make setup and start of UI automation projects easier
 You can find more information and updates on releases in : https://ruby-raider.com/
 
