@@ -101,6 +101,16 @@ class RubyRaider < Thor
     Utilities.new.run
   end
 
+  desc 'scaffold [SCAFFOLD_NAME]', 'It generates everything needed to start automating'
+  def scaffold(name)
+    if Pathname.new('spec').exist?
+      Scaffolding.new([name, load_config_path('spec')]).generate_spec
+    else
+      Scaffolding.new([name, load_config_path('feature')]).generate_feature
+    end
+    Scaffolding.new([name, load_config_path('page')]).generate_class
+  end
+
   no_commands do
     def load_config_path(type)
       YAML.load_file('config/config.yml')["#{type}_path"] unless YAML.load_file('config/config.yml').nil?
