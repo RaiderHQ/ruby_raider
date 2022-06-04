@@ -22,6 +22,10 @@ class Scaffolding < Thor::Group
     template('spec.tt', default_path("spec/#{name}_spec.rb", '_spec.rb'))
   end
 
+  def generate_helper
+    template('helper.tt', default_path("helpers/#{name}_helper.rb", '_helper.rb'))
+  end
+
   def delete_class
     remove_file(default_path("page_objects/pages/#{name}_page.rb", '_page.rb'))
   end
@@ -32,6 +36,10 @@ class Scaffolding < Thor::Group
 
   def delete_spec
     remove_file(default_path("spec/#{name}_spec.rb", '_spec.rb'))
+  end
+
+  def delete_helper
+    remove_file(default_path("helpers/#{name}_helper.rb", '_helper.rb'))
   end
 
   def default_path(standard_path, file_type)
