@@ -1,97 +1,50 @@
-What is Raider?
-===========
+# Ruby Raider
+This is a gem to make setup and start of UI automation projects easier 
+You can find more information and updates on releaseas in : https://ruby-raider.com/
 
-Raider is a tool to make the setup and start of automation projects in ruby easier, with one command you are ready to go
+Just do:
 
-# Pre-requisites:
+**gem install ruby_raider**
 
-Install RVM:
-https://rvm.io/rvm/install
+then do: 
 
-# How to use the framework:
+**raider new [name_of_project]** 
 
-If you want to run all the tests from your terminal do:
-*rspec spec/*
+and you will have a new project in the folder you are in
 
-If you want to run all the tests in parallel do:
-*parallel_rspec spec/*
+Currently we only support:
 
-# How are specs organized:
+* Gerating a Selenium with both Cucumber and Rspec framework
+* Gerating a Watir with both Cucumber and Rspec framework
+* Generating an Appium project with Rspec and Cucumber on IOS
 
-We use 'context' as the highest grouping level to indicate in which part of the application we are as an example:
+In order to run the appium tests, download the example [app](https://github.com/cloudgrey-io/the-app/releases/tag/v1.10.0)
 
-*context 'On the login page'/*
+This works in all the platforms (Tested on Mac OS, Linux and Windows)
 
-We use 'describe' from the user perspective to describe an action that the user can or cannot take:
-
-*describe 'A user can'/*
-
-or
-
-*describe 'A user cannot'/*
-
-This saves us repetition and forces us into an structure
-
-At last we use 'it' for the specific action the user can or cannot perform:
-
-it 'login with right credentials'
-
-If we group all of this together it will look like
-
-```ruby
-   context 'On the login page' do
-    describe 'A user can' do
-      it 'login with the right credentials' do
-      end
-    end
-
-    describe 'A user cannot' do
-      it 'login with the wrong credentials' do
-      end
-    end
-  end
+**Ruby raider provides the following list of commands**
 ```
-This is readed as 'On the login page a user can login with the right credentials' and 'On the login page a user cannot login with the wrong credentials'
+  raider browser [BROWSER]       # Sets the default browser for a project
 
-# How pages are organized:
-
-```ruby#{' '}
-  require_relative '../abstract/base_page'
-
-  class MainPage < BasePage
-
-  using Raider::WatirHelper
-
-  def url(_page)
-    '/'
-  end
-
-  # Actions
-
-  def change_currency(currency)
-    currency_dropdown.select currency
-  end
-
-  # Validations
-
-  def validate_currency(currency)
-    expect(currency_dropdown.include?(currency)).to be true
-  end
-
-  private
-
-  # Elements
-
-  def currency_dropdown
-    browser.select(class: %w[dropdown-menu currency])
-  end
-end
+  raider feature [FEATURE_NAME]  # Creates a new feature
+  
+  raider help [COMMAND]          # Describe available commands or one specific command
+  
+  raider new [PROJECT_NAME]      # Creates a new framework based on settings picked
+  
+  raider page [PAGE_NAME]        # Creates a new page object
+  
+  raider path [PATH]             # Sets the default path for scaffolding
+  
+  raider raid                    # It runs all the tests in a project
+  
+  raider spec [SPEC_NAME]        # Creates a new spec
+  
+  raider url [URL]               # Sets the default url for a project
 ```
 
-Pages are organized in Actions (things a user can perform on the page), Validations (assertions), and Elements.
-Each page has to have a url define, and each page is using the module WatirHelper to add methods on runtime to the Watir elements
+It's possible to add the option --path or -p if you want to specify where to create your features, pages and specs.
+And also it's possible to delete them using --delete or -d.
 
-# Mobile:
-
-For the appium base project to work you need to have [appium](https://appium.io)
-and download [the example app](https://github.com/cloudgrey-io/the-app/releases/tag/v1.10.0)
+If you want information on every release and usage you can visit:
+https://ruby-raider.com/home/
