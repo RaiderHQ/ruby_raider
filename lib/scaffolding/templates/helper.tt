@@ -1,0 +1,3 @@
+module <%= name.split('_').map {|word| word.capitalize }.join + 'Helper' %>
+  # Add your helper code here
+end
