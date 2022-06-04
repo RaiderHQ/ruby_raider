@@ -1,7 +1,6 @@
 require 'yaml'
 
 class Utilities
-
   def initialize
     @path = 'config/config.yml'
     @config = YAML.load_file(@path)
@@ -12,8 +11,18 @@ class Utilities
     overwrite_yaml
   end
 
-  def path=(path)
-    @config['path'] = path
+  def page_path=(path)
+    @config['page_path'] = path
+    overwrite_yaml
+  end
+
+  def spec_path=(path)
+    @config['spec_path'] = path
+    overwrite_yaml
+  end
+
+  def feature_path=(path)
+    @config['feature_path'] = path
     overwrite_yaml
   end
 
