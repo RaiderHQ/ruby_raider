@@ -26,6 +26,11 @@ class Utilities
     overwrite_yaml
   end
 
+  def helper_path=(path)
+    @config['helper_path'] = path
+    overwrite_yaml
+  end
+
   def url=(url)
     @config['url'] = url
     overwrite_yaml
