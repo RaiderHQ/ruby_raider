@@ -1,4 +1,4 @@
-# ruby_raider
+# Ruby Raider
 This is a gem to make setup and start of UI automation projects easier 
 You can find more information and updates on releaseas in : https://ruby-raider.com/
 
@@ -22,7 +22,7 @@ In order to run the appium tests, download the example [app](https://github.com/
 
 This works in all the platforms (Tested on Mac OS, Linux and Windows)
 
-**Ruby raider provides the following list of commands
+**Ruby raider provides the following list of commands**
 ```
   raider browser [BROWSER]       # Sets the default browser for a project
 
