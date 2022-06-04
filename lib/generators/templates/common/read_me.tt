@@ -54,6 +54,3 @@ raider path [PATH_NAME] --spec or -s
 ```
 
 If you don't specify an option path will assume you want to change the default path for pages
-
-If you want information on every release and usage you can visit:
-https://ruby-raider.com/home/
