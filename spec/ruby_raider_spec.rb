@@ -155,7 +155,7 @@ describe RubyRaider do
 
   context 'updates the config file' do
     before(:all) do
-      CommonGenerator.new(%w[rspec cucumber test]).invoke(:generate_config_file)
+      CommonGenerator.new(%w[rspec selenium test]).invoke(:generate_config_file)
       FileUtils.cp_lr('test/config', './')
     end
 
@@ -176,6 +176,38 @@ describe RubyRaider do
       folders.each do |folder|
         FileUtils.rm_rf(folder)
       end
+    end
+  end
+
+  context 'scaffolding' do
+    before(:all) do
+      CommonGenerator.new(%w[rspec selenium test]).invoke(:generate_config_file)
+      FileUtils.cp_lr('test/config', './')
+    end
+
+    context 'with a spec folder' do
+      it 'scaffolds for rspec' do
+        raider.new.invoke(:scaffold, nil, %W[#{name}])
+        expect(Pathname.new("page_objects/pages/#{name}_page.rb")).to be_file
+        expect(Pathname.new("spec/#{name}_spec.rb")).to be_file
+      end
+    end
+
+    context 'with a features folder' do
+      it 'scaffolds for cucumber' do
+        FileUtils.mkdir 'features'
+        raider.new.invoke(:scaffold, nil, %W[#{name}])
+        expect(Pathname.new("page_objects/pages/#{name}_page.rb")).to be_file
+        expect(Pathname.new("features/#{name}.feature")).to be_file
+      end
+    end
+
+    after(:all) do
+      folders = %w[test config page_objects features]
+      folders.each do |folder|
+        FileUtils.rm_rf(folder)
+      end
+      FileUtils.rm('spec/test_spec.rb') if Pathname.new('spec/test_spec.rb').exist?
     end
   end
 end

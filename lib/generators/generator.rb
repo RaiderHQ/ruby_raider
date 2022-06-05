@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'thor'
 
 class Generator < Thor::Group
@@ -9,7 +10,6 @@ class Generator < Thor::Group
   argument :name
 
   def self.source_root
-    File.dirname(__FILE__) + '/templates'
+    "#{File.dirname(__FILE__)}/templates"
   end
 end
-
