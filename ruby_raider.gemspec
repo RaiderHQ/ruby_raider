@@ -8,7 +8,6 @@ Gem::Specification.new do |s|
   s.authors     = ['Agustin Pequeno']
   s.email       = 'agustin.pe94@gmail.com'
   s.homepage = 'https://github.com/RubyRaider/ruby_raider'
-  s.files = %w[bin/* lib/* lib/**/*]
   s.license = 'MIT'
   s.required_ruby_version = '>= 3.0.0'
   s.files  = `git ls-files -z`.split("\x0")

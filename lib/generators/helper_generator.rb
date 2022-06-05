@@ -20,14 +20,14 @@ class HelpersGenerator < Generator
   end
 
   def generate_selenium_helper
-    if @_initializer.first.include?('selenium')
-      template('helpers/selenium_helper.tt', "#{name}/helpers/selenium_helper.rb")
-    end
+    return unless @_initializer.first.include?('selenium')
+
+    template('helpers/selenium_helper.tt', "#{name}/helpers/selenium_helper.rb")
   end
 
   def generate_driver_helper
-    unless @_initializer.first.include?('watir')
-      template('helpers/driver_helper.tt', "#{name}/helpers/driver_helper.rb")
-    end
+    return if @_initializer.first.include?('watir')
+
+    template('helpers/driver_helper.tt', "#{name}/helpers/driver_helper.rb")
   end
 end
