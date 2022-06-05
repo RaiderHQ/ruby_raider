@@ -105,12 +105,15 @@ class RubyRaider < Thor
 
   desc 'scaffold [SCAFFOLD_NAME]', 'It generates everything needed to start automating'
   def scaffold(name)
-    if Pathname.new('spec').exist?
+    if Pathname.new('spec').exist? && !Pathname.new('features').exist?
       Scaffolding.new([name, load_config_path('spec')]).generate_spec
-    else
+      Scaffolding.new([name, load_config_path('page')]).generate_class
+    elsif Pathname.new('features').exist?
       Scaffolding.new([name, load_config_path('feature')]).generate_feature
+      Scaffolding.new([name, load_config_path('page')]).generate_class
+    else
+      raise 'No features or spec folders where found. We are not sure which type of project you are running'
     end
-    Scaffolding.new([name, load_config_path('page')]).generate_class
   end
 
   no_commands do
