@@ -15,4 +15,3 @@ class CucumberGenerator < Generator
     template('cucumber/env.tt', "#{name}/features/support/env.rb")
   end
 end
-
