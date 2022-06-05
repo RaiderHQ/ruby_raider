@@ -36,8 +36,6 @@ class AutomationGenerator < Generator
   end
 
   def generate_appium_settings
-    if @_initializer.first.include?('appium_ios')
-      template('automation/appium_settings.tt', "#{name}/appium.txt")
-    end
+    template('automation/appium_settings.tt', "#{name}/appium.txt") if @_initializer.first.include?('appium_ios')
   end
 end
