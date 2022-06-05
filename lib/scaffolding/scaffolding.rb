@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'thor'
 
 class Scaffolding < Thor::Group
@@ -7,7 +9,7 @@ class Scaffolding < Thor::Group
   argument :path, optional: true
 
   def self.source_root
-    File.dirname(__FILE__) + '/templates'
+    "#{File.dirname(__FILE__)}/templates"
   end
 
   def generate_class

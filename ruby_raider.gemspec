@@ -16,9 +16,9 @@ Gem::Specification.new do |s|
   s.executables << 'raider'
   s.add_development_dependency 'rake', '~> 13.0.6'
   s.add_development_dependency 'reek', '~> 6.1.0'
+  s.add_development_dependency 'rspec', '~> 3.11.0'
   s.add_development_dependency 'rubocop', '~> 1.27'
   s.add_development_dependency 'rubocop-rspec', '~> 2.9.0'
-  s.add_development_dependency 'rspec', '~> 3.11.0'
 
   s.add_runtime_dependency 'highline', '~> 2.0.3'
   s.add_runtime_dependency 'thor', '~> 1.2.1'

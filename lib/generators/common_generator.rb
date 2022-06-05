@@ -27,4 +27,3 @@ class CommonGenerator < Generator
     empty_directory "#{name}/allure-results/screenshots"
   end
 end
-
