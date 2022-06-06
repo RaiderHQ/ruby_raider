@@ -16,10 +16,15 @@ and you will have a new project in the folder you are in
 Currently we support:
 
 * Gerating a framework with Cucumber and Selenium
+
 * Generating a framework with Rspec and Selenium
+
 * Generating a framework with Cucumber and Watir
+
 * Generating a framework with Rspec and Watir
+
 * Generating a framework with Rspec and Appium for IOS
+
 * Generating a framework with Cucumber and Appium for IOS
 
 In order to run the appium tests, download the example [app](https://github.com/cloudgrey-io/the-app/releases/tag/v1.10.0)
