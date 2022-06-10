@@ -14,6 +14,7 @@ module Raider
     AllureHelper.configure
     RSpec.configure do |config|
       config.formatter = AllureHelper.formatter
+      config.include(DriverHelper)
       config.before(:each) do
         <%= ERB.new(File.read(File.expand_path('./partials/select_driver.tt', __dir__))).result(binding).strip! %>
       end
