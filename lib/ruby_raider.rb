@@ -97,6 +97,13 @@ class RubyRaider < Thor
     Utilities.new.browser = default_browser
   end
 
+  desc 'browser_options [options]', 'Sets the options for the browser'
+
+  def browser_options(options)
+    Utilities.new.browser_options = options
+  end
+  map bopt: "browser_options"
+
   desc 'raid', 'It runs all the tests in a project'
 
   def raid

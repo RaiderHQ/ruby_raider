@@ -7,13 +7,13 @@ require 'webdrivers'
 
 module Raider
   module BrowserHelper
-    class << self
       attr_reader :browser
 
-      def new_browser(options = {})
-        browser = YAML.load_file('config/config.yml')['browser'].to_sym
-        @browser = Watir::Browser.new(browser, options: options)
+      def new_browser(opts = {})
+        @config = YAML.load_file('config/config.yml')
+        browser = @config['browser'].to_sym
+        opts = options.nil? ? @config['browser_options'] : options
+        @browser = Watir::Browser.new(browser, options: opts)
       end
-    end
   end
 end

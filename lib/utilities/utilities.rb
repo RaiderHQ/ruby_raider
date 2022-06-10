@@ -38,6 +38,11 @@ class Utilities
     overwrite_yaml
   end
 
+  def browser_options=(options)
+    @config['browser_options'] = options
+    overwrite_yaml
+  end
+
   def run
     if File.directory? 'spec'
       system 'rspec spec/'
