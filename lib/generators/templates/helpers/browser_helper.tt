@@ -12,7 +12,7 @@ module Raider
       def new_browser(opts = {})
         @config = YAML.load_file('config/config.yml')
         browser = @config['browser'].to_sym
-        opts = options.nil? ? @config['browser_options'] : options
+        opts = opts.nil? ? @config['browser_options'] : opts
         @browser = Watir::Browser.new(browser, options: opts)
       end
   end
