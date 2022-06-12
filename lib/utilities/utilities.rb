@@ -43,6 +43,10 @@ class Utilities
     overwrite_yaml
   end
 
+  def delete_browser_options
+    @config.delete('browser_options')
+  end
+
   def run
     if File.directory? 'spec'
       system 'rspec spec/'
