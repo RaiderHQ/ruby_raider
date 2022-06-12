@@ -99,18 +99,24 @@ class RubyRaider < Thor
   map '-u' => "url"
 
   desc 'browser [BROWSER]', 'Sets the default browser for a project'
-
+  option :options,
+         type: :string, required: false, desc: 'The options you want your browser to run with', aliases: '-o'
   def browser(default_browser)
     Utilities.new.browser = default_browser
   end
   map '-b' => "browser"
 
-  desc 'browser_options [options]', 'Sets the options for the browser'
-
-  def browser_options(options)
-    Utilities.new.browser_options = options
+  desc 'browser_options [OPTIONS]', 'Sets the options for the browser'
+  option :delete,
+         type: :boolean, required: false, desc: 'Removes all the options', aliases: '-d'
+  def browser_options(opts = nil)
+    if options[:delete]
+      Utilities.new.delete_browser_options
+    else
+      Utilities.new.browser_options = opts
+    end
   end
-  map bopt: "browser_options"
+  map '-bo' => "browser_options"
 
   desc 'raid', 'It runs all the tests in a project'
 
@@ -132,6 +138,20 @@ class RubyRaider < Thor
     end
   end
   map '-sf' => "scaffold"
+
+  desc 'config', 'Creates a new config file'
+  option :path,
+         type: :string, required: false, desc: 'The path where your config file will be created', aliases: '-p'
+  option :delete,
+         type: :boolean, required: false, desc: 'This will delete the selected config file', aliases: '-d'
+  def config
+    if options[:delete]
+      Scaffolding.new.delete_config
+    else
+      Scaffolding.new.generate_config
+    end
+  end
+  map '-c' => "config"
 
   no_commands do
     def load_config_path(type)
