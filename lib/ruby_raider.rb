@@ -12,6 +12,7 @@ class RubyRaider < Thor
   def new(project_name)
     MenuGenerator.generate_choice_menu(project_name)
   end
+  map '-n' => "new"
 
   desc 'page [PAGE_NAME]', 'Creates a new page object'
   option :path,
@@ -27,6 +28,7 @@ class RubyRaider < Thor
       Scaffolding.new([name, path]).generate_class
     end
   end
+  map '-pg' => "page"
 
   desc 'feature [FEATURE_NAME]', 'Creates a new feature'
   option :path,
@@ -42,6 +44,7 @@ class RubyRaider < Thor
       Scaffolding.new([name, path]).generate_feature
     end
   end
+  map '-f' => "feature"
 
   desc 'spec [SPEC_NAME]', 'Creates a new spec'
   option :path,
@@ -57,6 +60,7 @@ class RubyRaider < Thor
       Scaffolding.new([name, path]).generate_spec
     end
   end
+  map '-s' => "spec"
 
   desc 'helper [HELPER_NAME]', 'Creates a new helper'
   option :path,
@@ -72,6 +76,7 @@ class RubyRaider < Thor
       Scaffolding.new([name, path]).generate_helper
     end
   end
+  map '-h' => "helper"
 
   desc 'path [PATH]', 'Sets the default path for scaffolding'
   option :feature,
@@ -84,24 +89,32 @@ class RubyRaider < Thor
     type = options.empty? ? 'page' : options.keys.first
     Utilities.new.send("#{type}_path=", default_path)
   end
+  map '-p' => "path"
 
   desc 'url [URL]', 'Sets the default url for a project'
 
   def url(default_url)
     Utilities.new.url = default_url
   end
+  map '-u' => "url"
 
   desc 'browser [BROWSER]', 'Sets the default browser for a project'
-
-  def browser(default_browser)
-    Utilities.new.browser = default_browser
+  option :opts,
+         type: :hash, required: false, desc: 'The options you want your browser to run with', aliases: '-o'
+  option :delete,
+         type: :boolean, required: false, desc: 'This will delete your browser options', aliases: '-d'
+  def browser(default_browser = nil)
+    Utilities.new.browser = default_browser unless default_browser.nil?
+    Utilities.new.browser_options = options[:opts] unless options[:opts].nil?
+    Utilities.new.delete_browser_options if options[:delete]
   end
+  map '-b' => "browser"
 
   desc 'raid', 'It runs all the tests in a project'
-
   def raid
     Utilities.new.run
   end
+  map '-r' => "raid"
 
   desc 'scaffold [SCAFFOLD_NAME]', 'It generates everything needed to start automating'
   def scaffold(name)
@@ -115,6 +128,21 @@ class RubyRaider < Thor
       raise 'No features or spec folders where found. We are not sure which type of project you are running'
     end
   end
+  map '-sf' => "scaffold"
+
+  desc 'config', 'Creates a new config file'
+  option :path,
+         type: :string, required: false, desc: 'The path where your config file will be created', aliases: '-p'
+  option :delete,
+         type: :boolean, required: false, desc: 'This will delete the selected config file', aliases: '-d'
+  def config
+    if options[:delete]
+      Scaffolding.new.delete_config
+    else
+      Scaffolding.new.generate_config
+    end
+  end
+  map '-c' => "config"
 
   no_commands do
     def load_config_path(type)

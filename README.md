@@ -35,25 +35,25 @@ This works in all the platforms (Tested on Mac OS, Linux and Windows)
 ```
 Commands:
   raider browser [BROWSER]         # Sets the default browser for a project
-
+  
   raider feature [FEATURE_NAME]    # Creates a new feature
-
+  
   raider help [COMMAND]            # Describe available commands or one specific command
-
+  
   raider helper [HELPER_NAME]      # Creates a new helper
-
+  
   raider new [PROJECT_NAME]        # Creates a new framework based on settings picked
-
+  
   raider page [PAGE_NAME]          # Creates a new page object
-
+  
   raider path [PATH]               # Sets the default path for scaffolding
-
+  
   raider raid                      # It runs all the tests in a project
-
+  
   raider scaffold [SCAFFOLD_NAME]  # It generates everything needed to start automating
-
+  
   raider spec [SPEC_NAME]          # Creates a new spec
-
+  
   raider url [URL]                 # Sets the default url for a project
 ```
 

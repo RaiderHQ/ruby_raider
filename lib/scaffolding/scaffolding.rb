@@ -5,7 +5,7 @@ require 'thor'
 class Scaffolding < Thor::Group
   include Thor::Actions
 
-  argument :name
+  argument :name, optional: true
   argument :path, optional: true
 
   def self.source_root
@@ -28,6 +28,11 @@ class Scaffolding < Thor::Group
     template('helper.tt', default_path("helpers/#{name}_helper.rb", '_helper.rb'))
   end
 
+  def generate_config
+    template('../../generators/templates/common/config.tt',
+             default_path("config/config.yml", '.yml'))
+  end
+
   def delete_class
     remove_file(default_path("page_objects/pages/#{name}_page.rb", '_page.rb'))
   end
@@ -42,6 +47,10 @@ class Scaffolding < Thor::Group
 
   def delete_helper
     remove_file(default_path("helpers/#{name}_helper.rb", '_helper.rb'))
+  end
+
+  def delete_config
+    remove_file(default_path("config/config.yml", '.yml'))
   end
 
   def default_path(standard_path, file_type)
