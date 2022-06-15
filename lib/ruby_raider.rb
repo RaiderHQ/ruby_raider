@@ -99,27 +99,18 @@ class RubyRaider < Thor
   map '-u' => "url"
 
   desc 'browser [BROWSER]', 'Sets the default browser for a project'
-  option :options,
-         type: :string, required: false, desc: 'The options you want your browser to run with', aliases: '-o'
-  def browser(default_browser)
-    Utilities.new.browser = default_browser
+  option :opts,
+         type: :hash, required: false, desc: 'The options you want your browser to run with', aliases: '-o'
+  option :delete,
+         type: :boolean, required: false, desc: 'This will delete your browser options', aliases: '-d'
+  def browser(default_browser = nil)
+    Utilities.new.browser = default_browser unless default_browser.nil?
+    Utilities.new.browser_options = options[:opts] unless options[:opts].nil?
+    Utilities.new.delete_browser_options if options[:delete]
   end
   map '-b' => "browser"
 
-  desc 'browser_options [OPTIONS]', 'Sets the options for the browser'
-  option :delete,
-         type: :boolean, required: false, desc: 'Removes all the options', aliases: '-d'
-  def browser_options(opts = nil)
-    if options[:delete]
-      Utilities.new.delete_browser_options
-    else
-      Utilities.new.browser_options = opts
-    end
-  end
-  map '-bo' => "browser_options"
-
   desc 'raid', 'It runs all the tests in a project'
-
   def raid
     Utilities.new.run
   end
