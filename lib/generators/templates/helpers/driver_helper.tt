@@ -1,10 +1,10 @@
 # frozen_string_literal: true
-
-<% if automation == 'selenium' %>
+require 'yaml'
+<% if automation == 'selenium' -%>
 require 'webdrivers'
-<% else %>
+<% else -%>
 require 'appium_lib'
-<% end %>
+<% end -%>
 require_relative 'driver_helper'
 
 module Raider

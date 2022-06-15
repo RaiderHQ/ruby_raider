@@ -1,10 +1,8 @@
-require 'rspec'
-<%= ERB.new(File.read(File.expand_path('./partials/require_raider.tt', __dir__))).result(binding) %>
+require 'yaml'
+<%= ERB.new(File.read(File.expand_path('./partials/require_raider.tt', __dir__)), nil, '-').result(binding) -%>
 
 class AbstractPage
-  include RSpec::Matchers
-  extend Raider::PomHelper
-  <%= ERB.new(File.read(File.expand_path('./partials/driver_selector.tt', __dir__))).result(binding) %>
-  <%= ERB.new(File.read(File.expand_path('./partials/visit_method.tt', __dir__))).result(binding) %>
-  <%= ERB.new(File.read(File.expand_path('./partials/url_methods.tt', __dir__))).result(binding) %>
+  <%= ERB.new(File.read(File.expand_path('./partials/initialize_selector.tt', __dir__))).result(binding) -%>
+  <%= ERB.new(File.read(File.expand_path('./partials/visit_method.tt', __dir__))).result(binding) -%>
+  <%= ERB.new(File.read(File.expand_path('./partials/url_methods.tt', __dir__))).result(binding) -%>
 end

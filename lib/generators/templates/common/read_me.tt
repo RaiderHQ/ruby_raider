@@ -1,97 +1,60 @@
-What is Raider?
-===========
+# Ruby Raider
 
-Raider is a tool to make the setup and start of automation projects in ruby easier, with one command you are ready to go
+This is a gem to make setup and start of UI automation projects easier
+You can find more information and updates on releases in : https://ruby-raider.com/
 
-# Pre-requisites:
+Just do:
 
-Install RVM:
-https://rvm.io/rvm/install
+**gem install ruby_raider**
 
-# How to use the framework:
+then do:
 
-If you want to run all the tests from your terminal do:
-*rspec spec/*
+**raider new [name_of_project]**
 
-If you want to run all the tests in parallel do:
-*parallel_rspec spec/*
+and you will have a new project in the folder you are in
 
-# How are specs organized:
+Currently we only support:
 
-We use 'context' as the highest grouping level to indicate in which part of the application we are as an example:
+* Gerating a Selenium with both Cucumber and Rspec framework
+* Gerating a Watir with both Cucumber and Rspec framework
+* Generating an Appium project with Rspec and Cucumber on IOS
 
-*context 'On the login page'/*
+In order to run the appium tests, download the example [app](https://github.com/cloudgrey-io/the-app/releases/tag/v1.10.0)
 
-We use 'describe' from the user perspective to describe an action that the user can or cannot take:
+This works in all the platforms (Tested on Mac OS, Linux and Windows)
 
-*describe 'A user can'/*
-
-or
-
-*describe 'A user cannot'/*
-
-This saves us repetition and forces us into an structure
-
-At last we use 'it' for the specific action the user can or cannot perform:
-
-it 'login with right credentials'
-
-If we group all of this together it will look like
-
-```ruby
-   context 'On the login page' do
-    describe 'A user can' do
-      it 'login with the right credentials' do
-      end
-    end
-
-    describe 'A user cannot' do
-      it 'login with the wrong credentials' do
-      end
-    end
-  end
+**Ruby raider provides the following list of commands**
 ```
-This is readed as 'On the login page a user can login with the right credentials' and 'On the login page a user cannot login with the wrong credentials'
+  raider browser [BROWSER]       # Sets the default browser for a project
 
-# How pages are organized:
+  raider feature [FEATURE_NAME]  # Creates a new feature
 
-```ruby#{' '}
-  require_relative '../abstract/base_page'
+  raider help [COMMAND]          # Describe available commands or one specific command
 
-  class MainPage < BasePage
+  raider helper [HELPER_NAME]    # Creates a new helper
 
-  using Raider::WatirHelper
+  raider new [PROJECT_NAME]      # Creates a new framework based on settings picked
 
-  def url(_page)
-    '/'
-  end
+  raider page [PAGE_NAME]        # Creates a new page object
 
-  # Actions
+  raider path [PATH]             # Sets the default path for scaffolding
 
-  def change_currency(currency)
-    currency_dropdown.select currency
-  end
+  raider raid                    # It runs all the tests in a project
 
-  # Validations
+  raider spec [SPEC_NAME]        # Creates a new spec
 
-  def validate_currency(currency)
-    expect(currency_dropdown.include?(currency)).to be true
-  end
-
-  private
-
-  # Elements
-
-  def currency_dropdown
-    browser.select(class: %w[dropdown-menu currency])
-  end
-end
+  raider url [URL]               # Sets the default url for a project
 ```
 
-Pages are organized in Actions (things a user can perform on the page), Validations (assertions), and Elements.
-Each page has to have a url define, and each page is using the module WatirHelper to add methods on runtime to the Watir elements
+It's possible to add the option --path or -p if you want to specify where to create your features, pages, helpers and
+specs.
 
-# Mobile:
+If you want to set the default path for the creation of your features, helpers and specs:
 
-For the appium base project to work you need to have [appium](https://appium.io)
-and download [the example app](https://github.com/cloudgrey-io/the-app/releases/tag/v1.10.0)
+```
+raider path [PATH_NAME] --feature or -f
+raider path [PATH_NAME] --spec or -s
+raider path [PATH_NAME] --helper or -h
+```
+
+If you don't specify an option path will assume you want to change the default path for pages

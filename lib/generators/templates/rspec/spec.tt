@@ -1,25 +1,34 @@
-<% if %w[selenium watir].include? automation %>
+<% if %w[selenium watir].include? automation -%>
 require_relative 'base_spec'
 require_relative '../page_objects/pages/login_page'
 
-class LoginSpec < BaseSpec
-  describe 'Login' do
-    before(:each) do
-      LoginPage.visit
-    end
+describe 'Login' do
+  let(:user_name) { 'aguspe' }
+  let(:login_page) { LoginPage.new(<% if automation == 'watir' -%>@browser<% else -%>@driver<% end -%>) }
+  subject { login_page.header.customer_name }
 
-    it 'can login with valid credentials' do
-      LoginPage.login('aguspe', '12341234')
-      expect(LoginPage.header.customer_name).to eq 'Welcome back Agustin'
-    end
+  before(:example) do
+    login_page.visit
+    login_page.login(user_name, password)
+  end
 
-    it 'cannot login with wrong credentials' do
-      LoginPage.login('aguspe', 'wrongPassword')
-      expect(LoginPage.header.customer_name).to be_empty
+  context 'with right credentials' do
+    let(:password) { '12341234' }
+
+    it 'can successfully log in' do
+      expect(subject).to eq 'Welcome back Agustin'
+    end
+  end
+
+  context 'with wrong credentials' do
+    let(:password) { 'wrongPassword' }
+
+    it 'it cannot login in' do
+      expect(subject).to be_empty
     end
   end
 end
-<% else %>
+<% else -%>
 require_relative '../page_objects/pages/confirmation_page'
 require_relative '../page_objects/pages/home_page'
 require_relative 'base_spec'
@@ -27,11 +36,18 @@ require_relative '../page_objects/pages/login_page'
 
 class LoginSpec < BaseSpec
   describe 'Login' do
-    it 'Login with valid credentials' do
-      HomePage.go_to_login
-      LoginPage.login('alice', 'mypassword')
-      expect(ConfirmationPage.login_message).to eq 'You are logged in as alice'
+
+    let(:user_name) { 'alice' }
+    let(:password) { 'mypassword' }
+    let(:login_page) { LoginPage.new(@driver) }
+    let(:home_page) { HomePage.new(@driver) }
+    let(:confirmation_page) { ConfirmationPage.new(@driver) }
+
+    it 'can login' do
+      home_page.go_to_login
+      login_page.login(user_name, password)
+      expect(confirmation_page.login_message).to eq 'You are logged in as alice'
     end
   end
 end
-<% end %>
+<% end -%>
