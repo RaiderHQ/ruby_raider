@@ -171,6 +171,32 @@ describe RubyRaider do
       expect(config['browser']).to eql ':firefox'
     end
 
+    it 'updates the browser and the browser options' do
+      raider.new.invoke(:browser, nil, %W[:firefox --opts headless:test])
+      config = YAML.load_file('config/config.yml')
+      expect(config['browser']).to eql ':firefox'
+      expect(config['browser_options']).to eql "headless" => "test"
+    end
+
+    it 'updates only the browser options' do
+      raider.new.invoke(:browser, nil, %W[:firefox --opts headless:test])
+      config = YAML.load_file('config/config.yml')
+      expect(config['browser_options']).to eql "headless" => "test"
+    end
+
+    it 'deletes the browser options when passed with the delete parameter' do
+      raider.new.invoke(:browser, nil, %W[:firefox --opts headless:test --delete])
+      config = YAML.load_file('config/config.yml')
+      expect(config['browser_options']).to be_nil
+    end
+
+    it 'deletes the browser options' do
+      raider.new.invoke(:browser, nil, %W[:firefox --opts headless:test])
+      raider.new.invoke(:browser, nil, %W[--delete])
+      config = YAML.load_file('config/config.yml')
+      expect(config['browser_options']).to be_nil
+    end
+
     after(:all) do
       folders = %w[test config]
       folders.each do |folder|
