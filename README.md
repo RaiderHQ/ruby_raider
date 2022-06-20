@@ -1,5 +1,7 @@
 # Ruby Raider
 
+[![Rubocop](https://github.com/RubyRaider/ruby_raider/actions/workflows/rubocop.yml/badge.svg?branch=master)](https://github.com/RubyRaider/ruby_raider/actions/workflows/rubocop.yml)
+
 This is a gem to make setup and start of UI automation projects easier
 You can find more information and updates on releases in : https://ruby-raider.com/
 
