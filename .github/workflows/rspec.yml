@@ -17,14 +17,8 @@ jobs:
         with:
           ruby-version: head
 
-      - name: change dir
-        run: cd ..
-
-      - name: know directory
-        run: ls
-
-      - name: current dir
-        run: pwd
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Install gems
         run: bundle install
