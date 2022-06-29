@@ -16,7 +16,9 @@ jobs:
         uses: ruby/setup-ruby@f20f1eae726df008313d2e0d78c5e602562a1bcf
         with:
           ruby-version: head
-      - name: Run bundle install
+
+      - name: Install gems
+      - run: bundle install
 
       - name: Build and test with rspec
         run: bundle exec rspec spec
