@@ -18,7 +18,7 @@ jobs:
           ruby-version: head
 
       - name: Install gems
-      - run: bundle install
+        run: bundle install
 
       - name: Build and test with rspec
         run: bundle exec rspec spec
