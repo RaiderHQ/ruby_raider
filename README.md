@@ -1,6 +1,6 @@
 # Ruby Raider
 
-[![Rspec Tests](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml/badge.svg?branch=master)](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml)
+[![Rspec Tests](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml/badge.svg?event=status)](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml)
 
 This is a gem to make setup and start of UI automation projects easier
 You can find more information and updates on releases in : https://ruby-raider.com/
