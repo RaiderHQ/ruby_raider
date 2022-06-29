@@ -17,10 +17,11 @@ jobs:
         with:
           ruby-version: head
 
+      - name: know directory
+        run: ls
+
       - name: Install gems
-        working-directory: ${{env}}
         run: bundle install
 
       - name: Build and test with rspec
-        working-directory: ${{env}}
         run: bundle exec rspec spec
