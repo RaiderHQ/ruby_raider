@@ -100,7 +100,7 @@ class RubyRaider < Thor
 
   desc 'browser [BROWSER]', 'Sets the default browser for a project'
   option :opts,
-         type: :hash, required: false, desc: 'The options you want your browser to run with', aliases: '-o'
+         type: :array, required: false, desc: 'The options you want your browser to run with', aliases: '-o'
   option :delete,
          type: :boolean, required: false, desc: 'This will delete your browser options', aliases: '-d'
   def browser(default_browser = nil)

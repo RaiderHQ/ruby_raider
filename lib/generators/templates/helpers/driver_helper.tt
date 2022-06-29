@@ -11,6 +11,6 @@ module Raider
   module DriverHelper
       attr_reader :driver
 
-      <%= ERB.new(File.read(File.expand_path('./partials/new_driver.tt', __dir__))).result(binding).strip! %>
+      <%= ERB.new(File.read(File.expand_path('./partials/driver_and_options.tt', __dir__))).result(binding).strip! %>
   end
 end
