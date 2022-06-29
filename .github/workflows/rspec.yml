@@ -17,6 +17,9 @@ jobs:
         with:
           ruby-version: head
 
+      - name: change dir
+        run: cd ..
+
       - name: know directory
         run: ls
 
