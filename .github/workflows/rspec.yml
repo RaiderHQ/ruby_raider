@@ -1,0 +1,22 @@
+name: Rspec Tests
+
+on:
+  push:
+    branches: [ "*" ]
+  pull_request:
+    branches: [ "*" ]
+
+jobs:
+  build:
+    name: CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@f20f1eae726df008313d2e0d78c5e602562a1bcf
+        with:
+          ruby-version: head
+      - name: Run bundle install
+
+      - name: Build and test with rspec
+        run: bundle exec rspec spec
