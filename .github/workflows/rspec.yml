@@ -10,8 +10,6 @@ jobs:
   build:
     name: CI
     runs-on: ubuntu-latest
-    env:
-      raider-dir: ./ruby_raider
 
     steps:
       - name: Set up Ruby
@@ -20,9 +18,9 @@ jobs:
           ruby-version: head
 
       - name: Install gems
-        working-directory: ${{env.raider-dir}}
+        working-directory: ${{env}}
         run: bundle install
 
       - name: Build and test with rspec
-        working-directory: ${{env.raider-dir}}
+        working-directory: ${{env}}
         run: bundle exec rspec spec
