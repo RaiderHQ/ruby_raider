@@ -30,7 +30,7 @@ class Scaffolding < Thor::Group
 
   def generate_config
     template('../../generators/templates/common/config.tt',
-             default_path("config/config.yml", '.yml'))
+             default_path('config/config.yml', '.yml'))
   end
 
   def delete_class
@@ -50,7 +50,7 @@ class Scaffolding < Thor::Group
   end
 
   def delete_config
-    remove_file(default_path("config/config.yml", '.yml'))
+    remove_file(default_path('config/config.yml', '.yml'))
   end
 
   def default_path(standard_path, file_type)
