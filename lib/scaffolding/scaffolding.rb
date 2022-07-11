@@ -54,6 +54,6 @@ class Scaffolding < Thor::Group
   end
 
   def default_path(standard_path, file_type)
-    path.nil? ? standard_path : "#{path}/#{name}#{file_type}"
+    path ? standard_path : "#{path}/#{name}#{file_type}"
   end
 end

@@ -3,9 +3,8 @@
 require_relative 'lib/ruby_raider'
 
 desc 'Create a new test projects'
-task :new, [:name] do |_t, args|
-  RubyRaider.start
-  RubyRaider.new(args.name)
+task :new do
+  RubyRaider.new(%w[hello]).invoke(:new)
 end
 
 desc 'Create a page'

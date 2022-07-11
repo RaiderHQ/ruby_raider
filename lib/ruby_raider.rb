@@ -10,7 +10,7 @@ class RubyRaider < Thor
   desc 'new [PROJECT_NAME]', 'Creates a new framework based on settings picked'
 
   def new(project_name)
-    MenuGenerator.generate_choice_menu(project_name)
+    MenuGenerator.new(project_name).generate_choice_menu
   end
   map '-n' => 'new'
 
