@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'lib/ruby_raider'
+require_relative 'lib/ruby_raider.thor'
 
 desc 'Create a new test projects'
 task :new do
