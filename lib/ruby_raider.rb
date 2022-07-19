@@ -2,8 +2,7 @@
 
 require 'thor'
 require 'yaml'
-require_relative 'commands/command_loader'
+require_relative '../lib/commands/utility_commands'
 
-class RubyRaider < Thor
-  include CommandLoader
+class RubyRaider < UtilityCommands
 end
