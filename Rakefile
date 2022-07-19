@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require_relative 'lib/ruby_raider.thor'
+require_relative 'lib/ruby_raider'
 
 desc 'Create a new test projects'
 task :new do
-  RubyRaider.new(%w[hello]).invoke(:new)
+  RubyRaider.start
 end
 
 desc 'Create a page'

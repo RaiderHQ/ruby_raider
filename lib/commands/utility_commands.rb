@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
+require 'thor'
 require_relative '../utilities/utilities'
-require_relative 'scaffolding_commands'
 
-class UtilityCommands < ScaffoldingCommands
+class UtilityCommands < Thor
   desc 'path [PATH]', 'Sets the default path for scaffolding'
   option :feature,
          type: :boolean, required: false, desc: 'The default path for your features', aliases: '-f'

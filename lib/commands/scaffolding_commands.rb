@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require 'thor'
 require_relative '../generators/menu_generator'
 require_relative '../scaffolding/scaffolding'
+require_relative '../commands/utility_commands'
 
-class ScaffoldingCommands < Thor
+class ScaffoldingCommands < UtilityCommands
   desc 'new [PROJECT_NAME]', 'Creates a new framework based on settings picked'
 
   def new(project_name)

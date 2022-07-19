@@ -1,7 +1,7 @@
 require 'pathname'
 require 'yaml'
 require_relative 'spec_helper'
-require_relative '../lib/ruby_raider.thor'
+require_relative '../lib/ruby_raider'
 require_relative '../lib/generators/common_generator'
 
 describe RubyRaider do

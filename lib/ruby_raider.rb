@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
-require 'thor'
-require 'yaml'
-require_relative '../lib/commands/utility_commands'
+require_relative '../lib/commands/command_loader'
 
-class RubyRaider < UtilityCommands
+class RubyRaider
+  extend CommandLoader
 end
