@@ -20,7 +20,7 @@ class ScaffoldingCommands < UtilityCommands
          type: :boolean, required: false, desc: 'This will delete the selected page', aliases: '-d'
 
   def page(name)
-    path = options[:path].nil? ? load_config_path('page') : options[:path]
+    path = options[:path] ? options[:path] : load_config_path('page')
     if options[:delete]
       Scaffolding.new([name, path]).delete_class
     else
@@ -37,7 +37,7 @@ class ScaffoldingCommands < UtilityCommands
          type: :boolean, required: false, desc: 'This will delete the selected feature', aliases: '-d'
 
   def feature(name)
-    path = options[:path].nil? ? load_config_path('feature') : options[:path]
+    path = options[:path] ? options[:path] : load_config_path('feature')
     if options[:delete]
       Scaffolding.new([name, path]).delete_feature
     else
@@ -54,7 +54,7 @@ class ScaffoldingCommands < UtilityCommands
          type: :boolean, required: false, desc: 'This will delete the selected spec', aliases: '-d'
 
   def spec(name)
-    path = options[:path].nil? ? load_config_path('spec') : options[:path]
+    path = options[:path] ? options[:path] : load_config_path('spec')
     if options[:delete]
       Scaffolding.new([name, path]).delete_spec
     else
@@ -71,7 +71,7 @@ class ScaffoldingCommands < UtilityCommands
          type: :boolean, required: false, desc: 'This will delete the selected helper', aliases: '-d'
 
   def helper(name)
-    path = options[:path].nil? ? load_config_path('helper') : options[:path]
+    path = options[:path] ? options[:path] : load_config_path('helper')
     if options[:delete]
       Scaffolding.new([name, path]).delete_helper
     else
@@ -110,7 +110,7 @@ class ScaffoldingCommands < UtilityCommands
 
   no_commands do
     def load_config_path(type)
-      YAML.load_file('config/config.yml')["#{type}_path"] unless YAML.load_file('config/config.yml').nil?
+      YAML.load_file('config/config.yml')["#{type}_path"] if YAML.load_file('config/config.yml')
     end
   end
 end

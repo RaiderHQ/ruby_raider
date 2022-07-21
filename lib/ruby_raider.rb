@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
-require_relative '../lib/commands/command_loader'
+require_relative '../lib/commands/scaffolding_commands'
 
 class RubyRaider
-  extend CommandLoader
+  def self.start
+    ScaffoldingCommands.start
+  end
 end
