@@ -20,7 +20,7 @@ class ScaffoldingCommands < UtilityCommands
          type: :boolean, required: false, desc: 'This will delete the selected page', aliases: '-d'
 
   def page(name)
-    path = options[:path] ? options[:path] : load_config_path('page')
+    path = options[:path] || load_config_path('page')
     if options[:delete]
       Scaffolding.new([name, path]).delete_class
     else
