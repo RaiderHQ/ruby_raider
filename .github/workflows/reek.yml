@@ -1,0 +1,23 @@
+name: Reek Code Review
+
+on: [pull_request]
+
+jobs:
+  reek:
+    name: runner / reek
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@f20f1eae726df008313d2e0d78c5e602562a1bcf
+        with:
+          ruby-version: head
+
+      - name: Check out code
+        uses: actions/checkout@v1
+          
+      - name: reek
+        uses: reviewdog/action-reek@v1
+        with:
+          reek_version: gemfile
+          reporter: github-pr-review # Default is github-pr-check
+          fail_on_error: true
