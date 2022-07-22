@@ -37,7 +37,7 @@ class ScaffoldingCommands < UtilityCommands
          type: :boolean, required: false, desc: 'This will delete the selected feature', aliases: '-d'
 
   def feature(name)
-    path = options[:path] ? options[:path] : load_config_path('feature')
+    path = options[:path] || load_config_path('feature')
     if options[:delete]
       Scaffolding.new([name, path]).delete_feature
     else
