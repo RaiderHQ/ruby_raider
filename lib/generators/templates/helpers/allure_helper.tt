@@ -16,7 +16,7 @@ module Raider
       def add_screenshot(screenshot_name)
         Allure.add_attachment(
           name: name,
-          source: "File.open(allure-results/screenshots/#{screenshot_name}.png)",
+          source: File.open("allure-results/screenshots/#{screenshot_name}.png"),
           type: Allure::ContentType::PNG,
           test_case: true
         )

@@ -1,14 +1,10 @@
-name: Rubocop
+name: Reek Code Review
 
 on: [pull_request]
 
-permissions:
-  contents: read
-  pull-requests: write
-
 jobs:
-  rubocop:
-    name: runner / rubocop
+  reek:
+    name: runner / reek
     runs-on: ubuntu-latest
     steps:
       - name: Set up Ruby
@@ -18,11 +14,10 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@v1
-
-      - name: rubocop
-        uses: reviewdog/action-rubocop@v2
+          
+      - name: reek
+        uses: reviewdog/action-reek@v1
         with:
-          rubocop_version: gemfile
-          rubocop_extensions: rubocop-rspec:gemfile
+          reek_version: gemfile
           reporter: github-pr-review # Default is github-pr-check
           fail_on_error: true
