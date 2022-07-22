@@ -8,64 +8,79 @@ require_relative 'helper_generator'
 require_relative 'rspec_generator'
 
 class MenuGenerator
-  class << self
-    def generate_choice_menu(project_name)
-      @cli = HighLine.new
-      @cli.choose do |menu|
-        menu.prompt = 'Please select your automation framework'
-        menu.choice('Selenium') { choose_test_framework('selenium', project_name) }
-        menu.choice('Watir') { choose_test_framework('watir', project_name) }
-        menu.choice('Appium') { choose_test_framework('appium', project_name) }
-        menu.choice('Quit') { exit }
-      end
-    end
+  attr_reader :cli, :name, :generators
 
-    def choose_test_framework(automation, project_name)
-      system('clear') || system('cls')
-      sleep 0.3
-      automation = automation == 'appium' ? choose_mobile_platform : automation
-      framework = ''
-      @cli.choose do |menu|
-        menu.prompt = 'Please select your test framework'
-        menu.choice('Rspec') do
-          framework = 'rspec'
-          set_framework(automation, framework, project_name)
-        end
-        menu.choice('Cucumber') do
-          framework = 'cucumber'
-          set_framework(automation, framework, project_name)
-        end
-        menu.choice('Quit') { exit }
-      end
-      @cli.say("You have chosen to use #{framework} with #{automation}")
-    end
+  def initialize(project_name)
+    @cli = HighLine.new
+    @name = project_name
+    @generators = %w[Automation Common Helpers]
+  end
 
-    def set_framework(automation, framework, project_name)
-      if framework == 'rspec'
-        RspecGenerator.new([automation, framework, project_name]).invoke_all
-      else
-        CucumberGenerator.new([automation, framework, project_name]).invoke_all
-      end
-      AutomationGenerator.new([automation, framework, project_name]).invoke_all
-      CommonGenerator.new([automation, framework, project_name]).invoke_all
-      HelpersGenerator.new([automation, framework, project_name]).invoke_all
-      system "cd #{project_name} && gem install bundler && bundle install"
+  def generate_choice_menu
+    @cli.choose do |menu|
+      menu.prompt = 'Please select your automation framework'
+      menu.choice('Selenium') { choose_test_framework('selenium') }
+      menu.choice('Watir') { choose_test_framework('watir') }
+      menu.choice('Appium') { choose_test_framework('appium') }
+      menu.choice('Quit') { exit }
     end
+  end
 
-    def choose_mobile_platform
-      @cli.choose do |menu|
-        menu.prompt = 'Please select your mobile platform'
-        menu.choice('iOS') { 'appium_ios' }
-        menu.choice('Android') do
-          pp 'Android appium is coming soon. Thank you for the interest'
-          exit
-        end
-        menu.choice('Cross Platform') do
-          pp 'Cross platform appium is coming soon. Thank you for the interest'
-          exit
-        end
-        menu.choice('Quit') { exit }
-      end
+  def choose_test_framework(automation)
+    system('clear') || system('cls')
+    sleep 0.3
+    automation = automation == 'appium' ? choose_mobile_platform : automation
+    select_test_framework(automation)
+  end
+
+  def set_framework(automation, framework)
+    add_generator framework.capitalize
+    generators.each { |generator| invoke_generator(automation, framework, generator) }
+    system "cd #{name} && gem install bundler && bundle install"
+  end
+
+  def choose_mobile_platform
+    @cli.choose do |menu|
+      menu.prompt = 'Please select your mobile platform'
+      menu.choice('iOS') { 'appium_ios' }
+      error_handling(menu, 'Android')
+      error_handling(menu, 'Cross Platform')
+      menu.choice('Quit') { exit }
     end
+  end
+
+  protected
+
+  def add_generator(*opts)
+    opts.each { |opt| @generators.push opt }
+  end
+
+  private
+
+  def framework_choice(invoker, framework, automation_type)
+    invoker.choice(framework) do
+      set_framework(automation_type, framework.downcase)
+      @cli.say("You have chosen to use #{framework} with #{automation_type}")
+    end
+  end
+
+  def error_handling(invoker, platform)
+    invoker.choice(platform) do
+      pp "#{platform} appium is coming soon. Thank you for the interest"
+      exit
+    end
+  end
+
+  def select_test_framework(automation)
+    @cli.choose do |menu|
+      menu.prompt = 'Please select your test framework'
+      framework_choice(menu, 'Rspec', automation)
+      framework_choice(menu, 'Cucumber', automation)
+      menu.choice('Quit') { exit }
+    end
+  end
+
+  def invoke_generator(automation, framework, generator)
+    Object.const_get("#{generator}Generator").new([automation, framework, name]).invoke_all
   end
 end
