@@ -71,7 +71,7 @@ class ScaffoldingCommands < UtilityCommands
          type: :boolean, required: false, desc: 'This will delete the selected helper', aliases: '-d'
 
   def helper(name)
-    path = options[:path] ? options[:path] : load_config_path('helper')
+    path = options[:path] || load_config_path('helper')
     if options[:delete]
       Scaffolding.new([name, path]).delete_helper
     else
