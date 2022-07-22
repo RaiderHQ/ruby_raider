@@ -54,7 +54,7 @@ class ScaffoldingCommands < UtilityCommands
          type: :boolean, required: false, desc: 'This will delete the selected spec', aliases: '-d'
 
   def spec(name)
-    path = options[:path] ? options[:path] : load_config_path('spec')
+    path = options[:path] || load_config_path('spec')
     if options[:delete]
       Scaffolding.new([name, path]).delete_spec
     else
