@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require 'yaml'
 <% if automation == 'selenium' -%>
+require 'active_support/inflector'
 require 'webdrivers'
 <% else -%>
 require 'appium_lib'

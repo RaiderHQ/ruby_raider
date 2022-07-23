@@ -7,7 +7,7 @@ Before do
 end
 
 After do |scenario|
-  browser.save_screenshot("allure-results/screenshots/#{scenario.name}.png")
+  browser.screenshot.save("allure-results/screenshots/#{scenario.name}.png")
   Raider::AllureHelper.add_screenshot(scenario.name)
   browser.quit
 end

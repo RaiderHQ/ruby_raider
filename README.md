@@ -40,6 +40,8 @@ This works in all the platforms (Tested on Mac OS, Linux and Windows).
 Commands:
   raider browser [BROWSER]         # Sets the default browser for a project
   
+  raider browser_options [OPTIONS]  # Sets the browser options for the project
+
   raider feature [FEATURE_NAME]    # Creates a new feature
   
   raider help [COMMAND]            # Describes available commands or one specific command
