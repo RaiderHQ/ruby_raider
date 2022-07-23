@@ -199,26 +199,26 @@ describe ScaffoldingCommands do
     end
 
     it 'updates the browser and the browser options' do
-      scaffold.new.invoke(:browser, nil, %W[:firefox --opts headless:test])
+      scaffold.new.invoke(:browser, nil, %W[:firefox --opts headless start-maximized start-fullscreen])
       config = YAML.load_file('config/config.yml')
       expect(config['browser']).to eql ':firefox'
-      expect(config['browser_options']).to eql "headless" => "test"
+      expect(config['browser_options']).to eql %W[headless start-maximized start-fullscreen]
     end
 
     it 'updates only the browser options' do
-      scaffold.new.invoke(:browser, nil, %W[:firefox --opts headless:test])
+      scaffold.new.invoke(:browser, nil, %W[:firefox --opts headless])
       config = YAML.load_file('config/config.yml')
-      expect(config['browser_options']).to eql "headless" => "test"
+      expect(config['browser_options']).to eql %w[headless]
     end
 
     it 'deletes the browser options when passed with the delete parameter' do
-      scaffold.new.invoke(:browser, nil, %W[:firefox --opts headless:test --delete])
+      scaffold.new.invoke(:browser, nil, %W[:firefox --opts headless --delete])
       config = YAML.load_file('config/config.yml')
       expect(config['browser_options']).to be_nil
     end
 
     it 'deletes the browser options' do
-      scaffold.new.invoke(:browser, nil, %W[:firefox --opts headless:test])
+      scaffold.new.invoke(:browser, nil, %W[:firefox --opts headless])
       scaffold.new.invoke(:browser, nil, %W[--delete])
       config = YAML.load_file('config/config.yml')
       expect(config['browser_options']).to be_nil

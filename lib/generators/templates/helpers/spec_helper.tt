@@ -21,9 +21,8 @@ module Raider
 
       config.after(:each) do
         example_name = self.class.descendant_filtered_examples.first.description
-        status = self.class.descendant_filtered_examples.first.execution_result.status
         <%= ERB.new(File.read(File.expand_path('./partials/screenshot.tt', __dir__))).result(binding).strip! %>
-        AllureHelper.add_screenshot example_name if status == :failed
+        AllureHelper.add_screenshot example_name
         <%= ERB.new(File.read(File.expand_path('./partials/quit_driver.tt', __dir__))).result(binding).strip! %>
       end
     end

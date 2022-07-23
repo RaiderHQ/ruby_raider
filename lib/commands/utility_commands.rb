@@ -29,17 +29,27 @@ class UtilityCommands < Thor
 
   desc 'browser [BROWSER]', 'Sets the default browser for a project'
   option :opts,
-         type: :hash, required: false, desc: 'The options you want your browser to run with', aliases: '-o'
+         type: :array, required: false, desc: 'The options you want your browser to run with', aliases: '-o'
   option :delete,
          type: :boolean, required: false, desc: 'This will delete your browser options', aliases: '-d'
 
   def browser(default_browser = nil)
-    Utilities.new.browser = default_browser unless default_browser.nil?
-    Utilities.new.browser_options = options[:opts] unless options[:opts].nil?
-    Utilities.new.delete_browser_options if options[:delete]
+    Utilities.new.browser = default_browser if default_browser
+    browser_options(options[:opts]) if options[:opts] || options[:delete]
   end
 
   map '-b' => 'browser'
+
+  desc 'browser_options [OPTIONS]', 'Sets the browser options for the project'
+  option :delete,
+         type: :boolean, required: false, desc: 'This will delete your browser options', aliases: '-d'
+
+  def browser_options(*opts)
+    Utilities.new.browser_options = opts unless opts.empty?
+    Utilities.new.delete_browser_options if options[:delete]
+  end
+
+  map '-bo' => 'browser_options'
 
   desc 'raid', 'It runs all the tests in a project'
 
