@@ -1,0 +1,25 @@
+<% if automation == 'selenium' %>
+      def new_driver(*opts)
+        @config = YAML.load_file('config/config.yml')
+        browser = @config['browser'].to_sym
+        @driver = Selenium::WebDriver.for(browser, capabilities: browser_options(*opts))
+      end
+
+      def browser_options(*opts)
+        opts = opts.empty? ? @config['browser_options'] : opts
+        create_options(*opts)
+      end
+
+      def create_options(*opts)
+        browser = @config['browser'] == :ie ? @config['browser'].to_s.upcase : @config['browser'].to_s.capitalize
+        caps = "Selenium::WebDriver::#{browser}::Options".constantize.new
+        opts.each {|option| caps.add_argument(option) }
+        caps
+      end
+<% else %>
+      def new_driver
+        appium_file = File.join(Dir.pwd, 'appium.txt')
+        caps = Appium.load_appium_txt(file: appium_file)
+        @driver = Appium::Driver.new(caps)
+      end
+<% end %>

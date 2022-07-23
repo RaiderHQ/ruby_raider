@@ -9,11 +9,11 @@ module Raider
   module BrowserHelper
       attr_reader :browser
 
-      def new_browser(opts = {})
+      def new_browser(*args)
         @config = YAML.load_file('config/config.yml')
         browser = @config['browser'].to_sym
-        opts = opts.nil? ? @config['browser_options'] : opts
-        @browser = Watir::Browser.new(browser, options: opts)
+        args = args.empty? ? @config['browser_options'] : args
+        @browser = Watir::Browser.new(browser, options: { args: args })
       end
   end
 end

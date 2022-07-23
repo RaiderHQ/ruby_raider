@@ -1,8 +1,8 @@
 <% case automation
  when 'selenium' %>
-driver.save_screenshot("allure-results/screenshots/#{example_name}.png") if status == :failed
+driver.save_screenshot("allure-results/screenshots/#{example_name}.png")
 <% when 'watir' %>
-browser.save_screenshot("allure-results/screenshots/#{example_name}.png") if status == :failed
+browser.screenshot.save("allure-results/screenshots/#{example_name}.png")
 <% else %>
-driver.screenshot("allure-results/screenshots/#{example_name}.png") if status == :failed
+driver.screenshot("allure-results/screenshots/#{example_name}.png")
 <% end %>
