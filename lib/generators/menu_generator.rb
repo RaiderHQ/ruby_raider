@@ -65,8 +65,8 @@ class MenuGenerator
 
   def select_test_framework(automation)
     prompt.select('Please select your test framework') do |menu|
-      menu.choice :Cucumber, -> { framework_choice('Rspec', automation) }
-      menu.choice :Rspec, -> { framework_choice('Cucumber', automation) }
+      menu.choice :Cucumber, -> { framework_choice('Cucumber', automation) }
+      menu.choice :Rspec, -> { framework_choice('Rspec', automation) }
       menu.choice :Quit, -> { exit }
     end
   end
