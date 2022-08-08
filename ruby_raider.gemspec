@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name        = 'ruby_raider'
-  s.version     = '0.3.6'
+  s.version     = '0.3.7'
   s.summary     = 'A gem to make setup and start of UI automation projects easier'
   s.description = 'This gem has everything you need to start working with test automation'
   s.authors     = ['Agustin Pequeno']
@@ -19,6 +19,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rubocop', '~> 1.27'
   s.add_development_dependency 'rubocop-rspec', '~> 2.9.0'
 
-  s.add_runtime_dependency 'highline', '~> 2.0.3'
   s.add_runtime_dependency 'thor', '~> 1.2.1'
+  s.add_runtime_dependency 'tty-prompt', '~> 0.23.1'
 end
