@@ -3,21 +3,50 @@
 [![Gem Version](https://badge.fury.io/rb/ruby_raider.svg)](https://badge.fury.io/rb/ruby_raider)
 [![Rubocop](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml/badge.svg)](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml)
 
-This is a gem to make setup and start of UI automation projects easier.
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
+  <a href="https://github.com/RubyRaider/ruby_raider">
+    <img src="https://rubyraiderdotcom.files.wordpress.com/2022/05/logo_transparent_background-1.png" alt="Logo">
+  </a>
 
-You can find more information and updates on releases in : [https://ruby-raider.com/](https://ruby-raider.com/)
+  <h3 align="center">Ruby Raider</h3>
+  <p align="center">
+    This is a gem to make setup and start of UI automation projects easier.
+    <br />
+    <a href="https://github.com/RubyRaider/ruby_raider"><strong>Explore the docs »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/othneildrew/Best-README-Template">View Demo</a>
+    ·
+    <a href="https://rubygems.org/gems/ruby_raider">Rubygems</a>
+    ·
+    <a href="https://github.com/RubyRaider/ruby_raider/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/RubyRaider/ruby_raider/issues">Request Feature</a>
+  </p>
+</div>
 
-Just do:
+You can find more information and updates on releases in:
+[https://ruby-raider.com/](https://ruby-raider.com/)
 
-**gem install ruby_raider**
+## Getting started
 
-then do:
+To get the project up and running.
 
-**raider new [name_of_project]**
+**Just do:**
 
-and you will have a new project in the folder you are in.
+```ruby
+gem install ruby_raider
+```
 
-Currently we support:
+**Then do:**
+
+```ruby
+raider new [name_of_project]
+```
+
+### At the moment the supported frameworks that can generates are:
 
 * Generating a framework with Cucumber and Selenium
 
@@ -35,8 +64,9 @@ In order to run the Appium tests, download the example [app](https://github.com/
 
 This works in all the platforms (Tested on Mac OS, Linux and Windows).
 
-**Ruby raider provides the following list of commands**
-```
+### Ruby raider provides the following list of commands:
+
+```text
 Commands:
   raider browser [BROWSER]         # Sets the default browser for a project
   
@@ -68,7 +98,7 @@ specs.
 
 If you want to set the default path for the creation of your features, helpers and specs:
 
-```
+```ruby
 raider path [PATH_NAME] --feature or -f
 raider path [PATH_NAME] --spec or -s
 raider path [PATH_NAME] --helper or -h
