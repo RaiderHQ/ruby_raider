@@ -6,26 +6,24 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/RubyRaider/ruby_raider">
-    <img src="https://rubyraiderdotcom.files.wordpress.com/2022/05/logo_transparent_background-1.png" alt="Logo">
-  </a>
-
-  <h3 align="center">Ruby Raider</h3>
-  <p align="center">
-    This is a gem to make setup and start of UI automation projects easier.
-    <br />
-    <a href="https://github.com/RubyRaider/ruby_raider#Getting-started"><strong>Explore the docs »</strong></a>
-    <br />
-    <br />
-    <a href="https://rubygems.org/gems/ruby_raider">Rubygems</a>
-    ·
-    <a href="https://github.com/RubyRaider/ruby_raider/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/RubyRaider/ruby_raider/issues">Request Feature</a>
-  </p>
+   <a href="https://github.com/RubyRaider/ruby_raider">
+   <img src="https://rubyraiderdotcom.files.wordpress.com/2022/05/logo_transparent_background-1.png" alt="Logo">
+   </a>
+   <h3 align="center">Ruby Raider</h3>
+   <p align="center">
+      This is a gem to make setup and start of UI automation projects easier.
+      <br />
+      <a href="https://github.com/RubyRaider/ruby_raider#getting-started"><strong>Explore the docs »</strong></a>
+      <br />
+      <br />
+      <a href="https://rubygems.org/gems/ruby_raider">Rubygems</a>
+      ·
+      <a href="https://github.com/RubyRaider/ruby_raider/issues">Report Bug</a>
+      ·
+      <a href="https://github.com/RubyRaider/ruby_raider/issues">Request Feature</a>
+   </p>
+   <p align="center"> For more information and updates on releases, see <a href="https://ruby-raider.com">https://ruby-raider.com</a></p>
 </div>
-
-For more information and updates on releases, see <https://ruby-raider.com/>.
 
 ## Getting started
 
