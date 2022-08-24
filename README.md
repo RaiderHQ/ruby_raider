@@ -14,11 +14,9 @@
   <p align="center">
     This is a gem to make setup and start of UI automation projects easier.
     <br />
-    <a href="https://github.com/RubyRaider/ruby_raider"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/RubyRaider/ruby_raider#Getting-started"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/othneildrew/Best-README-Template">View Demo</a>
-    ·
     <a href="https://rubygems.org/gems/ruby_raider">Rubygems</a>
     ·
     <a href="https://github.com/RubyRaider/ruby_raider/issues">Report Bug</a>
@@ -27,8 +25,7 @@
   </p>
 </div>
 
-You can find more information and updates on releases in:
-[https://ruby-raider.com/](https://ruby-raider.com/)
+For more information and updates on releases, see <https://ruby-raider.com/>.
 
 ## Getting started
 
@@ -46,7 +43,9 @@ gem install ruby_raider
 raider new [name_of_project]
 ```
 
-### At the moment the supported frameworks that can generates are:
+Then a TUI/CLI will appear where the configuration of which frameworks there will be generated.
+
+### At the moment the supported frameworks that can generates are
 
 * Generating a framework with Cucumber and Selenium
 
@@ -64,33 +63,33 @@ In order to run the Appium tests, download the example [app](https://github.com/
 
 This works in all the platforms (Tested on Mac OS, Linux and Windows).
 
-### Ruby raider provides the following list of commands:
+### Ruby raider provides the following list of commands
 
 ```text
 Commands:
-  raider browser [BROWSER]         # Sets the default browser for a project
+  raider browser [BROWSER]          # Sets the default browser for a project
   
   raider browser_options [OPTIONS]  # Sets the browser options for the project
 
-  raider feature [FEATURE_NAME]    # Creates a new feature
+  raider feature [FEATURE_NAME]     # Creates a new feature
   
-  raider help [COMMAND]            # Describes available commands or one specific command
+  raider help [COMMAND]             # Describes available commands or one specific command
   
-  raider helper [HELPER_NAME]      # Creates a new helper
+  raider helper [HELPER_NAME]       # Creates a new helper
   
-  raider new [PROJECT_NAME]        # Creates a new framework based on settings picked
+  raider new [PROJECT_NAME]         # Creates a new framework based on settings picked
   
-  raider page [PAGE_NAME]          # Creates a new page object
+  raider page [PAGE_NAME]           # Creates a new page object
   
-  raider path [PATH]               # Sets the default path for scaffolding
+  raider path [PATH]                # Sets the default path for scaffolding
   
-  raider raid                      # Runs all the tests in a project
+  raider raid                       # Runs all the tests in a project
   
-  raider scaffold [SCAFFOLD_NAME]  # Generates everything needed to start automating
+  raider scaffold [SCAFFOLD_NAME]   # Generates everything needed to start automating
   
-  raider spec [SPEC_NAME]          # Creates a new spec
+  raider spec [SPEC_NAME]           # Creates a new spec
   
-  raider url [URL]                 # Sets the default url for a project
+  raider url [URL]                  # Sets the default url for a project
 ```
 
 It's possible to add the option --path or -p if you want to specify where to create your features, pages, helpers and
