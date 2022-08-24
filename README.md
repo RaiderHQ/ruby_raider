@@ -9,7 +9,7 @@
    <a href="https://github.com/RubyRaider/ruby_raider">
    <img src="https://rubyraiderdotcom.files.wordpress.com/2022/05/logo_transparent_background-1.png" alt="Logo">
    </a>
-   <h3 align="center">Ruby Raider</h3>
+   <h1 align="center">Ruby Raider</h1>
    <p align="center">
       This is a gem to make setup and start of UI automation projects easier.
       <br />
@@ -63,7 +63,7 @@ This works in all the platforms (Tested on Mac OS, Linux and Windows).
 
 ### Ruby raider provides the following list of commands
 
-```text
+```ruby
 Commands:
   raider browser [BROWSER]          # Sets the default browser for a project
   
