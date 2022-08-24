@@ -25,6 +25,28 @@
    <p align="center"> For more information and updates on releases, see <a href="https://ruby-raider.com">https://ruby-raider.com</a></p>
 </div>
 
+## What is ruby raider?
+
+Ruby Raider is a generator and scaffolding gem to make UI test automation easier
+
+### At the moment Ruby raider supports
+
+* Generating a framework with Cucumber and Selenium
+
+* Generating a framework with Rspec and Selenium
+
+* Generating a framework with Cucumber and Watir
+
+* Generating a framework with Rspec and Watir
+
+* Generating a framework with Rspec and Appium for IOS
+
+* Generating a framework with Cucumber and Appium for IOS
+
+***In order to run the Appium tests, download the example [app](https://github.com/cloudgrey-io/the-app/releases/tag/v1.10.0).***
+
+This works in all the platforms (Tested on Mac OS, Linux and Windows).
+
 ## Getting started
 
 To get the project up and running.
@@ -41,27 +63,13 @@ gem install ruby_raider
 raider new [name_of_project]
 ```
 
-Then a TUI/CLI will appear where the configuration of which frameworks there will be generated.
+Then a TUI/CLI will appear where the configuration of which frameworks you want to be generated/scaffolded can be selected.
 
-### At the moment the supported frameworks that can generates are
-
-* Generating a framework with Cucumber and Selenium
-
-* Generating a framework with Rspec and Selenium
-
-* Generating a framework with Cucumber and Watir
-
-* Generating a framework with Rspec and Watir
-
-* Generating a framework with Rspec and Appium for IOS
-
-* Generating a framework with Cucumber and Appium for IOS
-
-In order to run the Appium tests, download the example [app](https://github.com/cloudgrey-io/the-app/releases/tag/v1.10.0).
-
-This works in all the platforms (Tested on Mac OS, Linux and Windows).
+Select the ones you will like to work with.
 
 ### Ruby raider provides the following list of commands
+
+###### Anything between square brackets([...]) is where your imput goes
 
 ```ruby
 Commands:
@@ -89,6 +97,12 @@ Commands:
   
   raider url [URL]                  # Sets the default url for a project
 ```
+
+Ruby raider also supports scaffolding:
+
+* To create a new page object you do: ```raider page [PAGE_NAME]```
+* To create a new spec you do: ```raider spec [SPEC_NAME]```
+* To create a new feature you do: ```raider feature [FEATURE_NAME]```
 
 It's possible to add the option --path or -p if you want to specify where to create your features, pages, helpers and
 specs.
