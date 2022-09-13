@@ -48,7 +48,7 @@ class Utilities
     overwrite_yaml
   end
 
-  def run
+  def run(parallel = false, opts = [])
     if File.directory? 'spec'
       system 'rspec spec/'
     else
