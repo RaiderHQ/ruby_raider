@@ -48,12 +48,14 @@ class Utilities
     overwrite_yaml
   end
 
-  def run(parallel = false, opts = [])
-    if File.directory? 'spec'
-      system 'rspec spec/'
-    else
-      system 'cucumber features'
-    end
+  def run(opts = nil)
+    command = File.directory? 'spec' ? 'rspec spec/' : 'cucumber features'
+    system "#{command} #{opts}"
+  end
+
+  def parallel_run(opts = nil)
+    command = File.directory? 'spec' ? 'parallel_rspec spec/' : 'parallel_cucumber features'
+    system "#{command} #{opts}"
   end
 
   def overwrite_yaml
