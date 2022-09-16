@@ -2,7 +2,7 @@
 
 require_relative '../lib/commands/scaffolding_commands'
 
-class RubyRaider
+module RubyRaider
   def self.start
     ScaffoldingCommands.start
   end
