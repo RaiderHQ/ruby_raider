@@ -59,9 +59,9 @@ class UtilityCommands < Thor
 
   def raid
     if options[:parallel]
-      Utilities.new.run(options[:opts])
-    else
       Utilities.new.parallel_run(options[:opts])
+    else
+      Utilities.new.run(options[:opts])
     end
   end
 
