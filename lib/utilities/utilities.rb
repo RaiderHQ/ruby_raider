@@ -49,12 +49,12 @@ class Utilities
   end
 
   def run(opts = nil)
-    command = File.directory? 'spec' ? 'rspec spec/' : 'cucumber features'
+    command = File.directory?('spec') ? 'rspec spec/' : 'cucumber features'
     system "#{command} #{opts}"
   end
 
   def parallel_run(opts = nil)
-    command = File.directory? 'spec' ? 'parallel_rspec spec/' : 'parallel_cucumber features'
+    command = File.directory?('spec') ? 'parallel_rspec spec/' : 'parallel_cucumber features'
     system "#{command} #{opts}"
   end
 
