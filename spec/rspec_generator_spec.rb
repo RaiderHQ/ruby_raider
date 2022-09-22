@@ -11,7 +11,7 @@ describe RspecGenerator do
     end
 
     it 'creates a spec file' do
-      expect(File.exist?("#{@name}/spec/login_page_spec.rb")).to be_truthy
+      expect(File.exist?("#{@name}/spec/pdp_page_spec.rb")).to be_truthy
     end
 
     it 'creates the base spec file' do
@@ -30,7 +30,7 @@ describe RspecGenerator do
     end
 
     it 'creates a spec file' do
-      expect(File.exist?("#{@name}/spec/login_page_spec.rb")).to be_truthy
+      expect(File.exist?("#{@name}/spec/pdp_page_spec.rb")).to be_truthy
     end
 
     it 'creates the base spec file' do
@@ -49,7 +49,7 @@ describe RspecGenerator do
     end
 
     it 'creates a spec file' do
-      expect(File.exist?("#{@name}/spec/login_page_spec.rb")).to be_truthy
+      expect(File.exist?("#{@name}/spec/pdp_page_spec.rb")).to be_truthy
     end
 
     it 'creates the base spec file' do
