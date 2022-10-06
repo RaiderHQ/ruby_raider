@@ -15,10 +15,10 @@ class HomePage < AbstractPage
   # Elements
 
   def backpack_image
-  <% if automation == 'ios' -%>
-  <%= ERB.new(File.read(File.expand_path('./partials/ios_settings.tt', __dir__))).result(binding) -%>
-  <% else -%>
+  <% if automation == 'ios' %>
+    driver.find_element(predicate: 'label == "Sauce Labs Backpack"')
+  <% else %>
     driver.find_element(xpath: '(//android.view.ViewGroup[@content-desc="store item"])[1]/android.view.ViewGroup[1]')
-  <% end -%>
+  <% end %>
   end
 end
