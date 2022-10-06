@@ -4,6 +4,6 @@ require_relative '../abstract/abstract_component'
 
 class HeaderComponent < AbstractComponent
   def customer_name
-    @component.text
+    component.text
   end
 end

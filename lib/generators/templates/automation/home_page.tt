@@ -4,17 +4,21 @@ require_relative '../abstract/abstract_page'
 
 class HomePage < AbstractPage
 
-  #Actions
+  # Actions
 
-  def go_to_login
-    @driver.wait { login_button_navigator }.click
+  def go_to_backpack_pdp
+    driver.wait { backpack_image }.click
   end
 
   private
 
   # Elements
 
-  def login_button_navigator
-    @driver.find_element(accessibility_id: 'Login Screen')
+  def backpack_image
+  <% if automation == 'ios' -%>
+  <%= ERB.new(File.read(File.expand_path('./partials/ios_settings.tt', __dir__))).result(binding) -%>
+  <% else -%>
+    driver.find_element(xpath: '(//android.view.ViewGroup[@content-desc="store item"])[1]/android.view.ViewGroup[1]')
+  <% end -%>
   end
 end

@@ -1,8 +1,9 @@
-<% if automation == 'watir' %>
+<% case automation
+ when 'selenium' %>
+new_driver
+<% when 'watir' %>
 new_browser
 <% else %>
 new_driver
-<% end %>
-<% if %w[appium_ios].include? automation %>
-start_driver
+        driver.start_driver
 <% end %>
