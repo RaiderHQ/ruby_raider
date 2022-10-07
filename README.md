@@ -43,7 +43,11 @@ Ruby Raider is a generator and scaffolding gem to make UI test automation easier
 
 * Generating a framework with Cucumber and Appium for IOS
 
-***In order to run the Appium tests, download the example [app](https://github.com/cloudgrey-io/the-app/releases/tag/v1.10.0).***
+* Generating a framework with Rspec and Appium for Android
+
+* Generating a framework with Cucumber and Appium for Android
+
+***In order to run the Appium tests, download the example [app](https://github.com/saucelabs/my-demo-app-rn).***
 
 This works in all the platforms (Tested on Mac OS, Linux and Windows).
 
