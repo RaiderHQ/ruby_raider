@@ -27,14 +27,14 @@ class LoginPage < AbstractPage
   # Elements
 
   def username_field
-    @driver.find_element(id: 'loginFrm_loginname')
+    driver.find_element(id: 'loginFrm_loginname')
   end
 
   def password_field
-    @driver.find_element(id: 'loginFrm_password')
+    driver.find_element(id: 'loginFrm_password')
   end
 
   def login_button
-    @driver.find_element(xpath: "//button[@title='Login']")
+    driver.find_element(xpath: "//button[@title='Login']")
   end
 end

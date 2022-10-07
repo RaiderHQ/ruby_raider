@@ -4,8 +4,8 @@ require_relative 'lib/ruby_raider'
 require_relative 'lib/commands/scaffolding_commands'
 
 desc 'Creates a new test project'
-task :new do
-  RubyRaider.start
+task :new, [:name] do |_t, args|
+  system "bin/raider -n #{args.name}"
 end
 
 desc 'Creates a page'
