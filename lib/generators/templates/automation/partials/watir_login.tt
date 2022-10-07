@@ -26,14 +26,14 @@ class LoginPage < AbstractPage
   # Elements
 
   def username_field
-    @browser.text_field(id: 'loginFrm_loginname')
+    browser.text_field(id: 'loginFrm_loginname')
   end
 
   def password_field
-    @browser.text_field(id: 'loginFrm_password')
+    browser.text_field(id: 'loginFrm_password')
   end
 
   def login_button
-    @browser.button(xpath: "//button[@title='Login']")
+    browser.button(xpath: "//button[@title='Login']")
   end
 end

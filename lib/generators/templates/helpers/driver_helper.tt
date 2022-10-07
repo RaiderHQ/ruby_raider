@@ -6,7 +6,6 @@ require 'webdrivers'
 <% else -%>
 require 'appium_lib'
 <% end -%>
-require_relative 'driver_helper'
 
 module Raider
   module DriverHelper

@@ -42,14 +42,33 @@ describe RspecGenerator do
     end
   end
 
-  context 'with appium' do
+  context 'with ios appium' do
     before(:all) do
       @name = 'rspec-appium'
-      RspecGenerator.new(['appium_ios', 'rspec', @name]).invoke_all
+      RspecGenerator.new(['ios', 'rspec', @name]).invoke_all
     end
 
     it 'creates a spec file' do
-      expect(File.exist?("#{@name}/spec/login_page_spec.rb")).to be_truthy
+      expect(File.exist?("#{@name}/spec/pdp_page_spec.rb")).to be_truthy
+    end
+
+    it 'creates the base spec file' do
+      expect(File.exist?("#{@name}/spec/base_spec.rb")).to be_truthy
+    end
+
+    after(:all) do
+      FileUtils.rm_rf(@name)
+    end
+  end
+
+  context 'with android appium' do
+    before(:all) do
+      @name = 'rspec-appium'
+      RspecGenerator.new(['android', 'rspec', @name]).invoke_all
+    end
+
+    it 'creates a spec file' do
+      expect(File.exist?("#{@name}/spec/pdp_page_spec.rb")).to be_truthy
     end
 
     it 'creates the base spec file' do

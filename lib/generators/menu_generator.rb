@@ -39,8 +39,8 @@ class MenuGenerator
 
   def choose_mobile_platform
     prompt.select('Please select your mobile platform') do |menu|
-      menu.choice :iOS, -> { choose_test_framework 'appium_ios' }
-      menu.choice :Android, -> { error_handling('Android') }
+      menu.choice :iOS, -> { choose_test_framework 'ios' }
+      menu.choice :Android, -> { choose_test_framework 'android' }
       menu.choice :Cross_Platform, -> { error_handling('Cross Platform') }
       menu.choice :Quit, -> { exit }
     end
