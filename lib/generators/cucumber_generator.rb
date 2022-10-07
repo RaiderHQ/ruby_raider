@@ -4,7 +4,6 @@ require_relative 'generator'
 
 class CucumberGenerator < Generator
   def generate_feature
-
     template('cucumber/feature.tt', "#{name}/features/#{template_name}.feature")
   end
 
