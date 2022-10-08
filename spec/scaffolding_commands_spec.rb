@@ -21,19 +21,28 @@ describe ScaffoldingCommands do
       described_class.new.invoke(:config)
     end
 
-    it 'scaffolds for rspec' do
+    it 'scaffolds for rspec creating a spec' do
+      scaffold.new.invoke(:scaffold, nil, %W[#{name}])
+      expect(Pathname.new("spec/#{name}_spec.rb")).to be_file
+    end
+
+    it 'scaffolds for rspec creating a page' do
       scaffold.new.invoke(:scaffold, nil, %W[#{name}])
       expect(Pathname.new("page_objects/pages/#{name}_page.rb")).to be_file
-      expect(Pathname.new("spec/#{name}_spec.rb")).to be_file
     end
   end
 
   context 'with a features folder' do
-    it 'scaffolds for cucumber' do
+    it 'scaffolds for cucumber creating a feature' do
+      FileUtils.mkdir 'features'
+      scaffold.new.invoke(:scaffold, nil, %W[#{name}])
+      expect(Pathname.new("features/#{name}.feature")).to be_file
+    end
+
+    it 'scaffolds for cucumber creating a page' do
       FileUtils.mkdir 'features'
       scaffold.new.invoke(:scaffold, nil, %W[#{name}])
       expect(Pathname.new("page_objects/pages/#{name}_page.rb")).to be_file
-      expect(Pathname.new("features/#{name}.feature")).to be_file
     end
   end
 
@@ -123,7 +132,7 @@ describe ScaffoldingCommands do
     end
   end
 
-  context 'changes the default path' do
+  context 'without default path' do
     let(:path) { 'test_folder' }
 
     before(:all) do
@@ -173,7 +182,7 @@ describe ScaffoldingCommands do
       expect(Pathname.new("#{path}/#{name}_spec.rb")).to be_file
     end
 
-    it 'creates spec' do
+    it 'creates a helper' do
       scaffold.new.invoke(:path, nil, %W[#{path} -h])
       scaffold.new.invoke(:helper, nil, %W[#{name}])
       expect(Pathname.new("#{path}/#{name}_helper.rb")).to be_file
@@ -205,10 +214,9 @@ describe ScaffoldingCommands do
       expect(config['browser']).to eql ':firefox'
     end
 
-    it 'updates the browser and the browser options' do
+    it 'updates the browser options' do
       scaffold.new.invoke(:browser, nil, %w[:firefox --opts headless start-maximized start-fullscreen])
       config = YAML.load_file('config/config.yml')
-      expect(config['browser']).to eql ':firefox'
       expect(config['browser_options']).to eql %w[headless start-maximized start-fullscreen]
     end
 
