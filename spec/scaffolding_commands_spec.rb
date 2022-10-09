@@ -6,6 +6,7 @@ require_relative 'spec_helper'
 
 describe ScaffoldingCommands do
   let(:scaffold) { described_class }
+  let(:name) { 'test' }
 
   context 'with a spec folder' do
     it 'scaffolds for rspec creating a spec' do

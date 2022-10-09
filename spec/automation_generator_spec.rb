@@ -4,8 +4,6 @@ require_relative '../lib/generators/automation_generator'
 require_relative 'spec_helper'
 
 describe AutomationGenerator do
-  frameworks = @frameworks
-  automation_types = @automation_types
   shared_examples 'creates web automation files' do |name|
     it 'creates a login page file' do
       expect(File).to exist("#{name}/page_objects/pages/login_page.rb")
@@ -43,34 +41,34 @@ describe AutomationGenerator do
   end
 
   context 'with rspec and selenium' do
-    include_examples 'creates web automation files', "#{frameworks.last}_#{automation_types[2]}"
+    include_examples 'creates web automation files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
   end
 
   context 'with rspec and watir' do
-    include_examples 'creates web automation files', "#{frameworks.last}_#{automation_types.last}"
+    include_examples 'creates web automation files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
   end
 
   context 'with cucumber and selenium' do
-    include_examples 'creates web automation files', "#{frameworks.first}_#{automation_types[2]}"
+    include_examples 'creates web automation files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}"
   end
 
   context 'with cucumber and watir' do
-    include_examples 'creates web automation files', "#{frameworks.first}_#{automation_types.last}"
+    include_examples 'creates web automation files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
   end
 
   context 'with rspec and appium android' do
-    include_examples 'creates mobile automation files', "#{frameworks.last}_#{automation_types.first}"
+    include_examples 'creates mobile automation files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.first}"
   end
 
   context 'with rspec and appium ios' do
-    include_examples 'creates mobile automation files', "#{frameworks.last}_#{automation_types[1]}"
+    include_examples 'creates mobile automation files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[1]}"
   end
 
   context 'with cucumber and appium android' do
-    include_examples 'creates mobile automation files', "#{frameworks.first}_#{automation_types.first}"
+    include_examples 'creates mobile automation files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.first}"
   end
 
   context 'with cucumber and appium ios' do
-    include_examples 'creates mobile automation files', "#{frameworks.first}_#{automation_types[1]}"
+    include_examples 'creates mobile automation files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}"
   end
 end
