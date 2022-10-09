@@ -6,21 +6,8 @@ require_relative 'spec_helper'
 
 describe ScaffoldingCommands do
   let(:scaffold) { described_class }
-  let(:name) { 'test' }
-
-  after(:all) do
-    folders = %w[test config page_objects features]
-    folders.each do |folder|
-      FileUtils.rm_rf(folder)
-    end
-    FileUtils.rm('spec/test_spec.rb') if Pathname.new('spec/test_spec.rb').exist?
-  end
 
   context 'with a spec folder' do
-    before(:all) do
-      described_class.new.invoke(:config)
-    end
-
     it 'scaffolds for rspec creating a spec' do
       scaffold.new.invoke(:scaffold, nil, %W[#{name}])
       expect(Pathname.new("spec/#{name}_spec.rb")).to be_file
@@ -47,18 +34,6 @@ describe ScaffoldingCommands do
   end
 
   context 'with path from config file' do
-    before(:all) do
-      described_class.new.invoke(:config)
-    end
-
-    after(:all) do
-      folders = %w[test config page_objects features helpers]
-      folders.each do |folder|
-        FileUtils.rm_rf(folder)
-      end
-      FileUtils.rm('spec/test_spec.rb') if Pathname.new('spec/test_spec.rb').exist?
-    end
-
     it 'creates a page' do
       scaffold.new.invoke(:page, nil, %W[#{name}])
       expect(Pathname.new("page_objects/pages/#{name}_page.rb")).to be_file
@@ -107,10 +82,6 @@ describe ScaffoldingCommands do
   context 'with path option' do
     let(:path) { 'test_folder' }
 
-    after do
-      FileUtils.rm_rf(path)
-    end
-
     it 'creates a page' do
       scaffold.new.invoke(:page, nil, %W[#{name} --path #{path}])
       expect(Pathname.new("#{path}/#{name}_page.rb")).to be_file
@@ -134,17 +105,6 @@ describe ScaffoldingCommands do
 
   context 'without default path' do
     let(:path) { 'test_folder' }
-
-    before(:all) do
-      described_class.new.invoke(:config)
-    end
-
-    after(:all) do
-      folders = %w[test_folder test config]
-      folders.each do |folder|
-        FileUtils.rm_rf(folder)
-      end
-    end
 
     it 'changes the path for pages' do
       scaffold.new.invoke(:path, nil, %W[#{path}])
@@ -189,54 +149,40 @@ describe ScaffoldingCommands do
     end
   end
 
-  context 'updates the config file' do
-    before(:all) do
-      CommonGenerator.new(%w[rspec selenium test]).invoke(:generate_config_file)
-      FileUtils.cp_lr('test/config', './')
-    end
+  it 'updates the url' do
+    scaffold.new.invoke(:url, nil, %w[test.com])
+    config = YAML.load_file('config/config.yml')
+    expect(config['url']).to eql 'test.com'
+  end
 
-    after(:all) do
-      folders = %w[test config]
-      folders.each do |folder|
-        FileUtils.rm_rf(folder)
-      end
-    end
+  it 'updates the browser' do
+    scaffold.new.invoke(:browser, nil, %w[:firefox])
+    config = YAML.load_file('config/config.yml')
+    expect(config['browser']).to eql ':firefox'
+  end
 
-    it 'updates the url' do
-      scaffold.new.invoke(:url, nil, %w[test.com])
-      config = YAML.load_file('config/config.yml')
-      expect(config['url']).to eql 'test.com'
-    end
+  it 'updates the browser options' do
+    scaffold.new.invoke(:browser, nil, %w[:firefox --opts headless start-maximized start-fullscreen])
+    config = YAML.load_file('config/config.yml')
+    expect(config['browser_options']).to eql %w[headless start-maximized start-fullscreen]
+  end
 
-    it 'updates the browser' do
-      scaffold.new.invoke(:browser, nil, %w[:firefox])
-      config = YAML.load_file('config/config.yml')
-      expect(config['browser']).to eql ':firefox'
-    end
+  it 'updates only the browser options' do
+    scaffold.new.invoke(:browser, nil, %w[:firefox --opts headless])
+    config = YAML.load_file('config/config.yml')
+    expect(config['browser_options']).to eql %w[headless]
+  end
 
-    it 'updates the browser options' do
-      scaffold.new.invoke(:browser, nil, %w[:firefox --opts headless start-maximized start-fullscreen])
-      config = YAML.load_file('config/config.yml')
-      expect(config['browser_options']).to eql %w[headless start-maximized start-fullscreen]
-    end
+  it 'deletes the browser options when passed with the delete parameter' do
+    scaffold.new.invoke(:browser, nil, %w[:firefox --opts headless --delete])
+    config = YAML.load_file('config/config.yml')
+    expect(config['browser_options']).to be_nil
+  end
 
-    it 'updates only the browser options' do
-      scaffold.new.invoke(:browser, nil, %w[:firefox --opts headless])
-      config = YAML.load_file('config/config.yml')
-      expect(config['browser_options']).to eql %w[headless]
-    end
-
-    it 'deletes the browser options when passed with the delete parameter' do
-      scaffold.new.invoke(:browser, nil, %w[:firefox --opts headless --delete])
-      config = YAML.load_file('config/config.yml')
-      expect(config['browser_options']).to be_nil
-    end
-
-    it 'deletes the browser options' do
-      scaffold.new.invoke(:browser, nil, %w[:firefox --opts headless])
-      scaffold.new.invoke(:browser, nil, %w[--delete])
-      config = YAML.load_file('config/config.yml')
-      expect(config['browser_options']).to be_nil
-    end
+  it 'deletes the browser options' do
+    scaffold.new.invoke(:browser, nil, %w[:firefox --opts headless])
+    scaffold.new.invoke(:browser, nil, %w[--delete])
+    config = YAML.load_file('config/config.yml')
+    expect(config['browser_options']).to be_nil
   end
 end

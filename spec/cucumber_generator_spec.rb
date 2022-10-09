@@ -7,9 +7,7 @@ describe CucumberGenerator do
   frameworks = @frameworks
   automation_types = @automation_types
 
-  context 'with selenium' do
-    name = "#{frameworks.first}_#{automation_types[2]}"
-
+  shared_examples 'creates cucumber files' do |name|
     it 'creates a feature file' do
       expect(File).to exist("#{name}/features/login.feature")
     end
@@ -23,55 +21,23 @@ describe CucumberGenerator do
     end
 
     it 'does not create a spec file' do
-      expect(File).not_to exist("#{name}/spec/login_spec.rb")
+      expect(File).not_to exist("#{name}/spec/home_spec.rb")
     end
   end
 
-  context 'with watir' do
-    name = "#{frameworks.first}_#{automation_types.last}"
-
-    it 'creates a feature file' do
-      expect(File).to exist("#{name}/features/login.feature")
-    end
-
-    it 'creates a step definitions file' do
-      expect(File).to exist("#{name}/features/step_definitions/login_steps.rb")
-    end
-
-    it 'creates an env file' do
-      expect(File).to exist("#{name}/features/support/env.rb")
-    end
+  context 'with cucumber and appium android' do
+    include_examples 'creates cucumber files', "#{frameworks.first}_#{automation_types.first}"
   end
 
-  context 'with android appium' do
-    name = "#{frameworks.first}_#{automation_types.first}"
-
-    it 'creates a feature file' do
-      expect(File).to exist("#{name}/features/home.feature")
-    end
-
-    it 'creates a step definitions file' do
-      expect(File).to exist("#{name}/features/step_definitions/home_steps.rb")
-    end
-
-    it 'creates an env file' do
-      expect(File).to exist("#{name}/features/support/env.rb")
-    end
+  context 'with cucumber and appium ios' do
+    include_examples 'creates cucumber files', "#{frameworks.first}_#{automation_types[1]}"
   end
 
-  context 'with ios appium' do
-    name = "#{frameworks.first}_#{automation_types[1]}"
+  context 'with cucumber and selenium' do
+    include_examples 'creates cucumber files', "#{frameworks.first}_#{automation_types[2]}"
+  end
 
-    it 'creates a feature file' do
-      expect(File).to exist("#{name}/features/home.feature")
-    end
-
-    it 'creates a step definitions file' do
-      expect(File).to exist("#{name}/features/step_definitions/home_steps.rb")
-    end
-
-    it 'creates an env file' do
-      expect(File).to exist("#{name}/features/support/env.rb")
-    end
+  context 'with cucumber and watir' do
+    include_examples 'creates cucumber files', "#{frameworks.first}_#{automation_types.last}"
   end
 end
