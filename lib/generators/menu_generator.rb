@@ -31,9 +31,8 @@ class MenuGenerator
     select_test_framework(automation)
   end
 
-  def set_framework(automation, framework)
-    add_generator framework.capitalize
-    generators.each { |generator| invoke_generator(automation, framework, generator) }
+  def set_up_framework(automation, framework)
+    generate_framework(automation, framework)
     system "cd #{name} && gem install bundler && bundle install"
   end
 
@@ -46,6 +45,11 @@ class MenuGenerator
     end
   end
 
+  def generate_framework(automation, framework)
+    add_generator framework.capitalize
+    generators.each { |generator| invoke_generator(automation, framework, generator) }
+  end
+
   protected
 
   def add_generator(*opts)
@@ -55,7 +59,7 @@ class MenuGenerator
   private
 
   def framework_choice(framework, automation_type)
-    set_framework(automation_type, framework.downcase)
+    set_up_framework(automation_type, framework.downcase)
     prompt.say("You have chosen to use #{framework} with #{automation_type}")
   end
 
