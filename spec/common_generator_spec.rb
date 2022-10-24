@@ -4,138 +4,53 @@ require_relative '../lib/generators/common_generator'
 require_relative 'spec_helper'
 
 describe CommonGenerator do
-  context 'with selenium' do
-    before(:all) do
-      @name = 'rspec-selenium'
-      CommonGenerator.new(['selenium', 'rspec', @name]).invoke_all
-    end
-
+  shared_examples 'creates common files' do |name|
     it 'creates a config file' do
-      expect(File.exist?("#{@name}/config/config.yml")).to be_truthy
+      expect(File).to exist("#{name}/config/config.yml")
     end
 
     it 'creates a rake file' do
-      expect(File.exist?("#{@name}/Rakefile")).to be_truthy
+      expect(File).to exist("#{name}/Rakefile")
     end
 
     it 'creates a readMe file' do
-      expect(File.exist?("#{@name}/Readme.md")).to be_truthy
+      expect(File).to exist("#{name}/Readme.md")
     end
 
     it 'creates a gemfile file' do
-      expect(File.exist?("#{@name}/Gemfile")).to be_truthy
-    end
-
-    after(:all) do
-      FileUtils.rm_rf(@name)
+      expect(File).to exist("#{name}/Gemfile")
     end
   end
 
-  context 'with watir' do
-    before(:all) do
-      @name = 'rspec-watir'
-      CommonGenerator.new(['watir', 'rspec', @name]).invoke_all
-    end
-
-    it 'creates a config file' do
-      expect(File.exist?("#{@name}/config/config.yml")).to be_truthy
-    end
-
-    it 'creates a rake file' do
-      expect(File.exist?("#{@name}/Rakefile")).to be_truthy
-    end
-
-    it 'creates a readMe file' do
-      expect(File.exist?("#{@name}/Readme.md")).to be_truthy
-    end
-
-    it 'creates a gemfile file' do
-      expect(File.exist?("#{@name}/Gemfile")).to be_truthy
-    end
-
-    after(:all) do
-      FileUtils.rm_rf(@name)
-    end
+  context 'with rspec and selenium' do
+    include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
   end
 
-  context 'with appium' do
-    before(:all) do
-      @name = 'rspec-appium'
-      CommonGenerator.new(['appium_ios', 'rspec', @name]).invoke_all
-    end
+  context 'with rspec and watir' do
+    include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
+  end
 
-    it 'creates a config file' do
-      expect(File.exist?("#{@name}/config/config.yml")).to be_truthy
-    end
+  context 'with cucumber and selenium' do
+    include_examples 'creates common files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}"
+  end
 
-    it 'creates a rake file' do
-      expect(File.exist?("#{@name}/Rakefile")).to be_truthy
-    end
+  context 'with cucumber and watir' do
+    include_examples 'creates common files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
+  end
 
-    it 'creates a readMe file' do
-      expect(File.exist?("#{@name}/Readme.md")).to be_truthy
-    end
+  context 'with rspec and appium android' do
+    include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.first}"
+  end
 
-    it 'creates a gemfile file' do
-      expect(File.exist?("#{@name}/Gemfile")).to be_truthy
-    end
+  context 'with rspec and appium ios' do
+    include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[1]}"
+  end
 
-    after(:all) do
-      FileUtils.rm_rf(@name)
-    end
+  context 'with cucumber and appium android' do
+    include_examples 'creates common files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.first}"
+  end
 
-    context 'with cucumber and selenium' do
-      before(:all) do
-        @name = 'cucumber-selenium'
-        CommonGenerator.new(['selenium', 'cucumber', @name]).invoke_all
-      end
-
-      it 'creates a config file' do
-        expect(File.exist?("#{@name}/config/config.yml")).to be_truthy
-      end
-
-      it 'creates a rake file' do
-        expect(File.exist?("#{@name}/Rakefile")).to be_truthy
-      end
-
-      it 'creates a readMe file' do
-        expect(File.exist?("#{@name}/Readme.md")).to be_truthy
-      end
-
-      it 'creates a gemfile file' do
-        expect(File.exist?("#{@name}/Gemfile")).to be_truthy
-      end
-
-      after(:all) do
-        FileUtils.rm_rf(@name)
-      end
-    end
-
-    context 'with cucumber and watir' do
-      before(:all) do
-        @name = 'cucumber-watir'
-        CommonGenerator.new(['watir', 'cucumber', @name]).invoke_all
-      end
-
-      it 'creates a config file' do
-        expect(File.exist?("#{@name}/config/config.yml")).to be_truthy
-      end
-
-      it 'creates a rake file' do
-        expect(File.exist?("#{@name}/Rakefile")).to be_truthy
-      end
-
-      it 'creates a readMe file' do
-        expect(File.exist?("#{@name}/Readme.md")).to be_truthy
-      end
-
-      it 'creates a gemfile file' do
-        expect(File.exist?("#{@name}/Gemfile")).to be_truthy
-      end
-
-      after(:all) do
-        FileUtils.rm_rf(@name)
-      end
-    end
+  context 'with cucumber and appium ios' do
+    include_examples 'creates common files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}"
   end
 end

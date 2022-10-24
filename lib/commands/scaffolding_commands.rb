@@ -86,7 +86,7 @@ class ScaffoldingCommands < UtilityCommands
   def scaffold(name)
     if Pathname.new('spec').exist? && !Pathname.new('features').exist?
       Scaffolding.new([name, load_config_path('spec')]).generate_spec
-    elsif Pathname.new('features').exist?
+    else
       Scaffolding.new([name, load_config_path('feature')]).generate_feature
     end
     Scaffolding.new([name, load_config_path('page')]).generate_class
@@ -110,7 +110,7 @@ class ScaffoldingCommands < UtilityCommands
 
   no_commands do
     def load_config_path(type)
-      YAML.load_file('config/config.yml')["#{type}_path"] if YAML.load_file('config/config.yml')
+      YAML.load_file('config/config.yml')["#{type}_path"] if Pathname.new('config/config.yml').exist?
     end
   end
 end

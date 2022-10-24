@@ -4,192 +4,71 @@ require_relative '../lib/generators/automation_generator'
 require_relative 'spec_helper'
 
 describe AutomationGenerator do
-  context 'with selenium' do
-    before(:all) do
-      @name = 'rspec-selenium'
-      AutomationGenerator.new(['selenium', 'rspec', @name]).invoke_all
-    end
-
+  shared_examples 'creates web automation files' do |name|
     it 'creates a login page file' do
-      expect(File.exist?("#{@name}/page_objects/pages/login_page.rb")).to be_truthy
+      expect(File).to exist("#{name}/page_objects/pages/login_page.rb")
     end
 
     it 'creates an abstract page file' do
-      expect(File.exist?("#{@name}/page_objects/abstract/abstract_page.rb")).to be_truthy
+      expect(File).to exist("#{name}/page_objects/abstract/abstract_page.rb")
     end
 
     it 'creates an abstract component file' do
-      expect(File.exist?("#{@name}/page_objects/abstract/abstract_component.rb")).to be_truthy
+      expect(File).to exist("#{name}/page_objects/abstract/abstract_component.rb")
     end
 
     it 'creates a component file' do
-      expect(File.exist?("#{@name}/page_objects/components/header_component.rb")).to be_truthy
-    end
-
-    after(:all) do
-      FileUtils.rm_rf(@name)
+      expect(File).to exist("#{name}/page_objects/components/header_component.rb")
     end
   end
 
-  context 'with watir' do
-    before(:all) do
-      @name = 'rspec-watir'
-      AutomationGenerator.new(['watir', 'rspec', @name]).invoke_all
-    end
-
-    it 'creates a login page file' do
-      expect(File.exist?("#{@name}/page_objects/pages/login_page.rb")).to be_truthy
-    end
-
-    it 'creates an abstract page file' do
-      expect(File.exist?("#{@name}/page_objects/abstract/abstract_page.rb")).to be_truthy
-    end
-
-    it 'creates an abstract component file' do
-      expect(File.exist?("#{@name}/page_objects/abstract/abstract_component.rb")).to be_truthy
-    end
-
-    it 'creates a component file' do
-      expect(File.exist?("#{@name}/page_objects/components/header_component.rb")).to be_truthy
-    end
-
-    after(:all) do
-      FileUtils.rm_rf(@name)
-    end
-  end
-
-  context 'with rspec and appium on ios' do
-    before(:all) do
-      @name = 'rspec-appium-ios'
-      AutomationGenerator.new(['ios', 'rspec', @name]).invoke_all
-    end
-
+  shared_examples 'creates mobile automation files' do |name|
     it 'creates a home page file' do
-      expect(File.exist?("#{@name}/page_objects/pages/home_page.rb")).to be_truthy
+      expect(File).to exist("#{name}/page_objects/pages/home_page.rb")
     end
 
     it 'creates an abstract page file' do
-      expect(File.exist?("#{@name}/page_objects/abstract/abstract_page.rb")).to be_truthy
+      expect(File).to exist("#{name}/page_objects/abstract/abstract_page.rb")
     end
 
     it 'creates a pdp page file' do
-      expect(File.exist?("#{@name}/page_objects/pages/pdp_page.rb")).to be_truthy
+      expect(File).to exist("#{name}/page_objects/pages/pdp_page.rb")
     end
 
     it 'creates an appium config file' do
-      expect(File.exist?("#{@name}/appium.txt")).to be_truthy
-    end
-
-    after(:all) do
-      FileUtils.rm_rf(@name)
+      expect(File).to exist("#{name}/appium.txt")
     end
   end
 
-  context 'with rspec and appium on android' do
-    before(:all) do
-      @name = 'rspec-appium-android'
-      AutomationGenerator.new(['android', 'rspec', @name]).invoke_all
-    end
+  context 'with rspec and selenium' do
+    include_examples 'creates web automation files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
+  end
 
-    it 'creates a home page file' do
-      expect(File.exist?("#{@name}/page_objects/pages/home_page.rb")).to be_truthy
-    end
-
-    it 'creates an abstract page file' do
-      expect(File.exist?("#{@name}/page_objects/abstract/abstract_page.rb")).to be_truthy
-    end
-
-    it 'creates a pdp page file' do
-      expect(File.exist?("#{@name}/page_objects/pages/pdp_page.rb")).to be_truthy
-    end
-
-    it 'creates an appium config file' do
-      expect(File.exist?("#{@name}/appium.txt")).to be_truthy
-    end
-
-    after(:all) do
-      FileUtils.rm_rf(@name)
-    end
+  context 'with rspec and watir' do
+    include_examples 'creates web automation files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
   end
 
   context 'with cucumber and selenium' do
-    before(:all) do
-      @name = 'cucumber-selenium'
-      AutomationGenerator.new(['selenium', 'cucumber', @name]).invoke_all
-    end
-
-    it 'creates a login page file' do
-      expect(File.exist?("#{@name}/page_objects/pages/login_page.rb")).to be_truthy
-    end
-
-    it 'creates an abstract page file' do
-      expect(File.exist?("#{@name}/page_objects/abstract/abstract_page.rb")).to be_truthy
-    end
-
-    it 'creates an abstract component file' do
-      expect(File.exist?("#{@name}/page_objects/abstract/abstract_component.rb")).to be_truthy
-    end
-
-    it 'creates a component file' do
-      expect(File.exist?("#{@name}/page_objects/components/header_component.rb")).to be_truthy
-    end
-
-    after(:all) do
-      FileUtils.rm_rf(@name)
-    end
+    include_examples 'creates web automation files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}"
   end
 
   context 'with cucumber and watir' do
-    before(:all) do
-      @name = 'cucumber-watir'
-      AutomationGenerator.new(['watir', 'cucumber', @name]).invoke_all
-    end
-
-    it 'creates a login page file' do
-      expect(File.exist?("#{@name}/page_objects/pages/login_page.rb")).to be_truthy
-    end
-
-    it 'creates an abstract page file' do
-      expect(File.exist?("#{@name}/page_objects/abstract/abstract_page.rb")).to be_truthy
-    end
-
-    it 'creates an abstract component file' do
-      expect(File.exist?("#{@name}/page_objects/abstract/abstract_component.rb")).to be_truthy
-    end
-
-    it 'creates a component file' do
-      expect(File.exist?("#{@name}/page_objects/components/header_component.rb")).to be_truthy
-    end
-
-    after(:all) do
-      FileUtils.rm_rf(@name)
-    end
+    include_examples 'creates web automation files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
   end
 
-  context 'with cucumber and appium' do
-    before(:all) do
-      @name = 'cucumber-appium'
-      AutomationGenerator.new(['ios', 'cucumber', @name]).invoke_all
-    end
+  context 'with rspec and appium android' do
+    include_examples 'creates mobile automation files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.first}"
+  end
 
-    it 'creates a home page file' do
-      expect(File.exist?("#{@name}/page_objects/pages/home_page.rb")).to be_truthy
-    end
+  context 'with rspec and appium ios' do
+    include_examples 'creates mobile automation files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[1]}"
+  end
 
-    it 'creates an abstract page file' do
-      expect(File.exist?("#{@name}/page_objects/abstract/abstract_page.rb")).to be_truthy
-    end
+  context 'with cucumber and appium android' do
+    include_examples 'creates mobile automation files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.first}"
+  end
 
-    it 'creates a pdp page file' do
-      expect(File.exist?("#{@name}/page_objects/pages/pdp_page.rb")).to be_truthy
-    end
-
-    it 'creates an appium config file' do
-      expect(File.exist?("#{@name}/appium.txt")).to be_truthy
-    end
-
-    after(:all) do
-      FileUtils.rm_rf(@name)
-    end
+  context 'with cucumber and appium ios' do
+    include_examples 'creates mobile automation files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}"
   end
 end

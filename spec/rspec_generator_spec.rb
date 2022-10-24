@@ -4,79 +4,29 @@ require_relative '../lib/generators/rspec_generator'
 require_relative 'spec_helper'
 
 describe RspecGenerator do
-  context 'with selenium' do
-    before(:all) do
-      @name = 'rspec-selenium'
-      RspecGenerator.new(['selenium', 'rspec', @name]).invoke_all
-    end
-
+  shared_examples 'creates rspec files' do |project_name, file_name|
     it 'creates a spec file' do
-      expect(File.exist?("#{@name}/spec/login_page_spec.rb")).to be_truthy
+      expect(File).to exist("#{project_name}/spec/#{file_name}_page_spec.rb")
     end
 
     it 'creates the base spec file' do
-      expect(File.exist?("#{@name}/spec/base_spec.rb")).to be_truthy
-    end
-
-    after(:all) do
-      FileUtils.rm_rf(@name)
+      expect(File).to exist("#{project_name}/spec/base_spec.rb")
     end
   end
 
-  context 'with watir' do
-    before(:all) do
-      @name = 'rspec-watir'
-      RspecGenerator.new(['watir', 'rspec', @name]).invoke_all
-    end
-
-    it 'creates a spec file' do
-      expect(File.exist?("#{@name}/spec/login_page_spec.rb")).to be_truthy
-    end
-
-    it 'creates the base spec file' do
-      expect(File.exist?("#{@name}/spec/base_spec.rb")).to be_truthy
-    end
-
-    after(:all) do
-      FileUtils.rm_rf(@name)
-    end
+  context 'with rspec and selenium' do
+    include_examples 'creates rspec files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}", 'login'
   end
 
-  context 'with ios appium' do
-    before(:all) do
-      @name = 'rspec-appium'
-      RspecGenerator.new(['ios', 'rspec', @name]).invoke_all
-    end
-
-    it 'creates a spec file' do
-      expect(File.exist?("#{@name}/spec/pdp_page_spec.rb")).to be_truthy
-    end
-
-    it 'creates the base spec file' do
-      expect(File.exist?("#{@name}/spec/base_spec.rb")).to be_truthy
-    end
-
-    after(:all) do
-      FileUtils.rm_rf(@name)
-    end
+  context 'with rspec and watir' do
+    include_examples 'creates rspec files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}", 'login'
   end
 
-  context 'with android appium' do
-    before(:all) do
-      @name = 'rspec-appium'
-      RspecGenerator.new(['android', 'rspec', @name]).invoke_all
-    end
+  context 'with rspec and appium android' do
+    include_examples 'creates rspec files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.first}", 'pdp'
+  end
 
-    it 'creates a spec file' do
-      expect(File.exist?("#{@name}/spec/pdp_page_spec.rb")).to be_truthy
-    end
-
-    it 'creates the base spec file' do
-      expect(File.exist?("#{@name}/spec/base_spec.rb")).to be_truthy
-    end
-
-    after(:all) do
-      FileUtils.rm_rf(@name)
-    end
+  context 'with rspec and appium ios' do
+    include_examples 'creates rspec files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[1]}", 'pdp'
   end
 end
