@@ -1,6 +1,5 @@
 require:
   - rubocop-rspec
-  - rubocop-performance
 
 # Layout
 Layout/CaseIndentation:
