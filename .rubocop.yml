@@ -1,8 +1,5 @@
-require: rubocop-rspec
-
-AllCops:
-  Exclude:
-    - './spec/*'
+require:
+  - rubocop-rspec
 
 # Layout
 Layout/CaseIndentation:
@@ -86,7 +83,7 @@ Style/HashTransformValues:
 
 Style/SafeNavigation:
   Description: "Use &. instead of checking if an object exists"
-  Enabled: false
+  Enabled: true
 
 Style/SingleLineBlockParams:
   Description: 'Enforces the names of some block params.'

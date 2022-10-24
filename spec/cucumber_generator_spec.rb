@@ -4,76 +4,37 @@ require_relative '../lib/generators/cucumber_generator'
 require_relative 'spec_helper'
 
 describe CucumberGenerator do
-  context 'with selenium' do
-    before(:all) do
-      @name = 'cucumber-selenium'
-      CucumberGenerator.new(['selenium', 'cucumber', @name]).invoke_all
-    end
-
+  shared_examples 'creates cucumber files' do |project_name, file_name|
     it 'creates a feature file' do
-      expect(File.exist?("#{@name}/features/login.feature")).to be_truthy
+      expect(File).to exist("#{project_name}/features/#{file_name}.feature")
     end
 
     it 'creates a step definitions file' do
-      expect(File.exist?("#{@name}/features/step_definitions/login_steps.rb")).to be_truthy
+      expect(File).to exist("#{project_name}/features/step_definitions/#{file_name}_steps.rb")
     end
 
     it 'creates an env file' do
-      expect(File.exist?("#{@name}/features/support/env.rb")).to be_truthy
+      expect(File).to exist("#{project_name}/features/support/env.rb")
     end
 
     it 'does not create a spec file' do
-      expect(File.exist?("#{@name}/spec/login_spec.rb")).to be_falsey
-    end
-
-    after(:all) do
-      FileUtils.rm_rf(@name)
+      expect(File).not_to exist("#{project_name}/spec/home_spec.rb")
     end
   end
 
-  context 'with watir' do
-    before(:all) do
-      @name = 'cucumber-watir'
-      CucumberGenerator.new(['watir', 'cucumber', @name]).invoke_all
-    end
-
-    it 'creates a feature file' do
-      expect(File.exist?("#{@name}/features/login.feature")).to be_truthy
-    end
-
-    it 'creates a step definitions file' do
-      expect(File.exist?("#{@name}/features/step_definitions/login_steps.rb")).to be_truthy
-    end
-
-    it 'creates an env file' do
-      expect(File.exist?("#{@name}/features/support/env.rb")).to be_truthy
-    end
-
-    after(:all) do
-      FileUtils.rm_rf(@name)
-    end
+  context 'with cucumber and appium android' do
+    include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.first}", 'home'
   end
 
-  context 'with appium' do
-    before(:all) do
-      @name = 'cucumber-appium'
-      CucumberGenerator.new(['appium_ios', 'cucumber', @name]).invoke_all
-    end
+  context 'with cucumber and appium ios' do
+    include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}", 'home'
+  end
 
-    it 'creates a feature file' do
-      expect(File.exist?("#{@name}/features/login.feature")).to be_truthy
-    end
+  context 'with cucumber and selenium' do
+    include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}", 'login'
+  end
 
-    it 'creates a step definitions file' do
-      expect(File.exist?("#{@name}/features/step_definitions/login_steps.rb")).to be_truthy
-    end
-
-    it 'creates an env file' do
-      expect(File.exist?("#{@name}/features/support/env.rb")).to be_truthy
-    end
-
-    after(:all) do
-      FileUtils.rm_rf(@name)
-    end
+  context 'with cucumber and watir' do
+    include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}", 'login'
   end
 end
