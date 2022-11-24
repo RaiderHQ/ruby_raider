@@ -8,6 +8,8 @@ class CommonGenerator < Generator
   end
 
   def generate_config_file
+    return unless (@_initializer.first & %w[android ios]).empty?
+
     template('common/config.tt', "#{name}/config/config.yml")
   end
 

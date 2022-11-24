@@ -17,13 +17,13 @@
         caps
       end
 <% elsif automation == 'cross_platform' %>
-       def new_driver
-        platform = config['platform'].to_s
-        @driver = Appium::Driver.new({ caps: caps[platform] })
-       end
+   def new_driver
+     platform = config['platform'].to_s
+     @driver = Appium::Driver.new({ caps: caps[platform] })
+   end
 <% else %>
-      def new_driver
-       platform = config['platform'].to_s
-       @driver = Appium::Driver.new({ caps: caps })
-      end
+   def new_driver
+     platform = config['platform'].to_s
+     @driver = Appium::Driver.new({ caps: caps })
+   end
 <% end %>
