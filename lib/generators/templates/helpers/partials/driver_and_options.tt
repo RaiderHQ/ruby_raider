@@ -16,10 +16,14 @@
         opts.each {|option| caps.add_argument(option) }
         caps
       end
+<% elsif automation == 'cross_platform' %>
+       def new_driver
+        platform = config['platform'].to_s
+        @driver = Appium::Driver.new({ caps: caps[platform] })
+       end
 <% else %>
       def new_driver
-        appium_file = File.join(Dir.pwd, 'appium.txt')
-        caps = Appium.load_appium_txt(file: appium_file)
-        @driver = Appium::Driver.new(caps)
+       platform = config['platform'].to_s
+       @driver = Appium::Driver.new({ caps: caps })
       end
 <% end %>
