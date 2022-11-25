@@ -18,6 +18,8 @@ Currently we only support:
 * Gerating a Selenium with both Cucumber and Rspec framework
 * Gerating a Watir with both Cucumber and Rspec framework
 * Generating an Appium project with Rspec and Cucumber on IOS
+* Generating an Appium project with Rspec and Cucumber on Android
+* Generating an Appium project with Rspec and Cucumber cross platform
 
 In order to run the appium tests, download the example [app](https://github.com/cloudgrey-io/the-app/releases/tag/v1.10.0)
 
@@ -39,6 +41,8 @@ Commands:
   raider page [PAGE_NAME]          # Creates a new page object
 
   raider path [PATH]               # Sets the default path for scaffolding
+
+  raider platform [PLATFORM]       # Sets the default platform for a cross-platform project
 
   raider raid                      # It runs all the tests in a project
 

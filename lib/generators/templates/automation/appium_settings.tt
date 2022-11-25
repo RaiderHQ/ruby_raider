@@ -1,5 +1,0 @@
-<% if automation == 'ios' %>
-<%= ERB.new(File.read(File.expand_path('./partials/ios_settings.tt', __dir__))).result(binding) -%>
-<% else %>
-<%= ERB.new(File.read(File.expand_path('./partials/android_settings.tt', __dir__))).result(binding) -%>
-<% end %>

@@ -1,0 +1,5 @@
+automationName: UiAutomator2
+platformName: Android
+deviceName: Nexus_7_API_33
+app: "Android-MyDemoAppRN.1.3.0.build-244.apk"
+autoGrantPermissions: true

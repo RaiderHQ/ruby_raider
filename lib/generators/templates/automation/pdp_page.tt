@@ -13,10 +13,6 @@ class PdpPage < AbstractPage
   # Elements
 
   def add_to_cart_button
-      <% if automation == 'ios' %>
-      driver.find_element(accessibility_id: 'Add To Cart button')
-      <% else %>
-      driver.find_element(xpath: '//android.view.ViewGroup[@content-desc="Add To Cart button"]/android.widget.TextView')
-      <% end %>
+    <%= ERB.new(File.read(File.expand_path('./partials/pdp_page_selector.tt', __dir__))).result(binding) %>
   end
 end

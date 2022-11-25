@@ -30,4 +30,10 @@ class HelpersGenerator < Generator
 
     template('helpers/driver_helper.tt', "#{name}/helpers/driver_helper.rb")
   end
+
+  def generate_pdp_page
+    return unless (@_initializer.first.include?('cross_platform'))
+
+    template('helpers/appium_helper.tt', "#{name}/helpers/appium_helper.rb")
+  end
 end
