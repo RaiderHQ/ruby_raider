@@ -40,7 +40,7 @@ class MenuGenerator
     prompt.select('Please select your mobile platform') do |menu|
       menu.choice :iOS, -> { choose_test_framework 'ios' }
       menu.choice :Android, -> { choose_test_framework 'android' }
-      menu.choice :Cross_Platform, -> { error_handling('Cross Platform') }
+      menu.choice :Cross_Platform, -> { choose_test_framework 'cross_platform' }
       menu.choice :Quit, -> { exit }
     end
   end

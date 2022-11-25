@@ -34,10 +34,6 @@ describe AutomationGenerator do
     it 'creates a pdp page file' do
       expect(File).to exist("#{name}/page_objects/pages/pdp_page.rb")
     end
-
-    it 'creates an appium config file' do
-      expect(File).to exist("#{name}/appium.txt")
-    end
   end
 
   context 'with rspec and selenium' do
@@ -45,7 +41,7 @@ describe AutomationGenerator do
   end
 
   context 'with rspec and watir' do
-    include_examples 'creates web automation files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
+    include_examples 'creates web automation files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}"
   end
 
   context 'with cucumber and selenium' do
@@ -53,7 +49,7 @@ describe AutomationGenerator do
   end
 
   context 'with cucumber and watir' do
-    include_examples 'creates web automation files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
+    include_examples 'creates web automation files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[3]}"
   end
 
   context 'with rspec and appium android' do
@@ -70,5 +66,13 @@ describe AutomationGenerator do
 
   context 'with cucumber and appium ios' do
     include_examples 'creates mobile automation files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}"
+  end
+
+  context 'with cucumber and appium cross platform' do
+    include_examples 'creates mobile automation files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
+  end
+
+  context 'with cucumber and appium cross platform' do
+    include_examples 'creates mobile automation files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
   end
 end

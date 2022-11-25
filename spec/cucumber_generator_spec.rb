@@ -30,11 +30,15 @@ describe CucumberGenerator do
     include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}", 'home'
   end
 
+  context 'with cucumber and appium cross platform' do
+    include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}", 'home'
+  end
+
   context 'with cucumber and selenium' do
     include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}", 'login'
   end
 
   context 'with cucumber and watir' do
-    include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}", 'login'
+    include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[3]}", 'login'
   end
 end

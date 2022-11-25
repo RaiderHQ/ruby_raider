@@ -38,6 +38,11 @@ class Utilities
     overwrite_yaml
   end
 
+  def platform=(platform)
+    @config['platform'] = platform
+    overwrite_yaml
+  end
+
   def browser_options=(*opts)
     @config['browser_options'] = opts.flatten
     overwrite_yaml
