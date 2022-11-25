@@ -4,7 +4,7 @@ require 'fileutils'
 require 'rspec'
 require_relative '../lib/generators/menu_generator'
 
-AUTOMATION_TYPES = %w[android ios selenium watir].freeze
+AUTOMATION_TYPES = %w[android ios selenium watir cross_platform].freeze
 FRAMEWORKS = %w[cucumber rspec].freeze
 
 RSpec.configure do |config|

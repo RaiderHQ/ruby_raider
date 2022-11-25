@@ -23,7 +23,6 @@
    end
 <% else %>
    def new_driver
-     platform = config['platform'].to_s
      @driver = Appium::Driver.new({ caps: caps })
    end
 <% end %>

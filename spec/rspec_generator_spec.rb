@@ -19,7 +19,7 @@ describe RspecGenerator do
   end
 
   context 'with rspec and watir' do
-    include_examples 'creates rspec files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}", 'login'
+    include_examples 'creates rspec files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}", 'login'
   end
 
   context 'with rspec and appium android' do
@@ -28,5 +28,9 @@ describe RspecGenerator do
 
   context 'with rspec and appium ios' do
     include_examples 'creates rspec files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[1]}", 'pdp'
+  end
+
+  context 'with rspec and appium cross platform' do
+    include_examples 'creates rspec files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}", 'pdp'
   end
 end

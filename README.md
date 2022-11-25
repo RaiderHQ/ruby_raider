@@ -47,6 +47,10 @@ Ruby Raider is a generator and scaffolding gem to make UI test automation easier
 
 * Generating a framework with Cucumber and Appium for Android
 
+* Generating a framework with Rspec and Appium cross platform
+
+* Generating a framework with Cucumber and Appium cross platform
+
 ***In order to run the Appium tests, download the example [app](https://github.com/saucelabs/my-demo-app-rn).***
 
 This works in all the platforms (Tested on Mac OS, Linux and Windows).
@@ -92,6 +96,8 @@ Commands:
   raider page [PAGE_NAME]           # Creates a new page object
   
   raider path [PATH]                # Sets the default path for scaffolding
+
+  raider platform [PLATFORM]        # Sets the default platform for a cross-platform project
   
   raider raid                       # Runs all the tests in a project
   

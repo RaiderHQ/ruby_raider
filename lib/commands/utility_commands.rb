@@ -72,4 +72,12 @@ class UtilityCommands < Thor
          type: :string, required: false, desc: 'The path where your config file will be created', aliases: '-p'
   option :delete,
          type: :boolean, required: false, desc: 'This will delete the selected config file', aliases: '-d'
+
+  desc 'platform [platform]', 'Sets the default platform for a cross-platform project'
+
+  def platform(platform)
+    Utilities.new.platform = platform
+  end
+
+  map '-pl' => 'platform'
 end
