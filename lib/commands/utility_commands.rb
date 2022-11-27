@@ -51,11 +51,11 @@ class UtilityCommands < Thor
 
   map '-bo' => 'browser_options'
 
-  desc 'raid', 'It runs all the tests in a project'
+  desc 'raid [OPTS]', 'It runs all the tests in a project'
   option :parallel,
          type: :boolean, required: false, desc: 'It runs the tests in parallel', aliases: '-p'
   option :opts,
-         type: :array, required: false, desc: 'The options you your parallelization to run with', aliases: '-o'
+         type: :array, required: false, desc: 'The options that your run will run with', aliases: '-o'
 
   def raid
     if options[:parallel]

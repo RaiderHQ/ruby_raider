@@ -32,7 +32,7 @@ class HelpersGenerator < Generator
   end
 
   def generate_pdp_page
-    return unless (@_initializer.first.include?('cross_platform'))
+    return unless @_initializer.first.include?('cross_platform')
 
     template('helpers/appium_helper.tt', "#{name}/helpers/appium_helper.rb")
   end
