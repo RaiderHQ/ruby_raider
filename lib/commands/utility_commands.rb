@@ -55,7 +55,7 @@ class UtilityCommands < Thor
   option :parallel,
          type: :boolean, required: false, desc: 'It runs the tests in parallel', aliases: '-p'
   option :opts,
-         type: :array, required: false, desc: 'The options you your parallelization to run with', aliases: '-o'
+         type: :array, required: false, desc: 'The options that your run will run with', aliases: '-o'
 
   def raid
     if options[:parallel]

@@ -1,11 +1,10 @@
-<%= ERB.new(File.read(File.expand_path('./partials/require_raider.tt', __dir__)), nil, '-').result(binding) -%>
+<%= ERB.new(File.read(File.expand_path('./partials/require_raider.tt', __dir__)), trim_mode: '-').result(binding) -%>
 
 class AbstractPage
-<% if automation == 'cross_platform' %>
+<% if automation == 'cross_platform' -%>
   include Raider::AppiumHelper
-<% end %>
-
-  <%= ERB.new(File.read(File.expand_path('./partials/initialize_selector.tt', __dir__))).result(binding) -%>
-  <%= ERB.new(File.read(File.expand_path('./partials/visit_method.tt', __dir__))).result(binding) -%>
-  <%= ERB.new(File.read(File.expand_path('./partials/url_methods.tt', __dir__))).result(binding) -%>
+<% end -%>
+<%= ERB.new(File.read(File.expand_path('./partials/initialize_selector.tt', __dir__))).result(binding) -%>
+<%= ERB.new(File.read(File.expand_path('./partials/visit_method.tt', __dir__))).result(binding) -%>
+<%= ERB.new(File.read(File.expand_path('./partials/url_methods.tt', __dir__))).result(binding) -%>
 end

@@ -11,7 +11,7 @@ module Raider
   module DriverHelper
     attr_reader :driver
 
-    <%= ERB.new(File.read(File.expand_path('./partials/driver_and_options.tt', __dir__))).result(binding).strip! %>
+ <%= ERB.new(File.read(File.expand_path('./partials/driver_and_options.tt', __dir__)), trim_mode: '-').result(binding).strip! %>
 
   <% if automation == 'cross_platform' -%>
   private
@@ -21,9 +21,10 @@ module Raider
     end
 <% end -%>
 <% if automation != 'selenium'  -%>
+
     def caps
       YAML.load_file('config/capabilities.yml')
     end
-    <% end -%>
-  end
+<% end -%>
+end
 end

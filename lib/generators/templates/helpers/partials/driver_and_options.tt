@@ -1,28 +1,28 @@
-<% if automation == 'selenium' %>
+<% if automation == 'selenium' -%>
       def new_driver(*opts)
-        @config = YAML.load_file('config/config.yml')
-        browser = @config['browser'].to_sym
-        @driver = Selenium::WebDriver.for(browser, capabilities: browser_options(*opts))
-      end
+      @config = YAML.load_file('config/config.yml')
+      browser = @config['browser'].to_sym
+      @driver = Selenium::WebDriver.for(browser, capabilities: browser_options(*opts))
+    end
 
-      def browser_options(*opts)
-        opts = opts.empty? ? @config['browser_options'] : opts
-        create_options(*opts)
-      end
+    def browser_options(*opts)
+      opts = opts.empty? ? @config['browser_options'] : opts
+      create_options(*opts)
+    end
 
-      def create_options(*opts)
-        browser = @config['browser'] == :ie ? @config['browser'].to_s.upcase : @config['browser'].to_s.capitalize
-        caps = "Selenium::WebDriver::#{browser}::Options".constantize.new
-        opts.each {|option| caps.add_argument(option) }
-        caps
-      end
-<% elsif automation == 'cross_platform' %>
-   def new_driver
-     platform = config['platform'].to_s
-     @driver = Appium::Driver.new({ caps: caps[platform] })
-   end
-<% else %>
-   def new_driver
-     @driver = Appium::Driver.new({ caps: caps })
-   end
-<% end %>
+    def create_options(*opts)
+      browser = @config['browser'] == :ie ? @config['browser'].to_s.upcase : @config['browser'].to_s.capitalize
+      caps = "Selenium::WebDriver::#{browser}::Options".constantize.new
+      opts.each { |option| caps.add_argument(option) }
+      caps
+    end
+<% elsif automation == 'cross_platform' -%>
+  def new_driver
+    platform = config['platform'].to_s
+    @driver = Appium::Driver.new({ caps: caps[platform] })
+  end
+<% else -%>
+  def new_driver
+    @driver = Appium::Driver.new({ caps: caps })
+  end
+<% end -%>

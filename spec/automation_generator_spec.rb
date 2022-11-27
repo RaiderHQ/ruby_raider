@@ -71,8 +71,4 @@ describe AutomationGenerator do
   context 'with cucumber and appium cross platform' do
     include_examples 'creates mobile automation files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
   end
-
-  context 'with cucumber and appium cross platform' do
-    include_examples 'creates mobile automation files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
-  end
 end
