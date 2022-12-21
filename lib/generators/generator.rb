@@ -8,6 +8,7 @@ class Generator < Thor::Group
   argument :automation
   argument :framework
   argument :name
+  argument :visual_automation
 
   def self.source_root
     "#{File.dirname(__FILE__)}/templates"

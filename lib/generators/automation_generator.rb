@@ -26,6 +26,7 @@ class AutomationGenerator < Generator
   end
 
   def generate_header_component
+    pp @_initializer
     return unless (@_initializer.first & %w[android ios cross_platform]).empty?
 
     template('automation/component.tt', "#{name}/page_objects/components/header_component.rb")

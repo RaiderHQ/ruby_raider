@@ -1,6 +1,7 @@
-<% case automation
- when 'selenium' -%>
+<% if automation == 'selenium' && visual_automation == true %>
+<%= ERB.new(File.read(File.expand_path('./partials/visual_rspec_login.tt', __dir__))).result(binding) -%>
+<% elsif automation == 'selenium' && visual_automation == false %>
 <%= ERB.new(File.read(File.expand_path('./partials/selenium_login.tt', __dir__))).result(binding) %>
-<% when 'watir' -%>
+<% elsif automation == 'watir' && visual_automation == false %>
 <%= ERB.new(File.read(File.expand_path('./partials/watir_login.tt', __dir__))).result(binding) %>
-<% end -%>
+<% end %>

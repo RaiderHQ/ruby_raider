@@ -80,4 +80,15 @@ class UtilityCommands < Thor
   end
 
   map '-pl' => 'platform'
+
+  desc 'download_builds [build_type]', 'It downloads the example builds for appium projects'
+  def download_builds(build_type)
+    if %w[android, ios, both].include?(build_type)
+      raise 'Please select one of the following build types: android, ios, both'
+    end
+
+    Utilities.new.download_builds build_type
+  end
+
+  map '-d' => 'download_builds'
 end

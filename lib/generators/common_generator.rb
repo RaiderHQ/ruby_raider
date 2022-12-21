@@ -22,10 +22,10 @@ class CommonGenerator < Generator
   end
 
   def create_allure_folder
-    empty_directory "#{name}/allure-results"
+    empty_directory "#{name}/allure-results" unless @_initializer.first.last
   end
 
   def create_screenshots_folder
-    empty_directory "#{name}/allure-results/screenshots"
+    empty_directory "#{name}/allure-results/screenshots" unless @_initializer.first.last
   end
 end

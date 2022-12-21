@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'yaml'
+require 'open-uri'
 
 class Utilities
   def initialize
@@ -65,5 +66,33 @@ class Utilities
 
   def overwrite_yaml
     File.open(@path, 'w') { |file| YAML.dump(@config, file) }
+  end
+
+  def download_builds(build_type)
+    if build_type == 'android'
+      download_android_build
+    elsif build_type == 'ios'
+      download_ios_build
+    else
+      download_android_build
+      download_ios_build
+    end
+  end
+
+  private
+
+  def download_android_build
+    download_build('Android-MyDemoAppRN.1.3.0.build-244.apk',
+                   'https://github.com/saucelabs/my-demo-app-rn/releases/download/v1.3.0/Android-MyDemoAppRN.1.3.0.build-244.apk')
+  end
+
+  def download_ios_build
+    download_build('iOS-Simulator-MyRNDemoApp.1.3.0-162.zip',
+                   'https://github.com/saucelabs/my-demo-app-rn/releases/download/v1.3.0/iOS-Simulator-MyRNDemoApp.1.3.0-162.zip')
+  end
+  def download_build(name, url)
+    open(name, 'wb') do |file|
+      file << open(url).read
+    end
   end
 end
