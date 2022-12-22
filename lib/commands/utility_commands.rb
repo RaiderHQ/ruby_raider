@@ -94,7 +94,8 @@ class UtilityCommands < Thor
 
   desc 'version', 'It shows the version of Ruby Raider you are currently using'
   def version
-    Utilities.new.version
+    spec_version = Gem::Specification.load('ruby_raider.gemspec').version
+    puts "The Ruby Raider version is #{spec_version}, Happy testing!"
   end
 
   map '-v' => 'version'
