@@ -1,2 +1,6 @@
 browser: :chrome
+<% if visual_automation == true %>
+url: 'https://demo.applitools.com/'
+<% else %>
 url: 'https://automationteststore.com/'
+<% end %>

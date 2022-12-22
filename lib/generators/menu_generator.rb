@@ -25,14 +25,22 @@ class MenuGenerator
     end
   end
 
+  def choose_visual_automation
+    prompt.select('Do you want to add visual automation with applitools?') do |menu|
+      menu.choice :Yes, -> { true  }
+      menu.choice :No, -> { false }
+      menu.choice :Quit, -> { exit }
+    end
+  end
+
   def choose_test_framework(automation)
     return choose_mobile_platform if automation == 'appium'
 
     select_test_framework(automation)
   end
 
-  def set_up_framework(automation, framework)
-    generate_framework(automation, framework)
+  def set_up_framework(automation, framework, visual_automation)
+    generate_framework(automation, framework, visual_automation)
     system "cd #{name} && gem install bundler && bundle install"
   end
 
@@ -45,9 +53,9 @@ class MenuGenerator
     end
   end
 
-  def generate_framework(automation, framework)
+  def generate_framework(automation, framework, visual_automation)
     add_generator framework.capitalize
-    generators.each { |generator| invoke_generator(automation, framework, generator) }
+    generators.each { |generator| invoke_generator(automation, framework, generator, visual_automation) }
   end
 
   protected
@@ -59,7 +67,11 @@ class MenuGenerator
   private
 
   def framework_choice(framework, automation_type)
-    set_up_framework(automation_type, framework.downcase)
+    visual_automation = if automation_type == 'selenium' && framework == 'Rspec'
+                          choose_visual_automation
+                        end
+
+    set_up_framework(automation_type, framework.downcase, visual_automation)
     prompt.say("You have chosen to use #{framework} with #{automation_type}")
   end
 
@@ -75,7 +87,7 @@ class MenuGenerator
     end
   end
 
-  def invoke_generator(automation, framework, generator)
-    Object.const_get("#{generator}Generator").new([automation, framework, name]).invoke_all
+  def invoke_generator(automation, framework, generator, visual_automation)
+    Object.const_get("#{generator}Generator").new([automation, framework, name, visual_automation]).invoke_all
   end
 end

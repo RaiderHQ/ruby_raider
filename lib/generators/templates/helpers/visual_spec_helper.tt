@@ -1,0 +1,30 @@
+# frozen_string_literal: true
+
+require 'rspec'
+require 'eyes_selenium'
+require_relative 'driver_helper'
+require_relative 'visual_helper'
+
+module Raider
+  module SpecHelper
+    RSpec.configure do |config|
+      config.include(DriverHelper)
+      config.include(VisualHelper)
+      config.before(:each) do
+        OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
+        @grid_runner = create_grid_runner
+        @eyes = create_eyes(@grid_runner)
+        configure_eyes @eyes
+        @driver = @eyes.open(driver: new_driver)
+      end
+
+      config.after(:each) do
+        @eyes.close
+        @driver.quit
+        @eyes.abort_async
+        results = @grid_runner.get_all_test_results
+        puts results
+      end
+    end
+  end
+end
