@@ -51,7 +51,7 @@ Ruby Raider is a generator and scaffolding gem to make UI test automation easier
 
 * Generating a framework with Cucumber and Appium cross platform
 
-* Generating a visual testing framework with Rspec, Aplitools and Selenium
+* Generating a visual testing framework with Rspec, Applitools and Selenium
 
 ***In order to run the Appium tests, download the example [app](https://github.com/saucelabs/my-demo-app-rn).***
 
@@ -110,6 +110,8 @@ Commands:
   raider spec [SPEC_NAME]           # Creates a new spec
   
   raider url [URL]                  # Sets the default url for a project
+  
+  raider version                    # It shows the version of Ruby Raider you are currently using
 ```
 
 Ruby raider also supports scaffolding:
