@@ -54,7 +54,8 @@ Ruby Raider is a generator and scaffolding gem to make UI test automation easier
 * Generating a visual testing framework with Rspec, Aplitools and Selenium
 
 ***In order to run the Appium tests, download the example [app](https://github.com/saucelabs/my-demo-app-rn).***
-***In order to run the visual tests with applitools, you need to create an account and get your api key(https://applitools.com/docs/topics/overview/obtain-api-key.html#:~:text=If%20you%20already%20have%20an,Your%20key%20will%20be%20displayed.).***
+
+***In order to run the visual tests with applitools, you need to create an account and get your api key, you can read more [here](https://applitools.com/docs/topics/overview/obtain-api-key.html#:~:text=If%20you%20already%20have%20an,Your%20key%20will%20be%20displayed.).***
 
 This works in all the platforms (Tested on Mac OS, Linux and Windows).
 
