@@ -11,7 +11,7 @@ RSpec.configure do |config|
   config.before(:all) do
     FRAMEWORKS.each do |framework|
       AUTOMATION_TYPES.each do |automation|
-        MenuGenerator.new("#{framework}_#{automation}").generate_framework(automation, framework)
+        MenuGenerator.new("#{framework}_#{automation}").generate_framework(automation, framework, false)
       end
     end
   end

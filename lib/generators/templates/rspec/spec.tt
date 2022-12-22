@@ -1,4 +1,26 @@
-<% if %w[selenium watir].include? automation -%>
+<% if automation == 'selenium' && visual_automation == true %>
+# frozen_string_literal: true
+
+require_relative 'base_spec'
+require_relative '../page_objects/pages/login_page'
+require_relative '../page_objects/pages/app_page'
+
+describe 'Login Page' do
+  let(:app_page) { AppPage.new(@driver) }
+  let(:login_page) { LoginPage.new(@driver) }
+
+  before(:example) do
+    login_page.visit
+  end
+
+  it 'looks as expected' do
+    check_page login_page
+    login_page.login
+    check_page app_page
+  end
+end
+
+<% elsif %w[selenium watir].include? automation -%>
 require_relative 'base_spec'
 require_relative '../page_objects/pages/login_page'
 
