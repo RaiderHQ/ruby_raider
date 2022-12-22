@@ -51,6 +51,8 @@ Ruby Raider is a generator and scaffolding gem to make UI test automation easier
 
 * Generating a framework with Cucumber and Appium cross platform
 
+* Generating a visual testing framework with Rspec, Aplitools and Selenium
+
 ***In order to run the Appium tests, download the example [app](https://github.com/saucelabs/my-demo-app-rn).***
 
 This works in all the platforms (Tested on Mac OS, Linux and Windows).
