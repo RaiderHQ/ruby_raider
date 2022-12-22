@@ -1,0 +1,11 @@
+# frozen_string_literal: true
+
+require_relative '../abstract/abstract_page'
+
+class AppPage < AbstractPage
+  using Raider::SeleniumHelper
+
+  def url(_page)
+    'app.html#'
+  end
+end

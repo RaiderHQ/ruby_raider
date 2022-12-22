@@ -1,0 +1,25 @@
+# frozen_string_literal: true
+
+require_relative '../abstract/abstract_page'
+
+class LoginPage < AbstractPage
+  using Raider::SeleniumHelper
+
+  def url(_page)
+    'index.html'
+  end
+
+  # Actions
+
+  def login
+    login_button.click_when_present
+  end
+
+  private
+
+  # Elements
+
+  def login_button
+    driver.find_element(:id, 'log-in')
+  end
+end

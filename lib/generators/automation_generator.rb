@@ -26,14 +26,15 @@ class AutomationGenerator < Generator
   end
 
   def generate_header_component
-    pp @_initializer
     return unless (@_initializer.first & %w[android ios cross_platform]).empty?
+    return if @_initializer.first.last
 
     template('automation/component.tt', "#{name}/page_objects/components/header_component.rb")
   end
 
   def generate_abstract_component
     return unless (@_initializer.first & %w[android ios cross_platform]).empty?
+    return if @_initializer.first.last
 
     template('automation/abstract_component.tt', "#{name}/page_objects/abstract/abstract_component.rb")
   end
@@ -42,5 +43,17 @@ class AutomationGenerator < Generator
     return if (@_initializer.first & %w[android ios cross_platform]).empty?
 
     template('automation/appium_caps.tt', "#{name}/config/capabilities.yml")
+  end
+
+  def generate_app_page
+    return unless @_initializer.first.last
+
+    template('automation/app_page.tt', "#{name}/page_objects/pages/app_page.rb")
+  end
+
+  def generate_visual_options
+    return unless @_initializer.first.last
+
+    template('automation/visual_options.tt', "#{name}/config/options.yml")
   end
 end

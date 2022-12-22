@@ -1,13 +1,20 @@
 source 'https://rubygems.org'
 
 gem 'activesupport'
+<% unless visual_automation -%>
 gem 'allure-rspec'
 gem 'allure-ruby-commons'
+<% end -%>
 <% if framework == 'cucumber' -%>
 gem 'allure-cucumber'
 <% end -%>
+<% if visual_automation -%>
+gem 'eyes_selenium'
+<% end -%>
+<% unless visual_automation -%>
 gem 'parallel_split_test'
 gem 'parallel_tests'
+<% end -%>
 gem 'rake'
 gem '<%= framework %>'
 <% if framework == 'cucumber' -%>

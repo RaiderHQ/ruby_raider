@@ -91,4 +91,11 @@ class UtilityCommands < Thor
   end
 
   map '-d' => 'download_builds'
+
+  desc 'version', 'It shows the version of Ruby Raider you are currently using'
+  def version
+    Utilities.new.version
+  end
+
+  map '-v' => 'version'
 end

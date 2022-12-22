@@ -8,6 +8,8 @@ class HelpersGenerator < Generator
   end
 
   def generate_allure_helper
+    return if @_initializer.first.last
+
     template('helpers/allure_helper.tt', "#{name}/helpers/allure_helper.rb")
   end
 
@@ -16,6 +18,8 @@ class HelpersGenerator < Generator
   end
 
   def generate_spec_helper
+    return if @_initializer.first.last
+
     template('helpers/spec_helper.tt', "#{name}/helpers/spec_helper.rb") if @_initializer.first.include?('rspec')
   end
 
@@ -31,9 +35,21 @@ class HelpersGenerator < Generator
     template('helpers/driver_helper.tt', "#{name}/helpers/driver_helper.rb")
   end
 
-  def generate_pdp_page
+  def generate_appium_helper
     return unless @_initializer.first.include?('cross_platform')
 
     template('helpers/appium_helper.tt', "#{name}/helpers/appium_helper.rb")
+  end
+
+  def generate_visual_helper
+    return unless @_initializer.first.last
+
+    template('helpers/visual_helper.tt', "#{name}/helpers/visual_helper.rb")
+  end
+
+  def generate_visual_spec_helper
+    return unless @_initializer.first.last
+
+    template('helpers/visual_spec_helper.tt', "#{name}/helpers/spec_helper.rb")
   end
 end

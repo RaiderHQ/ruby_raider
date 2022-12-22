@@ -68,10 +68,16 @@ class Utilities
     File.open(@path, 'w') { |file| YAML.dump(@config, file) }
   end
 
+  def version
+    spec_version = Gem::Specification.load('ruby_raider.gemspec').version
+    puts "The Ruby Raider version is #{spec_version}, Happy testing!"
+  end
+
   def download_builds(build_type)
-    if build_type == 'android'
+    case build_type
+    when 'android'
       download_android_build
-    elsif build_type == 'ios'
+    when 'ios'
       download_ios_build
     else
       download_android_build
