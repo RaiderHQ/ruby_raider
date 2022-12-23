@@ -1,7 +1,7 @@
 # Ruby Raider
 
 [![Gem Version](https://badge.fury.io/rb/ruby_raider.svg)](https://badge.fury.io/rb/ruby_raider)
-[![Rubocop](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml/badge.svg)](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml)
+[![Rubocop](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml/badge.svg)](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml) [![Join the chat at https://gitter.im/RubyRaider/ruby_raider](https://badges.gitter.im/RubyRaider/ruby_raider.svg)](https://gitter.im/RubyRaider/ruby_raider?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 <!-- PROJECT LOGO -->
 <br />
