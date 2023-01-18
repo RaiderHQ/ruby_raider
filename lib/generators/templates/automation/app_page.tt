@@ -3,7 +3,9 @@
 require_relative '../abstract/abstract_page'
 
 class AppPage < AbstractPage
+<% if automation == 'selenium' %>
   using Raider::SeleniumHelper
+<% end %>
 
   def url(_page)
     'app.html#'
