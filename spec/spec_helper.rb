@@ -12,13 +12,17 @@ RSpec.configure do |config|
     FRAMEWORKS.each do |framework|
       AUTOMATION_TYPES.each do |automation|
         MenuGenerator.new("#{framework}_#{automation}").generate_framework(automation, framework, false)
+        MenuGenerator.new("#{framework}_#{automation}_visual").generate_framework(automation, framework, true)
       end
     end
   end
 
   config.after(:all) do
     FRAMEWORKS.each do |framework|
-      AUTOMATION_TYPES.each { |automation| FileUtils.rm_rf("#{framework}_#{automation}") }
+      AUTOMATION_TYPES.each do |automation|
+        FileUtils.rm_rf("#{framework}_#{automation}")
+        FileUtils.rm_rf("#{framework}_#{automation}_visual")
+      end
     end
   end
 end
