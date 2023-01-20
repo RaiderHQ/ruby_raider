@@ -44,6 +44,20 @@ describe HelpersGenerator do
     end
   end
 
+  shared_examples 'creates common visual helpers' do |name|
+    it 'does not create an allure helper file' do
+      expect(File).not_to exist("#{name}/helpers/allure_helper.rb")
+    end
+
+    it 'creates a raider file' do
+      expect(File).to exist("#{name}/helpers/raider.rb")
+    end
+
+    it 'creates a visual helper file' do
+      expect(File).to exist("#{name}/helpers/visual_helper.rb")
+    end
+  end
+
   context 'with rspec and selenium' do
     include_examples 'creates common helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
     include_examples 'creates selenium helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
@@ -54,6 +68,18 @@ describe HelpersGenerator do
     include_examples 'creates common helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}"
     include_examples 'creates watir helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}"
     include_examples 'creates rspec helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}"
+  end
+
+  context 'with rspec, selenium and applitools' do
+    include_examples 'creates common visual helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}_visual"
+    include_examples 'creates selenium helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}_visual"
+    include_examples 'creates rspec helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}_visual"
+  end
+
+  context 'with rspec, watir and applitools' do
+    include_examples 'creates common visual helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}_visual"
+    include_examples 'creates watir helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}_visual"
+    include_examples 'creates rspec helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}_visual"
   end
 
   context 'with cucumber and selenium' do

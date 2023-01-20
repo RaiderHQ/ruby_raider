@@ -25,7 +25,7 @@ describe CommonGenerator do
   end
 
   shared_examples 'creates a capabilities file' do |name|
-    it 'creates a config file' do
+    it 'creates a capabilities file' do
       expect(File).to exist("#{name}/config/capabilities.yml")
     end
   end
@@ -33,6 +33,12 @@ describe CommonGenerator do
   shared_examples "doesn't create a config file" do |name|
     it "doesn't create a config file" do
       expect(File).not_to exist("#{name}/config/config.yml")
+    end
+  end
+
+  shared_examples 'creates an options file' do |name|
+    it 'creates an options file' do
+      expect(File).to exist("#{name}/config/options.yml")
     end
   end
 
@@ -44,6 +50,18 @@ describe CommonGenerator do
   context 'with rspec and watir' do
     include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}"
     include_examples 'creates a config file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}"
+  end
+
+  context 'with rspec, selenium and applitools' do
+    include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}_visual"
+    include_examples 'creates a config file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}_visual"
+    include_examples 'creates an options file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}_visual"
+  end
+
+  context 'with rspec, watir and applitools' do
+    include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}_visual"
+    include_examples 'creates a config file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}_visual"
+    include_examples 'creates an options file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}_visual"
   end
 
   context 'with cucumber and selenium' do

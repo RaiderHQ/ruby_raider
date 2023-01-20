@@ -1,22 +1,22 @@
 # frozen_string_literal: true
 
 module Raider
-<% if framework == 'rspec' -%>
+<%- if framework == 'rspec' -%>
   require_relative 'spec_helper'
-<% end -%>
+<%- end -%>
   <%= ERB.new(File.read(File.expand_path('./partials/require_automation.tt', __dir__))).result(binding).strip! %>
-<% if automation == 'watir' -%>
+<%- if automation == 'watir' -%>
   require_relative 'browser_helper'
-<% else -%>
+<%- else -%>
   require_relative 'driver_helper'
-<% end -%>
-<% unless visual_automation -%>
+<%- end -%>
+<%- unless visual_automation -%>
   require_relative 'allure_helper'
-<% end -%>
-<% if automation == 'cross_platform' -%>
+<%- end -%>
+<%- if automation == 'cross_platform' -%>
   require_relative 'appium_helper'
-<% end -%>
-<% if visual_automation -%>
+<%- end -%>
+<%- if visual_automation -%>
   require_relative 'visual_helper'
-<% end -%>
+<%- end -%>
 end
