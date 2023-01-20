@@ -3,9 +3,9 @@
 require_relative '../abstract/abstract_page'
 
 class LoginPage < AbstractPage
-<% if automation == 'selenium' %>
+<%- if automation == 'selenium' -%>
   using Raider::SeleniumHelper
-<% end %>
+<%- end -%>
 
   def url(_page)
     'index.html'
@@ -14,11 +14,11 @@ class LoginPage < AbstractPage
   # Actions
 
   def login
-  <% if automation == 'watir' %>
+  <%- if automation == 'watir' -%>
     login_button.click
-    <% else %>
+    <%- else -%>
     login_button.click_when_present
-    <% end %>
+    <%- end -%>
   end
 
   private
@@ -26,10 +26,10 @@ class LoginPage < AbstractPage
   # Elements
 
   def login_button
-  <% if automation == 'watir' %>
-  browser.element(id: 'log-in')
-  <% else %>
-  driver.find_element(:id, 'log-in')
-  <% end %>
+  <%- if automation == 'watir' -%>
+    browser.element(id: 'log-in')
+  <%- else -%>
+    driver.find_element(:id, 'log-in')
+  <%- end -%>
   end
 end

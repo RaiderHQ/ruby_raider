@@ -9,7 +9,7 @@ describe 'Login Page' do
   let(:app_page) { AppPage.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
   let(:login_page) { LoginPage.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
 
-  before(:example) do
+  before do
     login_page.visit
   end
 
@@ -19,8 +19,7 @@ describe 'Login Page' do
     check_page app_page
   end
 end
-
-<% elsif %w[selenium watir].include? automation -%>
+<%- elsif %w[selenium watir].include? automation -%>
 require_relative 'base_spec'
 require_relative '../page_objects/pages/login_page'
 
@@ -29,7 +28,7 @@ describe 'Login' do
   let(:login_page) { LoginPage.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
   subject { login_page.header.customer_name }
 
-  before(:example) do
+  before do
     login_page.visit
     login_page.login(user_name, password)
   end
@@ -50,7 +49,7 @@ describe 'Login' do
     end
   end
 end
-<% else -%>
+<%- else -%>
 require_relative '../page_objects/pages/home_page'
 require_relative 'base_spec'
 require_relative '../page_objects/pages/pdp_page'
@@ -67,4 +66,4 @@ class PdpSpec < BaseSpec
     end
   end
 end
-<% end -%>
+<%- end -%>
