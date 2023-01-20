@@ -36,12 +36,28 @@ describe AutomationGenerator do
     end
   end
 
+  shared_examples 'creates web visual automation files' do |name|
+    it 'creates a login page file' do
+      expect(File).to exist("#{name}/page_objects/pages/login_page.rb")
+    end
+
+    it 'creates an abstract page file' do
+      expect(File).to exist("#{name}/page_objects/abstract/abstract_page.rb")
+    end
+
+    it 'creates an app page file' do
+      expect(File).to exist("#{name}/page_objects/pages/app_page.rb")
+    end
+  end
+
   context 'with rspec and selenium' do
     include_examples 'creates web automation files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
+    include_examples 'creates web visual automation files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}_visual"
   end
 
   context 'with rspec and watir' do
     include_examples 'creates web automation files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}"
+    include_examples 'creates web visual automation files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}_visual"
   end
 
   context 'with cucumber and selenium' do

@@ -67,16 +67,10 @@ class MenuGenerator
   private
 
   def framework_choice(framework, automation_type)
-    visual_automation = if automation_type == 'selenium' && framework == 'Rspec'
-                          choose_visual_automation
-                        end
+    visual_automation = choose_visual_automation if %w[selenium watir].include?(automation_type) && framework == 'Rspec'
 
     set_up_framework(automation_type, framework.downcase, visual_automation)
     prompt.say("You have chosen to use #{framework} with #{automation_type}")
-  end
-
-  def error_handling(platform)
-    pp "#{platform} appium is coming soon. Thank you for the interest"
   end
 
   def select_test_framework(automation)

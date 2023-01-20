@@ -10,6 +10,7 @@ gem 'allure-cucumber'
 <% end -%>
 <% if visual_automation -%>
 gem 'eyes_selenium'
+gem 'eyes_universal'
 <% end -%>
 <% unless visual_automation -%>
 gem 'parallel_split_test'
