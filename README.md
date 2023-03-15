@@ -99,7 +99,9 @@ Commands:
   raider helper [HELPER_NAME]       # Creates a new helper
   
   raider new [PROJECT_NAME]         # Creates a new framework based on settings picked
-  
+
+  raider open_ai [REQUEST]          # Uses open AI to create a file or generate output
+ 
   raider page [PAGE_NAME]           # Creates a new page object
   
   raider path [PATH]                # Sets the default path for scaffolding
