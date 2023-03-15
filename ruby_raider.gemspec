@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rubocop-performance', '~> 1.15.0'
   s.add_development_dependency 'rubocop-rspec', '~> 2.9.0'
 
+  s.add_runtime_dependency 'ruby-openai', '~> 3.5'
   s.add_runtime_dependency 'thor', '~> 1.2.1'
   s.add_runtime_dependency 'tty-prompt', '~> 0.23.1'
-  s.add_runtime_dependency 'ruby-openai', '~> 3.5'
 end
