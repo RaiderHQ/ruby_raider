@@ -95,7 +95,7 @@ class UtilityCommands < Thor
 
   desc 'version', 'It shows the version of Ruby Raider you are currently using'
   def version
-    puts 'The Ruby Raider version is 0.5.0, Happy testing!'
+    puts 'The Ruby Raider version is 0.5.1, Happy testing!'
   end
 
   map '-v' => 'version'
@@ -103,8 +103,6 @@ class UtilityCommands < Thor
   desc 'open_ai [REQUEST]', 'Uses open AI to create a file or generate output'
   option :path,
          type: :string, required: false, desc: 'The path where your file will be created', aliases: '-p'
-  option :output,
-         type: :string, required: false, desc: 'This will output the response from open AI on the terminal', aliases: '-o'
 
   def open_ai(request)
     if options[:path]
@@ -113,4 +111,6 @@ class UtilityCommands < Thor
       OpenAi.output(request)
     end
   end
+
+  map '-oa' => 'open_ai'
 end
