@@ -2,20 +2,28 @@
 
 require 'rspec'
 require 'eyes_selenium'
+<%- if automation == 'selenium' -%>
 require_relative 'driver_helper'
+<%- else -%>
+require_relative 'browser_helper'
+<%- end -%>
 require_relative 'visual_helper'
 
 module Raider
   module SpecHelper
     RSpec.configure do |config|
-      config.include(DriverHelper)
+      config.include(<%- if automation == 'watir' -%>BrowserHelper<% else -%>DriverHelper<%- end -%>)
       config.include(VisualHelper)
       config.before(:each) do
         OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
         @grid_runner = create_grid_runner
         @eyes = create_eyes(@grid_runner)
         configure_eyes @eyes
+        <%- if automation == 'selenium' -%>
         @driver = @eyes.open(driver: new_driver)
+        <%- else -%>
+        @driver = @eyes.open(driver: new_browser.driver)
+        <%- end -%>
       end
 
       config.after(:each) do
