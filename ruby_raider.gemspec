@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name        = 'ruby_raider'
-  s.version     = '0.4.9'
+  s.version     = '0.5.0'
   s.summary     = 'A gem to make setup and start of UI automation projects easier'
   s.description = 'This gem has everything you need to start working with test automation'
   s.authors     = ['Agustin Pequeno']
@@ -22,4 +22,5 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency 'thor', '~> 1.2.1'
   s.add_runtime_dependency 'tty-prompt', '~> 0.23.1'
+  s.add_runtime_dependency 'ruby-openai', '~> 3.5'
 end
