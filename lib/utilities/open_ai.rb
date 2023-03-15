@@ -10,8 +10,8 @@ module OpenAi
 
     def configure_client
       OpenAI.configure do |config|
-        config.access_token = ENV.fetch('OPENAI_ACCESS_TOKEN') # Required
-        config.organization_id = ENV.fetch('OPENAI_ORGANIZATION_ID') # Optional.
+        config.access_token = ENV.fetch('OPENAI_ACCESS_TOKEN')
+        config.organization_id = ENV.fetch('OPENAI_ORGANIZATION_ID', nil)
       end
     end
 
@@ -27,6 +27,11 @@ module OpenAi
     def create_file(choice = 0, path, request)
       response = input(request)
       File.write(path, response.dig("choices", choice, "message", "content"))
+    end
+
+    def output(choice = 0, request)
+      response = input(request)
+      puts response.dig("choices", choice, "message", "content")
     end
   end
 end

@@ -2,6 +2,7 @@
 
 require 'thor'
 require_relative '../utilities/utilities'
+require_relative '../utilities/open_ai'
 
 class UtilityCommands < Thor
   desc 'path [PATH]', 'Sets the default path for scaffolding'
@@ -73,7 +74,7 @@ class UtilityCommands < Thor
   option :delete,
          type: :boolean, required: false, desc: 'This will delete the selected config file', aliases: '-d'
 
-  desc 'platform [platform]', 'Sets the default platform for a cross-platform project'
+  desc 'platform [PLATFORM]', 'Sets the default platform for a cross-platform project'
 
   def platform(platform)
     Utilities.new.platform = platform
@@ -81,7 +82,7 @@ class UtilityCommands < Thor
 
   map '-pl' => 'platform'
 
-  desc 'download_builds [build_type]', 'It downloads the example builds for appium projects'
+  desc 'download_builds [BUILD_TYPE]', 'It downloads the example builds for appium projects'
   def download_builds(build_type)
     if %w[android, ios, both].include?(build_type)
       raise 'Please select one of the following build types: android, ios, both'
@@ -100,16 +101,16 @@ class UtilityCommands < Thor
   map '-v' => 'version'
 
   desc 'open_ai [REQUEST]', 'Uses open AI to create a file or generate output'
-  option :file,
-         type: :string, required: false, desc: 'The path where your file will be created', aliases: '-f'
-  option :print,
-         type: :string, required: false, desc: 'This will print the response from open AI', aliases: '-p'
+  option :path,
+         type: :string, required: false, desc: 'The path where your file will be created', aliases: '-p'
+  option :output,
+         type: :string, required: false, desc: 'This will output the response from open AI on the terminal', aliases: '-o'
 
-  def open_ai(path, request)
+  def open_ai(request)
     if options[:path]
-      OpenAi.create_file(choice = 0, path, request)
+      OpenAi.create_file(choice = 0, options[:path], request)
     else
-      pp OpenAi.input(request)
+      OpenAi.output(request)
     end
   end
 end
