@@ -22,3 +22,8 @@ desc 'Updates a path'
 task :path, [:path] do |_t, args|
   ScaffoldingCommands.new.invoke(:path, nil, %W[#{args.path} -s])
 end
+
+desc 'Download mobile builds'
+task :builds, [:type] do |_t, args|
+  ScaffoldingCommands.new.invoke(:download_builds, nil, %W[#{args.type}])
+end

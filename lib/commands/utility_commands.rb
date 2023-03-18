@@ -84,7 +84,7 @@ class UtilityCommands < Thor
 
   desc 'download_builds [BUILD_TYPE]', 'It downloads the example builds for appium projects'
   def download_builds(build_type)
-    raise 'Please select one of the following build types: android, ios, both' if %w[android ios both].include?(build_type)
+    raise 'Please select one of the following build types: android, ios, both' unless %w[android ios both].include?(build_type)
 
     Utilities.download_builds build_type
   end

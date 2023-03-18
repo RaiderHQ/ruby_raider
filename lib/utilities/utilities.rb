@@ -91,20 +91,11 @@ module Utilities
     end
 
     def download_build(name, url)
-      connection = Faraday.new(url: url)
+      response = Faraday.get(url)
+      build_url = Faraday.get(response.headers['location'])
 
-      connection.get do |request|
-        request.url(url)
-        request.headers['Accept-Encoding'] = 'identity'
-
-        File.open(name, 'wb') do |file|
-          request.on_data = proc do |chunk|
-            file.write(chunk)
-          end
-
-          response = connection.send(request)
-          raise "Invalid response #{response.status}" unless response.status == 200
-        end
+      File.open(name, 'wb') do |file|
+        file.write(build_url.body)
       end
     end
 
