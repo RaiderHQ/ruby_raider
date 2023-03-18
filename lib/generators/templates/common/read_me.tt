@@ -56,6 +56,9 @@ Ruby Raider is a generator and scaffolding gem to make UI test automation easier
 
 ***In order to run the visual tests with applitools, you need to create an account and get your api key, you can read more [here](https://applitools.com/docs/topics/overview/obtain-api-key.html#:~:text=If%20you%20already%20have%20an,Your%20key%20will%20be%20displayed.).***
 
+***To use the open ai integration you need to set up the OPENAI_ACCESS_TOKEN environment variable and
+you can also set the optional OPENAI_ORGANIZATION_ID if you have an organization***
+
 This works in all the platforms (Tested on Mac OS, Linux and Windows).
 
 ## Getting started
@@ -133,3 +136,16 @@ raider path [PATH_NAME] --helper or -h
 ```
 
 If you don't specify an option, path will assume you want to change the default path for pages.
+
+### Open AI Commands
+
+If you want to set the default path for the creation of your features, helpers and specs:
+
+```ruby
+# Will print the result of the request on the terminal
+raider open_ai [REQUEST]
+# Will create a file with the result of your request as content
+raider open_ai [REQUEST] --path or -p [PATH]
+# Will input the content of the chosen file into open ai and will edit it based on the result
+raider path [PATH_NAME] --edit or -e [FILE_PATH]
+```

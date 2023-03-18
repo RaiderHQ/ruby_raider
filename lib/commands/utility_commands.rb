@@ -15,7 +15,7 @@ class UtilityCommands < Thor
 
   def path(default_path)
     type = options.empty? ? 'page' : options.keys.first
-    Utilities.new.send("#{type}_path=", default_path)
+    Utilities.send("#{type}_path=", default_path)
   end
 
   map '-p' => 'path'
@@ -23,7 +23,7 @@ class UtilityCommands < Thor
   desc 'url [URL]', 'Sets the default url for a project'
 
   def url(default_url)
-    Utilities.new.url = default_url
+    Utilities.url = default_url
   end
 
   map '-u' => 'url'
@@ -35,7 +35,7 @@ class UtilityCommands < Thor
          type: :boolean, required: false, desc: 'This will delete your browser options', aliases: '-d'
 
   def browser(default_browser = nil)
-    Utilities.new.browser = default_browser if default_browser
+    Utilities.browser = default_browser if default_browser
     browser_options(options[:opts]) if options[:opts] || options[:delete]
   end
 
@@ -46,8 +46,8 @@ class UtilityCommands < Thor
          type: :boolean, required: false, desc: 'This will delete your browser options', aliases: '-d'
 
   def browser_options(*opts)
-    Utilities.new.browser_options = opts unless opts.empty?
-    Utilities.new.delete_browser_options if options[:delete]
+    Utilities.browser_options = opts unless opts.empty?
+    Utilities.delete_browser_options if options[:delete]
   end
 
   map '-bo' => 'browser_options'
@@ -60,9 +60,9 @@ class UtilityCommands < Thor
 
   def raid
     if options[:parallel]
-      Utilities.new.parallel_run(options[:opts])
+      Utilities.parallel_run(options[:opts])
     else
-      Utilities.new.run(options[:opts])
+      Utilities.run(options[:opts])
     end
   end
 
@@ -77,25 +77,25 @@ class UtilityCommands < Thor
   desc 'platform [PLATFORM]', 'Sets the default platform for a cross-platform project'
 
   def platform(platform)
-    Utilities.new.platform = platform
+    Utilities.platform = platform
   end
 
   map '-pl' => 'platform'
 
   desc 'download_builds [BUILD_TYPE]', 'It downloads the example builds for appium projects'
   def download_builds(build_type)
-    if %w[android, ios, both].include?(build_type)
-      raise 'Please select one of the following build types: android, ios, both'
-    end
+    raise 'Please select one of the following build types: android, ios, both' if %w[android ios both].include?(build_type)
 
-    Utilities.new.download_builds build_type
+    Utilities.download_builds build_type
   end
 
   map '-d' => 'download_builds'
 
   desc 'version', 'It shows the version of Ruby Raider you are currently using'
   def version
-    puts 'The Ruby Raider version is 0.5.2, Happy testing!'
+    spec = Gem::Specification.load('ruby_raider.gemspec')
+    version = spec.version
+    puts "The Ruby Raider version is #{version}, Happy testing!"
   end
 
   map '-v' => 'version'
@@ -103,14 +103,20 @@ class UtilityCommands < Thor
   desc 'open_ai [REQUEST]', 'Uses open AI to create a file or generate output'
   option :path,
          type: :string, required: false, desc: 'The path where your file will be created', aliases: '-p'
+  option :edit,
+         type: :string, required: false, desc: 'Path to the file you want to edit', aliases: '-e'
 
   def open_ai(request)
-    if options[:path]
+    if options[:edit]
+      pp 'Editing File...'
+      OpenAi.edit_file(options[:edit], request)
+      pp "File #{options[:edit]} edited"
+    elsif options[:path]
       pp 'Generating File...'
-      OpenAi.create_file(choice = 0, options[:path], request)
+      OpenAi.create_file(options[:path], request)
       pp "File created in #{options[:path]}"
     else
-      OpenAi.output(request)
+      puts OpenAi.output(request)
     end
   end
 
