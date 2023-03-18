@@ -106,15 +106,16 @@ class UtilityCommands < Thor
   option :edit,
          type: :string, required: false, desc: 'Path to the file you want to edit', aliases: '-e'
 
-  def open_ai(request)
+  def open_ai(request, path = nil)
+    path ||= options[:path]
     if options[:edit]
       pp 'Editing File...'
       OpenAi.edit_file(options[:edit], request)
       pp "File #{options[:edit]} edited"
-    elsif options[:path]
+    elsif path
       pp 'Generating File...'
-      OpenAi.create_file(options[:path], request)
-      pp "File created in #{options[:path]}"
+      OpenAi.create_file(path, request)
+      pp "File created in #{path}"
     else
       puts OpenAi.output(request)
     end

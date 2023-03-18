@@ -30,22 +30,69 @@ class ScaffoldingCommands < UtilityCommands
 
   map '-pg' => 'page'
 
-  desc 'feature [FEATURE_NAME]', 'Creates a new feature'
+  desc 'feature [NAME]', 'Creates a new feature'
   option :path,
-         type: :string, required: false, desc: 'The path where your feature will be created', aliases: '-p'
+         type: :string,
+         required: false, desc: 'The path where your feature will be created', aliases: '-p'
   option :delete,
-         type: :boolean, required: false, desc: 'This will delete the selected feature', aliases: '-d'
+         type: :boolean,
+         required: false, desc: 'This will delete the selected feature', aliases: '-d'
+  option :open_ai,
+         type: :string, required: false,
+         desc: 'This will create the selected feature based on your prompt using open ai', aliases: '-o'
 
   def feature(name)
     path = options[:path] || load_config_path('feature')
     if options[:delete]
       Scaffolding.new([name, path]).delete_feature
+    elsif options[:open_ai]
+      path ||= 'features'
+      mkdir(path)
+      open_ai(options[:open_ai], "#{path}/#{name}.feature")
     else
       Scaffolding.new([name, path]).generate_feature
     end
   end
 
   map '-f' => 'feature'
+
+  desc 'steps [NAME]', 'Creates a new step definitions file'
+  option :path,
+         type: :string,
+         required: false, desc: 'The path where your feature will be created', aliases: '-p'
+  option :open_ai,
+         type: :string, required: false,
+         desc: 'This will create the selected steps based on your prompt using open ai', aliases: '-o'
+  option :input,
+         type: :string,
+         required: false, desc: 'It uses a file as input to create the steps', aliases: '-i'
+
+  def steps(name)
+    path = 'features/step_definitions'
+    if options[:input]
+      prompt = options[:open_ai] || 'create cucumber steps for the following scenarios in ruby'
+      content = "#{prompt} #{File.read(options[:input])}"
+      open_ai(content, "#{path}/#{name}_steps.rb")
+    else
+      open_ai(options[:open_ai], "#{path}/#{name}_steps.rb")
+    end
+  end
+
+  map '-st' => 'steps'
+
+  desc 'cuke [NAME]', 'Creates feature and step files only using open ai'
+  option :prompt,
+         type: :string,
+         required: true, desc: 'The path where your feature will be created', aliases: '-p'
+
+  def cuke(name)
+    feature_path = "features/#{name}.feature"
+    open_ai(options[:prompt], feature_path)
+    prompt_step = "create cucumber steps for the following scenarios in ruby #{File.read(feature_path)}"
+    open_ai(prompt_step, "features/step_definitions/#{name}_steps.rb")
+  end
+
+  map '-ck' => 'cuke'
 
   desc 'spec [SPEC_NAME]', 'Creates a new spec'
   option :path,
@@ -107,6 +154,12 @@ class ScaffoldingCommands < UtilityCommands
   end
 
   map '-c' => 'config'
+
+  desc 'mkdir [NAME]', "Creates a directory if the directory doesn't exist"
+
+  def mkdir(dir)
+    Dir.mkdir(dir) unless Dir.exist?(dir)
+  end
 
   no_commands do
     def load_config_path(type)
