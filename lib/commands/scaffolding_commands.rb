@@ -1,18 +1,11 @@
 # frozen_string_literal: true
 
+require 'thor'
 require_relative '../generators/menu_generator'
 require_relative '../scaffolding/scaffolding'
 require_relative '../commands/utility_commands'
 
-class ScaffoldingCommands < UtilityCommands
-  desc 'new [PROJECT_NAME]', 'Creates a new framework based on settings picked'
-
-  def new(project_name)
-    MenuGenerator.new(project_name).generate_choice_menu
-  end
-
-  map '-n' => 'new'
-
+class ScaffoldingCommands < Thor
   desc 'page [PAGE_NAME]', 'Creates a new page object'
   option :path,
          type: :string, required: false, desc: 'The path where your page will be created', aliases: '-p'
@@ -28,13 +21,13 @@ class ScaffoldingCommands < UtilityCommands
     end
   end
 
-  map '-pg' => 'page'
-
-  desc 'feature [FEATURE_NAME]', 'Creates a new feature'
+  desc 'feature [NAME]', 'Creates a new feature'
   option :path,
-         type: :string, required: false, desc: 'The path where your feature will be created', aliases: '-p'
+         type: :string,
+         required: false, desc: 'The path where your feature will be created', aliases: '-p'
   option :delete,
-         type: :boolean, required: false, desc: 'This will delete the selected feature', aliases: '-d'
+         type: :boolean,
+         required: false, desc: 'This will delete the selected feature', aliases: '-d'
 
   def feature(name)
     path = options[:path] || load_config_path('feature')
@@ -44,8 +37,6 @@ class ScaffoldingCommands < UtilityCommands
       Scaffolding.new([name, path]).generate_feature
     end
   end
-
-  map '-f' => 'feature'
 
   desc 'spec [SPEC_NAME]', 'Creates a new spec'
   option :path,
@@ -62,8 +53,6 @@ class ScaffoldingCommands < UtilityCommands
     end
   end
 
-  map '-s' => 'spec'
-
   desc 'helper [HELPER_NAME]', 'Creates a new helper'
   option :path,
          type: :string, required: false, desc: 'The path where your helper will be created', aliases: '-p'
@@ -79,8 +68,6 @@ class ScaffoldingCommands < UtilityCommands
     end
   end
 
-  map '-h' => 'helper'
-
   desc 'scaffold [SCAFFOLD_NAME]', 'It generates everything needed to start automating'
 
   def scaffold(name)
@@ -92,21 +79,9 @@ class ScaffoldingCommands < UtilityCommands
     Scaffolding.new([name, load_config_path('page')]).generate_class
   end
 
-  map '-sf' => 'scaffold'
-
   desc 'config', 'Creates configuration file'
   option :delete,
          type: :boolean, required: false, desc: 'This will delete the config file', aliases: '-d'
-
-  def config
-    if options[:delete]
-      Scaffolding.new.delete_config
-    else
-      Scaffolding.new.generate_config
-    end
-  end
-
-  map '-c' => 'config'
 
   no_commands do
     def load_config_path(type)
