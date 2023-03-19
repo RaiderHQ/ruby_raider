@@ -16,7 +16,7 @@ module RubyRaider
 
     desc 'version', 'It shows the version of Ruby Raider you are currently using'
     def version
-      spec = Gem::Specification.load('ruby_raider.gemspec')
+      spec = Gem::Specification.find_by_name('ruby_raider')
       version = spec.version
       puts "The Ruby Raider version is #{version}, Happy testing!"
     end
