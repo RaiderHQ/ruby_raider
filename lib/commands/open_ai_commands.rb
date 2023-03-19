@@ -2,7 +2,7 @@ require 'thor'
 require_relative '../open_ai/open_ai'
 
 class OpenAiCommands < Thor
-  desc 'open_ai [REQUEST]', 'Uses open AI to create a file or generate output'
+  desc 'make [REQUEST]', 'Uses open AI to create a file or generate output'
   option :path,
          type: :string, required: false, desc: 'The path where your file will be created', aliases: '-p'
   option :edit,
