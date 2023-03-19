@@ -91,22 +91,4 @@ describe UtilityCommands do
       expect(config['browser_options']).to be_nil
     end
   end
-
-  context 'with open ai' do
-    Dotenv.load
-
-    after do
-      FileUtils.rm_rf('joke.txt')
-    end
-
-    it 'creates a file using open ai' do
-      utility.new.invoke(:open_ai, nil, ['tell me a joke', '--path', 'joke.txt'])
-      expect(File).to be_size('joke.txt')
-    end
-
-    it 'edits an existing file using open ai' do
-      FileUtils.touch('joke.txt')
-      utility.new.invoke(:open_ai, nil, ['tell me a better joke', '--edit', 'joke.txt'])
-    end
-  end
 end

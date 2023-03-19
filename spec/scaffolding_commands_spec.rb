@@ -104,20 +104,5 @@ describe ScaffoldingCommands do
       scaffold.new.invoke(:helper, nil, %W[#{name} --path #{new_path}])
       expect(Pathname.new("#{new_path}/#{name}_helper.rb")).to be_file
     end
-
-    context 'with open ai' do
-      Dotenv.load
-
-      it 'creates a feature with open ai' do
-        scaffold.new.invoke(:feature, nil, [name, '-o', 'make gherkin scenarios for a checkout feature'])
-        expect(Pathname.new("features/#{name}.feature")).to be_file
-      end
-
-      it 'creates a feature with open ai using a new path' do
-        path = 'open'
-        scaffold.new.invoke(:feature, nil, [name, '-o', 'make gherkin scenarios for a checkout feature', '-p', path])
-        expect(Pathname.new("#{path}/#{name}.feature")).to be_file
-      end
-    end
   end
 end

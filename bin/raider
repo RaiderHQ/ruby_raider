@@ -3,4 +3,4 @@
 
 require_relative '../lib/ruby_raider'
 
-RubyRaider.start
+RubyRaider::Raider.start
