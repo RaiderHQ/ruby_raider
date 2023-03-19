@@ -139,7 +139,7 @@ raider o make [REQUEST] - -path or -p [PATH]
 # Will input the content of the chosen file into open ai and will edit it based on the result
 raider o make [PATH_NAME] - -edit or -e [FILE_PATH]
 # Creates a cucumber file and uses it to input into open ai and create a steps file
-# The prompt is not required because it uses a based prompt
+# The prompt is required
 raider o cucumber [NAME] - -prompt or -p [PROMPT]
 # Creates a cucumber step definitions file based on an scenario file
 raider open_ai steps [NAME]

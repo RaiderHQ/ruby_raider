@@ -26,7 +26,7 @@ class OpenAiCommands < Thor
   desc 'cucumber [NAME]', 'Creates feature and step files only using open ai'
   option :prompt,
          type: :string,
-         required: false, desc: 'The prompt for open ai', aliases: '-p'
+         required: true, desc: 'The prompt for open ai', aliases: '-p'
 
   def cucumber(name)
     feature_path = "features/#{name}.feature"
