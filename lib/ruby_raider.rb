@@ -23,7 +23,7 @@ module RubyRaider
 
     map 'v' => 'version'
 
-    desc 'generate', 'Provides access to all the generators commands'
+    desc 'generate', 'Provides access to all the generator commands'
     subcommand 'generate', ScaffoldingCommands
     map 'g' => 'generate'
 
