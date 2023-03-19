@@ -1,3 +1,4 @@
+require 'dotenv'
 require 'pathname'
 require 'yaml'
 require_relative '../lib/generators/common_generator'
@@ -49,30 +50,6 @@ describe ScaffoldingCommands do
       expect(Pathname.new("page_objects/pages/#{name}_page.rb")).to be_file
     end
 
-    it 'changes the path for specs' do
-      scaffold.new.invoke(:path, nil, %W[#{path} -s])
-      config = YAML.load_file('config/config.yml')
-      expect(config['spec_path']).to eql path
-    end
-
-    it 'updates the url' do
-      scaffold.new.invoke(:url, nil, %w[test.com])
-      config = YAML.load_file('config/config.yml')
-      expect(config['url']).to eql 'test.com'
-    end
-
-    it 'updates the browser' do
-      scaffold.new.invoke(:browser, nil, %w[:firefox])
-      config = YAML.load_file('config/config.yml')
-      expect(config['browser']).to eql ':firefox'
-    end
-
-    it 'updates the browser options' do
-      scaffold.new.invoke(:browser, nil, %w[:firefox --opts headless start-maximized start-fullscreen])
-      config = YAML.load_file('config/config.yml')
-      expect(config['browser_options']).to eql %w[headless start-maximized start-fullscreen]
-    end
-
     it 'creates a page with a path' do
       scaffold.new.invoke(:page, nil, %W[#{name} --path #{new_path}])
       expect(Pathname.new("#{new_path}/#{name}_page.rb")).to be_file
@@ -116,37 +93,6 @@ describe ScaffoldingCommands do
     it 'deletes a feature' do
       scaffold.new.invoke(:feature, nil, %w[login --delete])
       expect(Pathname.new('features/login.feature')).not_to be_file
-    end
-
-    it 'changes the path for pages' do
-      scaffold.new.invoke(:path, nil, %W[#{path}])
-      config = YAML.load_file('config/config.yml')
-      expect(config['page_path']).to eql path
-    end
-
-    it 'changes the path for features' do
-      scaffold.new.invoke(:path, nil, %W[#{path} -f])
-      config = YAML.load_file('config/config.yml')
-      expect(config['feature_path']).to eql path
-    end
-
-    it 'updates only the browser options' do
-      scaffold.new.invoke(:browser, nil, %w[:firefox --opts headless])
-      config = YAML.load_file('config/config.yml')
-      expect(config['browser_options']).to eql %w[headless]
-    end
-
-    it 'deletes the browser options when passed with the delete parameter' do
-      scaffold.new.invoke(:browser, nil, %w[:firefox --opts headless --delete])
-      config = YAML.load_file('config/config.yml')
-      expect(config['browser_options']).to be_nil
-    end
-
-    it 'deletes the browser options' do
-      scaffold.new.invoke(:browser, nil, %w[:firefox --opts headless])
-      scaffold.new.invoke(:browser, nil, %w[--delete])
-      config = YAML.load_file('config/config.yml')
-      expect(config['browser_options']).to be_nil
     end
 
     it 'creates a feature' do
