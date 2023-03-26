@@ -1,19 +1,15 @@
 # frozen_string_literal: true
 
 require 'tty-prompt'
-require_relative 'automation_generator'
-require_relative 'common_generator'
-require_relative 'cucumber_generator'
-require_relative 'helper_generator'
-require_relative 'rspec_generator'
 
 class MenuGenerator
-  attr_reader :prompt, :name, :generators
+  attr_reader :prompt, :name
+
+  include InvokeGenerators
 
   def initialize(project_name)
     @prompt = TTY::Prompt.new
     @name = project_name
-    @generators = %w[Automation Common Helpers]
   end
 
   def generate_choice_menu
@@ -27,7 +23,7 @@ class MenuGenerator
 
   def choose_visual_automation
     prompt.select('Do you want to add visual automation with applitools?') do |menu|
-      menu.choice :Yes, -> { true  }
+      menu.choice :Yes, -> { true }
       menu.choice :No, -> { false }
       menu.choice :Quit, -> { exit }
     end
@@ -39,8 +35,15 @@ class MenuGenerator
     select_test_framework(automation)
   end
 
-  def set_up_framework(automation, framework, visual_automation)
-    generate_framework(automation, framework, visual_automation)
+  def set_up_framework(automation, framework, visual_automation, with_examples)
+    structure = {
+      automation: automation,
+      framework: framework,
+      name: @name,
+      visual: visual_automation,
+      examples: with_examples
+    }
+    generate_framework(structure)
     system "cd #{name} && gem install bundler && bundle install"
   end
 
@@ -53,35 +56,28 @@ class MenuGenerator
     end
   end
 
-  def generate_framework(automation, framework, visual_automation)
-    add_generator framework.capitalize
-    generators.each { |generator| invoke_generator(automation, framework, generator, visual_automation) }
-  end
-
-  protected
-
-  def add_generator(*opts)
-    opts.each { |opt| @generators.push opt }
-  end
-
   private
 
-  def framework_choice(framework, automation_type)
+  def framework_choice(framework, automation_type, with_examples: true)
     visual_automation = choose_visual_automation if %w[selenium watir].include?(automation_type) && framework == 'Rspec'
 
-    set_up_framework(automation_type, framework.downcase, visual_automation)
+    set_up_framework(automation_type, framework.downcase, visual_automation, with_examples)
     prompt.say("You have chosen to use #{framework} with #{automation_type}")
   end
 
   def select_test_framework(automation)
     prompt.select('Please select your test framework') do |menu|
-      menu.choice :Cucumber, -> { framework_choice('Cucumber', automation) }
-      menu.choice :Rspec, -> { framework_choice('Rspec', automation) }
+      menu.choice :Cucumber, -> { select_example_files('Cucumber', automation) }
+      menu.choice :Rspec, -> { select_example_files('Rspec', automation) }
       menu.choice :Quit, -> { exit }
     end
   end
 
-  def invoke_generator(automation, framework, generator, visual_automation)
-    Object.const_get("#{generator}Generator").new([automation, framework, name, visual_automation]).invoke_all
+  def select_example_files(framework, automation)
+    prompt.select('Would you like to create example files?') do |menu|
+      menu.choice :Yes, -> { framework_choice(framework, automation) }
+      menu.choice :No, -> { framework_choice(framework, automation, with_examples: false) }
+      menu.choice :Quit, -> { exit }
+    end
   end
 end

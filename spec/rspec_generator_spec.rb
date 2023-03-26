@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../lib/generators/rspec_generator'
+require_relative '../lib/generators/rspec/rspec_generator'
 require_relative 'spec_helper'
 
 describe RspecGenerator do

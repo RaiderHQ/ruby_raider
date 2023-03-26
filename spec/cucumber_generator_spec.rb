@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../lib/generators/cucumber_generator'
+require_relative '../lib/generators/cucumber/cucumber_generator'
 require_relative 'spec_helper'
 
 describe CucumberGenerator do
