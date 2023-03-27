@@ -4,6 +4,7 @@ require 'forwardable'
 require 'logger'
 
 module Raider
+  # The RaiderLog module provides logging functionality for the RubyRaider application.
   module RaiderLogHelper
     extend Forwardable
     def_delegators :level, :level=, :debug, :info, :warn, :error, :fatal
