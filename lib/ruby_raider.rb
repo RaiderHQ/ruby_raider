@@ -3,9 +3,11 @@
 require_relative '../lib/commands/open_ai_commands'
 require_relative '../lib/commands/scaffolding_commands'
 require_relative '../lib/commands/utility_commands'
+require_relative '../lib/utilities/raider_log'
 
 module RubyRaider
   class Raider < Thor
+    include RaiderLog
     desc 'new [PROJECT_NAME]', 'Creates a new framework based on settings picked'
 
     def new(project_name)
@@ -18,7 +20,7 @@ module RubyRaider
     def version
       spec = Gem::Specification.find_by_name('ruby_raider')
       version = spec.version
-      puts "The Ruby Raider version is #{version}, Happy testing!"
+      RaiderLog.info(to_s) { "The Ruby Raider version is #{version}, Happy testing!" }
     end
 
     map 'v' => 'version'

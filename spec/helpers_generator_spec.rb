@@ -12,6 +12,10 @@ describe HelpersGenerator do
     it 'creates an allure helper file' do
       expect(File).to exist("#{name}/helpers/allure_helper.rb")
     end
+
+    it 'create raider log helper file' do
+      expect(File).to exist("#{name}/helpers/allure_helper.rb")
+    end
   end
 
   shared_examples 'creates selenium helpers' do |name|

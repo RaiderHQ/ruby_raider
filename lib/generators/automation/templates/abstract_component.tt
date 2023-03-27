@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
 class AbstractComponent
+  include Raider::RaiderLogHelper
   attr_reader :component
 
   def initialize(component)
     @component = component
+    RaiderLogHelper.info(to_s) { "Url: #{component.current_url}, Title: #{component.title}" }
   end
 end

@@ -52,4 +52,8 @@ class HelpersGenerator < Generator
 
     template('helpers/visual_spec_helper.tt', "#{name}/helpers/spec_helper.rb")
   end
+
+  def generate_logger
+    template('helpers/raider_log_helper.tt', "#{name}/helpers/raider_log_helper.rb")
+  end
 end

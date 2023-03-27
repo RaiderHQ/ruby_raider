@@ -31,7 +31,7 @@ module Raider
         @driver.quit
         @eyes.abort_async
         results = @grid_runner.get_all_test_results
-        puts results
+        RaiderLogHelper.info(to_s) { results }
       end
     end
   end

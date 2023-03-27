@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module Raider
+  require_relative 'raider_log_helper'
 <%- if framework == 'rspec' -%>
   require_relative 'spec_helper'
 <%- end -%>
