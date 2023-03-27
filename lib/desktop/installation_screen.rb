@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative 'base_screen'
 require_relative '../generators/invoke_generators'
 
@@ -8,30 +9,33 @@ class InstallationScreen < BaseScreen
   attr_accessor :entry_text
 
   def launch
-    window('Ruby Raider', 1240, 800) {
+    window('Ruby Raider', 1240, 800) do
       margined true
 
-      horizontal_box {
-        #area {
-        #image(File.expand_path('/Users/apeque01/Desktop/main_folder/Projects/Open source/ruby_raider/logo_transparent_background-1.png', __dir__), width: 400, height: 600)
-        #}
+      horizontal_box do
+        # area {
+        # image(File.expand_path('/Users/apeque01/Desktop/main_folder/Projects/Open source/ruby_raider/logo_transparent_background-1.png', __dir__), width: 400, height: 600)
+        # }
 
-        grid {
+        grid do
           padded true
           stretchy true
-          label('Project Name') {
+          label('Project Name') do
             top 0
             halign :center
-          }
+          end
 
-          entry {
+          entry do
             top 1
             halign :center
             # stretchy true # Smart default option for appending to horizontal_box
-            text <=> [self, :entry_text, after_write: ->(text) { @project_name = text; $stdout.flush }] # bidirectional data-binding between text property and entry_text attribute, printing after write to model.
-          }
+            text <=> [self, :entry_text, {after_write: lambda { |text|
+                                                         @project_name = text
+                                                         $stdout.flush
+                                                       }}] # bidirectional data-binding between text property and entry_text attribute, printing after write to model.
+          end
 
-          @radio = radio_buttons {
+          @radio = radio_buttons do
             top 2
             halign :center
             items 'Web', 'Mobile'
@@ -47,33 +51,33 @@ class InstallationScreen < BaseScreen
                 @platforms.show
               end
             end
-          }
+          end
 
-          @mobile_automation = combobox {
+          @mobile_automation = combobox do
             top 3
             halign :center
             visible false
             items 'Appium'
             selected_item 'Appium'
-          }
+          end
 
-          @web_automation = combobox {
+          @web_automation = combobox do
             top 3
             halign :center
             visible true
             items 'Selenium', 'Watir'
             selected_item 'Selenium'
-          }
+          end
 
-          @platforms = combobox {
+          @platforms = combobox do
             top 4
             halign :center
             visible false
             items 'Android', 'iOS', 'Cross-Platform'
             selected_item 'iOS'
-          }
+          end
 
-          @framework = combobox {
+          @framework = combobox do
             top 5
             halign :center
             visible true
@@ -87,23 +91,23 @@ class InstallationScreen < BaseScreen
                 @visual_checkbox.hide
               end
             end
-          }
+          end
 
-          @visual_checkbox = checkbox('Applitools integration') {
+          @visual_checkbox = checkbox('Applitools integration') do
             visible false
             top 6
             xspan 4
             halign :center
-          }
+          end
 
-          @example_checkbox = checkbox('Add example files') {
+          @example_checkbox = checkbox('Add example files') do
             visible true
             top 7
             xspan 4
             halign :center
-          }
+          end
 
-          button('Create Project') {
+          button('Create Project') do
             top 8
             halign :center
             on_clicked do
@@ -114,6 +118,7 @@ class InstallationScreen < BaseScreen
                            end
               structure = {
                 automation: automation,
+                examples: @example_checkbox.checked,
                 framework: @framework.selected_item,
                 generators: %w[Automation Common Helpers],
                 name: @project_name,
@@ -121,9 +126,9 @@ class InstallationScreen < BaseScreen
               }
               generate_framework(structure)
             end
-          }
-        }
-      }
-    }.show
+          end
+        end
+      end
+    end.show
   end
 end

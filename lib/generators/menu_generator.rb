@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'tty-prompt'
+require_relative '../generators/invoke_generators'
 
 class MenuGenerator
   attr_reader :prompt, :name

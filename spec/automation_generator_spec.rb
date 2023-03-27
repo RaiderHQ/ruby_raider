@@ -32,11 +32,11 @@ describe AutomationGenerator do
     end
 
     it 'creates a login page file' do
-      expect(File).to_not exist("#{name}/page_objects/pages/login_page.rb")
+      expect(File).not_to exist("#{name}/page_objects/pages/login_page.rb")
     end
 
     it 'creates a component file' do
-      expect(File).to_not exist("#{name}/page_objects/components/header_component.rb")
+      expect(File).not_to exist("#{name}/page_objects/components/header_component.rb")
     end
   end
 
@@ -60,11 +60,11 @@ describe AutomationGenerator do
     end
 
     it 'creates a home page file' do
-      expect(File).to_not exist("#{name}/page_objects/pages/home_page.rb")
+      expect(File).not_to exist("#{name}/page_objects/pages/home_page.rb")
     end
 
     it 'creates a pdp page file' do
-      expect(File).to_not exist("#{name}/page_objects/pages/pdp_page.rb")
+      expect(File).not_to exist("#{name}/page_objects/pages/pdp_page.rb")
     end
   end
 
