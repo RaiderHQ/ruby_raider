@@ -8,17 +8,13 @@ module RubyRaider
     extend Forwardable
     def_delegators :level, :level=, :debug, :info, :warn, :error, :fatal
 
-    def set_logger_level(level: ::Logger::WARN)
-      @logger_level = level
-    end
+    DEFAULT_LOG_LEVEL = ::Logger::WARN
 
     private
 
     def logger
-      @logger ||= begin
-        set_logger_level unless @logger_level
-        logger = ::Logger.new($stdout, level: @logger_level)
-        logger
+      @logger ||= ::Logger.new($stdout) do |log|
+        log.level = @logger_level || DEFAULT_LOG_LEVEL
       end
     end
   end
