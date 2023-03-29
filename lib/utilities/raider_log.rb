@@ -7,9 +7,13 @@ module RubyRaider
   # The RaiderLog module provides logging functionality for the RubyRaider application.
   module RaiderLog
     extend Forwardable
-    def_delegators :level, :level=, :debug, :info, :warn, :error
+    def_delegators :level, :level=, :debug, :info, :warn
 
     def fatal(&block)
+      logger.fatal(to_s) { block.call }
+    end
+
+    def error(&block)
       logger.fatal(to_s) { block.call }
     end
 
