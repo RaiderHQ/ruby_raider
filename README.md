@@ -3,7 +3,6 @@
 [![Gem Version](https://badge.fury.io/rb/ruby_raider.svg)](https://badge.fury.io/rb/ruby_raider)
 [![Rubocop](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml/badge.svg)](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml)
 [![Gitter](https://badges.gitter.im/RubyRaider/community.svg)](https://gitter.im/RubyRaider/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-[![Sponsor](<iframe src="https://github.com/sponsors/RubyRaider/button" title="Sponsor RubyRaider" height="32" width="114" style="border: 0; border-radius: 6px;"></iframe>)
 
 <!-- PROJECT LOGO -->
 <br />
