@@ -45,10 +45,10 @@ class RunnerScreen < BaseScreen
 
         @tests = combobox do
           left 2
-          files = Dir.glob(File.join(@folder, @extension))
+          files = Dir.glob(File.join(@folder, @extension)) || ['No Files are created']
           items files
           selected_item files.first
-          @file = File.open(files.first)
+          @file = File.open(files.first) unless files.first == 'No Files are created'
 
           on_selected do |items|
             @results.text = ''
