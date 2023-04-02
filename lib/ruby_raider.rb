@@ -3,6 +3,8 @@
 require_relative '../lib/commands/open_ai_commands'
 require_relative '../lib/commands/scaffolding_commands'
 require_relative '../lib/commands/utility_commands'
+require_relative '../lib/desktop/installation_screen'
+require_relative '../lib/desktop/runner_screen'
 
 module RubyRaider
   class Raider < Thor
@@ -13,6 +15,11 @@ module RubyRaider
     end
 
     map '-n' => 'new'
+
+    desc 'open', 'It opens the Ruby Raider desktop app'
+    def open
+      InstallationScreen.new.launch
+    end
 
     desc 'version', 'It shows the version of Ruby Raider you are currently using'
     def version

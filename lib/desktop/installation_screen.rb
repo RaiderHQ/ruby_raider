@@ -9,122 +9,125 @@ class InstallationScreen < BaseScreen
   attr_accessor :entry_text
 
   def launch
-    window('Ruby Raider', 1240, 800) do
+    window('Ruby Raider', 800, 600) do
       margined true
+      tab do
+        tab_item('Installer') do
+          vertical_box do
+            vertical_box do
+              stretchy false
+              label('Project Name') do
+                stretchy false
+              end
 
-      horizontal_box do
-        # area {
-        # image(File.expand_path('/Users/apeque01/Desktop/main_folder/Projects/Open source/ruby_raider/logo_transparent_background-1.png', __dir__), width: 400, height: 600)
-        # }
-
-        grid do
-          padded true
-          stretchy true
-          label('Project Name') do
-            top 0
-            halign :center
-          end
-
-          entry do
-            top 1
-            halign :center
-            # stretchy true # Smart default option for appending to horizontal_box
-            text <=> [self, :entry_text, {after_write: lambda { |text|
-                                                         @project_name = text
-                                                         $stdout.flush
-                                                       }}] # bidirectional data-binding between text property and entry_text attribute, printing after write to model.
-          end
-
-          @radio = radio_buttons do
-            top 2
-            halign :center
-            items 'Web', 'Mobile'
-            selected_item 'Web'
-            on_selected do |buttons|
-              if buttons.selected_item == 'Web'
-                @mobile_automation.hide
-                @platforms.hide
-                @web_automation.show
-              else
-                @web_automation.hide
-                @mobile_automation.show
-                @platforms.show
+              entry do
+                stretchy false # Smart default option for appending to horizontal_box
+                text <=> [self, :entry_text, { after_write: lambda { |text|
+                  @project_name = text
+                  $stdout.flush
+                } }] # bidirectional data-binding between text property and entry_text attribute, printing after write to model.
               end
             end
-          end
 
-          @mobile_automation = combobox do
-            top 3
-            halign :center
-            visible false
-            items 'Appium'
-            selected_item 'Appium'
-          end
+            vertical_box do
+              stretchy false
 
-          @web_automation = combobox do
-            top 3
-            halign :center
-            visible true
-            items 'Selenium', 'Watir'
-            selected_item 'Selenium'
-          end
+              @radio = radio_buttons do
+                stretchy false
 
-          @platforms = combobox do
-            top 4
-            halign :center
-            visible false
-            items 'Android', 'iOS', 'Cross-Platform'
-            selected_item 'iOS'
-          end
+                items 'Web', 'Mobile'
+                selected_item 'Web'
+                on_selected do |buttons|
+                  if buttons.selected_item == 'Web'
+                    @mobile_automation.hide
+                    @platforms.hide
+                    @web_automation.show
+                  else
+                    @web_automation.hide
+                    @mobile_automation.show
+                    @platforms.show
+                  end
+                end
+              end
 
-          @framework = combobox do
-            top 5
-            halign :center
-            visible true
-            items 'Cucumber', 'Rspec'
-            selected_item 'Cucumber'
+              @mobile_automation = combobox do
+                stretchy false
+                visible false
+                items 'Appium'
+                selected_item 'Appium'
+              end
 
-            on_selected do |items|
-              if items.selected_item == 'Rspec' && @radio.selected_item != 'Mobile'
-                @visual_checkbox.show
-              else
-                @visual_checkbox.hide
+              @web_automation = combobox do
+                stretchy false
+                visible true
+                items 'Selenium', 'Watir'
+                selected_item 'Selenium'
+              end
+
+              @platforms = combobox do
+                stretchy false
+                visible false
+                items 'Android', 'iOS', 'Cross-Platform'
+                selected_item 'iOS'
+              end
+
+              @framework = combobox do
+                stretchy false
+                visible true
+                items 'Cucumber', 'Rspec'
+                selected_item 'Cucumber'
+
+                on_selected do |items|
+                  if items.selected_item == 'Rspec' && @radio.selected_item != 'Mobile'
+                    @visual_checkbox.show
+                  else
+                    @visual_checkbox.hide
+                  end
+                end
+              end
+
+              @visual_checkbox = checkbox('Applitools integration') do
+                stretchy false
+                visible false
+              end
+
+              @example_checkbox = checkbox('Add example files') do
+                stretchy false
+                visible true
+              end
+
+              button('Create Project') do
+                stretchy false
+                on_clicked do
+                  automation = if @web_automation.visible?
+                                 @web_automation.selected_item
+                               else
+                                 @mobile_automation.selected_item
+                               end
+                  structure = {
+                    automation: automation,
+                    examples: @example_checkbox.checked,
+                    framework: @framework.selected_item,
+                    generators: %w[Automation Common Helpers],
+                    name: @project_name,
+                    visual: @visual_checkbox.checked
+                  }
+                  generate_framework(structure)
+                  @installation_box.text = if File.directory?(@project_name)
+                                             "Your project has been created, close this window, go to the folder #{@project_name} and run 'raider open'"
+                                           else
+                                             'There was a problem creating your project try again'
+                                           end
+                end
               end
             end
-          end
-
-          @visual_checkbox = checkbox('Applitools integration') do
-            visible false
-            top 6
-            xspan 4
-            halign :center
-          end
-
-          @example_checkbox = checkbox('Add example files') do
-            visible true
-            top 7
-            xspan 4
-            halign :center
-          end
-
-          button('Create Project') do
-            top 8
-            halign :center
-            on_clicked do
-              automation = if @web_automation.visible?
-                             @web_automation.selected_item
-                           else
-                             @mobile_automation.selected_item
-                           end
-              structure = {
-                automation: automation,
-                examples: @example_checkbox.checked,
-                framework: @framework.selected_item,
-                generators: %w[Automation Common Helpers],
-                name: @project_name,
-                visual: @visual_checkbox.checked
-              }
-              generate_framework(structure)
+            vertical_box do
+              stretchy false
+              @installation_box = multiline_entry do
+                stretchy false
+                text 'Your installation result will appear here...'
+                $stdout.flush
+              end
             end
           end
         end

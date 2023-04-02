@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'open3'
 require 'yaml'
 require_relative 'base_screen'
 
@@ -8,29 +9,60 @@ class RunnerScreen < BaseScreen
 
   CONFIG_ITEM = Struct.new(:attribute, :value)
   CAP = Struct.new(:attribute, :value)
-  TEST = Struct.new(:file_name)
 
-  window('Ruby Raider', 800, 400) do
+  if File.directory?('spec')
+    @folder = 'spec'
+    @framework = 'rspec'
+    @extension = '*_spec.rb'
+  else
+    @folder = 'features'
+    @framework = 'cucumber'
+    @extension = '*.features'
+  end
+
+  window('Ruby Raider', 1200, 800) do
     margined true
-
     vertical_box do
       grid do
         stretchy false
 
         button('▶') do
-          top 0
-          halign :left
+          left 0
           on_clicked do
-            pp 'None selected'
-            @tests
+            output = Open3.popen3("#{@framework} #{@tests.selected_item}") do |_stdin, stdout, _stderr|
+              stdout.read
+            end
+            system "rspec #{@tests.selected_item}"
+            @results.text = output
           end
         end
         button('■') do
-          top 0
           left 1
-          halign :left
           on_clicked do
-            pp 'stop'
+            pp 'The stop feature will be implemented in a later release'
+          end
+        end
+
+        @tests = combobox do
+          left 2
+          files = Dir.glob(File.join(@folder, @extension))
+          items files
+          selected_item files.first
+          @file = File.open(files.first)
+
+          on_selected do |items|
+            @results.text = ''
+            path = items.selected_item
+            @file = File.open(path)
+            @text_box.text = @file.read
+          end
+        end
+
+        button('Open Dashboard') do
+          left 3
+          halign :end
+          on_clicked do
+            system 'allure serve allure-reports'
           end
         end
       end
@@ -39,17 +71,19 @@ class RunnerScreen < BaseScreen
         stretchy true
 
         tab_item('Tests') do
-          files = Dir.glob(File.join('spec', '*_spec.rb'))
-          tests = files.map { |file| TEST.new(file) }
-          vertical_box do
-            @tests = refined_table(
-              model_array: tests,
-              table_columns: {
-                'File Name' => :text
-              },
-              table_editable: false,
-              per_page: 20
-            )
+          horizontal_box do
+            @text_box = multiline_entry do
+              text @file.read
+
+              on_changed do |e|
+                File.write(@tests.selected_item, e.text)
+                $stdout.flush # for Windows
+              end
+            end
+
+            @results = multiline_entry do
+              text ''
+            end
           end
         end
 
