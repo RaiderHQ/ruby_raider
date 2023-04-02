@@ -28,25 +28,31 @@ module OpenAi
         })
     end
 
-    def create_file(path, request, choice = 0)
-      File.write(path, output(request, choice))
+    def create_file(options)
+      path, request, choice = options.values_at(:path, :request, :choice)
+      File.write(path, output(request: request, choice: choice))
     end
 
-    def output(request, choice = 0)
+    def output(options)
+      request, choice = options.values_at(:request, :choice)
+      choice ||= 0
       extract_text(input(request), 'choices', choice, 'message', 'content')
     end
 
-    def edit_file(path, request, choice = 0)
+    def edit_file(options)
+      path, request, choice = options.values_at(:path, :request, :choice)
       content = File.read(path)
-      response = edit(content, request)
+      response = edit(content: content, request: request)
       File.write(path, extract_text(response, 'choices', choice, 'text'))
     end
 
-    def edit(input, request, model = 'text-davinci-edit-001')
+    def edit(options)
+      content, request, model = options.values_at(:content, :request, :model)
+      model ||= 'text-davinci-edit-001'
       client.edits(
         parameters: {
           model: model,
-          input: input,
+          input: content,
           instruction: request
         }
       )

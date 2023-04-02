@@ -4,6 +4,8 @@ require_relative '../lib/commands/open_ai_commands'
 require_relative '../lib/commands/scaffolding_commands'
 require_relative '../lib/commands/utility_commands'
 
+# :reek:FeatureEnvy { enabled: false }
+# :reek:UtilityFunction { enabled: false }
 module RubyRaider
   class Raider < Thor
     desc 'new [PROJECT_NAME]', 'Creates a new framework based on settings picked'
