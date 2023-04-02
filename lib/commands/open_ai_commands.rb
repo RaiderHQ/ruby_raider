@@ -10,16 +10,17 @@ class OpenAiCommands < Thor
 
   def make(request, path = nil)
     path ||= options[:path]
-    if options[:edit]
+    edit_path = options[:edit]
+    if edit_path
       pp 'Editing File...'
-      OpenAi.edit_file(options[:edit], request)
-      pp "File #{options[:edit]} edited"
+      OpenAi.edit_file(path: edit_path, request: request)
+      pp "File #{edit_path} edited"
     elsif path
       pp 'Generating File...'
-      OpenAi.create_file(path, request)
+      OpenAi.create_file(path: path, request: request)
       pp "File created in #{path}"
     else
-      puts OpenAi.output(request)
+      puts OpenAi.output(request: request)
     end
   end
 
@@ -48,9 +49,10 @@ class OpenAiCommands < Thor
 
   def steps(name)
     path = 'features/step_definitions'
-    if options[:input]
+    input = options[:input]
+    if input
       prompt = options[:prompt] || 'create cucumber steps for the following scenarios in ruby'
-      content = "#{prompt} #{File.read(options[:input])}"
+      content = "#{prompt} #{File.read(input)}"
       make(content, "#{path}/#{name}_steps.rb")
     else
       make(options[:open_ai], "#{path}/#{name}_steps.rb")
