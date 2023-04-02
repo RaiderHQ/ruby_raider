@@ -3,8 +3,6 @@
 require_relative '../lib/commands/open_ai_commands'
 require_relative '../lib/commands/scaffolding_commands'
 require_relative '../lib/commands/utility_commands'
-require_relative '../lib/desktop/installation_screen'
-require_relative '../lib/desktop/runner_screen'
 
 module RubyRaider
   class Raider < Thor
@@ -16,16 +14,8 @@ module RubyRaider
 
     map '-n' => 'new'
 
-    desc 'open', 'It opens the Ruby Raider desktop app'
-    def open
-      if File.directory?('spec') || File.directory?('feature')
-        RunnerScreen.new.launch
-      else
-        InstallationScreen.new.launch
-      end
-    end
-
     desc 'version', 'It shows the version of Ruby Raider you are currently using'
+
     def version
       spec = Gem::Specification.find_by_name('ruby_raider')
       version = spec.version
