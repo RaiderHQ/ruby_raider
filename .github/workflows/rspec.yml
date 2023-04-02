@@ -24,4 +24,6 @@ jobs:
         run: bundle install
 
       - name: Build and test with rspec
+        env:
+          OPENAI_ACCESS_TOKEN: ${{ secrets.OPENAI_ACCESS_TOKEN }}
         run: bundle exec rspec spec

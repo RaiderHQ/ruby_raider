@@ -23,10 +23,11 @@ describe OpenAiCommands do
       FileUtils.rm_rf('joke.txt')
     end
 
-    it 'creates a file using open ai' do
-      open_ai.new.invoke(:make, nil, ['tell me a joke', '--path', 'joke.txt'])
-      expect(File).to be_size('joke.txt')
-    end
+    # TODO: Enable test once the paid account is setup
+    # it 'creates a file using open ai' do
+    #   open_ai.new.invoke(:make, nil, ['tell me a joke', '--path', 'joke.txt'])
+    #   expect(File).to be_size('joke.txt')
+    # end
 
     it 'edits an existing file using open ai' do
       FileUtils.touch('joke.txt')
