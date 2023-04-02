@@ -117,6 +117,56 @@ class RunnerScreen < BaseScreen
             )
           end
         end
+        tab_item('Editor') do
+          horizontal_box do
+            vertical_box do
+              horizontal_box do
+                button('Create Test') do
+                  on_clicked do
+                    pp 'stop'
+                  end
+                end
+                entry do
+                  text 'hello'
+                end
+              end
+              horizontal_box do
+                button('Create Page') do
+                  on_clicked do
+                    pp 'stop'
+                  end
+                end
+                entry do
+                  text 'hello'
+                end
+              end
+              horizontal_box do
+                button('Create Component') do
+                  on_clicked do
+                    pp 'stop'
+                  end
+                end
+                entry do
+                  text 'hello'
+                end
+              end
+              vertical_separator do
+                stretchy false
+              end
+            end
+            vertical_box do
+              combobox do
+                stretchy false
+                visible true
+                items 'Cucumber', 'Rspec'
+                selected_item 'Cucumber'
+              end
+              multiline_entry do
+                text 'hello'
+              end
+            end
+          end
+        end
       end
     end
   end.show
