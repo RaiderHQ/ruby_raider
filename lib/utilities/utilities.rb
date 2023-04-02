@@ -62,24 +62,6 @@ module Utilities
       system "#{command} #{opts}"
     end
 
-    def download_builds(build_type)
-      case build_type
-      when 'android'
-        download_android_build
-      when 'ios'
-        download_ios_build
-      else
-        download_android_build
-        download_ios_build
-      end
-    end
-
-    private
-
-    def overwrite_yaml
-      File.open(@path, 'w') { |file| YAML.dump(config, file) }
-    end
-
     def download_android_build
       download_build('Android-MyDemoAppRN.1.3.0.build-244.apk',
                      'https://github.com/saucelabs/my-demo-app-rn/releases/download/v1.3.0/Android-MyDemoAppRN.1.3.0.build-244.apk')
@@ -97,6 +79,12 @@ module Utilities
       File.open(name, 'wb') do |file|
         file.write(build_url.body)
       end
+    end
+
+    private
+
+    def overwrite_yaml
+      File.open(@path, 'w') { |file| YAML.dump(config, file) }
     end
 
     def config

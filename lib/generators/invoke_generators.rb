@@ -7,15 +7,18 @@ require_relative 'helper_generator'
 require_relative 'rspec/rspec_generator'
 require_relative 'rspec/rspec_examples_generator'
 
+# :reek:FeatureEnvy { enabled: false }
+# :reek:UtilityFunction { enabled: false }
 module InvokeGenerators
   def generate_framework(structure = {})
     generators = %w[Automation Common Helpers]
-    add_generator(generators, structure[:framework].capitalize)
+    framework = structure[:framework]
+    add_generator(generators, framework.capitalize)
     generators = add_examples(generators) if structure[:examples]
     generators.each do |generator|
       invoke_generator({
                          automation: structure[:automation],
-                         framework: structure[:framework],
+                         framework: framework,
                          generator: generator,
                          name: structure[:name],
                          visual: structure[:visual]

@@ -3,6 +3,8 @@
 require 'thor'
 require_relative '../utilities/utilities'
 
+# :reek:FeatureEnvy { enabled: false }
+# :reek:UtilityFunction { enabled: false }
 class UtilityCommands < Thor
   desc 'path [PATH]', 'Sets the default path for scaffolding'
   option :feature,
@@ -31,7 +33,8 @@ class UtilityCommands < Thor
 
   def browser(default_browser = nil)
     Utilities.browser = default_browser if default_browser
-    browser_options(options[:opts]) if options[:opts] || options[:delete]
+    selected_options = options[:opts]
+    browser_options(selected_options) if selected_options || options[:delete]
   end
 
   desc 'browser_options [OPTIONS]', 'Sets the browser options for the project'
@@ -50,10 +53,11 @@ class UtilityCommands < Thor
          type: :array, required: false, desc: 'The options that your run will run with', aliases: '-o'
 
   def raid
+    selected_options = options[:opts]
     if options[:parallel]
-      Utilities.parallel_run(options[:opts])
+      Utilities.parallel_run(selected_options)
     else
-      Utilities.run(options[:opts])
+      Utilities.run(selected_options)
     end
   end
 
@@ -69,10 +73,18 @@ class UtilityCommands < Thor
     Utilities.platform = platform
   end
 
-  desc 'builds [BUILD_TYPE]', 'It downloads the example builds for appium projects'
-  def builds(build_type)
-    raise 'Please select one of the following build types: android, ios, both' unless %w[android ios both].include?(build_type)
+  desc 'build [BUILD_TYPE]', 'It downloads the selected example build for appium projects'
 
-    Utilities.download_builds build_type
+  def build(build_type)
+    raise 'Please select one of the following build types: android, ios' unless %w[android ios].include?(build_type)
+
+    build_type == 'android' ? Utilities.download_android_build : Utilities.download_ios_build
+  end
+
+  desc 'builds', 'It downloads both builds for appium cross platform projects'
+
+  def builds
+    Utilities.download_android_build
+    Utilities.download_ios_build
   end
 end
