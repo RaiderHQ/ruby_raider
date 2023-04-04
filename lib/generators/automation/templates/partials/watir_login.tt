@@ -18,7 +18,7 @@ class LoginPage < AbstractPage
   # Components
 
   def header
-    HeaderComponent.new(@browser.element(class: 'menu_text'))
+    HeaderComponent.new(browser.element(class: 'menu_text'))
   end
 
   private

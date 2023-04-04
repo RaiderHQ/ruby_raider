@@ -14,4 +14,16 @@ class RspecExamplesGenerator < Generator
 
     template('spec.tt', "#{name}/spec/pdp_page_spec.rb")
   end
+
+  def generate_model_factory
+    return if args.include?(%w[selenium watir])
+
+    template('factory.tt', "#{name}/models/model_factory.rb")
+  end
+
+  def generate_model_data
+    return if args.include?(%w[selenium watir])
+
+    template('data.tt', "#{name}/models/data/users.yml")
+  end
 end

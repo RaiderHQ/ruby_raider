@@ -10,8 +10,10 @@
       create_options(*opts)
     end
 
+    # :reek:FeatureEnvy
     def create_options(*opts)
-      browser = @config['browser'] == :ie ? @config['browser'].to_s.upcase : @config['browser'].to_s.capitalize
+      load_browser = @config['browser'].to_s
+      browser = load_browser == 'ie' ? load_browser.upcase : load_browser.capitalize
       caps = "Selenium::WebDriver::#{browser}::Options".constantize.new
       opts.each { |option| caps.add_argument(option) }
       caps
