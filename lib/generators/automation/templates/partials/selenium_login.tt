@@ -1,9 +1,9 @@
+# frozen_string_literal: true
+
 require_relative '../abstract/abstract_page'
 require_relative '../components/header_component'
 
 class LoginPage < AbstractPage
-  using Raider::SeleniumHelper
-
   def url(_page)
     'index.php?rt=account/login'
   end
@@ -13,13 +13,13 @@ class LoginPage < AbstractPage
   def login(username, password)
     username_field.send_keys username
     password_field.send_keys password
-    login_button.click_when_present
+    login_button.click
   end
 
   # Components
 
   def header
-    HeaderComponent.new(@driver.find_element(class: 'menu_text'))
+    HeaderComponent.new(driver.find_element(class: 'menu_text'))
   end
 
   private

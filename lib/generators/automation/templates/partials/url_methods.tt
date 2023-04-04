@@ -3,6 +3,7 @@
     "#{base_url}#{url(*page)}"
   end
 
+  # :reek:UtilityFunction
   def base_url
     YAML.load_file('config/config.yml')['url']
   end

@@ -21,6 +21,14 @@ class CommonGenerator < Generator
     template('common/gemfile.tt', "#{name}/Gemfile")
   end
 
+  def generate_reek_file
+    template('common/reek.tt', "#{name}/.reek.yml")
+  end
+
+  def generate_rubocop_file
+    template('common/rubocop.tt', "#{name}/.rubocop.yml")
+  end
+
   def create_allure_folder
     empty_directory "#{name}/allure-results" unless visual_selected?
   end

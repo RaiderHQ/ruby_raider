@@ -1,3 +1,0 @@
-<% if automation == 'selenium' %>
-    require_relative 'selenium_helper'
-<% end %>

@@ -20,32 +20,36 @@ describe 'Login Page' do
   end
 end
 <%- elsif %w[selenium watir].include? automation -%>
+# frozen_string_literal: true
+
 require_relative 'base_spec'
+require_relative '../models/model_factory'
 require_relative '../page_objects/pages/login_page'
 
 describe 'Login' do
-  let(:user_name) { 'aguspe' }
+  subject(:header) { login_page.header.customer_name }
+
+  let(:user) { ModelFactory.for('users')['Agustin'] }
   let(:login_page) { LoginPage.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
-  subject { login_page.header.customer_name }
 
   before do
     login_page.visit
-    login_page.login(user_name, password)
+    login_page.login(user['username'], password)
   end
 
   context 'with right credentials' do
-    let(:password) { '12341234' }
+    let(:password) { user['password'] }
 
     it 'can successfully log in' do
-      expect(subject).to eq 'Welcome back Agustin'
+      expect(header).to eq "Welcome back #{user['name']}"
     end
   end
 
   context 'with wrong credentials' do
     let(:password) { 'wrongPassword' }
 
-    it 'it cannot login in' do
-      expect(subject).to be_empty
+    it 'cannot login in' do
+      expect(header).to be_empty
     end
   end
 end
