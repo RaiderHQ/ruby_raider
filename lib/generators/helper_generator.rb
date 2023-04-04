@@ -6,7 +6,6 @@ class HelpersGenerator < Generator
   def generate_helpers
     generate_raider_helper
     generate_browser_helper
-    generate_selenium_helper
     generate_driver_helper
     generate_appium_helper
 
@@ -35,12 +34,6 @@ class HelpersGenerator < Generator
 
   def generate_spec_helper
     template('helpers/spec_helper.tt', "#{name}/helpers/spec_helper.rb") if args.include?('rspec')
-  end
-
-  def generate_selenium_helper
-    return unless args.include?('selenium')
-
-    template('helpers/selenium_helper.tt', "#{name}/helpers/selenium_helper.rb")
   end
 
   def generate_driver_helper

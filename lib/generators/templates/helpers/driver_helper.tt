@@ -21,10 +21,10 @@ module Raider
     end
 <% end -%>
 <% if automation != 'selenium'  -%>
-
+    # :reek:UtilityFunction
     def caps
       YAML.load_file('config/capabilities.yml')
     end
 <% end -%>
-end
+  end
 end
