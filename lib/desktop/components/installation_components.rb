@@ -12,6 +12,7 @@ class InstallationComponents < BaseComponent
     checkbox('Add example files') do
       stretchy false
       visible true
+      checked true
     end
   end
 
@@ -70,7 +71,7 @@ class InstallationComponents < BaseComponent
       selected_item 'Cucumber'
 
       on_selected do |items|
-        if items.selected_item == 'Rspec' && automation.selected_item != 'Mobile'
+        if items.selected_item == 'Rspec' && @automation.selected_item != 'Mobile'
           @visual.show
         else
           @visual.hide
@@ -83,30 +84,20 @@ class InstallationComponents < BaseComponent
     button(name) do
       stretchy false
       on_clicked do
-        if File.directory?('spec')
-          RunnerScreen.new.launch
-          pp window.methods
-        else
-          automation = if @web.visible?
-                         @web.selected_item
-                       else
-                         @mobile.selected_item
-                       end
-          structure = {
-            automation: automation,
-            examples: @example.checked,
-            framework: @framework.selected_item,
-            generators: %w[Automation Common Helpers],
-            name: @project_name,
-            visual: @visual.checked
-          }
-          generate_framework(structure)
-          @installation_box.text = if File.directory?(@project_name)
-                                     "Your project has been created, close this window, go to the folder #{@project_name} and run 'raider open'"
-                                   else
-                                     'There was a problem creating your project try again'
-                                   end
-        end
+        automation = @web.visible? ? @web.selected_item : @mobile.selected_item
+        structure = {
+          automation: automation,
+          framework: @framework.selected_item,
+          name: @project_name,
+          visual: @visual.checked,
+          examples: @example.checked
+        }
+        generate_framework(structure)
+        @installation_box.text = if File.directory?(@project_name)
+                                   "Your project has been created, close this window, go to the folder #{@project_name} and run 'raider open'"
+                                 else
+                                   'There was a problem creating your project try again'
+                                 end
       end
     end
   end
@@ -116,7 +107,7 @@ class InstallationComponents < BaseComponent
       stretchy false
       @installation_box = multiline_entry do
         stretchy false
-        message = if File.directory?('spec')
+        message = if File.directory?(@folder)
                     'You have already installed Ruby Raider, please click the "Open test runner" button, to run your tests'
                   else
                     'Your installation result will appear here...'
@@ -142,5 +133,13 @@ class InstallationComponents < BaseComponent
         } }] # bidirectional data-binding between text property and entry_text attribute, printing after write to model.
       end
     end
+  end
+
+  private
+
+  FrameworkOptions = Struct.new(:automation, :framework, :visual_automation, :with_examples)
+
+  def create_framework_options(params)
+    FrameworkOptions.new(params[:automation], params[:framework], params[:visual_automation], params[:with_examples])
   end
 end

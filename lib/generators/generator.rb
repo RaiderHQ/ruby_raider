@@ -24,7 +24,7 @@ class Generator < Thor::Group
   end
 
   def mobile_platform?
-    (args & %w[android ios cross_platform]).empty?
+    (args & %w[android ios cross_platform]).count.positive?
   end
 
   private

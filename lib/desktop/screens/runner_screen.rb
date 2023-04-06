@@ -11,9 +11,8 @@ class RunnerScreen < RunnerComponents
         tab do
           stretchy true
           tests_tab
-          config_tab
-          caps_tab
           editor_tab
+          config_tab
         end
       end
     end.show

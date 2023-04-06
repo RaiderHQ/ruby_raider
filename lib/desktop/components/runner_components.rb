@@ -1,6 +1,7 @@
 require 'open3'
 require 'yaml'
 require_relative 'base_component'
+require_relative '../../scaffolding/scaffolding'
 
 class RunnerComponents < BaseComponent
   attr_accessor :contacts
@@ -18,7 +19,7 @@ class RunnerComponents < BaseComponent
           output = Open3.popen3("#{@framework} #{@tests.selected_item}") do |_stdin, stdout, _stderr|
             stdout.read
           end
-          system "rspec #{@tests.selected_item}"
+          system "#{@framework} #{@tests.selected_item}"
           @results.text = output
         end
       end
@@ -59,7 +60,7 @@ class RunnerComponents < BaseComponent
     tab_item('Tests') do
       horizontal_box do
         @text_box = multiline_entry do
-          text @file
+          text @file.read
 
           on_changed do |e|
             File.write(@tests.selected_item, e.text)
@@ -76,33 +77,11 @@ class RunnerComponents < BaseComponent
 
   def config_tab
     tab_item('Configuration') do
-      if File.exist?('config/config.yml')
-        @config = YAML.load_file('config/config.yml')
-        @config_items = @config.map { |key, value| CONFIG_ITEM.new(key, value) }
-      else
-        @config_items = [CONFIG_ITEM.new('Create a config file to access your attributes', '')]
-      end
+      @config_data = load_or_create_config
+      @config_items = @config_data.map { |key, value| CONFIG_ITEM.new(key, value) }
       vertical_box do
         refined_table(
           model_array: @config_items,
-          table_columns: {
-            'Attribute' => :text,
-            'Value' => { text: { editable: true } }
-          },
-          table_editable: true,
-          per_page: 20
-        )
-      end
-    end
-  end
-
-  def caps_tab
-    tab_item('Capabilities') do
-      caps = File.exist?('config/capabilities.yml') ? YAML.load_file('config/capabilities.yml') : []
-      caps = caps.map { |key, value| CAP.new(key, value) }
-      vertical_box do
-        refined_table(
-          model_array: caps,
           table_columns: {
             'Attribute' => :text,
             'Value' => { text: { editable: true } }
@@ -121,31 +100,31 @@ class RunnerComponents < BaseComponent
           horizontal_box do
             button('Create Test') do
               on_clicked do
-                pp 'stop'
+                Scaffolding.new([@test_name.text]).generate_spec
               end
             end
-            entry do
-              text 'hello'
+            @test_name = entry do
+              text 'test_example'
             end
           end
           horizontal_box do
             button('Create Page') do
               on_clicked do
-                pp 'stop'
+                Scaffolding.new([@page_name.text]).generate_class
               end
             end
-            entry do
-              text 'hello'
+            @page_name = entry do
+              text 'page_example'
             end
           end
           horizontal_box do
-            button('Create Component') do
+            button('Create Helper') do
               on_clicked do
-                pp 'stop'
+                Scaffolding.new([@helper_name.text]).generate_helper
               end
             end
-            entry do
-              text 'hello'
+            @helper_name = entry do
+              text 'helper_example'
             end
           end
           vertical_separator do
@@ -153,17 +132,54 @@ class RunnerComponents < BaseComponent
           end
         end
         vertical_box do
-          combobox do
+          @editable_files = combobox do
+            @all_files = load_all_files
             stretchy false
             visible true
-            items 'Cucumber', 'Rspec'
-            selected_item 'Cucumber'
+            items @all_files
+            selected_item @all_files.first
+
+            on_selected do |items|
+              path = items.selected_item
+              @edit_file = File.open(path)
+              @edit_box.text = @edit_file.read
+            end
           end
-          multiline_entry do
-            text 'hello'
+          @edit_box = multiline_entry do
+            text File.read(@all_files.first)
+
+            on_changed do |e|
+              File.write(@editable_files.selected_item, e.text)
+              $stdout.flush # for Windows
+            end
           end
         end
       end
     end
+  end
+
+  private
+
+  def load_all_files
+    test_files = Dir.glob(File.join(@folder, @extension))
+    page_object_files = Dir.glob(File.join('page_objects/pages', '*.rb'))
+    helper_files = Dir.glob(File.join('helpers', '*.rb'))
+    test_files + page_object_files + helper_files
+  end
+
+  def load_or_create_config
+    file_paths = {
+      config: 'config/config.yml',
+      caps: 'config/capabilities.yml',
+      opts: 'config/options.yml'
+    }
+
+    loaded_files = file_paths.transform_values do |path|
+      File.exist?(path) ? YAML.load_file(path) : {}
+    end
+
+    return { message: 'Create a config file to access your attributes' } if loaded_files.values.all?(&:empty?)
+
+    loaded_files[:config].merge(loaded_files[:caps]).merge(loaded_files[:opts])
   end
 end

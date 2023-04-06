@@ -19,8 +19,13 @@ module RubyRaider
     map '-n' => 'new'
 
     desc 'open', 'It opens the Ruby Raider desktop app'
+
     def open
-      InstallationScreen.new.launch
+      if File.directory?('spec') || File.directory?('cucumber')
+        RunnerScreen.new.launch
+      else
+        InstallationScreen.new.launch
+      end
     end
 
     desc 'version', 'It shows the version of Ruby Raider you are currently using'
