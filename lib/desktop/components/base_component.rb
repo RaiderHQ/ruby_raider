@@ -12,7 +12,7 @@ class BaseComponent
     else
       @folder = 'features'
       @framework = 'cucumber'
-      @extension = '*.features'
+      @extension = '*.feature'
     end
   end
 end
