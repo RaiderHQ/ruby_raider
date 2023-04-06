@@ -3,7 +3,6 @@
 require_relative '../lib/commands/open_ai_commands'
 require_relative '../lib/commands/scaffolding_commands'
 require_relative '../lib/commands/utility_commands'
-require_relative '../lib/desktop/screens/installation_screen'
 require_relative '../lib/desktop/screens/runner_screen'
 
 # :reek:FeatureEnvy { enabled: false }
@@ -21,11 +20,7 @@ module RubyRaider
     desc 'open', 'It opens the Ruby Raider desktop app'
 
     def open
-      if File.directory?('spec') || File.directory?('cucumber')
-        RunnerScreen.new.launch
-      else
-        InstallationScreen.new.launch
-      end
+      RunnerScreen.new.launch
     end
 
     desc 'version', 'It shows the version of Ruby Raider you are currently using'

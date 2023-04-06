@@ -9,6 +9,11 @@ class RunnerComponents < BaseComponent
   CONFIG_ITEM = Struct.new(:attribute, :value)
   CAP = Struct.new(:attribute, :value)
 
+  def initialize
+    super
+    @folder_exist = File.directory?(@folder)
+  end
+
   def header
     grid do
       stretchy false
@@ -60,7 +65,8 @@ class RunnerComponents < BaseComponent
     tab_item('Tests') do
       horizontal_box do
         @text_box = multiline_entry do
-          text @file.read
+          test_code = @folder_exist ? @file.read : 'No tests have been created, please create your first test'
+          text test_code
 
           on_changed do |e|
             File.write(@tests.selected_item, e.text)
@@ -133,24 +139,28 @@ class RunnerComponents < BaseComponent
         end
         vertical_box do
           @editable_files = combobox do
-            @all_files = load_all_files
+            @all_files = @folder_exist ? load_all_files : ['There are no files created']
             stretchy false
             visible true
             items @all_files
             selected_item @all_files.first
 
             on_selected do |items|
-              path = items.selected_item
-              @edit_file = File.open(path)
-              @edit_box.text = @edit_file.read
+              if @folder_exist
+                path = items.selected_item
+                @edit_file = File.open(path)
+                @edit_box.text = @edit_file.read
+              end
             end
           end
           @edit_box = multiline_entry do
-            text File.read(@all_files.first)
+            text File.read(@all_files.first) if @folder_exist
 
             on_changed do |e|
-              File.write(@editable_files.selected_item, e.text)
-              $stdout.flush # for Windows
+              if @folder_exist
+                File.write(@editable_files.selected_item, e.text)
+                $stdout.flush # for Windows
+              end
             end
           end
         end
