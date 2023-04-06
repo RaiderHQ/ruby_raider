@@ -17,9 +17,14 @@ gem 'parallel_split_test'
 gem 'parallel_tests'
 <% end -%>
 gem 'rake'
+gem 'reek'
 gem '<%= framework %>'
 <% if framework == 'cucumber' -%>
 gem 'rspec'
+<% end -%>
+gem 'rubocop'
+<% if framework == 'rspec' -%>
+gem 'rubocop-rspec'
 <% end -%>
 gem 'ruby_raider'
 <%= ERB.new(File.read(File.expand_path('./partials/automation_gems.tt', __dir__))).result(binding).strip! %>

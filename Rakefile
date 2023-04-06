@@ -2,8 +2,8 @@
 
 require_relative 'lib/ruby_raider'
 require_relative 'lib/commands/scaffolding_commands'
-require_relative 'lib/desktop/installation_screen'
-require_relative 'lib/desktop/runner_screen'
+require_relative 'lib/desktop/screens/installation_screen'
+require_relative 'lib/desktop/screens/runner_screen'
 
 desc 'Creates a new test project'
 task :new, [:name] do |_t, args|

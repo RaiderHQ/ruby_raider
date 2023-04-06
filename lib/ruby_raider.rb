@@ -3,9 +3,11 @@
 require_relative '../lib/commands/open_ai_commands'
 require_relative '../lib/commands/scaffolding_commands'
 require_relative '../lib/commands/utility_commands'
-require_relative '../lib/desktop/installation_screen'
-require_relative '../lib/desktop/runner_screen'
+require_relative '../lib/desktop/screens/installation_screen'
+require_relative '../lib/desktop/screens/runner_screen'
 
+# :reek:FeatureEnvy { enabled: false }
+# :reek:UtilityFunction { enabled: false }
 module RubyRaider
   class Raider < Thor
     desc 'new [PROJECT_NAME]', 'Creates a new framework based on settings picked'
@@ -22,6 +24,7 @@ module RubyRaider
     end
 
     desc 'version', 'It shows the version of Ruby Raider you are currently using'
+
     def version
       spec = Gem::Specification.find_by_name('ruby_raider')
       version = spec.version
