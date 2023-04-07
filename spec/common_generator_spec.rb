@@ -24,9 +24,9 @@ describe CommonGenerator do
     end
   end
 
-  shared_examples 'creates a capabilities file' do |name|
-    it 'creates a capabilities file' do
-      expect(File).to exist("#{name}/config/capabilities.yml")
+  shared_examples 'creates a config file' do |name|
+    it 'creates a config file' do
+      expect(File).to exist("#{name}/config/config.yml")
     end
   end
 
@@ -39,6 +39,12 @@ describe CommonGenerator do
   shared_examples 'creates an options file' do |name|
     it 'creates an options file' do
       expect(File).to exist("#{name}/config/options.yml")
+    end
+  end
+
+  shared_examples 'creates a capabilities file' do |name|
+    it 'creates a capabilities file' do
+      expect(File).to exist("#{name}/config/capabilities.yml")
     end
   end
 

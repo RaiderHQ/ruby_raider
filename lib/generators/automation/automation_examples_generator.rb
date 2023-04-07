@@ -5,11 +5,11 @@ require_relative '../generator'
 class AutomationExamplesGenerator < Generator
   def generate_example_files
     if mobile_platform?
-      generate_login_page
-      generate_header_component unless visual_selected?
-    else
       generate_home_page
       generate_pdp_page
+    else
+      generate_login_page
+      generate_header_component unless visual_selected?
     end
 
     generate_app_page if visual_selected?
