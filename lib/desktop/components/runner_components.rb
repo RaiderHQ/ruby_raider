@@ -154,7 +154,7 @@ class RunnerComponents < BaseComponent
             end
           end
           @edit_box = multiline_entry do
-            text File.read(@all_files.first) if @folder_exist
+            text File.read(@all_files&.first) if @folder_exist
 
             on_changed do |e|
               if @folder_exist
