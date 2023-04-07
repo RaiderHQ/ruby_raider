@@ -55,7 +55,7 @@ class RunnerComponents < BaseComponent
         left 3
         halign :end
         on_clicked do
-          system 'allure serve allure-reports'
+          system 'allure serve allure-results'
         end
       end
     end
@@ -104,7 +104,8 @@ class RunnerComponents < BaseComponent
       horizontal_box do
         vertical_box do
           horizontal_box do
-            button('Create Test') do
+            button_test_name = "Create #{@folder.capitalize}"
+            button(button_test_name) do
               on_clicked do
                 Scaffolding.new([@test_name.text]).generate_spec
               end
