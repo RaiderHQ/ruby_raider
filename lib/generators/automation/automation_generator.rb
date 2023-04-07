@@ -8,14 +8,14 @@ class AutomationGenerator < Generator
   end
 
   def generate_abstract_component
-    return unless mobile_platform?
+    return if mobile_platform?
     return if visual_selected?
 
     template('abstract_component.tt', "#{name}/page_objects/abstract/abstract_component.rb")
   end
 
   def generate_appium_settings
-    return if mobile_platform?
+    return unless mobile_platform?
 
     template('appium_caps.tt', "#{name}/config/capabilities.yml")
   end
