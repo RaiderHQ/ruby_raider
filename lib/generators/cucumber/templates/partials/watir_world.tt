@@ -1,1 +1,3 @@
-World(BrowserHelper)
+require_relative 'models/user_factory'
+
+World(BrowserHelper, UserFactory)
