@@ -10,4 +10,8 @@ class CucumberGenerator < Generator
   def generate_world
     template('world.tt', "#{name}/world.rb")
   end
+
+  def generate_cucumber_file
+    template('cucumber.tt', "#{name}/cucumber.yml")
+  end
 end

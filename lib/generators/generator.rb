@@ -27,6 +27,10 @@ class Generator < Thor::Group
     (args & %w[android ios cross_platform]).count.positive?
   end
 
+  def web_platform?
+    args.include?(%w[selenium watir])
+  end
+
   private
 
   def _initializer

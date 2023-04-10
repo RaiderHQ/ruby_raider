@@ -1,0 +1,1 @@
+default: --format AllureCucumber::CucumberFormatter --out allure-results --publish-quiet

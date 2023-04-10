@@ -3,7 +3,7 @@ require_relative 'spec_helper'
 require_relative '../lib/ruby_raider'
 
 describe RubyRaider do
-  shared_examples 'execute framework' do |name|
+  shared_examples 'execute web frameworks' do |name|
     it 'runs the tests' do
       Bundler.with_unbundled_env do
         Dir.chdir(name) do
@@ -14,18 +14,18 @@ describe RubyRaider do
   end
 
   context 'with a Rspec and Selenium project' do
-    include_examples 'execute framework', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
+    include_examples 'execute web frameworks', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
   end
 
   context 'with a Rspec and Watir project' do
-    include_examples 'execute framework', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}"
+    include_examples 'execute web frameworks', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}"
   end
 
   context 'with a Cucumber and Selenium project' do
-    include_examples 'execute framework', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}"
+    include_examples 'execute web frameworks', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}"
   end
 
   context 'with a Cucumber and Watir project' do
-    include_examples 'execute framework', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[3]}"
+    include_examples 'execute web frameworks', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[3]}"
   end
 end
