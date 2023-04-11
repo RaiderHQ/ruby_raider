@@ -29,7 +29,7 @@ require_relative '../page_objects/pages/login_page'
 describe 'Login' do
   subject(:header) { login_page.header.customer_name }
 
-  let(:user) { ModelFactory.for('users')['Agustin'] }
+  let(:user) { ModelFactory.for('users')['registered user'] }
   let(:login_page) { LoginPage.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
 
   before do
