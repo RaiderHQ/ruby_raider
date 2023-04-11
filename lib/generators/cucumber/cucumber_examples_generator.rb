@@ -12,7 +12,7 @@ class CucumberExamplesGenerator < Generator
   end
 
   def generate_user_factory
-    template('steps.tt', "#{name}/models/user_factory.rb")
+    template('user_factory.tt', "#{name}/models/user_factory.rb")
   end
 
   def template_name

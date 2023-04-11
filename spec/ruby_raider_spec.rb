@@ -7,7 +7,7 @@ describe RubyRaider do
     it 'runs the tests' do
       Bundler.with_unbundled_env do
         Dir.chdir(name) do
-          `bundle exec raider u browser_options headless | raider u raid`
+          `bundle exec raider u raid`
         end
       end
     end

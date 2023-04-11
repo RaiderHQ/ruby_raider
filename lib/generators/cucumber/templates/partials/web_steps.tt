@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 require_relative '../../page_objects/pages/login_page'
+require_relative '../../models/user_factory'
 
 Given("I'm a {user} on the login page") do |user|
   @user = user
-  @login_page = LoginPage.new(browser)
+  @login_page = LoginPage.new(<% if automation == 'watir' %>browser<% else %>driver<% end %>)
   @login_page.visit
 end
 
