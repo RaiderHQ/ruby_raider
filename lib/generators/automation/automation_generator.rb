@@ -9,7 +9,6 @@ class AutomationGenerator < Generator
 
   def generate_abstract_component
     return if mobile_platform?
-    return if visual_selected?
 
     template('abstract_component.tt', "#{name}/page_objects/abstract/abstract_component.rb")
   end

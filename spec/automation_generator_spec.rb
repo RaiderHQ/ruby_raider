@@ -76,10 +76,6 @@ describe AutomationGenerator do
     it 'creates an abstract page file' do
       expect(File).to exist("#{name}/page_objects/abstract/abstract_page.rb")
     end
-
-    it 'creates an app page file' do
-      expect(File).to exist("#{name}/page_objects/pages/app_page.rb")
-    end
   end
 
   shared_examples 'creates web visual framework without example files' do |name|

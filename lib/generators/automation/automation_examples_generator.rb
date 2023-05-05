@@ -7,9 +7,6 @@ class AutomationExamplesGenerator < Generator
     if mobile_platform?
       generate_home_page
       generate_pdp_page
-    elsif visual_selected?
-      generate_login_page
-      generate_app_page
     else
       generate_model_factory
       generate_model_data
@@ -34,10 +31,6 @@ class AutomationExamplesGenerator < Generator
 
   def generate_header_component
     template('component.tt', "#{name}/page_objects/components/header_component.rb")
-  end
-
-  def generate_app_page
-    template('app_page.tt', "#{name}/page_objects/pages/app_page.rb")
   end
 
   def generate_model_factory
