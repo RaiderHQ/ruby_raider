@@ -2,21 +2,25 @@
 # frozen_string_literal: true
 
 require_relative 'base_spec'
+require_relative '../models/model_factory'
 require_relative '../page_objects/pages/login_page'
-require_relative '../page_objects/pages/app_page'
 
-describe 'Login Page' do
-  let(:app_page) { AppPage.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
+describe 'Login' do
+  subject(:header) { login_page.header.customer_name }
+
+  let(:user) { ModelFactory.for('users')['registered user'] }
   let(:login_page) { LoginPage.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
 
   before do
     login_page.visit
   end
 
-  it 'looks as expected' do
-    check_page login_page
-    login_page.login
-    check_page app_page
+  context 'with right credentials' do
+    let(:password) { user['password'] }
+
+    it 'cannot see unexpected changes on the login page' do
+      check_page login_page
+    end
   end
 end
 <%- elsif %w[selenium watir].include? automation -%>
