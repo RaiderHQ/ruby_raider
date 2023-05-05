@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name        = 'ruby_raider'
-  s.version     = '0.7.0'
+  s.version     = '0.7.1'
   s.summary     = 'A gem to make setup and start of UI automation projects easier'
   s.description = 'This gem has everything you need to start working with test automation'
   s.authors     = ['Agustin Pequeno']
@@ -22,6 +22,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rubocop-rspec', '~> 2.9.0'
 
   s.add_runtime_dependency 'faraday', '~> 1.2.0'
+  s.add_runtime_dependency 'faraday-multipart', '~> 1.0.4'
   s.add_runtime_dependency 'glimmer-dsl-libui', '~> 0.7.3'
   s.add_runtime_dependency 'ruby-openai', '~> 3.5'
   s.add_runtime_dependency 'thor', '~> 1.2.1'

@@ -26,7 +26,7 @@ module RubyRaider
     desc 'version', 'It shows the version of Ruby Raider you are currently using'
 
     def version
-      puts 'The Ruby Raider version is 0.7.0, Happy testing!'
+      puts 'The Ruby Raider version is 0.7.1, Happy testing!'
     end
 
     map 'v' => 'version'
