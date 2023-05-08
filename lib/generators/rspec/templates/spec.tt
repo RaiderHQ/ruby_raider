@@ -1,40 +1,17 @@
-<% if %w[selenium watir].include?(automation) && visual_automation == true %>
+<%- if %w[selenium watir].include? automation -%>
 # frozen_string_literal: true
 
 require_relative 'base_spec'
 require_relative '../models/model_factory'
+require_relative '../page_objects/pages/account_page'
 require_relative '../page_objects/pages/login_page'
 
 describe 'Login' do
-  subject(:header) { login_page.header.customer_name }
+  subject(:header) { account_page.header.customer_name }
 
   let(:user) { ModelFactory.for('users')['registered user'] }
   let(:login_page) { LoginPage.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
-
-  before do
-    login_page.visit
-  end
-
-  context 'with right credentials' do
-    let(:password) { user['password'] }
-
-    it 'cannot see unexpected changes on the login page' do
-      check_page login_page
-    end
-  end
-end
-<%- elsif %w[selenium watir].include? automation -%>
-# frozen_string_literal: true
-
-require_relative 'base_spec'
-require_relative '../models/model_factory'
-require_relative '../page_objects/pages/login_page'
-
-describe 'Login' do
-  subject(:header) { login_page.header.customer_name }
-
-  let(:user) { ModelFactory.for('users')['registered user'] }
-  let(:login_page) { LoginPage.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
+  let(:account_page) { AccountPage.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
 
   before do
     login_page.visit
@@ -45,7 +22,11 @@ describe 'Login' do
     let(:password) { user['password'] }
 
     it 'can successfully log in' do
+      <% if visual_automation == true -%>
+      check_page account_page
+      <% else -%>
       expect(header).to eq "Welcome back #{user['name']}"
+      <% end %>
     end
   end
 
@@ -53,7 +34,11 @@ describe 'Login' do
     let(:password) { 'wrongPassword' }
 
     it 'cannot login in' do
-      expect(header).to be_empty
+          <% if visual_automation == true -%>
+          check_page login_page
+          <% else -%>
+          expect(header).to be_empty
+          <% end %>
     end
   end
 end

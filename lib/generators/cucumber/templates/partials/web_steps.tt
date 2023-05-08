@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative '../../page_objects/pages/account_page'
 require_relative '../../page_objects/pages/login_page'
 require_relative '../../models/user_factory'
 
@@ -14,5 +15,10 @@ When('I login with my credentials') do
 end
 
 When('I can see the main page') do
-  expect(@login_page.header.customer_name).to eq "Welcome back #{@user['name']}"
+  account_page = AccountPage.new(<% if automation == 'watir' %>browser<% else %>driver<% end %>)
+  <% if visual_automation == true -%>
+  check_page account_page
+  <% else -%>
+  expect(account_page.header.customer_name).to eq "Welcome back #{@user['name']}"
+  <% end %>
 end

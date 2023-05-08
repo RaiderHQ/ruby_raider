@@ -21,6 +21,10 @@ class AutomationExamplesGenerator < Generator
     template('login_page.tt', "#{name}/page_objects/pages/login_page.rb")
   end
 
+  def generate_account_page
+    template('account_page.tt', "#{name}/page_objects/pages/account_page.rb")
+  end
+
   def generate_home_page
     template('home_page.tt', "#{name}/page_objects/pages/home_page.rb")
   end
