@@ -2,6 +2,7 @@
 
 require 'rspec'
 require 'eyes_selenium'
+require_relative 'allure_helper'
 <%- if automation == 'selenium' -%>
 require_relative 'driver_helper'
 <%- else -%>
@@ -30,6 +31,7 @@ module Raider
         @eyes.close
         @driver.quit
         @eyes.abort_async
+        AllureHelper.add_screenshot example_name
         results = @grid_runner.get_all_test_results
         puts results
       end

@@ -4,7 +4,7 @@ require_relative '../generator'
 
 class AutomationExamplesGenerator < Generator
   def generate_example_files
-    if mobile_platform?
+    if mobile?
       generate_home_page
       generate_pdp_page
     else
@@ -12,6 +12,7 @@ class AutomationExamplesGenerator < Generator
       generate_model_data
       generate_header_component
       generate_login_page
+      generate_account_page
     end
   end
 

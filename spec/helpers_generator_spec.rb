@@ -45,10 +45,6 @@ describe HelpersGenerator do
   end
 
   shared_examples 'creates common visual helpers' do |name|
-    it 'does not create an allure helper file' do
-      expect(File).not_to exist("#{name}/helpers/allure_helper.rb")
-    end
-
     it 'creates a raider file' do
       expect(File).to exist("#{name}/helpers/raider.rb")
     end
@@ -130,5 +126,12 @@ describe HelpersGenerator do
     include_examples 'creates selenium helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
     include_examples 'creates cucumber helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
     include_examples 'creates cross platform helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
+  end
+
+  context 'with cucumber, watir and applitools' do
+    include_examples 'creates common helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}_visual"
+    include_examples 'creates selenium helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}_visual"
+    include_examples 'creates cucumber helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}_visual"
+    include_examples 'creates common visual helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}_visual"
   end
 end

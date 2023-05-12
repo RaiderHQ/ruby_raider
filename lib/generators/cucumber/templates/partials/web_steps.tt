@@ -14,11 +14,11 @@ When('I login with my credentials') do
   @login_page.login(@user['username'], @user['password'])
 end
 
-When('I can see the main page') do
+Then("I'm logged in") do
   account_page = AccountPage.new(<% if automation == 'watir' %>browser<% else %>driver<% end %>)
-  <% if visual_automation == true -%>
+  <% if visual_automation == true %>
   check_page account_page
-  <% else -%>
+  <% else %>
   expect(account_page.header.customer_name).to eq "Welcome back #{@user['name']}"
   <% end %>
 end

@@ -8,12 +8,12 @@ class HelpersGenerator < Generator
     generate_browser_helper
     generate_driver_helper
     generate_appium_helper
+    generate_allure_helper
 
-    if visual_selected?
+    if visual?
       generate_visual_helper
       generate_visual_spec_helper
     else
-      generate_allure_helper
       generate_spec_helper
     end
   end
@@ -29,21 +29,25 @@ class HelpersGenerator < Generator
   end
 
   def generate_browser_helper
-    template('helpers/browser_helper.tt', "#{name}/helpers/browser_helper.rb") if args.include?('watir')
+    return if selenium?
+
+    template('helpers/browser_helper.tt', "#{name}/helpers/browser_helper.rb")
   end
 
   def generate_spec_helper
-    template('helpers/spec_helper.tt', "#{name}/helpers/spec_helper.rb") if args.include?('rspec')
+    return if cucumber?
+
+    template('helpers/spec_helper.tt', "#{name}/helpers/spec_helper.rb")
   end
 
   def generate_driver_helper
-    return if args.include?('watir')
+    return if watir?
 
     template('helpers/driver_helper.tt', "#{name}/helpers/driver_helper.rb")
   end
 
   def generate_appium_helper
-    return unless args.include?('cross_platform')
+    return unless cross_platform?
 
     template('helpers/appium_helper.tt', "#{name}/helpers/appium_helper.rb")
   end
@@ -53,6 +57,8 @@ class HelpersGenerator < Generator
   end
 
   def generate_visual_spec_helper
+    return if cucumber?
+
     template('helpers/visual_spec_helper.tt', "#{name}/helpers/spec_helper.rb")
   end
 end

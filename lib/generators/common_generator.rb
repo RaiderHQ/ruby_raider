@@ -8,7 +8,7 @@ class CommonGenerator < Generator
   end
 
   def generate_config_file
-    return if mobile_platform?
+    return if mobile?
 
     template('common/config.tt', "#{name}/config/config.yml")
   end
@@ -30,10 +30,14 @@ class CommonGenerator < Generator
   end
 
   def create_allure_folder
-    empty_directory "#{name}/allure-results" unless visual_selected?
+    return unless visual?
+
+    empty_directory "#{name}/allure-results"
   end
 
   def create_screenshots_folder
-    empty_directory "#{name}/allure-results/screenshots" unless visual_selected?
+    return unless visual?
+
+    empty_directory "#{name}/allure-results/screenshots"
   end
 end
