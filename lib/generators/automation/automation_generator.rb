@@ -14,7 +14,6 @@ class AutomationGenerator < Generator
     generate_abstract_page
   end
 
-
   private
 
   def generate_abstract_page
