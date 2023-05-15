@@ -8,7 +8,7 @@ class CucumberGenerator < Generator
   end
 
   def generate_world
-    template('world.tt', "#{name}/world.rb")
+    template('world.tt', "#{name}/features/support/world.rb")
   end
 
   def generate_cucumber_file

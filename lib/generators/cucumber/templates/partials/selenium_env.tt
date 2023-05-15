@@ -1,10 +1,10 @@
 <% if visual_automation %>
 # frozen_string_literal: true
 
-require_relative '../../helpers/browser_helper'
+require_relative '../../helpers/driver_helper'
 require_relative '../../helpers/visual_helper'
 
-include Raider::BrowserHelper
+include Raider::DriverHelper
 include Raider::VisualHelper
 
 Before do
@@ -12,14 +12,14 @@ Before do
   @grid_runner = create_grid_runner
   @eyes = create_eyes(@grid_runner)
   configure_eyes @eyes
-  @browser = @eyes.open(driver: new_browser.driver)
+  @driver = @eyes.open(driver: new_driver)
 end
 
 After do |scenario|
-  browser.screenshot.save("allure-results/screenshots/#{scenario.name}.png")
+  driver.save_screenshot("allure-results/screenshots/#{scenario.name}.png")
   Raider::AllureHelper.add_screenshot(scenario.name)
   @eyes.close
-  @browser.quit
+  @driver.quit
   @eyes.abort_async
   results = @grid_runner.get_all_test_results
   puts results
@@ -28,17 +28,17 @@ end
 <% else %>
 # frozen_string_literal: true
 
-require_relative '../../helpers/browser_helper'
+require_relative '../../helpers/driver_helper'
 
-include Raider::BrowserHelper
+include Raider::DriverHelper
 
 Before do
-  new_browser
+  new_driver
 end
 
 After do |scenario|
-  browser.screenshot.save("allure-results/screenshots/#{scenario.name}.png")
+  driver.save_screenshot("allure-results/screenshots/#{scenario.name}.png")
   Raider::AllureHelper.add_screenshot(scenario.name)
-  browser.quit
+  driver.quit
 end
 <% end %>

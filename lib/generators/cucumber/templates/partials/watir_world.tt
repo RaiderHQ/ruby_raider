@@ -1,4 +1,10 @@
-require_relative 'helpers/browser_helper'
-require_relative 'models/user_factory'
+require_relative '../../helpers/browser_helper'
+require_relative '../../models/user_factory'
+<% if visual_automation %>
+require_relative '../../helpers/visual_helper'
+<% end %>
 
-World(BrowserHelper, UserFactory<% if visual_automation == true %>, VisualHelper<% end %>)
+World(Raider::BrowserHelper<% if visual_automation %>, Raider::VisualHelper<% end %>)
+
+
+
