@@ -1,4 +1,4 @@
-<% if visual_automation %>
+<%- if visual_automation -%>
 # frozen_string_literal: true
 
 require_relative '../../helpers/browser_helper'
@@ -25,7 +25,7 @@ After do |scenario|
   puts results
 end
 
-<% else %>
+<%- else -%>
 # frozen_string_literal: true
 
 require_relative '../../helpers/browser_helper'
@@ -41,4 +41,4 @@ After do |scenario|
   Raider::AllureHelper.add_screenshot(scenario.name)
   browser.quit
 end
-<% end %>
+<%- end -%>

@@ -15,9 +15,9 @@ end
 
 Then("I'm logged in") do
   account_page = AccountPage.new(<% if automation == 'watir' %>browser<% else %>driver<% end %>)
-  <% if visual_automation == true %>
+  <%- if visual_automation == true -%>
   check_page account_page
-  <% else %>
+  <%- else -%>
   expect(account_page.header.customer_name).to eq "Welcome back #{@user['name']}"
-  <% end %>
+  <%- end -%>
 end

@@ -72,12 +72,6 @@ describe HelpersGenerator do
     include_examples 'creates rspec helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}_visual"
   end
 
-  context 'with rspec, watir and applitools' do
-    include_examples 'creates common visual helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}_visual"
-    include_examples 'creates watir helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}_visual"
-    include_examples 'creates rspec helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}_visual"
-  end
-
   context 'with cucumber and selenium' do
     include_examples 'creates common helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}"
     include_examples 'creates selenium helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}"
@@ -126,12 +120,5 @@ describe HelpersGenerator do
     include_examples 'creates selenium helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
     include_examples 'creates cucumber helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
     include_examples 'creates cross platform helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
-  end
-
-  context 'with cucumber, watir and applitools' do
-    include_examples 'creates common helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}_visual"
-    include_examples 'creates selenium helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}_visual"
-    include_examples 'creates cucumber helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}_visual"
-    include_examples 'creates common visual helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}_visual"
   end
 end

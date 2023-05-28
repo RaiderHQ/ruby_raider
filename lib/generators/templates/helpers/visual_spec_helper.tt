@@ -3,35 +3,26 @@
 require 'rspec'
 require 'eyes_selenium'
 require_relative 'allure_helper'
-<%- if automation == 'selenium' -%>
 require_relative 'driver_helper'
-<%- else -%>
-require_relative 'browser_helper'
-<%- end -%>
 require_relative 'visual_helper'
 
 module Raider
   module SpecHelper
     RSpec.configure do |config|
-      config.include(<%- if automation == 'watir' -%>BrowserHelper<% else -%>DriverHelper<%- end -%>)
+      config.include(DriverHelper)
       config.include(VisualHelper)
       config.before(:each) do
         OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
         @grid_runner = create_grid_runner
         @eyes = create_eyes(@grid_runner)
         configure_eyes @eyes
-        <%- if automation == 'selenium' -%>
         @driver = @eyes.open(driver: new_driver)
-        <%- else -%>
-        @browser = @eyes.open(driver: new_browser.driver)
-        <%- end -%>
       end
 
       config.after(:each) do
         example_name = self.class.descendant_filtered_examples.first.description
         @eyes.close
-        <%- if automation == 'selenium' -%>
-        @driver.quit<%- else -%>@browser.quit<%- end -%>
+        @driver.quit
         @eyes.abort_async
         AllureHelper.add_screenshot example_name
         results = @grid_runner.get_all_test_results

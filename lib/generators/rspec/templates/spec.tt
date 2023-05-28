@@ -33,7 +33,7 @@ describe 'Login' do
   context 'with wrong credentials' do
     let(:password) { 'wrongPassword' }
 
-    it 'cannot login in' do
+    it 'cannot log in' do
           <% if visual_automation == true -%>
           check_page login_page
           <% else -%>

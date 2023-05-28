@@ -80,14 +80,14 @@ class MenuGenerator
   end
 
   def framework_with_examples(framework, automation_type)
-    visual_automation = choose_visual_automation if %w[selenium watir].include?(automation_type)
+    visual_automation = choose_visual_automation if %w[selenium].include?(automation_type)
     options = create_framework_options(automation: automation_type, framework: framework.downcase, visual_automation: visual_automation, with_examples: true)
     set_up_framework(options)
     prompt.say("You have chosen to use #{framework} with #{automation_type}")
   end
 
   def framework_without_examples(framework, automation_type)
-    visual_automation = choose_visual_automation if %w[selenium watir].include?(automation_type)
+    visual_automation = choose_visual_automation if %w[selenium].include?(automation_type)
     options = create_framework_options(automation: automation_type, framework: framework.downcase, visual_automation: visual_automation, with_examples: false)
     set_up_framework(options)
     prompt.say("You have chosen to use #{framework} with #{automation_type}")
