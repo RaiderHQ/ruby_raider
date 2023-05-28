@@ -3,7 +3,6 @@
 require_relative '../generator'
 
 class AutomationGenerator < Generator
-
   def generate_automation_files
     if mobile?
       generate_appium_settings
@@ -14,7 +13,6 @@ class AutomationGenerator < Generator
 
     generate_abstract_page
   end
-
 
   private
 
