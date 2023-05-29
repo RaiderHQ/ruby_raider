@@ -30,14 +30,10 @@ class CommonGenerator < Generator
   end
 
   def create_allure_folder
-    return unless visual?
-
     empty_directory "#{name}/allure-results"
   end
 
   def create_screenshots_folder
-    return unless visual?
-
     empty_directory "#{name}/allure-results/screenshots"
   end
 end

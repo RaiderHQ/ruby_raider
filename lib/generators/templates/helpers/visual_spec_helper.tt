@@ -21,6 +21,7 @@ module Raider
 
       config.after(:each) do
         example_name = self.class.descendant_filtered_examples.first.description
+        driver.save_screenshot("allure-results/screenshots/#{example_name}.png")
         @eyes.close
         @driver.quit
         @eyes.abort_async

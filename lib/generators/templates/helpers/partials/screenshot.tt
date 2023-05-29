@@ -1,8 +1,5 @@
-<% case automation
- when 'selenium' %>
+<%- if automation == 'selenium' -%>
 driver.save_screenshot("allure-results/screenshots/#{example_name}.png")
-<% when 'watir' %>
+<%- else -%>
 browser.screenshot.save("allure-results/screenshots/#{example_name}.png")
-<% else %>
-driver.screenshot("allure-results/screenshots/#{example_name}.png")
-<% end %>
+<%- end -%>

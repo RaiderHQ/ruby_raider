@@ -22,11 +22,11 @@ describe 'Login' do
     let(:password) { user['password'] }
 
     it 'can successfully log in' do
-      <% if visual_automation == true -%>
+    <%- if visual_automation == true -%>
       check_page account_page
-      <% else -%>
+    <%- else -%>
       expect(header).to eq "Welcome back #{user['name']}"
-      <% end %>
+    <%- end -%>
     end
   end
 
@@ -34,11 +34,11 @@ describe 'Login' do
     let(:password) { 'wrongPassword' }
 
     it 'cannot log in' do
-          <% if visual_automation == true -%>
-          check_page login_page
-          <% else -%>
-          expect(header).to be_empty
-          <% end %>
+    <%- if visual_automation == true -%>
+      check_page login_page
+    <%- else -%>
+      expect(header).to be_empty
+    <%- end -%>
     end
   end
 end
