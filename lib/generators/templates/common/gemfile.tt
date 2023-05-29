@@ -1,12 +1,11 @@
 source 'https://rubygems.org'
 
 gem 'activesupport'
-<% unless visual_automation -%>
-gem 'allure-rspec'
-gem 'allure-ruby-commons'
-<% end -%>
 <% if framework == 'cucumber' -%>
 gem 'allure-cucumber'
+<% else -%>
+gem 'allure-rspec'
+gem 'allure-ruby-commons'
 <% end -%>
 <% if visual_automation -%>
 gem 'eyes_selenium', '~> 4.6', '>= 4.6.1'

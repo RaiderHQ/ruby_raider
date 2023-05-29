@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
-<%= ERB.new(File.read(File.expand_path('./partials/allure_requirements.tt', __dir__))).result(binding).strip! -%>
-<% allure = ERB.new(File.read(File.expand_path('./partials/allure_imports.tt', __dir__))).result(binding).strip! %>
+<%=- ERB.new(File.read(File.expand_path('./partials/allure_requirements.tt', __dir__))).result(binding).strip! -%>
+<%- allure = ERB.new(File.read(File.expand_path('./partials/allure_imports.tt', __dir__))).result(binding).strip! -%>
+
 
 module Raider
   module AllureHelper
@@ -22,11 +23,11 @@ module Raider
         )
       end
 
-    <% if framework == 'rspec' %>
+    <%- if framework == 'rspec' -%>
       def formatter
         AllureRspecFormatter
       end
-      <% end %>
+      <%- end -%>
     end
   end
 end

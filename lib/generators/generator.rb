@@ -19,15 +19,36 @@ class Generator < Thor::Group
     initializer.first
   end
 
-  def visual_selected?
-    initializer.first.last
+  def cucumber?
+    args.include?('cucumber')
   end
 
-  def mobile_platform?
+  # The framework is cross platform when it supports Android and iOS
+  def cross_platform?
+    args.include?('cross_platform')
+  end
+
+  def mobile?
     (args & %w[android ios cross_platform]).count.positive?
   end
 
-  def web_platform?
+  def rspec?
+    args.include?('rspec')
+  end
+
+  def selenium?
+    args.include?('selenium')
+  end
+
+  def visual?
+    initializer.first.last
+  end
+
+  def watir?
+    args.include?('watir')
+  end
+
+  def web?
     args.include?(%w[selenium watir])
   end
 

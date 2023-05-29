@@ -3,24 +3,33 @@
 require_relative '../generator'
 
 class AutomationGenerator < Generator
+  def generate_automation_files
+    if mobile?
+      generate_appium_settings
+    else
+      generate_abstract_component
+      generate_visual_options
+    end
+
+    generate_abstract_page
+  end
+
+  private
+
   def generate_abstract_page
     template('abstract_page.tt', "#{name}/page_objects/abstract/abstract_page.rb")
   end
 
   def generate_abstract_component
-    return if mobile_platform?
-
     template('abstract_component.tt', "#{name}/page_objects/abstract/abstract_component.rb")
   end
 
   def generate_appium_settings
-    return unless mobile_platform?
-
     template('appium_caps.tt', "#{name}/config/capabilities.yml")
   end
 
   def generate_visual_options
-    return unless visual_selected?
+    return unless visual?
 
     template('visual_options.tt', "#{name}/config/options.yml")
   end
