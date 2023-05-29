@@ -9,9 +9,7 @@ module Raider
 <%- else -%>
   require_relative 'driver_helper'
 <%- end -%>
-<%- unless visual_automation -%>
   require_relative 'allure_helper'
-<%- end -%>
 <%- if automation == 'cross_platform' -%>
   require_relative 'appium_helper'
 <%- end -%>

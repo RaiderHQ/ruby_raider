@@ -1,3 +1,4 @@
-require_relative 'models/user_factory'
+require_relative '../../helpers/browser_helper'
+require_relative '../../models/user_factory'
 
-World(BrowserHelper, UserFactory)
+World(Raider::BrowserHelper)
