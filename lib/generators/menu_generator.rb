@@ -3,6 +3,8 @@
 require 'tty-prompt'
 require_relative '../generators/invoke_generators'
 
+# :reek:FeatureEnvy { enabled: false }
+# :reek:UtilityFunction { enabled: false }
 class MenuGenerator
   attr_reader :prompt, :name
 
@@ -23,11 +25,7 @@ class MenuGenerator
   end
 
   def choose_visual_automation
-    prompt.select('Do you want to add visual automation with applitools?') do |menu|
-      menu.choice :Yes, -> { true }
-      menu.choice :No, -> { false }
-      menu.choice :Quit, -> { exit }
-    end
+    prompt.select('Do you want to add visual automation with applitools?', visual_automation_menu_choices)
   end
 
   def choose_test_framework(automation)
@@ -36,13 +34,13 @@ class MenuGenerator
     select_test_framework(automation)
   end
 
-  def set_up_framework(automation, framework, visual_automation, with_examples)
+  def set_up_framework(options)
     structure = {
-      automation: automation,
-      framework: framework,
+      automation: options[:automation],
+      framework: options[:framework],
       name: @name,
-      visual: visual_automation,
-      examples: with_examples
+      visual: options[:visual_automation],
+      examples: options[:with_examples]
     }
     generate_framework(structure)
     system "cd #{name} && gem install bundler && bundle install"
@@ -59,13 +57,6 @@ class MenuGenerator
 
   private
 
-  def framework_choice(framework, automation_type, with_examples: true)
-    visual_automation = choose_visual_automation if %w[selenium watir].include?(automation_type) && framework == 'Rspec'
-
-    set_up_framework(automation_type, framework.downcase, visual_automation, with_examples)
-    prompt.say("You have chosen to use #{framework} with #{automation_type}")
-  end
-
   def select_test_framework(automation)
     prompt.select('Please select your test framework') do |menu|
       menu.choice :Cucumber, -> { select_example_files('Cucumber', automation) }
@@ -76,9 +67,37 @@ class MenuGenerator
 
   def select_example_files(framework, automation)
     prompt.select('Would you like to create example files?') do |menu|
-      menu.choice :Yes, -> { framework_choice(framework, automation) }
-      menu.choice :No, -> { framework_choice(framework, automation, with_examples: false) }
+      menu.choice :Yes, -> { framework_with_examples(framework, automation) }
+      menu.choice :No, -> { framework_without_examples(framework, automation) }
       menu.choice :Quit, -> { exit }
     end
+  end
+
+  FrameworkOptions = Struct.new(:automation, :framework, :visual_automation, :with_examples)
+
+  def create_framework_options(params)
+    FrameworkOptions.new(params[:automation], params[:framework], params[:visual_automation], params[:with_examples])
+  end
+
+  def framework_with_examples(framework, automation_type)
+    visual_automation = choose_visual_automation if %w[selenium].include?(automation_type)
+    options = create_framework_options(automation: automation_type, framework: framework.downcase, visual_automation: visual_automation, with_examples: true)
+    set_up_framework(options)
+    prompt.say("You have chosen to use #{framework} with #{automation_type}")
+  end
+
+  def framework_without_examples(framework, automation_type)
+    visual_automation = choose_visual_automation if %w[selenium].include?(automation_type)
+    options = create_framework_options(automation: automation_type, framework: framework.downcase, visual_automation: visual_automation, with_examples: false)
+    set_up_framework(options)
+    prompt.say("You have chosen to use #{framework} with #{automation_type}")
+  end
+
+  def visual_automation_menu_choices
+    {
+      Yes: -> { true },
+      No: -> { false },
+      Quit: -> { exit }
+    }
   end
 end

@@ -24,9 +24,9 @@ describe CommonGenerator do
     end
   end
 
-  shared_examples 'creates a capabilities file' do |name|
-    it 'creates a capabilities file' do
-      expect(File).to exist("#{name}/config/capabilities.yml")
+  shared_examples 'creates a config file' do |name|
+    it 'creates a config file' do
+      expect(File).to exist("#{name}/config/config.yml")
     end
   end
 
@@ -39,6 +39,12 @@ describe CommonGenerator do
   shared_examples 'creates an options file' do |name|
     it 'creates an options file' do
       expect(File).to exist("#{name}/config/options.yml")
+    end
+  end
+
+  shared_examples 'creates a capabilities file' do |name|
+    it 'creates a capabilities file' do
+      expect(File).to exist("#{name}/config/capabilities.yml")
     end
   end
 
@@ -101,12 +107,12 @@ describe CommonGenerator do
   context 'with cucumber and appium cross platform' do
     include_examples 'creates common files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
     include_examples 'creates a capabilities file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates a config file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
+    include_examples "doesn't create a config file", "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
   end
 
   context 'with rspec and appium cross platform' do
     include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
     include_examples 'creates a capabilities file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates a config file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
+    include_examples "doesn't create a config file", "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
   end
 end

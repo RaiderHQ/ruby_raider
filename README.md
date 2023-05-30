@@ -3,7 +3,6 @@
 [![Gem Version](https://badge.fury.io/rb/ruby_raider.svg)](https://badge.fury.io/rb/ruby_raider)
 [![Rubocop](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml/badge.svg)](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml)
 [![Gitter](https://badges.gitter.im/RubyRaider/community.svg)](https://gitter.im/RubyRaider/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-<a href="https://www.buymeacoffee.com/aguspe94" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="20" width="100"></a>
 
 <!-- PROJECT LOGO -->
 <br />
@@ -55,7 +54,7 @@ Ruby Raider is a generator and scaffolding gem to make UI test automation easier
 
 * Generating a visual testing framework with Rspec, Applitools and Selenium
 
-* Generating a visual testing framework with Rspec, Applitools and Watir
+* Generating a visual testing framework with Cucumber, Applitools and Selenium
 
 ***In order to run the Appium tests, download the example [app](https://github.com/saucelabs/my-demo-app-rn).***
 
@@ -98,6 +97,7 @@ Commands :
   raider generate # Provides access to all the generators commands
 raider help [COMMAND] # Describe available commands or one specific command
 raider new [PROJECT_NAME] # Creates a new framework based on settings picked
+raider open # It opens the desktop runner
 raider open_ai # Provides access to all the open ai commands
 raider utility # Provides access to all the utility commands
 raider version # It shows the version of Ruby Raider you are currently using

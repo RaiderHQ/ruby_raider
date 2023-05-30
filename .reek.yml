@@ -1,28 +1,13 @@
 detectors:
-  Attribute:
-    exclude:
-      - InstallationScreen
-      - RunnerScreen
-
-  DuplicateMethodCall:
-    exclude:
-      - InstallationScreen
-
-  InstanceVariableAssumption:
-    exclude:
-      - InstallationScreen
-
   IrresponsibleModule:
     enabled: false
-
-  TooManyInstanceVariables:
-    exclude:
-      - InstallationScreen
 
   TooManyStatements:
     enabled: true
     exclude:
       - initialize
-      - InstallationScreen
     max_statements: 10
 
+exclude_paths:
+  - 'lib/desktop/components/*.rb'
+  - 'lib/desktop/screens/*.rb'

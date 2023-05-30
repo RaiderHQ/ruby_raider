@@ -1,5 +1,5 @@
-<% if %w[watir].include? automation -%>
-<%= ERB.new(File.read(File.expand_path('./partials/watir_world.tt', __dir__))).result(binding).strip! -%>
-<% else -%>
-<%= ERB.new(File.read(File.expand_path('./partials/driver_world.tt', __dir__))).result(binding).strip! -%>
-<% end -%>
+<%- if automation == 'watir' -%>
+<%=- ERB.new(File.read(File.expand_path('./partials/watir_world.tt', __dir__)), trim_mode: '-').result(binding).strip! -%>
+<%- else -%>
+<%=- ERB.new(File.read(File.expand_path('./partials/driver_world.tt', __dir__)), trim_mode: '-').result(binding).strip! -%>
+<%- end -%>

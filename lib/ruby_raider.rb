@@ -3,11 +3,12 @@
 require_relative '../lib/commands/open_ai_commands'
 require_relative '../lib/commands/scaffolding_commands'
 require_relative '../lib/commands/utility_commands'
-require_relative '../lib/utilities/raider_log'
+require_relative '../lib/desktop/screens/runner_screen'
 
+# :reek:FeatureEnvy { enabled: false }
+# :reek:UtilityFunction { enabled: false }
 module RubyRaider
   class Raider < Thor
-    include RaiderLog
     desc 'new [PROJECT_NAME]', 'Creates a new framework based on settings picked'
 
     def new(project_name)
@@ -16,11 +17,16 @@ module RubyRaider
 
     map '-n' => 'new'
 
+    desc 'open', 'It opens the Ruby Raider desktop app'
+
+    def open
+      RunnerScreen.new.launch
+    end
+
     desc 'version', 'It shows the version of Ruby Raider you are currently using'
+
     def version
-      spec = Gem::Specification.find_by_name('ruby_raider')
-      version = spec.version
-      RaiderLog.info(to_s) { "The Ruby Raider version is #{version}, Happy testing!" }
+      puts 'The Ruby Raider version is 0.7.1, Happy testing!'
     end
 
     map 'v' => 'version'

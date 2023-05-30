@@ -1,51 +1,44 @@
-<% if %w[selenium watir].include?(automation) && visual_automation == true %>
+<%- if %w[selenium watir].include? automation -%>
 # frozen_string_literal: true
 
 require_relative 'base_spec'
-require_relative '../page_objects/pages/login_page'
-require_relative '../page_objects/pages/app_page'
-
-describe 'Login Page' do
-  let(:app_page) { AppPage.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
-  let(:login_page) { LoginPage.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
-
-  before do
-    login_page.visit
-  end
-
-  it 'looks as expected' do
-    check_page login_page
-    login_page.login
-    check_page app_page
-  end
-end
-<%- elsif %w[selenium watir].include? automation -%>
-require_relative 'base_spec'
+require_relative '../models/model_factory'
+require_relative '../page_objects/pages/account_page'
 require_relative '../page_objects/pages/login_page'
 
 describe 'Login' do
-  let(:user_name) { 'aguspe' }
+  subject(:header) { account_page.header.customer_name }
+
+  let(:user) { ModelFactory.for('users')['registered user'] }
   let(:login_page) { LoginPage.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
-  subject { login_page.header.customer_name }
+  let(:account_page) { AccountPage.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
 
   before do
     login_page.visit
-    login_page.login(user_name, password)
+    login_page.login(user['username'], password)
   end
 
   context 'with right credentials' do
-    let(:password) { '12341234' }
+    let(:password) { user['password'] }
 
     it 'can successfully log in' do
-      expect(subject).to eq 'Welcome back Agustin'
+    <%- if visual_automation == true -%>
+      check_page account_page
+    <%- else -%>
+      expect(header).to eq "Welcome back #{user['name']}"
+    <%- end -%>
     end
   end
 
   context 'with wrong credentials' do
     let(:password) { 'wrongPassword' }
 
-    it 'it cannot login in' do
-      expect(subject).to be_empty
+    it 'cannot log in' do
+    <%- if visual_automation == true -%>
+      check_page login_page
+    <%- else -%>
+      expect(header).to be_empty
+    <%- end -%>
     end
   end
 end

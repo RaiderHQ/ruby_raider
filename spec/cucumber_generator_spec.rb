@@ -17,6 +17,10 @@ describe CucumberGenerator do
       expect(File).to exist("#{project_name}/features/support/env.rb")
     end
 
+    it 'creates an cucumber.yml file' do
+      expect(File).to exist("#{project_name}/cucumber.yml")
+    end
+
     it 'does not create a spec file' do
       expect(File).not_to exist("#{project_name}/spec/home_spec.rb")
     end
@@ -35,8 +39,26 @@ describe CucumberGenerator do
       expect(File).to exist("#{project_name}/features/support/env.rb")
     end
 
+    it 'creates an cucumber.yml file' do
+      expect(File).to exist("#{project_name}/cucumber.yml")
+    end
+
     it 'does not create a spec file' do
       expect(File).not_to exist("#{project_name}/spec/home_spec.rb")
+    end
+  end
+
+  shared_examples 'creates factories for web projects' do |project_name|
+    it 'creates an data file' do
+      expect(File).to exist("#{project_name}/models/data/users.yml")
+    end
+
+    it 'creates a model factory' do
+      expect(File).to exist("#{project_name}/models/model_factory.rb")
+    end
+
+    it 'creates a user factory' do
+      expect(File).to exist("#{project_name}/models/user_factory.rb")
     end
   end
 
@@ -60,12 +82,14 @@ describe CucumberGenerator do
 
   context 'with cucumber and selenium' do
     include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}", 'login'
+    include_examples 'creates factories for web projects', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}", 'login'
     include_examples 'creates cucumber files without examples',
                      "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}_without_examples", 'login'
   end
 
   context 'with cucumber and watir' do
     include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[3]}", 'login'
+    include_examples 'creates factories for web projects', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[3]}", 'login'
     include_examples 'creates cucumber files without examples',
                      "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[3]}_without_examples", 'login'
   end

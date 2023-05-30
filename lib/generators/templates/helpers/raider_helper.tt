@@ -5,15 +5,12 @@ module Raider
 <%- if framework == 'rspec' -%>
   require_relative 'spec_helper'
 <%- end -%>
-  <%= ERB.new(File.read(File.expand_path('./partials/require_automation.tt', __dir__))).result(binding).strip! %>
 <%- if automation == 'watir' -%>
   require_relative 'browser_helper'
 <%- else -%>
   require_relative 'driver_helper'
 <%- end -%>
-<%- unless visual_automation -%>
   require_relative 'allure_helper'
-<%- end -%>
 <%- if automation == 'cross_platform' -%>
   require_relative 'appium_helper'
 <%- end -%>

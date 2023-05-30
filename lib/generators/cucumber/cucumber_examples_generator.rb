@@ -11,6 +11,10 @@ class CucumberExamplesGenerator < Generator
     template('steps.tt', "#{name}/features/step_definitions/#{template_name}_steps.rb")
   end
 
+  def generate_user_factory
+    template('user_factory.tt', "#{name}/models/user_factory.rb")
+  end
+
   def template_name
     @template_name ||= (@_initializer.first & %w[android ios cross_platform]).empty? ? 'login' : 'home'
   end
