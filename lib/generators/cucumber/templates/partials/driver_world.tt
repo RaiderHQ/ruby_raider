@@ -5,7 +5,7 @@ require_relative '../../helpers/visual_helper'
 <%- if automation == 'selenium' -%>
 require_relative '../../models/user_factory'
 
-World(Raider::DriverHelper<%- if visual_automation -%>, Raider::VisualHelper<%- end -%>)
+World(DriverHelper<%- if visual_automation -%>, VisualHelper<%- end -%>)
 <%- else -%>
 World(Raider::DriverHelper)
 <%- end -%>

@@ -7,24 +7,22 @@ require 'webdrivers'
 require 'appium_lib'
 <% end -%>
 
-module Raider
-  module DriverHelper
-    attr_reader :driver
+module DriverHelper
+  attr_reader :driver
 
-    <%= ERB.new(File.read(File.expand_path('./partials/driver_and_options.tt', __dir__)), trim_mode: '-').result(binding).strip! %>
+  <%= ERB.new(File.read(File.expand_path('./partials/driver_and_options.tt', __dir__)), trim_mode: '-').result(binding).strip! %>
 
   <% if automation == 'cross_platform' -%>
   private
 
-    def config
-      YAML.load_file('config/config.yml')
-    end
+  def config
+    YAML.load_file('config/config.yml')
+  end
 <% end -%>
 <%- if automation != 'selenium'  -%>
-    # :reek:UtilityFunction
-    def caps
-      YAML.load_file('config/capabilities.yml')
-    end
+  # :reek:UtilityFunction
+  def caps
+    YAML.load_file('config/capabilities.yml')
+  end
 <%- end -%>
-end
 end

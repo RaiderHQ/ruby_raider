@@ -45,10 +45,6 @@ describe HelpersGenerator do
   end
 
   shared_examples 'creates common visual helpers' do |name|
-    it 'creates a raider file' do
-      expect(File).to exist("#{name}/helpers/raider.rb")
-    end
-
     it 'creates a visual helper file' do
       expect(File).to exist("#{name}/helpers/visual_helper.rb")
     end

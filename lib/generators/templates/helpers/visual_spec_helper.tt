@@ -6,8 +6,7 @@ require_relative 'allure_helper'
 require_relative 'driver_helper'
 require_relative 'visual_helper'
 
-module Raider
-  module SpecHelper
+module SpecHelper
     RSpec.configure do |config|
       config.include(DriverHelper)
       config.include(VisualHelper)
@@ -29,6 +28,5 @@ module Raider
         results = @grid_runner.get_all_test_results
         puts results
       end
-    end
   end
 end

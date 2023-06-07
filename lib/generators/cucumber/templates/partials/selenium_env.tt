@@ -4,8 +4,8 @@
 require_relative '../../helpers/driver_helper'
 require_relative '../../helpers/visual_helper'
 
-include Raider::DriverHelper
-include Raider::VisualHelper
+include DriverHelper
+include VisualHelper
 
 Before do
   OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
