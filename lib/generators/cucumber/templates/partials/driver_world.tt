@@ -7,5 +7,5 @@ require_relative '../../models/user_factory'
 
 World(DriverHelper<%- if visual_automation -%>, VisualHelper<%- end -%>)
 <%- else -%>
-World(Raider::DriverHelper)
+World(DriverHelper)
 <%- end -%>

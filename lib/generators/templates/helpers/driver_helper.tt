@@ -16,7 +16,7 @@ module DriverHelper
   private
 
   def config
-    YAML.load_file('config/config.yml')
+     YAML.load_file('config/config.yml')
   end
 <% end -%>
 <%- if automation != 'selenium'  -%>
