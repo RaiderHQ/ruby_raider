@@ -8,23 +8,21 @@ require_relative 'browser_helper'
 require_relative 'driver_helper'
 <% end -%>
 
-module Raider
-  module SpecHelper
+module SpecHelper
 
-    AllureHelper.configure
-    RSpec.configure do |config|
-      config.formatter = AllureHelper.formatter
-      <% if automation == 'watir' %>config.include(BrowserHelper)<% else %>config.include(DriverHelper)<% end %>
-      config.before(:each) do
-        <%= ERB.new(File.read(File.expand_path('./partials/select_driver.tt', __dir__))).result(binding).strip! %>
-      end
+  AllureHelper.configure
+  RSpec.configure do |config|
+    config.formatter = AllureHelper.formatter
+    <% if automation == 'watir' %>config.include(BrowserHelper)<% else %>config.include(DriverHelper)<% end %>
+    config.before(:each) do
+      <%= ERB.new(File.read(File.expand_path('./partials/select_driver.tt', __dir__))).result(binding).strip! %>
+    end
 
-      config.after(:each) do
-        example_name = self.class.descendant_filtered_examples.first.description
-        <%= ERB.new(File.read(File.expand_path('./partials/screenshot.tt', __dir__)), trim_mode: '-').result(binding).strip! %>
-        AllureHelper.add_screenshot example_name
-        <%= ERB.new(File.read(File.expand_path('./partials/quit_driver.tt', __dir__)), trim_mode: '-').result(binding).strip! %>
-      end
+    config.after(:each) do
+      example_name = self.class.descendant_filtered_examples.first.description
+      <%= ERB.new(File.read(File.expand_path('./partials/screenshot.tt', __dir__)), trim_mode: '-').result(binding).strip! %>
+       AllureHelper.add_screenshot example_name
+      <%= ERB.new(File.read(File.expand_path('./partials/quit_driver.tt', __dir__)), trim_mode: '-').result(binding).strip! %>
     end
   end
 end

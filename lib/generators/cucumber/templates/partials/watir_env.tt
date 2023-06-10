@@ -1,11 +1,12 @@
 <%- if visual_automation -%>
 # frozen_string_literal: true
 
+require_relative '../../helpers/allure_helper'
 require_relative '../../helpers/browser_helper'
 require_relative '../../helpers/visual_helper'
 
-include Raider::BrowserHelper
-include Raider::VisualHelper
+include BrowserHelper
+include VisualHelper
 
 Before do
   OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
@@ -17,7 +18,7 @@ end
 
 After do |scenario|
   browser.screenshot.save("allure-results/screenshots/#{scenario.name}.png")
-  Raider::AllureHelper.add_screenshot(scenario.name)
+  AllureHelper.add_screenshot(scenario.name)
   @eyes.close
   @browser.quit
   @eyes.abort_async
@@ -30,7 +31,7 @@ end
 
 require_relative '../../helpers/browser_helper'
 
-include Raider::BrowserHelper
+include BrowserHelper
 
 Before do
   new_browser
@@ -38,7 +39,7 @@ end
 
 After do |scenario|
   browser.screenshot.save("allure-results/screenshots/#{scenario.name}.png")
-  Raider::AllureHelper.add_screenshot(scenario.name)
+  AllureHelper.add_screenshot(scenario.name)
   browser.quit
 end
 <%- end -%>

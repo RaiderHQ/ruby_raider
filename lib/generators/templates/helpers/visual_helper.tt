@@ -4,8 +4,7 @@ require 'active_support/inflector'
 require 'eyes_selenium'
 require 'yaml'
 
-module Raider
-  module VisualHelper
+module VisualHelper
     attr_reader :eyes
 
     SELENIUM = Applitools::Selenium
@@ -63,5 +62,4 @@ module Raider
       conf.test_name = options[:test_name]
       conf.viewport_size = REGTANGLE_SIZE.new(options[:viewport_size][:height], options[:viewport_size][:width])
     end
-  end
 end

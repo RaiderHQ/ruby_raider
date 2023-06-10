@@ -1,5 +1,0 @@
-<% if framework == 'rspec' -%>
-require_relative '../../helpers/raider'
-<% else -%>
-require_relative '../../helpers/raider'
-<% end -%>
