@@ -14,8 +14,8 @@ RSpec.configure do |config|
   config.before(:all) do
     FRAMEWORKS.each do |framework|
       AUTOMATION_TYPES.each do |automation|
-        [true, false].product([true, false]) do |examples, visual|
-          settings = create_settings(framework: framework, automation: automation, examples: examples, visual: visual)
+        [true, false].each do |visual|
+          settings = create_settings(framework: framework, automation: automation, visual: visual)
           generate_framework(settings)
         end
       end
@@ -25,8 +25,8 @@ RSpec.configure do |config|
   config.after(:all) do
     FRAMEWORKS.each do |framework|
       AUTOMATION_TYPES.each do |automation|
-        [true, false].product([true, false]) do |examples, visual|
-          settings = create_settings(framework: framework, automation: automation, examples: examples, visual: visual)
+        [true, false].each do |visual|
+          settings = create_settings(framework: framework, automation: automation, visual: visual)
           FileUtils.rm_rf(settings[:name])
         end
       end
