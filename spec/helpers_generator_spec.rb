@@ -5,10 +5,6 @@ require_relative 'spec_helper'
 
 describe HelpersGenerator do
   shared_examples 'creates common helpers' do |name|
-    it 'creates a raider file' do
-      expect(File).to exist("#{name}/helpers/raider.rb")
-    end
-
     it 'creates an allure helper file' do
       expect(File).to exist("#{name}/helpers/allure_helper.rb")
     end
@@ -45,10 +41,6 @@ describe HelpersGenerator do
   end
 
   shared_examples 'creates common visual helpers' do |name|
-    it 'creates a raider file' do
-      expect(File).to exist("#{name}/helpers/raider.rb")
-    end
-
     it 'creates a visual helper file' do
       expect(File).to exist("#{name}/helpers/visual_helper.rb")
     end
