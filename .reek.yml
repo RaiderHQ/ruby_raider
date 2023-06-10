@@ -7,7 +7,3 @@ detectors:
     exclude:
       - initialize
     max_statements: 10
-
-exclude_paths:
-  - 'lib/desktop/components/*.rb'
-  - 'lib/desktop/screens/*.rb'
