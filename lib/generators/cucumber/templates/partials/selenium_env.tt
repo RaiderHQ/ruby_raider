@@ -1,11 +1,12 @@
 <%- if visual_automation -%>
 # frozen_string_literal: true
 
+require_relative '../../helpers/allure_helper'
 require_relative '../../helpers/driver_helper'
 require_relative '../../helpers/visual_helper'
 
-include Raider::DriverHelper
-include Raider::VisualHelper
+include DriverHelper
+include VisualHelper
 
 Before do
   OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
@@ -17,7 +18,7 @@ end
 
 After do |scenario|
   driver.save_screenshot("allure-results/screenshots/#{scenario.name}.png")
-  Raider::AllureHelper.add_screenshot(scenario.name)
+  AllureHelper.add_screenshot(scenario.name)
   @eyes.close
   @driver.quit
   @eyes.abort_async
@@ -29,8 +30,9 @@ end
 # frozen_string_literal: true
 
 require_relative '../../helpers/driver_helper'
+require_relative '../../helpers/allure_helper'
 
-include Raider::DriverHelper
+include DriverHelper
 
 Before do
   new_driver
@@ -38,7 +40,7 @@ end
 
 After do |scenario|
   driver.save_screenshot("allure-results/screenshots/#{scenario.name}.png")
-  Raider::AllureHelper.add_screenshot(scenario.name)
+  AllureHelper.add_screenshot(scenario.name)
   driver.quit
 end
 <%- end -%>

@@ -4,7 +4,6 @@ require_relative 'generator'
 
 class HelpersGenerator < Generator
   def generate_helpers
-    generate_raider_helper
     generate_browser_helper
     generate_driver_helper
     generate_appium_helper
@@ -19,10 +18,6 @@ class HelpersGenerator < Generator
   end
 
   private
-
-  def generate_raider_helper
-    template('helpers/raider_helper.tt', "#{name}/helpers/raider.rb")
-  end
 
   def generate_allure_helper
     template('helpers/allure_helper.tt', "#{name}/helpers/allure_helper.rb")
