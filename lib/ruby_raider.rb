@@ -3,7 +3,6 @@
 require_relative '../lib/commands/open_ai_commands'
 require_relative '../lib/commands/scaffolding_commands'
 require_relative '../lib/commands/utility_commands'
-require_relative '../lib/desktop/screens/runner_screen'
 
 # :reek:FeatureEnvy { enabled: false }
 # :reek:UtilityFunction { enabled: false }
@@ -16,12 +15,6 @@ module RubyRaider
     end
 
     map '-n' => 'new'
-
-    desc 'open', 'It opens the Ruby Raider desktop app'
-
-    def open
-      RunnerScreen.new.launch
-    end
 
     desc 'version', 'It shows the version of Ruby Raider you are currently using'
 

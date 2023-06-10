@@ -97,7 +97,6 @@ Commands :
   raider generate # Provides access to all the generators commands
 raider help [COMMAND] # Describe available commands or one specific command
 raider new [PROJECT_NAME] # Creates a new framework based on settings picked
-raider open # It opens the desktop runner
 raider open_ai # Provides access to all the open ai commands
 raider utility # Provides access to all the utility commands
 raider version # It shows the version of Ruby Raider you are currently using
