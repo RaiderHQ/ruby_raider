@@ -13,7 +13,7 @@ Before do
   @grid_runner = VisualHelper.create_grid_runner
   @eyes = VisualHelper.create_eyes(@grid_runner)
   VisualHelper.configure_eyes @eyes
-  @driver = @eyes.open(driver: DriverHelper.new_driver)
+  @driver = @eyes.open(driver: driver)
 end
 
 After do |scenario|

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative '../../helpers/allure_helper'
 require_relative '../../helpers/browser_helper'
 
 include BrowserHelper
