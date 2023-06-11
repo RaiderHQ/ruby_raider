@@ -1,9 +1,0 @@
-<% case automation
- when 'selenium' %>
-new_driver
-<% when 'watir' %>
-new_browser
-<% else %>
-new_driver
-        driver.start_driver
-<% end %>

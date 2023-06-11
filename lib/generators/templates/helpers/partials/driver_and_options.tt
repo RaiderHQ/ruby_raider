@@ -1,30 +1,35 @@
 <% if automation == 'selenium' -%>
-    def new_driver(*opts)
-      @config = YAML.load_file('config/config.yml')
-      browser = @config['browser'].to_sym
-      @driver = Selenium::WebDriver.for(browser, capabilities: browser_options(*opts))
-    end
+  def create_driver(*opts)
+    @config = YAML.load_file('config/config.yml')
+    browser = @config['browser'].to_sym
+    Selenium::WebDriver.for(browser, capabilities: browser_options(*opts))
+  end
 
-    def browser_options(*opts)
-      opts = opts.empty? ? @config['browser_options'] : opts
-      create_options(*opts)
-    end
+  def browser_options(*opts)
+    opts = opts.empty? ? @config['browser_options'] : opts
+    create_options(*opts)
+  end
 
-    # :reek:FeatureEnvy
-    def create_options(*opts)
-      load_browser = @config['browser'].to_s
-      browser = load_browser == 'ie' ? load_browser.upcase : load_browser.capitalize
-      caps = "Selenium::WebDriver::#{browser}::Options".constantize.new
-      opts.each { |option| caps.add_argument(option) }
-      caps
-    end
+  # :reek:FeatureEnvy
+  def create_options(*opts)
+    load_browser = @config['browser'].to_s
+    browser = load_browser == 'ie' ? load_browser.upcase : load_browser.capitalize
+    caps = "Selenium::WebDriver::#{browser}::Options".constantize.new
+    opts.each { |option| caps.add_argument(option) }
+    caps
+  end
+
 <% elsif automation == 'cross_platform' -%>
-  def new_driver
+  def create_driver
     platform = config['platform'].to_s
     @driver = Appium::Driver.new({ caps: caps[platform] })
   end
+
+  def config
+     YAML.load_file('config/config.yml')
+  end
 <% else -%>
-  def new_driver
+  def create_driver
     @driver = Appium::Driver.new({ caps: caps })
   end
 <% end -%>

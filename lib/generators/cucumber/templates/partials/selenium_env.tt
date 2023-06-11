@@ -10,10 +10,10 @@ include VisualHelper
 
 Before do
   OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
-  @grid_runner = create_grid_runner
-  @eyes = create_eyes(@grid_runner)
-  configure_eyes @eyes
-  @driver = @eyes.open(driver: new_driver)
+  @grid_runner = VisualHelper.create_grid_runner
+  @eyes = VisualHelper.create_eyes(@grid_runner)
+  VisualHelper.configure_eyes @eyes
+  @driver = @eyes.open(driver: driver)
 end
 
 After do |scenario|
@@ -35,7 +35,7 @@ require_relative '../../helpers/allure_helper'
 include DriverHelper
 
 Before do
-  new_driver
+  driver
 end
 
 After do |scenario|

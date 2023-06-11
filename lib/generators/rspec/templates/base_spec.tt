@@ -1,7 +1,0 @@
-require_relative '../helpers/spec_helper'
-<% if %w[selenium watir].include?(automation) && visual_automation == false %>
-require_relative '../models/model_factory'
-<% end %>
-class BaseSpec
-  include SpecHelper
-end

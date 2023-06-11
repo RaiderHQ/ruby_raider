@@ -8,17 +8,20 @@ require 'appium_lib'
 <% end -%>
 
 module DriverHelper
-  attr_reader :driver
+  <% if automation == 'selenium' -%>
+  def driver(*opts)
+    @driver ||= create_driver(*opts)
+  end
+  <% else -%>
+  def driver
+      @driver ||= create_driver
+  end
+  <%- end -%>
+
+  private
 
   <%= ERB.new(File.read(File.expand_path('./partials/driver_and_options.tt', __dir__)), trim_mode: '-').result(binding).strip! %>
 
-  <% if automation == 'cross_platform' -%>
-  private
-
-  def config
-     YAML.load_file('config/config.yml')
-  end
-<% end -%>
 <%- if automation != 'selenium'  -%>
   # :reek:UtilityFunction
   def caps

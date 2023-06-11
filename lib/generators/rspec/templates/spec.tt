@@ -1,7 +1,7 @@
 <%- if %w[selenium watir].include? automation -%>
 # frozen_string_literal: true
 
-require_relative 'base_spec'
+require_relative '../helpers/spec_helper'
 require_relative '../models/model_factory'
 require_relative '../page_objects/pages/account_page'
 require_relative '../page_objects/pages/login_page'
@@ -43,8 +43,8 @@ describe 'Login' do
   end
 end
 <%- else -%>
+require_relative '../helpers/spec_helper'
 require_relative '../page_objects/pages/home_page'
-require_relative 'base_spec'
 require_relative '../page_objects/pages/pdp_page'
 
 class PdpSpec < BaseSpec

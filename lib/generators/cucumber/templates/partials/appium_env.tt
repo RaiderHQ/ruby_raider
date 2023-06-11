@@ -4,7 +4,6 @@ include DriverHelper
 
 Before do
   AllureHelper.configure
-  new_driver
   driver.start_driver
 end
 

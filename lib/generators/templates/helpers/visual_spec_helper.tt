@@ -15,7 +15,7 @@ module SpecHelper
         @grid_runner = create_grid_runner
         @eyes = create_eyes(@grid_runner)
         configure_eyes @eyes
-        @driver = @eyes.open(driver: new_driver)
+        @driver = @eyes.open(driver: driver)
       end
 
       config.after(:each) do
