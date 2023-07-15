@@ -1,3 +1,19 @@
+<%- if automation == 'sparkling_ios' -%>
+require_relative '../../helpers/driver_helper'
+
+include DriverHelper
+
+Before do
+  AllureHelper.configure
+  app
+end
+
+After do |scenario|
+  app.screenshot.save("allure-results/screenshots/#{scenario.name}.png")
+  AllureHelper.add_screenshot(scenario.name)
+  app.close
+end
+<%- else -%>
 require_relative '../../helpers/driver_helper'
 
 include DriverHelper
@@ -12,3 +28,4 @@ After do |scenario|
   AllureHelper.add_screenshot(scenario.name)
   driver.quit_driver
 end
+<%- end -%>
