@@ -47,7 +47,7 @@ require_relative '../helpers/spec_helper'
 require_relative '../page_objects/pages/home_page'
 require_relative '../page_objects/pages/pdp_page'
 
-class PdpSpec < BaseSpec
+class PdpSpec
   describe 'PDP page' do
 
     let(:home_page) { HomePage.new(driver) }
