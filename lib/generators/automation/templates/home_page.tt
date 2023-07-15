@@ -1,7 +1,24 @@
 # frozen_string_literal: true
 
 require_relative '../abstract/abstract_page'
+<%- if automation == 'sparkling_ios' -%>
+class HomePage < AbstractPage
 
+  # Actions
+
+  def go_to_backpack_pdp
+    app.tap on: backpack_image.wait_until(&:present?)
+  end
+
+  private
+
+  # Elements
+
+  def backpack_image
+    app.element(predicate: 'label == "Sauce Labs Backpack"')
+  end
+end
+<%- else -%>
 class HomePage < AbstractPage
 
   # Actions
@@ -18,3 +35,4 @@ class HomePage < AbstractPage
     <%= ERB.new(File.read(File.expand_path('./partials/home_page_selector.tt', __dir__)), trim_mode: '-').result(binding) %>
   end
 end
+<%- end -%>
