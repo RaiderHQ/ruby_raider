@@ -32,6 +32,10 @@ class Generator < Thor::Group
     (args & %w[android ios cross_platform sparkling_ios]).count.positive?
   end
 
+  def single_platform?
+    (args & %w[android ios sparkling_ios]).count.positive?
+  end
+
   def rspec?
     args.include?('rspec')
   end

@@ -1,4 +1,4 @@
-<%- if automation == 'sparkling' -%>
+<%- if automation == 'sparkling_ios' -%>
 # frozen_string_literal: true
 
 require 'rspec'
