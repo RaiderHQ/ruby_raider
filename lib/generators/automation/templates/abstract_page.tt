@@ -1,3 +1,7 @@
+<%- if automation == 'cross_platform' -%>
+require_relative '../../helpers/appium_helper'
+<% end -%>
+
 class AbstractPage
 <% if automation == 'cross_platform' -%>
   include AppiumHelper
