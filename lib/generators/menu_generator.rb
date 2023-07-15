@@ -19,6 +19,7 @@ class MenuGenerator
     prompt.select('Please select your automation framework') do |menu|
       menu.choice :Appium, -> { choose_test_framework('appium') }
       menu.choice :Selenium, -> { choose_test_framework('selenium') }
+      menu.choice 'Sparkling Watir', -> { choose_test_framework('sparkling') }
       menu.choice :Watir, -> { choose_test_framework('watir') }
       menu.choice :Quit, -> { exit }
     end
@@ -30,6 +31,7 @@ class MenuGenerator
 
   def choose_test_framework(automation)
     return choose_mobile_platform if automation == 'appium'
+    return choose_sparkling_platform if automation == 'sparkling'
 
     select_test_framework(automation)
   end
@@ -43,6 +45,13 @@ class MenuGenerator
     }
     generate_framework(structure)
     system "cd #{name} && gem install bundler && bundle install"
+  end
+
+  def choose_sparkling_platform
+    prompt.select('Please select your mobile platform') do |menu|
+      menu.choice :iOS, -> { choose_test_framework 'sparkling_ios' }
+      menu.choice :Quit, -> { exit }
+    end
   end
 
   def choose_mobile_platform

@@ -30,3 +30,6 @@ gem 'ruby_raider', '~> 0.7.0'
 <% if %w[selenium watir].include? automation -%>
 gem 'webdrivers'
 <% end -%>
+<% if automation == 'sparkling_ios' -%>
+gem 'sparkling_watir'
+<% end -%>
