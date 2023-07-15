@@ -8,7 +8,7 @@ class CommonGenerator < Generator
   end
 
   def generate_config_file
-    return if mobile?
+    return if single_platform?
 
     template('common/config.tt', "#{name}/config/config.yml")
   end
