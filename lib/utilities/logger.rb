@@ -12,10 +12,6 @@ module RubyRaider
       extend Forwardable
       def_delegators :logger, :fatal, :error, :warn, :info, :debug, :level, :level=, :formatter, :formatter=
 
-      attr_reader :logger
-
-      private
-
       def logger
         @logger ||= begin
           logger = ::Logger.new($stdout)
