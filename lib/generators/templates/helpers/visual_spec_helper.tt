@@ -26,6 +26,7 @@ module SpecHelper
         @eyes.abort_async
         AllureHelper.add_screenshot example_name
         results = @grid_runner.get_all_test_results
+        puts results
       end
   end
 end
