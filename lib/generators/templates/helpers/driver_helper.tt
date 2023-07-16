@@ -1,3 +1,25 @@
+<%- if automation == 'sparkling_ios' -%>
+# frozen_string_literal: true
+require 'yaml'
+require 'sparkling_watir'
+
+module DriverHelper
+    def app
+      @app ||= create_app
+    end
+
+  private
+
+  def create_app
+    @app = SparklingWatir::App.new(caps: caps)
+  end
+
+  # :reek:UtilityFunction
+  def caps
+    YAML.load_file('config/capabilities.yml')
+  end
+end
+<%- else -%>
 # frozen_string_literal: true
 require 'yaml'
 <% if automation == 'selenium' -%>
@@ -7,24 +29,26 @@ require 'webdrivers'
 require 'appium_lib'
 <% end -%>
 
-module Raider
-  module DriverHelper
-    attr_reader :driver
+module DriverHelper
+  <% if automation == 'selenium' -%>
+  def driver(*opts)
+    @driver ||= create_driver(*opts)
+  end
+  <% else -%>
+  def driver
+      @driver ||= create_driver
+  end
+  <%- end -%>
 
-    <%= ERB.new(File.read(File.expand_path('./partials/driver_and_options.tt', __dir__)), trim_mode: '-').result(binding).strip! %>
-
-  <% if automation == 'cross_platform' -%>
   private
 
-    def config
-      YAML.load_file('config/config.yml')
-    end
-<% end -%>
+  <%= ERB.new(File.read(File.expand_path('./partials/driver_and_options.tt', __dir__)), trim_mode: '-').result(binding).strip! %>
+
 <%- if automation != 'selenium'  -%>
-    # :reek:UtilityFunction
-    def caps
-      YAML.load_file('config/capabilities.yml')
-    end
+  # :reek:UtilityFunction
+  def caps
+    YAML.load_file('config/capabilities.yml')
+  end
 <%- end -%>
 end
-end
+<%- end -%>

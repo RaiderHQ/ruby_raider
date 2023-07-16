@@ -1,7 +1,7 @@
 <%- if %w[selenium watir].include? automation -%>
 # frozen_string_literal: true
 
-require_relative 'base_spec'
+require_relative '../helpers/spec_helper'
 require_relative '../models/model_factory'
 require_relative '../page_objects/pages/account_page'
 require_relative '../page_objects/pages/login_page'
@@ -42,12 +42,29 @@ describe 'Login' do
     end
   end
 end
-<%- else -%>
+<%- elsif automation == 'sparkling_ios' -%>
+require_relative '../helpers/spec_helper'
 require_relative '../page_objects/pages/home_page'
-require_relative 'base_spec'
 require_relative '../page_objects/pages/pdp_page'
 
-class PdpSpec < BaseSpec
+class PdpSpec
+  describe 'PDP page' do
+
+    let(:home_page) { HomePage.new(app) }
+    let(:pdp_page) { PdpPage.new(app) }
+
+    it 'shows add to cart button' do
+      home_page.go_to_backpack_pdp
+      expect(pdp_page.add_to_cart_text).to eq 'Add To Cart'
+    end
+  end
+end
+<%- else -%>
+require_relative '../helpers/spec_helper'
+require_relative '../page_objects/pages/home_page'
+require_relative '../page_objects/pages/pdp_page'
+
+class PdpSpec
   describe 'PDP page' do
 
     let(:home_page) { HomePage.new(driver) }

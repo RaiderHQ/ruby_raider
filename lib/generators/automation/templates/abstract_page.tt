@@ -1,9 +1,22 @@
-<%= ERB.new(File.read(File.expand_path('./partials/require_raider.tt', __dir__)), trim_mode: '-').result(binding) -%>
+<%- if automation == 'sparkling_ios' -%>
+require 'sparkling_watir/element'
 
 class AbstractPage
+
+  attr_reader :app
+
+  def initialize(app)
+    @app = app
+  end
+
+  def to_s
+    self.class.to_s.sub('Page', ' Page')
+  end
+end
+<%- else -%>
+class AbstractPage
 <% if automation == 'cross_platform' -%>
-  include Raider::AppiumHelper
-  include Raider::RaiderLogHelper
+  include AppiumHelper
 <% end -%>
 <%= ERB.new(File.read(File.expand_path('./partials/initialize_selector.tt', __dir__))).result(binding) -%>
 <%= ERB.new(File.read(File.expand_path('./partials/visit_method.tt', __dir__))).result(binding) -%>
@@ -13,3 +26,4 @@ class AbstractPage
     self.class.to_s.sub('Page', ' Page')
   end
 end
+<%- end -%>

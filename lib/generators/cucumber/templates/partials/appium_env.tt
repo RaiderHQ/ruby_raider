@@ -1,15 +1,31 @@
+<%- if automation == 'sparkling_ios' -%>
 require_relative '../../helpers/driver_helper'
 
-include Raider::DriverHelper
+include DriverHelper
 
 Before do
-  Raider::AllureHelper.configure
-  new_driver
+  AllureHelper.configure
+  app
+end
+
+After do |scenario|
+  app.screenshot.save("allure-results/screenshots/#{scenario.name}.png")
+  AllureHelper.add_screenshot(scenario.name)
+  app.close
+end
+<%- else -%>
+require_relative '../../helpers/driver_helper'
+
+include DriverHelper
+
+Before do
+  AllureHelper.configure
   driver.start_driver
 end
 
 After do |scenario|
   driver.screenshot("allure-results/screenshots/#{scenario.name}.png")
-  Raider::AllureHelper.add_screenshot(scenario.name)
+  AllureHelper.add_screenshot(scenario.name)
   driver.quit_driver
 end
+<%- end -%>

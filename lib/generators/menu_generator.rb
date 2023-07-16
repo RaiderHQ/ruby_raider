@@ -17,10 +17,7 @@ class MenuGenerator
 
   def generate_choice_menu
     prompt.select('Please select your automation framework') do |menu|
-      menu.choice :Appium, -> { choose_test_framework('appium') }
-      menu.choice :Selenium, -> { choose_test_framework('selenium') }
-      menu.choice :Watir, -> { choose_test_framework('watir') }
-      menu.choice :Quit, -> { exit }
+      select_automation_framework(menu)
     end
   end
 
@@ -30,6 +27,7 @@ class MenuGenerator
 
   def choose_test_framework(automation)
     return choose_mobile_platform if automation == 'appium'
+    return choose_sparkling_platform if automation == 'sparkling'
 
     select_test_framework(automation)
   end
@@ -39,11 +37,17 @@ class MenuGenerator
       automation: options[:automation],
       framework: options[:framework],
       name: @name,
-      visual: options[:visual_automation],
-      examples: options[:with_examples]
+      visual: options[:visual_automation]
     }
     generate_framework(structure)
     system "cd #{name} && gem install bundler && bundle install"
+  end
+
+  def choose_sparkling_platform
+    prompt.select('Please select your mobile platform') do |menu|
+      menu.choice :iOS, -> { choose_test_framework 'sparkling_ios' }
+      menu.choice :Quit, -> { exit }
+    end
   end
 
   def choose_mobile_platform
@@ -59,36 +63,23 @@ class MenuGenerator
 
   def select_test_framework(automation)
     prompt.select('Please select your test framework') do |menu|
-      menu.choice :Cucumber, -> { select_example_files('Cucumber', automation) }
-      menu.choice :Rspec, -> { select_example_files('Rspec', automation) }
+      menu.choice :Cucumber, -> { create_framework('Cucumber', automation) }
+      menu.choice :Rspec, -> { create_framework('Rspec', automation) }
       menu.choice :Quit, -> { exit }
     end
   end
 
-  def select_example_files(framework, automation)
-    prompt.select('Would you like to create example files?') do |menu|
-      menu.choice :Yes, -> { framework_with_examples(framework, automation) }
-      menu.choice :No, -> { framework_without_examples(framework, automation) }
-      menu.choice :Quit, -> { exit }
-    end
-  end
-
-  FrameworkOptions = Struct.new(:automation, :framework, :visual_automation, :with_examples)
+  FrameworkOptions = Struct.new(:automation, :framework, :visual_automation)
 
   def create_framework_options(params)
-    FrameworkOptions.new(params[:automation], params[:framework], params[:visual_automation], params[:with_examples])
+    FrameworkOptions.new(params[:automation], params[:framework], params[:visual_automation])
   end
 
-  def framework_with_examples(framework, automation_type)
+  def create_framework(framework, automation_type)
     visual_automation = choose_visual_automation if %w[selenium].include?(automation_type)
-    options = create_framework_options(automation: automation_type, framework: framework.downcase, visual_automation: visual_automation, with_examples: true)
-    set_up_framework(options)
-    prompt.say("You have chosen to use #{framework} with #{automation_type}")
-  end
-
-  def framework_without_examples(framework, automation_type)
-    visual_automation = choose_visual_automation if %w[selenium].include?(automation_type)
-    options = create_framework_options(automation: automation_type, framework: framework.downcase, visual_automation: visual_automation, with_examples: false)
+    options = create_framework_options(automation: automation_type,
+                                       framework: framework.downcase,
+                                       visual_automation: visual_automation)
     set_up_framework(options)
     prompt.say("You have chosen to use #{framework} with #{automation_type}")
   end
@@ -99,5 +90,13 @@ class MenuGenerator
       No: -> { false },
       Quit: -> { exit }
     }
+  end
+
+  def select_automation_framework(menu)
+    menu.choice :Appium, -> { choose_test_framework('appium') }
+    menu.choice :Selenium, -> { choose_test_framework('selenium') }
+    menu.choice 'Sparkling Watir', -> { choose_test_framework('sparkling') }
+    menu.choice :Watir, -> { choose_test_framework('watir') }
+    menu.choice :Quit, -> { exit }
   end
 end

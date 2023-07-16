@@ -52,7 +52,12 @@ Ruby Raider is a generator and scaffolding gem to make UI test automation easier
 
 * Generating a visual testing framework with Cucumber, Applitools and Selenium
 
+* Generating a mobile testing framework with Rspec and Sparkling Watir for IOS
+
+* Generating a mobile testing framework with Cucumber and Sparkling Watir for IOS
+
 ***In order to run the Appium tests, download the example [app](https://github.com/saucelabs/my-demo-app-rn).***
+***Remember to use the full path of the app that you download in the capabilities file***
 
 ***In order to run the visual tests with applitools, you need to create an account and get your api key, you can read
 more [here](https://applitools.com/docs/topics/overview/obtain-api-key.html#:~:text=If%20you%20already%20have%20an,Your%20key%20will%20be%20displayed.)
@@ -93,7 +98,6 @@ Commands :
   raider generate # Provides access to all the generators commands
 raider help [COMMAND] # Describe available commands or one specific command
 raider new [PROJECT_NAME] # Creates a new framework based on settings picked
-raider open # It opens the desktop runner
 raider open_ai # Provides access to all the open ai commands
 raider utility # Provides access to all the utility commands
 raider version # It shows the version of Ruby Raider you are currently using
