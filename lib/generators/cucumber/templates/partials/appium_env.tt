@@ -1,4 +1,5 @@
 <%- if automation == 'sparkling_ios' -%>
+require_relative '../../helpers/allure_helper'
 require_relative '../../helpers/driver_helper'
 
 include DriverHelper
@@ -14,6 +15,7 @@ After do |scenario|
   app.close
 end
 <%- else -%>
+require_relative '../../helpers/allure_helper'
 require_relative '../../helpers/driver_helper'
 
 include DriverHelper
