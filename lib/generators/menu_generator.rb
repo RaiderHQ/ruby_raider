@@ -17,11 +17,7 @@ class MenuGenerator
 
   def generate_choice_menu
     prompt.select('Please select your automation framework') do |menu|
-      menu.choice :Appium, -> { choose_test_framework('appium') }
-      menu.choice :Selenium, -> { choose_test_framework('selenium') }
-      menu.choice 'Sparkling Watir', -> { choose_test_framework('sparkling') }
-      menu.choice :Watir, -> { choose_test_framework('watir') }
-      menu.choice :Quit, -> { exit }
+      select_automation_framework(menu)
     end
   end
 
@@ -94,5 +90,13 @@ class MenuGenerator
       No: -> { false },
       Quit: -> { exit }
     }
+  end
+
+  def select_automation_framework(menu)
+    menu.choice :Appium, -> { choose_test_framework('appium') }
+    menu.choice :Selenium, -> { choose_test_framework('selenium') }
+    menu.choice 'Sparkling Watir', -> { choose_test_framework('sparkling') }
+    menu.choice :Watir, -> { choose_test_framework('watir') }
+    menu.choice :Quit, -> { exit }
   end
 end
