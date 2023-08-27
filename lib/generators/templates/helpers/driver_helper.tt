@@ -24,7 +24,7 @@ end
 require 'yaml'
 <% if automation == 'selenium' -%>
 require 'active_support/inflector'
-require 'webdrivers'
+require 'selenium-webdriver'
 <% else -%>
 require 'appium_lib'
 <% end -%>
