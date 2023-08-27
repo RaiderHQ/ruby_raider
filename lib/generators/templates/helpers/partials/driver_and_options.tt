@@ -2,7 +2,7 @@
   def create_driver(*opts)
     @config = YAML.load_file('config/config.yml')
     browser = @config['browser'].to_sym
-    Selenium::WebDriver.for(browser, capabilities: browser_options(*opts))
+    Selenium::WebDriver.for(browser, options: browser_options(*opts))
   end
 
   def browser_options(*opts)
@@ -14,9 +14,9 @@
   def create_options(*opts)
     load_browser = @config['browser'].to_s
     browser = load_browser == 'ie' ? load_browser.upcase : load_browser.capitalize
-    caps = "Selenium::WebDriver::#{browser}::Options".constantize.new
-    opts.each { |option| caps.add_argument(option) }
-    caps
+    options = "Selenium::WebDriver::#{browser}::Options".constantize.new
+    opts.each { |option| options.add_argument(option) }
+    options
   end
 
 <% elsif automation == 'cross_platform' -%>

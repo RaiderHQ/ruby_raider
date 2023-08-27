@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
 require 'yaml'
-require 'selenium-webdriver'
 require 'watir'
-require 'webdrivers'
 
 module BrowserHelper
 
