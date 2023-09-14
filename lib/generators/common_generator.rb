@@ -29,6 +29,10 @@ class CommonGenerator < Generator
     template('common/rubocop.tt', "#{name}/.rubocop.yml")
   end
 
+  def generate_gitignore_file
+    template('common/git_ignore.tt', "#{name}/.gitignore")
+  end
+
   def create_allure_folder
     empty_directory "#{name}/allure-results"
   end
