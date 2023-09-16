@@ -1,3 +1,4 @@
+require_relative 'actions/actions_generator'
 require_relative 'automation/automation_generator'
 require_relative 'common_generator'
 require_relative 'cucumber/cucumber_generator'
@@ -8,7 +9,7 @@ require_relative 'rspec/rspec_generator'
 # :reek:UtilityFunction { enabled: false }
 module InvokeGenerators
   def generate_framework(structure = {})
-    generators = %w[Automation Common Helpers]
+    generators = %w[Automation Actions Common Helpers]
     framework = structure[:framework]
     add_generator(generators, framework.capitalize)
     generators.each do |generator|
