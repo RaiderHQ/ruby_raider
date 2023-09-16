@@ -12,7 +12,8 @@ class Generator < Thor::Group
 
   def self.source_paths
     base_path = File.dirname(__FILE__)
-    %W[#{base_path}/automation/templates #{base_path}/cucumber/templates #{base_path}/rspec/templates #{base_path}/templates]
+    %W[#{base_path}/automation/templates #{base_path}/cucumber/templates
+       #{base_path}/rspec/templates #{base_path}/templates #{base_path}/actions/templates ]
   end
 
   def args
@@ -53,7 +54,7 @@ class Generator < Thor::Group
   end
 
   def web?
-    args.include?(%w[selenium watir])
+    (args & (%w[selenium watir])).count.positive?
   end
 
   private
@@ -61,5 +62,6 @@ class Generator < Thor::Group
   def _initializer
     @_initializer ||= super
   end
+
   alias initializer _initializer
 end
