@@ -3,15 +3,15 @@
 
 require_relative '../helpers/spec_helper'
 require_relative '../models/model_factory'
-require_relative '../page_objects/pages/account_page'
-require_relative '../page_objects/pages/login_page'
+require_relative '../page_objects/pages/account'
+require_relative '../page_objects/pages/login'
 
 describe 'Login' do
   subject(:header) { account_page.header.customer_name }
 
   let(:user) { ModelFactory.for('users')['registered user'] }
-  let(:login_page) { LoginPage.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
-  let(:account_page) { AccountPage.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
+  let(:login_page) { Login.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
+  let(:account_page) { Account.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
 
   before do
     login_page.visit
@@ -37,21 +37,21 @@ describe 'Login' do
     <%- if visual_automation == true -%>
       check_page login_page
     <%- else -%>
-      expect(header).to be_empty
+      expect(header).to eq 'Login or register'
     <%- end -%>
     end
   end
 end
 <%- elsif automation == 'sparkling_ios' -%>
 require_relative '../helpers/spec_helper'
-require_relative '../page_objects/pages/home_page'
-require_relative '../page_objects/pages/pdp_page'
+require_relative '../page_objects/pages/home'
+require_relative '../page_objects/pages/pdp'
 
 class PdpSpec
   describe 'PDP page' do
 
-    let(:home_page) { HomePage.new(app) }
-    let(:pdp_page) { PdpPage.new(app) }
+    let(:home_page) { Home.new(app) }
+    let(:pdp_page) { Pdp.new(app) }
 
     it 'shows add to cart button' do
       home_page.go_to_backpack_pdp
@@ -61,14 +61,14 @@ class PdpSpec
 end
 <%- else -%>
 require_relative '../helpers/spec_helper'
-require_relative '../page_objects/pages/home_page'
-require_relative '../page_objects/pages/pdp_page'
+require_relative '../page_objects/pages/home'
+require_relative '../page_objects/pages/pdp'
 
 class PdpSpec
-  describe 'PDP page' do
+  describe 'PDP' do
 
-    let(:home_page) { HomePage.new(driver) }
-    let(:pdp_page) { PdpPage.new(driver) }
+    let(:home_page) { Home.new(driver) }
+    let(:pdp_page) { Pdp.new(driver) }
 
     it 'shows add to cart button' do
       home_page.go_to_backpack_pdp

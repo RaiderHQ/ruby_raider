@@ -6,43 +6,43 @@ require_relative 'spec_helper'
 describe AutomationGenerator do
   shared_examples 'creates web automation framework' do |name|
     it 'creates a login page file' do
-      expect(File).to exist("#{name}/page_objects/pages/login_page.rb")
+      expect(File).to exist("#{name}/page_objects/pages/login.rb")
     end
 
     it 'creates an abstract page file' do
-      expect(File).to exist("#{name}/page_objects/abstract/abstract_page.rb")
+      expect(File).to exist("#{name}/page_objects/abstract/page.rb")
     end
 
     it 'creates an abstract component file' do
-      expect(File).to exist("#{name}/page_objects/abstract/abstract_component.rb")
+      expect(File).to exist("#{name}/page_objects/abstract/component.rb")
     end
 
     it 'creates a component file' do
-      expect(File).to exist("#{name}/page_objects/components/header_component.rb")
+      expect(File).to exist("#{name}/page_objects/components/header.rb")
     end
   end
 
   shared_examples 'creates mobile automation framework' do |name|
     it 'creates a home page file' do
-      expect(File).to exist("#{name}/page_objects/pages/home_page.rb")
+      expect(File).to exist("#{name}/page_objects/pages/home.rb")
     end
 
     it 'creates an abstract page file' do
-      expect(File).to exist("#{name}/page_objects/abstract/abstract_page.rb")
+      expect(File).to exist("#{name}/page_objects/abstract/page.rb")
     end
 
     it 'creates a pdp page file' do
-      expect(File).to exist("#{name}/page_objects/pages/pdp_page.rb")
+      expect(File).to exist("#{name}/page_objects/pages/pdp.rb")
     end
   end
 
   shared_examples 'creates web visual framework' do |name|
     it 'creates a login page file' do
-      expect(File).to exist("#{name}/page_objects/pages/login_page.rb")
+      expect(File).to exist("#{name}/page_objects/pages/login.rb")
     end
 
     it 'creates an abstract page file' do
-      expect(File).to exist("#{name}/page_objects/abstract/abstract_page.rb")
+      expect(File).to exist("#{name}/page_objects/abstract/page.rb")
     end
   end
 

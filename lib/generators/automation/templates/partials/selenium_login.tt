@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
-require_relative '../abstract/abstract_page'
-require_relative '../components/header_component'
+require_relative '../abstract/page'
 
-class LoginPage < AbstractPage
+class Login < Page
   def url(_page)
     'index.php?rt=account/login'
   end
@@ -14,12 +13,6 @@ class LoginPage < AbstractPage
     username_field.send_keys username
     password_field.send_keys password
     login_button.click
-  end
-
-  # Components
-
-  def header
-    HeaderComponent.new(driver.find_element(class: 'menu_text'))
   end
 
   private

@@ -1,7 +1,6 @@
-require_relative '../abstract/abstract_page'
-require_relative '../components/header_component'
+require_relative '../abstract/page'
 
-class LoginPage < AbstractPage
+class Login < Page
 
   def url(_page)
     'index.php?rt=account/login'
@@ -13,12 +12,6 @@ class LoginPage < AbstractPage
     username_field.set username
     password_field.set password
     login_button.click
-  end
-
-  # Components
-
-  def header
-    HeaderComponent.new(browser.element(class: 'menu_text'))
   end
 
   private

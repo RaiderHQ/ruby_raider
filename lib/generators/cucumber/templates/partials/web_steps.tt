@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require_relative '../../page_objects/pages/account_page'
-require_relative '../../page_objects/pages/login_page'
+require_relative '../../page_objects/pages/account'
+require_relative '../../page_objects/pages/login'
 
 Given("I'm a {user} on the login page") do |user|
   @user = user
-  @login_page = LoginPage.new(<% if automation == 'watir' %>browser<% else %>driver<% end %>)
+  @login_page = Login.new(<% if automation == 'watir' %>browser<% else %>driver<% end %>)
   @login_page.visit
 end
 
@@ -14,7 +14,7 @@ When('I login with my credentials') do
 end
 
 Then("I'm logged in") do
-  account_page = AccountPage.new(<% if automation == 'watir' %>browser<% else %>driver<% end %>)
+  account_page = Account.new(<% if automation == 'watir' %>browser<% else %>driver<% end %>)
   <%- if visual_automation == true -%>
   check_page account_page
   <%- else -%>

@@ -45,6 +45,14 @@ module SpecHelper
     config.before(:each) do
       driver.start_driver
     end
+    <%- elsif automation == 'selenium' -%>
+    config.before(:each) do
+      driver.manage.window.maximize
+    end
+    <%- elsif automation == 'watir' -%>
+    config.before(:each) do
+      browser.window.maximize
+    end
     <%- end -%>
 
     config.after(:each) do
