@@ -36,11 +36,11 @@ class AutomationGenerator < Generator
   end
 
   def generate_abstract_page
-    template('abstract_page.tt', "#{name}/page_objects/abstract/abstract_page.rb")
+    template('page.tt', "#{name}/page_objects/abstract/page.rb")
   end
 
   def generate_abstract_component
-    template('abstract_component.tt', "#{name}/page_objects/abstract/abstract_component.rb")
+    template('component.tt', "#{name}/page_objects/abstract/component.rb")
   end
 
   def generate_appium_settings
@@ -54,23 +54,23 @@ class AutomationGenerator < Generator
   end
 
   def generate_login_page
-    template('login_page.tt', "#{name}/page_objects/pages/login_page.rb")
+    template('login.tt', "#{name}/page_objects/pages/login.rb")
   end
 
   def generate_account_page
-    template('account_page.tt', "#{name}/page_objects/pages/account_page.rb")
+    template('account.tt', "#{name}/page_objects/pages/account.rb")
   end
 
   def generate_home_page
-    template('home_page.tt', "#{name}/page_objects/pages/home_page.rb")
+    template('home.tt', "#{name}/page_objects/pages/home.rb")
   end
 
   def generate_pdp_page
-    template('pdp_page.tt', "#{name}/page_objects/pages/pdp_page.rb")
+    template('pdp.tt', "#{name}/page_objects/pages/pdp.rb")
   end
 
   def generate_header_component
-    template('component.tt', "#{name}/page_objects/components/header_component.rb")
+    template('header.tt', "#{name}/page_objects/components/header.rb")
   end
 
   def generate_model_factory

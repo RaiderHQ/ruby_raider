@@ -35,7 +35,7 @@ require_relative '../../helpers/allure_helper'
 include DriverHelper
 
 Before do
-  driver
+  driver.manage.window.maximize
 end
 
 After do |scenario|

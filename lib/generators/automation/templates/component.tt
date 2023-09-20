@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require_relative '../abstract/abstract_component'
+class Component
+  attr_reader :component
 
-class HeaderComponent < AbstractComponent
-  def customer_name
-    component.text
+  def initialize(component)
+    @component = component
   end
 end

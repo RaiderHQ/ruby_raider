@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative '../abstract/abstract_page'
+require_relative '../abstract/page'
 <%- if automation == 'sparkling_ios' -%>
-class HomePage < AbstractPage
+class Home < Page
 
   # Actions
 
@@ -19,7 +19,7 @@ class HomePage < AbstractPage
   end
 end
 <%- else -%>
-class HomePage < AbstractPage
+class Home < Page
 
   # Actions
 

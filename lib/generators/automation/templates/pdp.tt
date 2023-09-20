@@ -1,6 +1,6 @@
-require_relative '../abstract/abstract_page'
+require_relative '../abstract/page'
 <%- if automation == 'sparkling_ios' -%>
-class PdpPage < AbstractPage
+class Pdp < Page
 
   # Actions
 
@@ -18,7 +18,7 @@ class PdpPage < AbstractPage
 end
 <%- else -%>
 
-class PdpPage < AbstractPage
+class Pdp < Page
 
   # Actions
 
