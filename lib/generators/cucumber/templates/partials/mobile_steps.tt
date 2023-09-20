@@ -1,11 +1,11 @@
 <%- if automation == 'sparkling_ios' -%>
 # frozen_string_literal: true
 
-require_relative '../../page_objects/pages/home_page'
-require_relative '../../page_objects/pages/pdp_page'
+require_relative '../../page_objects/pages/home'
+require_relative '../../page_objects/pages/pdp'
 
 Given("I'm an anonymous user on the home page") do
-    @home_page = HomePage.new(app)
+    @home_page = Home.new(app)
 end
 
 When('I select one of the products') do
@@ -13,7 +13,7 @@ When('I select one of the products') do
 end
 
 When("I'm redirected to the product details page") do
-    pdp_page = PdpPage.new(app)
+    pdp_page = Pdp.new(app)
     expect(pdp_page.add_to_cart_text).to eq 'Add To Cart'
 end
 <%- else -%>
@@ -23,7 +23,7 @@ require_relative '../../page_objects/pages/home_page'
 require_relative '../../page_objects/pages/pdp_page'
 
 Given("I'm an anonymous user on the home page") do
-    @home_page = HomePage.new(driver)
+    @home_page = Home.new(driver)
 end
 
 When('I select one of the products') do
@@ -31,7 +31,7 @@ When('I select one of the products') do
 end
 
 When("I'm redirected to the product details page") do
-    pdp_page = PdpPage.new(driver)
+    pdp_page = Pdp.new(driver)
     expect(pdp_page.add_to_cart_text).to eq 'Add To Cart'
 end
 <%- end -%>
