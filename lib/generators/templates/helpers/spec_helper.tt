@@ -16,8 +16,8 @@ module SpecHelper
       app
     end
 
-    config.after(:each) do
-      example_name = self.class.descendant_filtered_examples.first.description
+    config.after(:each) do |example|
+      example_name = example.description
       app.screenshot.save("allure-results/screenshots/#{example_name}.png")
       AllureHelper.add_screenshot example_name
       app.close
@@ -55,8 +55,8 @@ module SpecHelper
     end
     <%- end -%>
 
-    config.after(:each) do
-      example_name = self.class.descendant_filtered_examples.first.description
+    config.after(:each) do |example|
+      example_name = example.description
       <%= ERB.new(File.read(File.expand_path('./partials/screenshot.tt', __dir__)), trim_mode: '-').result(binding).strip! %>
        AllureHelper.add_screenshot example_name
       <%= ERB.new(File.read(File.expand_path('./partials/quit_driver.tt', __dir__)), trim_mode: '-').result(binding).strip! %>

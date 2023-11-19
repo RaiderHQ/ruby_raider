@@ -11,10 +11,12 @@ module BrowserHelper
 
   private
 
+  def config
+    @config ||= YAML.load_file('config/config.yml')
+  end
+
   def create_browser(*args)
-    @config = YAML.load_file('config/config.yml')
-    browser = @config['browser'].to_sym
-    args = args.empty? ? @config['browser_options'] : args
-    @browser = Watir::Browser.new(browser, options: { args: args })
+    args = args.empty? ? config['browser_arguments'][config['browser']] : args
+    Watir::Browser.new(config['browser'], options: { args: args })
   end
 end
