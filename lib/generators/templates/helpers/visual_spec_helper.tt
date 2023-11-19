@@ -22,7 +22,7 @@ module SpecHelper
       config.after(:each) do |example|
         example_name = example.description
         Dir.mktmpdir do |temp_folder|
-					<%= ERB.new(File.read(File.expand_path('./partials/screenshot.tt', __dir__)), trim_mode: '-').result(binding).strip! %>
+          <%= ERB.new(File.read(File.expand_path('./partials/screenshot.tt', __dir__)), trim_mode: '-').result(binding).strip! %>
           AllureHelper.add_screenshot(example_name, screenshot)
         end
         @eyes.close
