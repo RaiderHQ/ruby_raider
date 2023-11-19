@@ -31,9 +31,6 @@ jobs:
       - name: Create allure-results folder
         run: mkdir -p allure-results
 
-      - name: Create screenshots folder
-        run: mkdir -p allure-results/screenshots
-
       - name: Build and test with rspec
         run: <%- if framework == 'cucumber' -%>cucumber features --format pretty <%- else -%>bundle exec rspec spec --format documentation<%- end -%>
 
