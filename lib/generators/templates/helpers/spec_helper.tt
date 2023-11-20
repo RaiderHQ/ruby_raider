@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require 'rspec'
+require 'tmpdir'
 require_relative 'allure_helper'
 require_relative 'driver_helper'
 require 'sparkling_watir'
@@ -18,8 +19,10 @@ module SpecHelper
 
     config.after(:each) do |example|
       example_name = example.description
-      app.screenshot.save("allure-results/screenshots/#{example_name}.png")
-      AllureHelper.add_screenshot example_name
+      Dir.mktmpdir do |temp_folder|
+        app.screenshot.save("#{temp_folder}/#{example_name}.png")
+        AllureHelper.add_screenshot(example_name, screenshot)
+      end
       app.close
     end
   end
@@ -28,6 +31,7 @@ end
 # frozen_string_literal: true
 
 require 'rspec'
+require 'tmpdir'
 require_relative 'allure_helper'
 <%- if automation == 'watir' -%>
 require_relative 'browser_helper'
@@ -57,8 +61,10 @@ module SpecHelper
 
     config.after(:each) do |example|
       example_name = example.description
-      <%= ERB.new(File.read(File.expand_path('./partials/screenshot.tt', __dir__)), trim_mode: '-').result(binding).strip! %>
-       AllureHelper.add_screenshot example_name
+      Dir.mktmpdir do |temp_folder|
+        <%= ERB.new(File.read(File.expand_path('./partials/screenshot.tt', __dir__)), trim_mode: '-').result(binding).strip! %>
+        AllureHelper.add_screenshot(example_name, screenshot)
+      end
       <%= ERB.new(File.read(File.expand_path('./partials/quit_driver.tt', __dir__)), trim_mode: '-').result(binding).strip! %>
     end
   end

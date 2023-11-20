@@ -13,10 +13,10 @@ module AllureHelper
       end
     end
 
-    def add_screenshot(screenshot_name)
+    def add_screenshot(name, file)
       Allure.add_attachment(
-        name: name,
-        source: File.open("allure-results/screenshots/#{screenshot_name}.png"),
+        name:,
+        source: file,
         type: Allure::ContentType::PNG,
         test_case: true
        )

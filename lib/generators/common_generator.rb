@@ -36,8 +36,4 @@ class CommonGenerator < Generator
   def create_allure_folder
     empty_directory "#{name}/allure-results"
   end
-
-  def create_screenshots_folder
-    empty_directory "#{name}/allure-results/screenshots"
-  end
 end
