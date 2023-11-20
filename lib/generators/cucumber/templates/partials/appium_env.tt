@@ -1,4 +1,5 @@
 <%- if automation == 'sparkling_ios' -%>
+require 'tmpdir'
 require_relative '../../helpers/allure_helper'
 require_relative '../../helpers/driver_helper'
 
@@ -10,11 +11,14 @@ Before do
 end
 
 After do |scenario|
-  app.screenshot.save("allure-results/screenshots/#{scenario.name}.png")
-  AllureHelper.add_screenshot(scenario.name)
+  Dir.mktmpdir do |temp_folder|
+    screenshot = app.screenshot.save("#{temp_folder}/#{scenario.name}.png")
+    AllureHelper.add_screenshot(scenario.name, screenshot)
+  end
   app.close
 end
 <%- else -%>
+require 'tmpdir'
 require_relative '../../helpers/allure_helper'
 require_relative '../../helpers/driver_helper'
 
@@ -26,8 +30,10 @@ Before do
 end
 
 After do |scenario|
-  driver.screenshot("allure-results/screenshots/#{scenario.name}.png")
-  AllureHelper.add_screenshot(scenario.name)
+  Dir.mktmpdir do |temp_folder|
+    screenshot = driver.screenshot("#{temp_folder}/#{scenario.name}.png")
+    AllureHelper.add_screenshot(scenario.name, screenshot)
+  end
   driver.quit_driver
 end
 <%- end -%>
