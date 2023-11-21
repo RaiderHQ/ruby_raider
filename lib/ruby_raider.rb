@@ -19,7 +19,7 @@ module RubyRaider
     desc 'version', 'It shows the version of Ruby Raider you are currently using'
 
     def version
-      puts 'The Ruby Raider version is 0.8.3, Happy testing!'
+      puts "The version is #{parsed_version}, happy testing!"
     end
 
     map 'v' => 'version'
@@ -35,5 +35,10 @@ module RubyRaider
     desc 'utility', 'Provides access to all the utility commands'
     subcommand 'utility', UtilityCommands
     map 'u' => 'utility'
+
+    no_commands do
+      def gemspec = Gem::Specification.load('ruby_raider.gemspec')
+      def parsed_version = Gem::Version.new(gemspec.version)
+    end
   end
 end
