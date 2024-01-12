@@ -1,0 +1,90 @@
+require:
+  - rubocop-rspec
+
+# Layout
+Layout/CaseIndentation:
+  Enabled: false
+
+Layout/ClosingParenthesisIndentation:
+  Enabled: false
+
+Layout/LineLength:
+  Max: 999
+
+Layout/MultilineMethodCallBraceLayout:
+  Enabled: false
+
+Layout/SpaceInsideHashLiteralBraces:
+  StyleGuide: '#spaces-operators'
+  Enabled: false
+
+# Lint
+
+# Metrics
+Metrics/AbcSize:
+  Max: 100
+
+Metrics/BlockLength:
+  Max: 150
+
+Metrics/BlockNesting:
+  Max: 4
+
+Metrics/ClassLength:
+  CountComments: false
+  Max: 500
+
+Metrics/CyclomaticComplexity:
+  Enabled: false
+
+Metrics/MethodLength:
+  Max: 150
+
+Metrics/ModuleLength:
+  Max: 600
+
+Metrics/ParameterLists:
+  Enabled: false
+
+Metrics/PerceivedComplexity:
+  Enabled: false
+
+Naming/AccessorMethodName:
+  Enabled: false
+
+# Migration
+
+# Naming
+Naming/PredicateName:
+  ForbiddenPrefixes:
+    - 'is_'
+
+# Security
+
+# Styles
+
+Style/AsciiComments:
+  Enabled: false
+
+Style/Documentation:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/HashEachMethods:
+  Enabled: true
+
+Style/HashTransformKeys:
+  Enabled: true
+
+Style/HashTransformValues:
+  Enabled: true
+
+Style/SafeNavigation:
+  Description: "Use &. instead of checking if an object exists"
+  Enabled: true
+
+Style/SingleLineBlockParams:
+  Description: 'Enforces the names of some block params.'
+  Enabled: false
