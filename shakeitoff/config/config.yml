@@ -1,0 +1,15 @@
+browser: :chrome
+url: 'https://automationteststore.com/'
+
+driver_options:
+  :timeouts:
+    :implicit: 10000 # 10 seconds
+
+browser_arguments:
+  :chrome:
+    - no-sandbox
+    - disable-dev-shm-usage
+    - ignore-certificate-errors
+  :firefox:
+    - acceptInsecureCerts
+    - no-sandbox

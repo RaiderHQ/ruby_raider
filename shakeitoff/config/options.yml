@@ -1,0 +1,16 @@
+:batch_name: test_batch
+:app_name: test_app
+:test_name: app_test
+
+:viewport_size:
+  :height: 800
+  :width: 600
+
+:browsers:
+  - :name: chrome
+    :height: 800
+    :width: 600
+
+:devices:
+  - :name: IPhoneX
+    :orientation: PORTRAIT
