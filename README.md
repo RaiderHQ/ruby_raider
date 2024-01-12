@@ -26,39 +26,25 @@
    <p align="center"> For more information and updates on releases, see <a href="https://ruby-raider.com">https://ruby-raider.com</a></p>
 </div>
 
-## What is ruby raider?
+## What is Ruby Raider?
 
 Ruby Raider is a generator and scaffolding gem to make UI test automation easier
 
-### At the moment Ruby raider supports
+### At the moment Ruby Raider supports generating:
+| Framework with        | Visual Testing Framework with | Mobile Testing Framework with |
+|-----------------------|------------------------------|-----------------------------|
+| Cucumber and Selenium | Rspec, Applitools and Selenium              | Rspec and Sparkling Watir for IOS               |
+| Rspec and Selenium         | Cucumber, Applitools and Selenium             | Cucumber and Sparkling Watir for IOS               |
+| Cucumber and Watir       |                 |               |
+| Rspec and Appium for IOS | | |
+| Rspec and Appium for Android  | | |
+| Rspec and Appium cross platform |  | |
+| Cucumber and Appium for IOS |  |  |
+| Cucumber and Appium for Android|  | |
+| Cucumber and Appium cross platform |  ||
 
-* Generating a framework with Cucumber and Selenium
 
-* Generating a framework with Rspec and Selenium
 
-* Generating a framework with Cucumber and Watir
-
-* Generating a framework with Rspec and Watir
-
-* Generating a framework with Rspec and Appium for IOS
-
-* Generating a framework with Cucumber and Appium for IOS
-
-* Generating a framework with Rspec and Appium for Android
-
-* Generating a framework with Cucumber and Appium for Android
-
-* Generating a framework with Rspec and Appium cross platform
-
-* Generating a framework with Cucumber and Appium cross platform
-
-* Generating a visual testing framework with Rspec, Applitools and Selenium
-
-* Generating a visual testing framework with Cucumber, Applitools and Selenium
-
-* Generating a mobile testing framework with Rspec and Sparkling Watir for IOS
-
-* Generating a mobile testing framework with Cucumber and Sparkling Watir for IOS
 
 ***In order to run the Appium tests, download the example [app](https://github.com/saucelabs/my-demo-app-rn).***
 ***Remember to use the full path of the app that you download in the capabilities file***
