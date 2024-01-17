@@ -19,6 +19,9 @@ end
 <%- else -%>
 # frozen_string_literal: true
 
+<% if automation == 'cross_platform' -%>
+require_relative '../../helpers/appium_helper'
+<%- end -%>
 require_relative '../../page_objects/pages/home'
 require_relative '../../page_objects/pages/pdp'
 
