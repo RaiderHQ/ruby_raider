@@ -30,19 +30,17 @@
 
 Ruby Raider is a generator and scaffolding gem to make UI test automation easier
 
-### At the moment Ruby Raider supports generating:
-| Web Testing Framework with        | Visual Testing Framework with | Mobile Testing Framework with |
-|-----------------------|------------------------------|-----------------------------|
-| Cucumber and Selenium      | Cucumber, Applitools and Selenium              | Cucumber and Appium for IOS               |
-| Rspec and Selenium         | Rspec, Applitools and Selenium           | Rspec and Appium for IOS            |
+### At the moment Ruby Raider supports generating the following frameworks:
+| Web Testing Framework      | Visual Testing Framework                    | Mobile Testing Framework                  |
+|----------------------------|---------------------------------------------|-------------------------------------------|
+| Cucumber and Selenium      | Cucumber, Applitools and Selenium           | Cucumber and Appium for IOS               |
+| Rspec and Selenium         | Rspec, Applitools and Selenium              | Rspec and Appium for IOS                  |
 | Cucumber and Watir         |                                             | Cucumber and Appium for Android           |
-| Rspec and Watir            |                                             | Rspec and Appium for Android           |
-|   |                                                                      | Cucumber and Appium Cross-platform                                       |
-|  |  | Rspec and Appium Cross-platform|
-| |  |  Cucumber and Sparkling Watir for IOS |
-| |  | Rspec and Sparkling Watir for IOS|
-|  |  ||
-
+| Rspec and Watir            |                                             | Rspec and Appium for Android              |
+|                            |                                             | Cucumber and Appium Cross-platform        |
+|                            |                                             | Rspec and Appium Cross-platform           |
+|                            |                                             |  Cucumber and Sparkling Watir for IOS     |
+|                            |                                             | Rspec and Sparkling Watir for IOS         |
 
 
 
