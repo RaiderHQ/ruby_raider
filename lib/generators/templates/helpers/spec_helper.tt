@@ -20,7 +20,7 @@ module SpecHelper
     config.after(:each) do |example|
       example_name = example.description
       Dir.mktmpdir do |temp_folder|
-        app.screenshot.save("#{temp_folder}/#{example_name}.png")
+        screenshot = app.screenshot.save("#{temp_folder}/#{example_name}.png")
         AllureHelper.add_screenshot(example_name, screenshot)
       end
       app.close
