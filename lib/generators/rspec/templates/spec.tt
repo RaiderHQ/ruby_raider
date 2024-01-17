@@ -60,6 +60,9 @@ class PdpSpec
   end
 end
 <%- else -%>
+<% if automation == 'cross_platform' -%>
+require_relative '../helpers/appium_helper'
+<%- end -%>
 require_relative '../helpers/spec_helper'
 require_relative '../page_objects/pages/home'
 require_relative '../page_objects/pages/pdp'
