@@ -1,5 +1,9 @@
 # Ruby Raider
 
+[![Gem Version](https://badge.fury.io/rb/ruby_raider.svg)](https://badge.fury.io/rb/ruby_raider)
+[![Rubocop](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml/badge.svg)](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml)
+[![Gitter](https://badges.gitter.im/RubyRaider/community.svg)](https://gitter.im/RubyRaider/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
@@ -22,39 +26,23 @@
    <p align="center"> For more information and updates on releases, see <a href="https://ruby-raider.com">https://ruby-raider.com</a></p>
 </div>
 
-## What is ruby raider?
+## What is Ruby Raider?
 
 Ruby Raider is a generator and scaffolding gem to make UI test automation easier
 
-### At the moment Ruby raider supports
+### At the moment Ruby Raider supports generating the following frameworks:
+| Web Testing Framework      | Visual Testing Framework                    | Mobile Testing Framework                  |
+|----------------------------|---------------------------------------------|-------------------------------------------|
+| Cucumber and Selenium      | Cucumber, Applitools and Selenium           | Cucumber and Appium for IOS               |
+| Rspec and Selenium         | Rspec, Applitools and Selenium              | Rspec and Appium for IOS                  |
+| Cucumber and Watir         |                                             | Cucumber and Appium for Android           |
+| Rspec and Watir            |                                             | Rspec and Appium for Android              |
+|                            |                                             | Cucumber and Appium Cross-platform        |
+|                            |                                             | Rspec and Appium Cross-platform           |
+|                            |                                             |  Cucumber and Sparkling Watir for IOS     |
+|                            |                                             | Rspec and Sparkling Watir for IOS         |
 
-* Generating a framework with Cucumber and Selenium
 
-* Generating a framework with Rspec and Selenium
-
-* Generating a framework with Cucumber and Watir
-
-* Generating a framework with Rspec and Watir
-
-* Generating a framework with Rspec and Appium for IOS
-
-* Generating a framework with Cucumber and Appium for IOS
-
-* Generating a framework with Rspec and Appium for Android
-
-* Generating a framework with Cucumber and Appium for Android
-
-* Generating a framework with Rspec and Appium cross platform
-
-* Generating a framework with Cucumber and Appium cross platform
-
-* Generating a visual testing framework with Rspec, Applitools and Selenium
-
-* Generating a visual testing framework with Cucumber, Applitools and Selenium
-
-* Generating a mobile testing framework with Rspec and Sparkling Watir for IOS
-
-* Generating a mobile testing framework with Cucumber and Sparkling Watir for IOS
 
 ***In order to run the Appium tests, download the example [app](https://github.com/saucelabs/my-demo-app-rn).***
 ***Remember to use the full path of the app that you download in the capabilities file***
@@ -95,7 +83,7 @@ Select the ones you will like to work with.
 
 ```ruby
 Commands :
-  raider generate # Provides access to all the generators commands
+ raider generate # Provides access to all the generators commands
 raider help [COMMAND] # Describe available commands or one specific command
 raider new [PROJECT_NAME] # Creates a new framework based on settings picked
 raider open_ai # Provides access to all the open ai commands
