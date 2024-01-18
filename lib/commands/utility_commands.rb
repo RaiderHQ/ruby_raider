@@ -87,4 +87,9 @@ class UtilityCommands < Thor
     Utilities.download_android_build
     Utilities.download_ios_build
   end
+
+  desc 'start_appium', 'It starts the appium server'
+  def start_appium
+    system 'appium  --base-path /wd/hub'
+  end
 end
