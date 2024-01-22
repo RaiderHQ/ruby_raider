@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative '../lib/generators/actions/actions_generator'
-require_relative 'spec_helper'
+require_relative '../../../lib/generators/actions/actions_generator'
+require_relative '../../spec_helper'
 
 describe ActionsGenerator do
   shared_examples 'creates web automation framework' do |name|
