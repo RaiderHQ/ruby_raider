@@ -1,6 +1,6 @@
 require 'fileutils'
-require_relative 'spec_helper'
-require_relative '../lib/ruby_raider'
+require_relative '../spec_helper'
+require_relative '../../lib/ruby_raider'
 
 describe RubyRaider do
   shared_examples 'execute web frameworks' do |name|

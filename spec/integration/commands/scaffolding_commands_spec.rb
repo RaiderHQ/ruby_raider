@@ -1,10 +1,10 @@
 require 'dotenv'
 require 'pathname'
 require 'yaml'
-require_relative '../lib/generators/common_generator'
-require_relative '../lib/commands/scaffolding_commands'
-require_relative '../lib/scaffolding/scaffolding'
-require_relative 'spec_helper'
+require_relative '../../../lib/generators/common_generator'
+require_relative '../../../lib/commands/scaffolding_commands'
+require_relative '../../../lib/scaffolding/scaffolding'
+require_relative '../../spec_helper'
 
 describe ScaffoldingCommands do
   let(:scaffold) { described_class }

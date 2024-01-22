@@ -2,10 +2,10 @@
 # require 'fileutils'
 # require 'pathname'
 # require 'yaml'
-# require_relative '../lib/generators/common_generator'
-# require_relative '../lib/commands/open_ai_commands'
-# require_relative '../lib/scaffolding/scaffolding'
-# require_relative 'spec_helper'
+# require_relative '../../../lib/generators/common_generator'
+# require_relative '../../../lib/integration.commands/open_ai_commands'
+# require_relative '../../../lib/scaffolding/scaffolding'
+# require_relative '../../spec_helper'
 #
 # describe OpenAiCommands do
 #   let(:open_ai) { described_class }
