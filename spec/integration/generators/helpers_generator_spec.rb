@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative '../lib/generators/helper_generator'
-require_relative 'spec_helper'
+require_relative '../../../lib/generators/helper_generator'
+require_relative '../../spec_helper'
 
 describe HelpersGenerator do
   shared_examples 'creates common helpers' do |name|

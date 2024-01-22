@@ -33,3 +33,22 @@ desc 'Logs a warning'
 task :log, [:message] do |_t, args|
   RubyRaider::Logger.warn(args.message)
 end
+
+desc 'Runs integration tests'
+task :integration, [:type, :name] do |_t, args|
+  path = args.type ? "spec/integration/#{args.type}" : 'spec/integration'
+  full_path = if args.type == 'generators' && args.name
+                "#{path}/#{args.name.downcase}_generator_spec.rb"
+              elsif args.type == 'commands' && args.name
+                "#{path}/#{args.name.downcase}_commands_spec.rb"
+              else
+                path
+              end
+
+  system "rspec #{full_path}"
+end
+
+desc 'Runs system tests'
+task :system do |_t|
+  system 'rspec spec/system'
+end
