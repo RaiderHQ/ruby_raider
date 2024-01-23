@@ -1,3 +1,6 @@
+env:
+  NAME: 'CI'
+
 name: System tests
 
 on: [pull_request]
