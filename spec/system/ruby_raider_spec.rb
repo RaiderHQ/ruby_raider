@@ -5,10 +5,10 @@ require_relative '../../lib/ruby_raider'
 describe RubyRaider do
   shared_examples 'execute web frameworks' do |name|
     it 'runs the tests' do
-        Dir.chdir(name) do
-          system 'gem install bundler'
-          system 'bundle install'
-          system 'raider u raid'
+      Dir.chdir(name) do
+        system 'gem install bundler'
+        system 'bundle install'
+        system 'raider u raid'
       end
     end
   end
