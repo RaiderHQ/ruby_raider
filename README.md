@@ -10,6 +10,7 @@
    <a href="https://github.com/RubyRaider/ruby_raider">
    <img src="https://rubyraiderdotcom.files.wordpress.com/2022/05/logo_transparent_background-1.png" alt="Logo">
    </a>
+   <iframe src="https://giphy.com/embed/ljtfkyTD3PIUZaKWRi" width="480" height="400" frameBorder="0" class="giphy-embed" allowFullScreen></iframe>
    <h1 align="center">Ruby Raider</h1>
    <p align="center">
       This is a gem to make setup and start of UI automation projects easier.
