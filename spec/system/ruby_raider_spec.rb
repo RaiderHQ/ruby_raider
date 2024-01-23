@@ -6,17 +6,9 @@ describe RubyRaider do
   shared_examples 'execute web frameworks' do |name|
     it 'runs the tests' do
       if ENV['CI']
-        Dir.chdir(name) do
-          system 'gem install bundler'
-          system 'bundle install'
-          system 'raider u raid'
-        end
+        Dir.chdir(name) { system('gem install bundler', 'bundle install', 'raider u raid') }
       else
-        Bundler.with_unbundled_env do
-          Dir.chdir(name) do
-            system `bundle exec raider u raid`
-          end
-        end
+        Bundler.with_unbundled_env { Dir.chdir(name) { system('bundle exec raider u raid') } }
       end
     end
   end
