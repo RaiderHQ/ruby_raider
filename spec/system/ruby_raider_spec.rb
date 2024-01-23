@@ -7,7 +7,8 @@ describe RubyRaider do
     it 'runs the tests' do
         Dir.chdir(name) do
           system 'gem install bundler'
-          system 'bundle exec raider u raid'
+          system 'bundle install'
+          system 'raider u raid'
       end
     end
   end
