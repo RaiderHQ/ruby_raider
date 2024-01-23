@@ -1,10 +1,6 @@
-name: Rspec Tests
+name: Integration tests
 
-on:
-  push:
-    branches: [ "*" ]
-  pull_request:
-    branches: [ "*" ]
+on: [pull_request]
 
 jobs:
   build:
@@ -23,7 +19,7 @@ jobs:
       - name: Install gems
         run: bundle install
 
-      - name: Build and test with rspec
+      - name: Build and run integration tests
         env:
           OPENAI_ACCESS_TOKEN: ${{ secrets.OPENAI_ACCESS_TOKEN }}
-        run: bundle exec rspec spec
+        run: rake integration
