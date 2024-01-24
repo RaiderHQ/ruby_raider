@@ -5,10 +5,10 @@ require_relative '../../lib/ruby_raider'
 describe RubyRaider do
   shared_examples 'execute web frameworks' do |name|
     it 'runs the tests' do
-      Bundler.with_unbundled_env do
-        Dir.chdir(name) do
-          `bundle exec raider u raid`
-        end
+      if ENV['CI']
+        Dir.chdir(name) { system('gem install bundler && bundle install && raider u raid') }
+      else
+        Bundler.with_unbundled_env { Dir.chdir(name) { system('bundle exec raider u raid') } }
       end
     end
   end
