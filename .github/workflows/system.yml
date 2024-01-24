@@ -3,7 +3,10 @@ env:
 
 name: System tests
 
-on: [pull_request]
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   build:
