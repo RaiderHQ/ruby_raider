@@ -90,7 +90,8 @@ Commands:
   raider help [COMMAND] # Describe available commands or one specific command
   raider new [PROJECT_NAME] # Creates a new framework based on settings picked
   raider open_ai # Provides access to all the open ai commands
-  raider utility # Provides access to all the utility commands raider version # It shows the version of Ruby Raider you are currently using
+  raider utility # Provides access to all the utility commands
+  raider version # It shows the version of Ruby Raider you are currently using
 ```
 
 All the basic commands have their corresponding shortcut:
@@ -101,24 +102,6 @@ All the basic commands have their corresponding shortcut:
 * u for utility
 * v for version
 
-Ruby raider also supports scaffolding:
-
-* To create a new page object you do: ```raider g page [PAGE_NAME]```
-* To create a new spec you do: ```raider g spec [SPEC_NAME]```
-* To create a new feature you do: ```raider g feature [FEATURE_NAME]```
-
-It's possible to add the option --path or -p if you want to specify where to create your features, pages, helpers and
-specs.
-
-If you want to set the default path for the creation of your features, helpers and specs:
-
-```ruby
-raider u path [PATH_NAME] - -feature or -f
-raider u path [PATH_NAME] - -spec or -s
-raider u path [PATH_NAME] - -helper or -h
-```
-
-If you don't specify an option, path will assume you want to change the default path for pages.
 
 ### Appium Server Command
 To initialise Appium server run this command:
