@@ -37,7 +37,7 @@ module RubyRaider
     map 'u' => 'utility'
 
     no_commands do
-      def parsed_version = File.read('lib/version').strip
+      def parsed_version = File.read(File.expand_path('version', __dir__)).strip
     end
   end
 end

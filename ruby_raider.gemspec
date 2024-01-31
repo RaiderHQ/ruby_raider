@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-version = File.read('lib/version').strip
+version = File.read(File.expand_path('lib/version', __dir__)).strip
 
 Gem::Specification.new do |s|
   s.name        = 'ruby_raider'

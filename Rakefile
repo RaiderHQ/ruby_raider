@@ -52,3 +52,11 @@ desc 'Runs system tests'
 task :system do |_t|
   system 'rspec spec/system'
 end
+
+desc 'Print Ruby Raider version'
+task :raider do
+  raider = `raider version`
+  print raider
+end
+
+
