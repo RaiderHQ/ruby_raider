@@ -1,10 +1,8 @@
 # frozen_string_literal: true
 
-version = File.read(File.expand_path('lib/version', __dir__)).strip
-
 Gem::Specification.new do |s|
   s.name        = 'ruby_raider'
-  s.version     = version
+  s.version     = File.read(File.expand_path('lib/version', __dir__)).strip
   s.summary     = 'A gem to make setup and start of UI automation projects easier'
   s.description = 'This gem has everything you need to start working with test automation'
   s.authors     = ['Agustin Pequeno']

@@ -1,5 +1,4 @@
 desc 'Print Ruby Raider version'
 task :raider do
-  raider = `raider version`
-  print raider
+  system 'raider version'
 end

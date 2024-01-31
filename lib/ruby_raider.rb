@@ -19,7 +19,7 @@ module RubyRaider
     desc 'version', 'It shows the version of Ruby Raider you are currently using'
 
     def version
-      puts "The version is #{parsed_version}, happy testing!"
+      puts "The version is #{current_version}, happy testing!"
     end
 
     map 'v' => 'version'
@@ -37,7 +37,7 @@ module RubyRaider
     map 'u' => 'utility'
 
     no_commands do
-      def parsed_version = File.read(File.expand_path('version', __dir__)).strip
+      def current_version = File.read(File.expand_path('version', __dir__)).strip
     end
   end
 end
