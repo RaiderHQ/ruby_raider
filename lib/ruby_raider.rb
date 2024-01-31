@@ -37,8 +37,7 @@ module RubyRaider
     map 'u' => 'utility'
 
     no_commands do
-      def gemspec = Gem::Specification.load('ruby_raider.gemspec')
-      def parsed_version = Gem::Version.new(gemspec.version)
+      def parsed_version = File.read('lib/version').strip
     end
   end
 end
