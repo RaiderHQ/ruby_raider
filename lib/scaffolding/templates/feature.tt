@@ -1,4 +1,4 @@
-Feature: <%= name %>
+Feature: <%= name.capitalize %>
 
 Scenario: Scenario name
     Given I am

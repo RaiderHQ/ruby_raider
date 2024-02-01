@@ -13,7 +13,7 @@ class Scaffolding < Thor::Group
   end
 
   def generate_class
-    template('page_object.tt', default_path("page_objects/pages/#{name}_page.rb", '_page.rb'))
+    template('page_object.tt', default_path("page_objects/pages/#{name}.rb", '_page.rb'))
   end
 
   def generate_feature
@@ -21,7 +21,7 @@ class Scaffolding < Thor::Group
   end
 
   def generate_spec
-    template('spec.tt', default_path("spec/#{name}_spec.rb", '_spec.rb'))
+    template('spec.tt', default_path("spec/#{name}_page_spec.rb", '_spec.rb'))
   end
 
   def generate_helper
@@ -34,7 +34,7 @@ class Scaffolding < Thor::Group
   end
 
   def delete_class
-    remove_file(default_path("page_objects/pages/#{name}_page.rb", '_page.rb'))
+    remove_file(default_path("page_objects/pages/#{name}.rb", '_page.rb'))
   end
 
   def delete_feature
@@ -42,7 +42,7 @@ class Scaffolding < Thor::Group
   end
 
   def delete_spec
-    remove_file(default_path("spec/#{name}_spec.rb", '_spec.rb'))
+    remove_file(default_path("spec/#{name}_page_spec.rb", '_spec.rb'))
   end
 
   def delete_helper
