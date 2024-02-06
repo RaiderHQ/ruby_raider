@@ -28,6 +28,10 @@ class Scaffolding < Thor::Group
     template('helper.tt', default_path("helpers/#{name}_helper.rb", '_helper.rb'))
   end
 
+  def generate_steps
+    template('steps.tt', default_path("features/step_definitions/#{name}_steps.rb", '_steps.rb'))
+  end
+
   def generate_config
     template('../../generators/templates/common/config.tt',
              default_path('config/config.yml', '.yml'))
@@ -47,6 +51,10 @@ class Scaffolding < Thor::Group
 
   def delete_helper
     remove_file(default_path("helpers/#{name}_helper.rb", '_helper.rb'))
+  end
+
+  def delete_steps
+    remove_file(default_path("features/step_definitions/#{name}_steps.rb", '_steps.rb'))
   end
 
   def delete_config

@@ -50,6 +50,16 @@ class ScaffoldingCommands < Thor
     handle_scaffolding(name, 'helper')
   end
 
+  desc 'steps [STEPS_NAME]', 'Creates a new steps definition'
+  option :path,
+         type: :string, required: false, desc: 'The path where your steps will be created', aliases: '-p'
+  option :delete,
+         type: :boolean, required: false, desc: 'This will delete the selected steps', aliases: '-d'
+
+  def steps(name)
+    handle_scaffolding(name, 'steps')
+  end
+
   desc 'scaffold [SCAFFOLD_NAME]', 'It generates everything needed to start automating'
 
   def scaffold(name)
@@ -57,13 +67,10 @@ class ScaffoldingCommands < Thor
       Scaffolding.new([name, load_config_path('spec')]).generate_spec
     else
       Scaffolding.new([name, load_config_path('feature')]).generate_feature
+      Scaffolding.new([name, load_config_path('steps')]).generate_steps
     end
     Scaffolding.new([name, load_config_path('page')]).generate_class
   end
-
-  desc 'config', 'Creates configuration file'
-  option :delete,
-         type: :boolean, required: false, desc: 'This will delete the config file', aliases: '-d'
 
   no_commands do
     def load_config_path(type)
@@ -84,6 +91,8 @@ class ScaffoldingCommands < Thor
           scaffolding.delete_spec
         when 'helper'
           scaffolding.delete_helper
+        when 'steps'
+          scaffolding.delete_steps
         end
       else
         case type
@@ -95,6 +104,8 @@ class ScaffoldingCommands < Thor
           scaffolding.generate_spec
         when 'helper'
           scaffolding.generate_helper
+        when 'steps'
+          scaffolding.generate_steps
         end
       end
     end

@@ -80,9 +80,19 @@ describe ScaffoldingCommands do
       expect(Pathname.new("page_objects/pages/#{name}.rb")).to be_file
     end
 
+    it 'scaffolds for cucumber creating a steps definition' do
+      scaffold.new.invoke(:scaffold, nil, %W[#{name}])
+      expect(Pathname.new("features/step_definitions/#{name}_steps.rb")).to be_file
+    end
+
     it 'creates a helper' do
       scaffold.new.invoke(:helper, nil, %W[#{name}])
       expect(Pathname.new("helpers/#{name}_helper.rb")).to be_file
+    end
+
+    it 'creates a steps definition' do
+      scaffold.new.invoke(:steps, nil, %W[#{name}])
+      expect(Pathname.new("features/step_definitions/#{name}_steps.rb")).to be_file
     end
 
     it 'deletes a page' do

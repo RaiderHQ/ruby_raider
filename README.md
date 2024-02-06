@@ -88,7 +88,7 @@ Select the ones you will like to work with.
 
 ```ruby
 Commands:
-  raider generate # Provides access to all the generators commands
+  raider generate # Provides access to all the scaffolding commands
   raider help [COMMAND] # Describe available commands or one specific command
   raider new [PROJECT_NAME] # Creates a new framework based on settings picked
   raider open_ai # Provides access to all the open ai commands
@@ -110,7 +110,8 @@ Ruby Raider also supports scaffolding:
 * To create a new page object you do: ```raider g page [PAGE_NAME]```
 * To create a new spec you do: ```raider g spec [SPEC_NAME]```
 * To create a new feature you do: ```raider g feature [FEATURE_NAME]```
-* To create both a page and a spec/feature you do: ```raider g scaffold [SCAFFOLD_NAME]```
+* To create a new steps definition you do: ```raider g steps [STEPS_NAME]```
+* To create both a page/spec or a page/feature/steps you do: ```raider g scaffold [SCAFFOLD_NAME]```
 
 It's possible to add the option --path or -p if you want to specify where to create your features, pages, helpers and
 specs.
