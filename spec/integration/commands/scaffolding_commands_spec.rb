@@ -27,12 +27,12 @@ describe ScaffoldingCommands do
 
     it 'scaffolds for rspec creating a spec' do
       scaffold.new.invoke(:scaffold, nil, %W[#{name}])
-      expect(Pathname.new("spec/#{name}_spec.rb")).to be_file
+      expect(Pathname.new("spec/#{name}_page_spec.rb")).to be_file
     end
 
     it 'scaffolds for rspec creating a page' do
       scaffold.new.invoke(:scaffold, nil, %W[#{name}])
-      expect(Pathname.new("page_objects/pages/#{name}_page.rb")).to be_file
+      expect(Pathname.new("page_objects/pages/#{name}.rb")).to be_file
     end
 
     it 'deletes a spec' do
@@ -47,7 +47,7 @@ describe ScaffoldingCommands do
 
     it 'creates a page' do
       scaffold.new.invoke(:page, nil, %W[#{name}])
-      expect(Pathname.new("page_objects/pages/#{name}_page.rb")).to be_file
+      expect(Pathname.new("page_objects/pages/#{name}.rb")).to be_file
     end
 
     it 'creates a page with a path' do
@@ -77,12 +77,22 @@ describe ScaffoldingCommands do
 
     it 'scaffolds for cucumber creating a page' do
       scaffold.new.invoke(:scaffold, nil, %W[#{name}])
-      expect(Pathname.new("page_objects/pages/#{name}_page.rb")).to be_file
+      expect(Pathname.new("page_objects/pages/#{name}.rb")).to be_file
+    end
+
+    it 'scaffolds for cucumber creating a steps definition' do
+      scaffold.new.invoke(:scaffold, nil, %W[#{name}])
+      expect(Pathname.new("features/step_definitions/#{name}_steps.rb")).to be_file
     end
 
     it 'creates a helper' do
       scaffold.new.invoke(:helper, nil, %W[#{name}])
       expect(Pathname.new("helpers/#{name}_helper.rb")).to be_file
+    end
+
+    it 'creates a steps definition' do
+      scaffold.new.invoke(:steps, nil, %W[#{name}])
+      expect(Pathname.new("features/step_definitions/#{name}_steps.rb")).to be_file
     end
 
     it 'deletes a page' do

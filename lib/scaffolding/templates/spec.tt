@@ -1,5 +1,4 @@
-require_relative 'base_spec'
-require_relative '../page_objects/pages/<%= name %>_page'
+require_relative '../page_objects/pages/<%= name %>'
 
-describe <%= name.split('_').map {|word| word.capitalize }.join + 'Page' %> do
+describe '<%= name.split('_').map {|word| word.capitalize }.join %>' do
 end

@@ -1,0 +1,12 @@
+# frozen_string_literal: true
+
+require_relative '../../page_objects/pages/<%= name %>'
+
+Given ('') do
+end
+
+When ('') do
+end
+
+Then ('') do
+end
