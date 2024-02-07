@@ -7,6 +7,7 @@ require_relative '../commands/utility_commands'
 
 # :reek:FeatureEnvy { enabled: false }
 # :reek:UtilityFunction { enabled: false }
+# :reek:RepeatedConditional { enabled: false }
 class ScaffoldingCommands < Thor
   desc 'page [PAGE_NAME]', 'Creates a new page object'
   option :path,
