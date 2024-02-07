@@ -12,7 +12,7 @@ class Scaffolding < Thor::Group
     "#{File.dirname(__FILE__)}/templates"
   end
 
-  def generate_class
+  def generate_page
     template('page_object.tt', default_path("page_objects/pages/#{name}.rb", '_page.rb'))
   end
 
@@ -37,7 +37,7 @@ class Scaffolding < Thor::Group
              default_path('config/config.yml', '.yml'))
   end
 
-  def delete_class
+  def delete_page
     remove_file(default_path("page_objects/pages/#{name}.rb", '_page.rb'))
   end
 
