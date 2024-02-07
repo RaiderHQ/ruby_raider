@@ -7,6 +7,7 @@ require_relative '../commands/utility_commands'
 
 # :reek:FeatureEnvy { enabled: false }
 # :reek:UtilityFunction { enabled: false }
+# :reek:RepeatedConditional { enabled: false }
 class ScaffoldingCommands < Thor
   desc 'page [PAGE_NAME]', 'Creates a new page object'
   option :path,
@@ -15,7 +16,9 @@ class ScaffoldingCommands < Thor
          type: :boolean, required: false, desc: 'This will delete the selected page', aliases: '-d'
 
   def page(name)
-    handle_scaffolding(name, 'page')
+    return delete_scaffolding(name, 'page') if options[:delete]
+
+    generate_scaffolding(name, 'page', options[:path])
   end
 
   desc 'feature [NAME]', 'Creates a new feature'
@@ -27,7 +30,9 @@ class ScaffoldingCommands < Thor
          required: false, desc: 'This will delete the selected feature', aliases: '-d'
 
   def feature(name)
-    handle_scaffolding(name, 'feature')
+    return delete_scaffolding(name, 'feature') if options[:delete]
+
+    generate_scaffolding(name, 'feature', options[:path])
   end
 
   desc 'spec [SPEC_NAME]', 'Creates a new spec'
@@ -37,7 +42,9 @@ class ScaffoldingCommands < Thor
          type: :boolean, required: false, desc: 'This will delete the selected spec', aliases: '-d'
 
   def spec(name)
-    handle_scaffolding(name, 'spec')
+    return delete_scaffolding(name, 'spec') if options[:delete]
+
+    generate_scaffolding(name, 'spec', options[:path])
   end
 
   desc 'helper [HELPER_NAME]', 'Creates a new helper'
@@ -47,7 +54,21 @@ class ScaffoldingCommands < Thor
          type: :boolean, required: false, desc: 'This will delete the selected helper', aliases: '-d'
 
   def helper(name)
-    handle_scaffolding(name, 'helper')
+    return delete_scaffolding(name, 'helper') if options[:delete]
+
+    generate_scaffolding(name, 'helper', options[:path])
+  end
+
+  desc 'steps [STEPS_NAME]', 'Creates a new steps definition'
+  option :path,
+         type: :string, required: false, desc: 'The path where your steps will be created', aliases: '-p'
+  option :delete,
+         type: :boolean, required: false, desc: 'This will delete the selected steps', aliases: '-d'
+
+  def steps(name)
+    return delete_scaffolding(name, 'steps') if options[:delete]
+
+    generate_scaffolding(name, 'steps', options[:path])
   end
 
   desc 'scaffold [SCAFFOLD_NAME]', 'It generates everything needed to start automating'
@@ -57,46 +78,23 @@ class ScaffoldingCommands < Thor
       Scaffolding.new([name, load_config_path('spec')]).generate_spec
     else
       Scaffolding.new([name, load_config_path('feature')]).generate_feature
+      Scaffolding.new([name, load_config_path('steps')]).generate_steps
     end
-    Scaffolding.new([name, load_config_path('page')]).generate_class
+    Scaffolding.new([name, load_config_path('page')]).generate_page
   end
-
-  desc 'config', 'Creates configuration file'
-  option :delete,
-         type: :boolean, required: false, desc: 'This will delete the config file', aliases: '-d'
 
   no_commands do
     def load_config_path(type)
       YAML.load_file('config/config.yml')["#{type}_path"] if Pathname.new('config/config.yml').exist?
     end
 
-    def handle_scaffolding(name, type)
-      path = options[:path] || load_config_path(type)
-      scaffolding = Scaffolding.new([name, path])
+    def delete_scaffolding(name, type)
+      Scaffolding.new([name]).send("delete_#{type}")
+    end
 
-      if options[:delete]
-        case type
-        when 'page'
-          scaffolding.delete_class
-        when 'feature'
-          scaffolding.delete_feature
-        when 'spec'
-          scaffolding.delete_spec
-        when 'helper'
-          scaffolding.delete_helper
-        end
-      else
-        case type
-        when 'page'
-          scaffolding.generate_class
-        when 'feature'
-          scaffolding.generate_feature
-        when 'spec'
-          scaffolding.generate_spec
-        when 'helper'
-          scaffolding.generate_helper
-        end
-      end
+    def generate_scaffolding(name, type, path)
+      path ||= load_config_path(type)
+      Scaffolding.new([name, path]).send("generate_#{type}")
     end
   end
 end

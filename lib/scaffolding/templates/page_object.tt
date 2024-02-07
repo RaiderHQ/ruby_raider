@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative '../abstract/abstract_page'
+require_relative '../abstract/page'
 
-class <%= name.split('_').map {|word| word.capitalize }.join + 'Page' %> < AbstractPage
+class <%= name.split('_').map {|word| word.capitalize }.join %> < Page
 
   # Actions
 
