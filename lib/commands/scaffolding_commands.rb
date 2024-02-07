@@ -15,7 +15,7 @@ class ScaffoldingCommands < Thor
          type: :boolean, required: false, desc: 'This will delete the selected page', aliases: '-d'
 
   def page(name)
-    return delete_scaffolding(name, 'page', options[:path]) if options[:delete]
+    return delete_scaffolding(name, 'page') if options[:delete]
 
     generate_scaffolding(name, 'page', options[:path])
   end
@@ -29,7 +29,7 @@ class ScaffoldingCommands < Thor
          required: false, desc: 'This will delete the selected feature', aliases: '-d'
 
   def feature(name)
-    return delete_scaffolding(name, 'feature', options[:path]) if options[:delete]
+    return delete_scaffolding(name, 'feature') if options[:delete]
 
     generate_scaffolding(name, 'feature', options[:path])
   end
@@ -41,7 +41,7 @@ class ScaffoldingCommands < Thor
          type: :boolean, required: false, desc: 'This will delete the selected spec', aliases: '-d'
 
   def spec(name)
-    return delete_scaffolding(name, 'spec', options[:path]) if options[:delete]
+    return delete_scaffolding(name, 'spec') if options[:delete]
 
     generate_scaffolding(name, 'spec', options[:path])
   end
@@ -53,7 +53,7 @@ class ScaffoldingCommands < Thor
          type: :boolean, required: false, desc: 'This will delete the selected helper', aliases: '-d'
 
   def helper(name)
-    return delete_scaffolding(name, 'helper', options[:path]) if options[:delete]
+    return delete_scaffolding(name, 'helper') if options[:delete]
 
     generate_scaffolding(name, 'helper', options[:path])
   end
@@ -65,7 +65,7 @@ class ScaffoldingCommands < Thor
          type: :boolean, required: false, desc: 'This will delete the selected steps', aliases: '-d'
 
   def steps(name)
-    return delete_scaffolding(name, 'steps', options[:path]) if options[:delete]
+    return delete_scaffolding(name, 'steps') if options[:delete]
 
     generate_scaffolding(name, 'steps', options[:path])
   end
@@ -87,9 +87,8 @@ class ScaffoldingCommands < Thor
       YAML.load_file('config/config.yml')["#{type}_path"] if Pathname.new('config/config.yml').exist?
     end
 
-    def delete_scaffolding(name, type, path)
-      path ||= load_config_path(type)
-      Scaffolding.new([name, path]).send("delete_#{type}")
+    def delete_scaffolding(name, type)
+      Scaffolding.new([name]).send("delete_#{type}")
     end
 
     def generate_scaffolding(name, type, path)
