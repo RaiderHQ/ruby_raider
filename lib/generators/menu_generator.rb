@@ -82,7 +82,7 @@ class MenuGenerator
 
   def create_framework(framework, automation_type)
     visual_automation = choose_visual_automation if %w[selenium].include?(automation_type)
-    axe = choose_axe_support if automation_type.downcase == 'selenium' && framework.downcase == 'rspec' && visual_automation == false
+    axe = choose_axe_support if automation_type == 'selenium' && framework == 'rspec' && visual_automation == false
     options = create_framework_options(automation: automation_type,
                                        framework: framework.downcase,
                                        visual_automation: visual_automation,
