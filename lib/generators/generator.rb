@@ -9,6 +9,7 @@ class Generator < Thor::Group
   argument :framework
   argument :name
   argument :visual_automation, optional: true
+  argument :axe_support, optional: true
 
   def self.source_paths
     base_path = File.dirname(__FILE__)
@@ -46,7 +47,7 @@ class Generator < Thor::Group
   end
 
   def visual?
-    initializer.first.last
+    visual_automation == true
   end
 
   def watir?
@@ -55,6 +56,10 @@ class Generator < Thor::Group
 
   def web?
     (args & (%w[selenium watir])).count.positive?
+  end
+
+  def axe?
+    axe_support == true
   end
 
   private

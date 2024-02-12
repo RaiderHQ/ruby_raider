@@ -18,7 +18,8 @@ module InvokeGenerators
                          framework: framework,
                          generator: generator,
                          name: structure[:name],
-                         visual: structure[:visual]
+                         visual: structure[:visual],
+                         axe_support: structure[:axe_support]
                        })
     end
   end
@@ -32,6 +33,7 @@ module InvokeGenerators
           .new([structure[:automation],
                 structure[:framework],
                 structure[:name],
-                structure[:visual]]).invoke_all
+                structure[:visual],
+                structure[:axe_support]]).invoke_all
   end
 end

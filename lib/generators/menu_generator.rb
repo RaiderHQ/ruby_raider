@@ -22,7 +22,11 @@ class MenuGenerator
   end
 
   def choose_visual_automation
-    prompt.select('Do you want to add visual automation with applitools?', visual_automation_menu_choices)
+    prompt.select('Do you want to add visual automation with Applitools?', yes_no_menu_choices)
+  end
+
+  def choose_axe_support
+    prompt.select('Do you want to add Axe accessibility testing tool?', yes_no_menu_choices)
   end
 
   def choose_test_framework(automation)
@@ -37,7 +41,8 @@ class MenuGenerator
       automation: options[:automation],
       framework: options[:framework],
       name: @name,
-      visual: options[:visual_automation]
+      visual: options[:visual_automation],
+      axe_support: options[:axe_support]
     }
     generate_framework(structure)
     system "cd #{name} && gem install bundler && bundle install"
@@ -69,22 +74,32 @@ class MenuGenerator
     end
   end
 
-  FrameworkOptions = Struct.new(:automation, :framework, :visual_automation)
+  FrameworkOptions = Struct.new(:automation, :framework, :visual_automation, :axe_support)
 
   def create_framework_options(params)
-    FrameworkOptions.new(params[:automation], params[:framework], params[:visual_automation])
+    FrameworkOptions.new(params[:automation], params[:framework], params[:visual_automation], params[:axe_support])
   end
 
   def create_framework(framework, automation_type)
     visual_automation = choose_visual_automation if %w[selenium].include?(automation_type)
+    axe = choose_axe_support if automation_type.downcase == 'selenium' && framework.downcase == 'rspec' && visual_automation == false
     options = create_framework_options(automation: automation_type,
                                        framework: framework.downcase,
-                                       visual_automation: visual_automation)
+                                       visual_automation: visual_automation,
+                                       axe_support: axe)
+
+    # Print the chosen options
+    puts 'Chosen Options:'
+    puts "  Automation Type: #{options[:automation]}"
+    puts "  Framework: #{options[:framework]}"
+    puts "  Visual Automation: #{options[:visual_automation]}"
+    puts "  Axe Support: #{options[:axe_support]}"
+
     set_up_framework(options)
     prompt.say("You have chosen to use #{framework} with #{automation_type}")
   end
 
-  def visual_automation_menu_choices
+  def yes_no_menu_choices
     {
       Yes: -> { true },
       No: -> { false },

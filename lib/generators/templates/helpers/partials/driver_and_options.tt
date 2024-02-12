@@ -1,4 +1,4 @@
-<% if automation == 'selenium' -%>
+<% if automation == 'selenium' && axe_support == false -%>
   def create_driver(*opts)
     @config = YAML.load_file('config/config.yml')
     browser = @config['browser'].to_sym
@@ -22,7 +22,13 @@
     driver_options.each { |opt| options.add_option(opt.first, opt.last) }
     options
   end
-
+<% elsif automation == 'selenium' && axe_support == true -%>
+  def create_driver(browser, js_path, skip_iframes)
+    AxeSelenium.configure(browser) do |config|
+      config.jslib_path = js_path if js_path
+      config.skip_iframes = skip_iframes if skip_iframes
+    end.page
+  end
 <% elsif automation == 'cross_platform' -%>
   def create_driver
     platform = config['platform'].to_s

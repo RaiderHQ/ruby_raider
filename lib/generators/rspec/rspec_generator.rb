@@ -14,4 +14,10 @@ class RspecGenerator < Generator
 
     template('spec.tt', "#{name}/spec/pdp_page_spec.rb")
   end
+
+  def generate_account_spec
+    return unless visual?
+
+    template('spec.tt', "#{name}/spec/account_page_spec.rb")
+  end
 end
