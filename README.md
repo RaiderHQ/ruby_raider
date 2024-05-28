@@ -153,3 +153,7 @@ Options :
   -i, [--input = INPUT] # It uses a file as input to create the steps
 
 ```
+
+### Sponsors
+
+This project is tested with BrowserStack.
