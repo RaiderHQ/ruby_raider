@@ -7,7 +7,7 @@ gem 'allure-cucumber'
 gem 'allure-rspec'
 gem 'allure-ruby-commons'
 <% end -%>
-<% if axe_support -%>
+<% if axe? -%>
 gem 'axe-core-rspec'
 gem 'axe-core-selenium'
 <% end -%>

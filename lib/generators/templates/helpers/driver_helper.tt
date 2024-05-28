@@ -21,7 +21,7 @@ module DriverHelper
 end
 <%- else -%>
 # frozen_string_literal: true
-<% if axe_support -%>
+<% if axe? -%>
 require 'axe-selenium'
 <% end -%>
 require 'yaml'
@@ -33,11 +33,11 @@ require 'appium_lib'
 <% end -%>
 
 module DriverHelper
-  <% if automation == 'selenium' && axe_support == false -%>
+  <% if automation == 'selenium' && axe? == false -%>
   def driver(*opts)
     @driver ||= create_driver(*opts)
   end
-  <% elsif axe_support == true -%>
+  <% elsif axe? == true -%>
   def driver(browser = :chrome, js_path = nil, skip_iframes = nil)
     @driver ||= create_driver(browser, js_path, skip_iframes)
   end

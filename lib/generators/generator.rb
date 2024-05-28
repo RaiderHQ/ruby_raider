@@ -47,7 +47,7 @@ class Generator < Thor::Group
   end
 
   def visual?
-    visual_automation == true
+    args[3]
   end
 
   def watir?
@@ -59,7 +59,7 @@ class Generator < Thor::Group
   end
 
   def axe?
-    axe_support == true
+    args.last
   end
 
   private
