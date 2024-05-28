@@ -30,6 +30,9 @@ end
 <%- else -%>
 # frozen_string_literal: true
 
+<%- if axe? %>
+require 'axe-rspec'
+<%- end -%>
 require 'rspec'
 require 'tmpdir'
 require_relative 'allure_helper'

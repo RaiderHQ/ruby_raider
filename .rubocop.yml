@@ -1,6 +1,10 @@
 require:
   - rubocop-rspec
 
+AllCops:
+  Exclude:
+    - 'lib/commands/open_ai_commands.rb'
+
 # Layout
 Layout/CaseIndentation:
   Enabled: false
