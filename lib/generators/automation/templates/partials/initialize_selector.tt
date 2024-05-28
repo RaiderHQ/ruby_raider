@@ -4,6 +4,13 @@
   def initialize(browser)
     @browser = browser
   end
+<% elsif axe? %>
+  attr_reader :driver
+  alias page driver
+
+  def initialize(driver)
+    @driver = driver
+  end
 <% else %>
   attr_reader :driver
 

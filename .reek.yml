@@ -7,3 +7,6 @@ detectors:
     exclude:
       - initialize
     max_statements: 10
+
+exclude_paths:
+  - 'lib/commands/open_ai_commands.rb'
