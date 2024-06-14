@@ -52,13 +52,3 @@ desc 'Runs system tests'
 task :system do |_t|
   system 'rspec spec/system'
 end
-
-desc 'Runs system tests'
-task :system do |_t|
-  system 'rspec spec/system'
-end
-
-desc 'Do the thingy'
-task :release do |_t|
-  pp "I'm releasing"
-end
