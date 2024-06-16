@@ -2,4 +2,3 @@ ruby_raider-*.gem
 .idea/
 ruby_raider.iml
 Gemfile.lock
-.env

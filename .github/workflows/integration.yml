@@ -20,6 +20,4 @@ jobs:
         run: bundle install
 
       - name: Build and run integration tests
-        env:
-          OPENAI_ACCESS_TOKEN: ${{ secrets.OPENAI_ACCESS_TOKEN }}
         run: rake integration
