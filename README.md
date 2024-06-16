@@ -91,7 +91,6 @@ Commands:
   raider generate # Provides access to all the scaffolding commands
   raider help [COMMAND] # Describe available commands or one specific command
   raider new [PROJECT_NAME] # Creates a new framework based on settings picked
-  raider open_ai # Provides access to all the open ai commands
   raider utility # Provides access to all the utility commands 
   raider version # It shows the version of Ruby Raider you are currently using
 ```
@@ -100,7 +99,6 @@ All the basic commands have their corresponding shortcut:
 
 * g for generate
 * n for new
-* o for open_ai
 * u for utility
 * v for version
 
@@ -131,27 +129,6 @@ If you don't specify an option, path will assume you want to change the default 
 To initialise Appium server run this command:
 ```ruby
 raider u start_appium
-```
-
-### Open AI Commands
-
-```ruby
-# Will print the result of the request on the terminal
-raider o make [REQUEST]
-# Will create a file with the result of your request as content
-raider o make [REQUEST] - -path or -p [PATH]
-# Will input the content of the chosen file into open ai and will edit it based on the result
-raider o make [PATH_NAME] - -edit or -e [FILE_PATH]
-# Creates a cucumber file and uses it to input into open ai and create a steps file
-# The prompt is required
-raider o cucumber [NAME] - -prompt or -p [PROMPT]
-# Creates a cucumber step definitions file based on an scenario file
-raider open_ai steps [NAME]
-Options : 
-  -p, [--path = PATH] # The path where your steps will be created
-  -pr, [--prompt = PROMPT] # This will create the selected steps based on your prompt using open ai
-  -i, [--input = INPUT] # It uses a file as input to create the steps
-
 ```
 
 ### Sponsors

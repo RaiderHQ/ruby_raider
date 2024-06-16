@@ -26,6 +26,4 @@ jobs:
         run: bundle install
 
       - name: Build and run system tests
-        env:
-          OPENAI_ACCESS_TOKEN: ${{ secrets.OPENAI_ACCESS_TOKEN }}
         run: rake system

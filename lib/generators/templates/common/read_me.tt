@@ -1,29 +1,25 @@
 # Ruby Raider
 
-[![Gem Version](https://badge.fury.io/rb/ruby_raider.svg)](https://badge.fury.io/rb/ruby_raider)
-[![Rubocop](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml/badge.svg)](https://github.com/RubyRaider/ruby_raider/actions/workflows/rspec.yml)
-[![Gitter](https://badges.gitter.im/RubyRaider/community.svg)](https://gitter.im/RubyRaider/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-   <a href="https://github.com/RubyRaider/ruby_raider">
-   <img src="https://rubyraiderdotcom.files.wordpress.com/2022/05/logo_transparent_background-1.png" alt="Logo">
-   </a>
-   <h1 align="center">Ruby Raider</h1>
-   <p align="center">
-      This is a gem to make setup and start of UI automation projects easier.
-      <br />
-      <a href="https://github.com/RubyRaider/ruby_raider#getting-started"><strong>Explore the docs »</strong></a>
-      <br />
-      <br />
-      <a href="https://rubygems.org/gems/ruby_raider">Rubygems</a>
-      ·
-      <a href="https://github.com/RubyRaider/ruby_raider/issues">Report Bug</a>
-      ·
-      <a href="https://github.com/RubyRaider/ruby_raider/issues">Request Feature</a>
-   </p>
-   <p align="center"> For more information and updates on releases, see <a href="https://ruby-raider.com">https://ruby-raider.com</a></p>
+  <a href="https://github.com/RubyRaider/ruby_raider">
+    <img src="https://rubyraiderdotcom.files.wordpress.com/2022/05/logo_transparent_background-1.png" alt="Logo">
+  </a>
+  <h1 align="center">Ruby Raider</h1>
+  <p align="center">
+    This is a gem to make setup and start of UI automation projects easier.
+    <br />
+    <a href="https://github.com/RubyRaider/ruby_raider#getting-started"><strong>Explore the docs »</strong></a>
+    <br />
+    <br />
+    <a href="https://rubygems.org/gems/ruby_raider">Rubygems</a>
+    ·
+    <a href="https://github.com/RubyRaider/ruby_raider/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/RubyRaider/ruby_raider/issues">Request Feature</a>
+  </p>
+  <p align="center"> For more information and updates on releases, see <a href="https://ruby-raider.com">https://ruby-raider.com</a></p>
 </div>
 
 ## What is Ruby Raider?
@@ -86,19 +82,17 @@ Select the ones you will like to work with.
 
 ```ruby
 Commands:
-  raider generate # Provides access to all the scaffolding commands
-  raider help [COMMAND] # Describe available commands or one specific command
-  raider new [PROJECT_NAME] # Creates a new framework based on settings picked
-  raider open_ai # Provides access to all the open ai commands
-  raider utility # Provides access to all the utility commands
-  raider version # It shows the version of Ruby Raider you are currently using
+raider generate # Provides access to all the scaffolding commands
+raider help [COMMAND] # Describe available commands or one specific command
+raider new [PROJECT_NAME] # Creates a new framework based on settings picked
+raider utility # Provides access to all the utility commands
+raider version # It shows the version of Ruby Raider you are currently using
 ```
 
 All the basic commands have their corresponding shortcut:
 
 * g for generate
 * n for new
-* o for open_ai
 * u for utility
 * v for version
 
@@ -129,25 +123,4 @@ If you don't specify an option, path will assume you want to change the default 
 To initialise Appium server run this command:
 ```ruby
 raider u start_appium
-```
-
-### Open AI Commands
-
-```ruby
-# Will print the result of the request on the terminal
-raider o make [REQUEST]
-# Will create a file with the result of your request as content
-raider o make [REQUEST] - -path or -p [PATH]
-# Will input the content of the chosen file into open ai and will edit it based on the result
-raider o make [PATH_NAME] - -edit or -e [FILE_PATH]
-# Creates a cucumber file and uses it to input into open ai and create a steps file
-# The prompt is required
-raider o cucumber [NAME] - -prompt or -p [PROMPT]
-# Creates a cucumber step definitions file based on an scenario file
-raider open_ai steps [NAME]
-Options :
-  -p, [--path = PATH] # The path where your steps will be created
-  -pr, [--prompt = PROMPT] # This will create the selected steps based on your prompt using open ai
-  -i, [--input = INPUT] # It uses a file as input to create the steps
-
 ```
