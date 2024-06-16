@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'yaml'
-require 'faraday'
 
 module Utilities
   @path = 'config/config.yml'
@@ -60,25 +59,6 @@ module Utilities
     def parallel_run(opts = nil, _settings = nil)
       command = File.directory?('spec') ? 'parallel_rspec spec/' : 'parallel_cucumber features'
       system "#{command} #{opts}"
-    end
-
-    def download_android_build
-      download_build('Android-MyDemoAppRN.1.3.0.build-244.apk',
-                     'https://github.com/saucelabs/my-demo-app-rn/releases/download/v1.3.0/Android-MyDemoAppRN.1.3.0.build-244.apk')
-    end
-
-    def download_ios_build
-      download_build('iOS-Simulator-MyRNDemoApp.1.3.0-162.zip',
-                     'https://github.com/saucelabs/my-demo-app-rn/releases/download/v1.3.0/iOS-Simulator-MyRNDemoApp.1.3.0-162.zip')
-    end
-
-    def download_build(name, url)
-      response = Faraday.get(url)
-      build_url = Faraday.get(response.headers['location'])
-
-      File.open(name, 'wb') do |file|
-        file.write(build_url.body)
-      end
     end
 
     private

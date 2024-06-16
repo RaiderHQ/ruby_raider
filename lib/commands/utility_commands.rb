@@ -73,21 +73,6 @@ class UtilityCommands < Thor
     Utilities.platform = platform
   end
 
-  desc 'build [BUILD_TYPE]', 'It downloads the selected example build for appium projects'
-
-  def build(build_type)
-    raise 'Please select one of the following build types: android, ios' unless %w[android ios].include?(build_type)
-
-    build_type == 'android' ? Utilities.download_android_build : Utilities.download_ios_build
-  end
-
-  desc 'builds', 'It downloads both builds for appium cross platform projects'
-
-  def builds
-    Utilities.download_android_build
-    Utilities.download_ios_build
-  end
-
   desc 'start_appium', 'It starts the appium server'
   def start_appium
     system 'appium  --base-path /wd/hub'
