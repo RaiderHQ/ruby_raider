@@ -27,6 +27,9 @@ jobs:
         with:
           ruby-version: head
 
+      - name: Install gems
+        run: bundle install
+
       - name: Create Raider framework
         run: bin/raider raider new rspec_selenium -p framework:rspec automation:selenium visual:false axe:true
 
