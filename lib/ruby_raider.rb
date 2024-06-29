@@ -18,7 +18,6 @@ module RubyRaider
         return InvokeGenerators.generate_framework(parsed_hash)
       end
 
-
       MenuGenerator.new(project_name).generate_choice_menu
     end
 
