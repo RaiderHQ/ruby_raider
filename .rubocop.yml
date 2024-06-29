@@ -1,6 +1,9 @@
 require:
   - rubocop-rspec
 
+AllCops:
+  TargetRubyVersion: 3.0
+
 # Layout
 Layout/CaseIndentation:
   Enabled: false
