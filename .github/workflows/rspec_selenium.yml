@@ -28,7 +28,7 @@ jobs:
           ruby-version: head
 
       - name: Install Ruby Raider
-        run: gem install ruby-raider
+        run: gem install ruby_raider
 
       - name: Create Raider framewor
         run: raider new 'rspec_selenium'
