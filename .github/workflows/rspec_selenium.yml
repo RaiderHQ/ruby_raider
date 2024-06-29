@@ -27,11 +27,33 @@ jobs:
         with:
           ruby-version: head
 
+      - name: Install user input tool
+        run: sudo apt-get install -y xdotool
+
       - name: Install Ruby Raider
         run: gem install ruby_raider
 
-      - name: Create Raider framewor
+      - name: Create Raider framework
         run: raider new 'rspec_selenium'
+
+      - name: Select Raider framework through the menu
+        run: |
+         xdotool key Down
+         sleep 1
+         xdotool key Return
+         sleep 1
+         xdotool key Down
+         sleep 1
+         xdotool key Return
+         sleep 1
+         xdotool key Down
+         sleep 1
+         xdotool key Return
+         sleep 1
+         xdotool key Down
+         sleep 1
+         xdotool key Return
+         sleep 1
 
       - name: Run Raider tests
         run: cd rspec_selenium | rspec spec/
