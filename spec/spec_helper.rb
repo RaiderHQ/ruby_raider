@@ -15,7 +15,7 @@ RSpec.configure do |config|
     FRAMEWORKS.each do |framework|
       AUTOMATION_TYPES.each do |automation|
         [true, false].each do |visual|
-          settings = create_settings(framework: framework, automation: automation, visual: visual, axe: axe_support)
+          settings = create_settings(framework: framework, automation: automation, visual: visual)
           generate_framework(settings)
         end
       end

@@ -4,10 +4,6 @@ require_relative 'lib/ruby_raider'
 require_relative 'lib/commands/scaffolding_commands'
 require_relative 'lib/utilities/logger'
 
-desc 'Creates a new test project'
-task :new, [:name] do |_t, args|
-  system "bin/raider -n #{args.name}"
-end
 
 desc 'Creates a page'
 task :page, [:name, :path] do |_t, args|
@@ -46,4 +42,9 @@ end
 desc 'Runs system tests'
 task :system do |_t|
   system 'rspec spec/system'
+end
+
+desc 'Create framework with parameters'
+task :new, [:name, :params] do |_t, args|
+  system "bin/raider -n #{args.name} -p #{args.params}"
 end

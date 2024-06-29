@@ -8,8 +8,17 @@ require_relative '../lib/commands/utility_commands'
 module RubyRaider
   class Raider < Thor
     desc 'new [PROJECT_NAME]', 'Creates a new framework based on settings picked'
+    option :parameters,
+           type: :hash, required: false, desc: 'Parameters to avoid using the menu', aliases: '-p'
 
     def new(project_name)
+      if options[:parameters]
+        options[:parameters][:name] = project_name
+        parsed_hash = options[:parameters].transform_keys(&:to_sym)
+        return InvokeGenerators.generate_framework(parsed_hash)
+      end
+
+
       MenuGenerator.new(project_name).generate_choice_menu
     end
 

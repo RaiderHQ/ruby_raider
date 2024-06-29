@@ -27,32 +27,8 @@ jobs:
         with:
           ruby-version: head
 
-      - name: Install Ruby Raider
-        run: gem install ruby_raider
-
       - name: Create Raider framework
-        run: xvfb-run -a raider new 'rspec_selenium'
-
-      - name: Select Raider framework through the menu
-        run: |
-              xvfb-run -a bash -c "
-              xdotool key Down
-              sleep 1
-              xdotool key Return
-              sleep 1
-              xdotool key Down
-              sleep 1
-              xdotool key Return
-              sleep 1
-              xdotool key Down
-              sleep 1
-              xdotool key Return
-              sleep 1
-              xdotool key Down
-              sleep 1
-              xdotool key Return
-              sleep 1
-              "
+        run: bin/raider raider new rspec_selenium -p framework:rspec automation:selenium visual:false axe:true
 
       - name: Run Raider tests
         run: cd rspec_selenium | rspec spec/
