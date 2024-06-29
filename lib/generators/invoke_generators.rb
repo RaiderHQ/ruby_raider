@@ -9,6 +9,7 @@ require_relative 'rspec/rspec_generator'
 # :reek:UtilityFunction { enabled: false }
 module InvokeGenerators
   module_function
+
   def generate_framework(structure = {})
     generators = %w[Automation Actions Common Helpers]
     framework = structure[:framework]
@@ -16,8 +17,8 @@ module InvokeGenerators
     generators.each do |generator|
       invoke_generator({
                          automation: structure[:automation],
-                         framework: framework,
-                         generator: generator,
+                         framework:,
+                         generator:,
                          name: structure[:name],
                          visual: to_bool(structure[:visual]),
                          axe_support: to_bool(structure[:axe_support])
@@ -40,6 +41,7 @@ module InvokeGenerators
 
   def to_bool(string)
     return unless string.is_a? String
-    string.downcase == "true"
+
+    string.downcase == 'true'
   end
 end

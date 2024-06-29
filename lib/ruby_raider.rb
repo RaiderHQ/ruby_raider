@@ -12,12 +12,12 @@ module RubyRaider
            type: :hash, required: false, desc: 'Parameters to avoid using the menu', aliases: '-p'
 
     def new(project_name)
-      if options[:parameters]
-        options[:parameters][:name] = project_name
-        parsed_hash = options[:parameters].transform_keys(&:to_sym)
+      params = options[:parameters]
+      if params
+        params[:name] = project_name
+        parsed_hash = params.transform_keys(&:to_sym)
         return InvokeGenerators.generate_framework(parsed_hash)
       end
-
 
       MenuGenerator.new(project_name).generate_choice_menu
     end

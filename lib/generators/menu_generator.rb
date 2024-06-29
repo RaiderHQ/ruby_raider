@@ -85,7 +85,7 @@ class MenuGenerator
     axe = choose_axe_support if automation_type == 'selenium' && framework == 'Rspec' && visual_automation == false
     options = create_framework_options(automation: automation_type,
                                        framework: framework.downcase,
-                                       visual_automation: visual_automation,
+                                       visual_automation:,
                                        axe_support: axe)
 
     # Print the chosen options

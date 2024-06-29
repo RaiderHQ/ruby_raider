@@ -7,10 +7,10 @@ module SettingsHelper
     visual = options[:visual]
     framework = options[:framework]
     {
-      automation: automation,
-      framework: framework,
+      automation:,
+      framework:,
       name: "#{framework}_#{automation}#{'_visual' if visual}",
-      visual: visual
+      visual:
     }
   end
 end

@@ -4,7 +4,6 @@ require_relative 'lib/ruby_raider'
 require_relative 'lib/commands/scaffolding_commands'
 require_relative 'lib/utilities/logger'
 
-
 desc 'Creates a page'
 task :page, [:name, :path] do |_t, args|
   ScaffoldingCommands.new.invoke(:page, nil, %W[:#{args.name} --path #{args.path}])
