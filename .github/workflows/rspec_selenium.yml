@@ -34,10 +34,7 @@ jobs:
         run: gem install ruby_raider
 
       - name: Create Raider framework
-        run: raider new 'rspec_selenium'
-
-      - name: Select Raider framework through the menu
-        run: |
+        run: raider new 'rspec_selenium' |
          xdotool key Down
          sleep 1
          xdotool key Return
