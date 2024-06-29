@@ -42,7 +42,9 @@ module Utilities
     end
 
     def browser_options=(*opts)
-      config['browser_options'] = opts.flatten
+      args = opts.flatten
+      browser_args = config['browser_arguments'][args.first&.to_sym]
+      config['browser_arguments'][args.first&.to_sym] = browser_args + args[1..-1]
       overwrite_yaml
     end
 
