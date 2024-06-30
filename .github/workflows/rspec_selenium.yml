@@ -1,4 +1,4 @@
-name: BrowserStack Test
+name: Rspec Selenium Test on Ubuntu
 on: [ pull_request ]
 
 jobs:
