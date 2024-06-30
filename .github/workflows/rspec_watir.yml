@@ -34,7 +34,7 @@ jobs:
         run: bin/raider new rspec_watir -p framework:rspec automation:watir visual:false axe:true
 
       - name: Run Raider tests
-        run: cd rspec_selenium && bundle install && raider utility browser_options chrome headless && rspec spec/
+        run: cd rspec_watir && bundle install && raider utility browser_options chrome headless && rspec spec/
 
       - name: BrowserStackLocal Stop
         uses: browserstack/github-actions/setup-local@master
