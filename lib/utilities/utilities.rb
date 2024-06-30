@@ -44,7 +44,8 @@ module Utilities
     def browser_options=(*opts)
       args = opts.flatten
       browser_args = config['browser_arguments']
-      browser_args[args.first&.to_sym] = browser_args + args[1..]
+      browser = args.first&.to_sym
+      browser_args[browser] = browser_args[browser] + args[1..]
       overwrite_yaml
     end
 
