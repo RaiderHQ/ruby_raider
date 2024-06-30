@@ -1,4 +1,3 @@
-require 'dotenv'
 require 'pathname'
 require 'yaml'
 require_relative '../../../lib/generators/common_generator'
