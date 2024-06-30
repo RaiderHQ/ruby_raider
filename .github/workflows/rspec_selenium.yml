@@ -33,8 +33,11 @@ jobs:
       - name: Create Raider framework
         run: bin/raider new rspec_selenium -p framework:rspec automation:selenium visual:false axe:true
 
+      - name: Setup Raider tests
+        run: cd rspec_selenium && bundle install && raider utility browser_options chrome headless
+
       - name: Run Raider tests
-        run: cd rspec_selenium && raider utility browser_options chrome headless && rspec spec/
+        run: rspec spec/rspec_selenium
 
       - name: BrowserStackLocal Stop
         uses: browserstack/github-actions/setup-local@master
