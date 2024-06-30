@@ -37,7 +37,7 @@ jobs:
         run: cd rspec_selenium && bundle install && raider utility browser_options chrome headless
 
       - name: Run Raider tests
-        run: rspec spec/rspec_selenium
+        run: rspec rspec_selenium/spec/
 
       - name: BrowserStackLocal Stop
         uses: browserstack/github-actions/setup-local@master
