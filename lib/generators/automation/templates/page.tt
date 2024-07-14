@@ -30,13 +30,15 @@ class Page
     self.class.to_s.sub('Page', ' Page')
   end
 
+  <%- if automation == 'selenium'  -%>
   # Components
 
-  <%- if automation == 'selenium'  -%>
   def header
     Header.new(driver.find_element(id: 'customer_menu_top'))
   end
   <%- elsif automation == 'watir'  -%>
+  # Components
+
   def header
     Header.new(browser.element(id: 'customer_menu_top'))
   end

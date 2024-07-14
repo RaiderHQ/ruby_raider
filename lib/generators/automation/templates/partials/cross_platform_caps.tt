@@ -8,7 +8,7 @@ android:
 ios:
   platformName: iOS
   appium:options:
-    platformVersion: 17.0
+    platformVersion: '17.0'
     deviceName: iPhone 15
     automationName: XCUITest
     app: MyRNDemoApp.app

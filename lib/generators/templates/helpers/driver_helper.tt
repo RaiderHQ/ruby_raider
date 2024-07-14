@@ -42,8 +42,8 @@ module DriverHelper
     @driver ||= create_driver(browser, js_path, skip_iframes)
   end
   <% else -%>
-  def driver
-      @driver ||= create_driver
+def driver
+    @driver ||= create_driver
   end
   <%- end -%>
 

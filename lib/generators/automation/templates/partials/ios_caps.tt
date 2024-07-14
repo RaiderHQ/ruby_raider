@@ -1,7 +1,7 @@
 platformName: iOS
 appium:options:
   url: http://localhost:4723/wd/hub
-  platformVersion: 17.0
+  platformVersion: '17.0'
   deviceName: iPhone 15
   automationName: XCUITest
   app: MyRNDemoApp.app
