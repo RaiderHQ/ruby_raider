@@ -31,15 +31,39 @@
   end
 <% elsif automation == 'cross_platform' -%>
   def create_driver
-    platform = config['platform'].to_s
-    @driver = Appium::Driver.new({ caps: caps[platform] })
+    @driver = Appium::Driver.new({ caps: parsed_caps })
   end
 
-  def config
-     YAML.load_file('config/config.yml')
+  def platform
+    @platform ||= YAML.load_file('config/config.yml')['platform'].to_s
+  end
+
+  def platform_caps
+    @platform_caps ||= YAML.load_file('config/capabilities.yml')[platform]
+  end
+
+  # :reek:UtilityFunction
+  def parsed_caps
+    platform_caps['appium:options']['app'] = parse_app_path(platform_caps['appium:options']['app'])
+    platform_caps
+  end
+
+  def parse_app_path(path)
+    File.expand_path(path, Dir.pwd)
   end
 <% else -%>
   def create_driver
-    @driver = Appium::Driver.new({ caps: caps })
+    @driver = Appium::Driver.new({ caps: parsed_caps })
+  end
+
+  # :reek:UtilityFunction
+  def parsed_caps
+    caps = YAML.load_file('config/capabilities.yml')
+    caps['appium:options']['app'] = app_path(caps['appium:options']['app'])
+    caps
+  end
+
+  def app_path(path)
+    File.expand_path(path, Dir.pwd)
   end
 <% end -%>
