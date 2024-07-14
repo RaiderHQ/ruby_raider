@@ -4,12 +4,12 @@ android:
     platformVersion: '12'
     automationName: UiAutomator2
     deviceName: Pixel 3 API 32
-    app: "Android-MyDemoAppRN.1.3.0.build-244.apk"
+    app: Android-MyDemoAppRN.1.3.0.build-244.apk
 ios:
   platformName: iOS
   appium:options:
-    platformVersion: "14.0"
-    deviceName: iPhone 11
+    platformVersion: '17.0'
+    deviceName: iPhone 15
     automationName: XCUITest
-    app: "MyRNDemoApp.app"
+    app: MyRNDemoApp.app
     autoDismissAlerts: true
