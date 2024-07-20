@@ -1,24 +1,6 @@
 # frozen_string_literal: true
 
 require_relative '../abstract/page'
-<%- if automation == 'sparkling_ios' -%>
-class Home < Page
-
-  # Actions
-
-  def go_to_backpack_pdp
-    app.tap on: backpack_image.wait_until(&:present?)
-  end
-
-  private
-
-  # Elements
-
-  def backpack_image
-    app.element(predicate: 'label == "Sauce Labs Backpack"')
-  end
-end
-<%- else -%>
 class Home < Page
 
   # Actions
@@ -35,4 +17,3 @@ class Home < Page
     <%= ERB.new(File.read(File.expand_path('./partials/home_page_selector.tt', __dir__)), trim_mode: '-').result(binding) %>
   end
 end
-<%- end -%>
