@@ -1,5 +1,5 @@
-<%- if automation == 'selenium' -%>
+<%- if selenium_based? -%>
 <%=- ERB.new(File.read(File.expand_path('./partials/selenium_login.tt', __dir__)), trim_mode: '-').result(binding) -%>
-<%- elsif automation == 'watir' -%>
+<%- elsif watir? -%>
 <%=- ERB.new(File.read(File.expand_path('./partials/watir_login.tt', __dir__)), trim_mode: '-').result(binding) -%>
 <%- end -%>

@@ -1,4 +1,4 @@
-<%- if visual_automation -%>
+<%- if visual? -%>
 # frozen_string_literal: true
 
 require 'tmpdir'

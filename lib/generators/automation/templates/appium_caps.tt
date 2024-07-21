@@ -1,6 +1,6 @@
-<% if automation.include?('ios') %>
+<% if ios? %>
 <%= ERB.new(File.read(File.expand_path('./partials/ios_caps.tt', __dir__))).result(binding) -%>
-<% elsif automation == 'android' %>
+<% elsif android? %>
 <%= ERB.new(File.read(File.expand_path('./partials/android_caps.tt', __dir__))).result(binding) -%>
 <% else %>
 <%= ERB.new(File.read(File.expand_path('./partials/cross_platform_caps.tt', __dir__))).result(binding) -%>

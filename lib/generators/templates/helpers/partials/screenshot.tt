@@ -1,8 +1,7 @@
-<% case automation
- when 'selenium' %>
-screenshot = driver.save_screenshot("#{temp_folder}/#{example_name}.png")
-<% when 'watir' %>
-screenshot = browser.screenshot.save("#{temp_folder}/#{example_name}.png")
+<% if selenium_based? %>
+  screenshot = driver.save_screenshot("#{temp_folder}/#{example_name}.png")
+<% elsif watir? %>
+  screenshot = browser.screenshot.save("#{temp_folder}/#{example_name}.png")
 <% else %>
-screenshot = driver.screenshot("#{temp_folder}/#{example_name}.png")
+  screenshot = driver.screenshot("#{temp_folder}/#{example_name}.png")
 <% end %>

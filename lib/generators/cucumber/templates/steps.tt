@@ -1,4 +1,4 @@
-<% if %w[selenium watir].include? automation -%>
+<% if web? -%>
 <%= ERB.new(File.read(File.expand_path('./partials/web_steps.tt', __dir__)), trim_mode: '-').result(binding).strip! -%>
 <% else -%>
 <%= ERB.new(File.read(File.expand_path('./partials/mobile_steps.tt', __dir__)), trim_mode: '-').result(binding).strip! -%>

@@ -1,6 +1,6 @@
-<%- if automation == 'ios' -%>
+<%- if ios? -%>
 driver.find_element(predicate: 'label == "Sauce Labs Backpack"')
-<%- elsif automation == 'android' -%>
+<%- elsif android? -%>
 driver.find_element(xpath: '(//android.view.ViewGroup[@content-desc="store item"])[1]/android.view.ViewGroup[1]')
 <%- else -%>
 element(ios: { predicate: 'label == "Sauce Labs Backpack"' },

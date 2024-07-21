@@ -22,7 +22,7 @@ module AllureHelper
        )
      end
 
-  <%- if framework == 'rspec' -%>
+  <%- if rspec? -%>
     def formatter
       AllureRspecFormatter
     end

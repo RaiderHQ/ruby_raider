@@ -1,4 +1,4 @@
-<% if %w[selenium watir].include? automation -%>
+<% if web? -%>
 Feature: Login Page
 
 Scenario: A user can login

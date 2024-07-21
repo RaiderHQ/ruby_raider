@@ -1,11 +1,11 @@
 require_relative '../../helpers/driver_helper'
-<%- if visual_automation -%>
+<%- if visual? -%>
 require_relative '../../helpers/visual_helper'
 <%- end -%>
-<%- if automation == 'selenium' -%>
+<%- if selenium_based? -%>
 require_relative '../../models/user_factory'
 
-World(DriverHelper<%- if visual_automation -%>, VisualHelper<%- end -%>)
+World(DriverHelper<%- if visual? -%>, VisualHelper<%- end -%>)
 <%- else -%>
 World(DriverHelper)
 <%- end -%>
