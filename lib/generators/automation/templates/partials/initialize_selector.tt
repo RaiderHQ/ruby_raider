@@ -1,4 +1,4 @@
-<% if automation == 'watir' %>
+<% if watir? %>
   attr_reader :browser
 
   def initialize(browser)

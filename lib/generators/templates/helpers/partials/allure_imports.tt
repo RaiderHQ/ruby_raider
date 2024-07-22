@@ -1,4 +1,4 @@
-<% if framework == 'rspec' %>
+<% if rspec? %>
 AllureRspec
 <% else %>
 AllureCucumber

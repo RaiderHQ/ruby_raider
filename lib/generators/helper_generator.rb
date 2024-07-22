@@ -24,7 +24,7 @@ class HelpersGenerator < Generator
   end
 
   def generate_browser_helper
-    return if selenium? || mobile?
+    return if selenium_based? || mobile?
 
     template('helpers/browser_helper.tt', "#{name}/helpers/browser_helper.rb")
   end

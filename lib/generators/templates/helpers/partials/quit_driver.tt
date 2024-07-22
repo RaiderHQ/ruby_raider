@@ -1,8 +1,7 @@
-<% case automation
- when 'selenium' %>
-driver.quit
-<% when 'watir' %>
-browser.quit
+<% if selenium_based? %>
+  driver.quit
+<% elsif watir? %>
+  browser.quit
 <% else %>
-driver.quit_driver
+  driver.quit_driver
 <% end %>

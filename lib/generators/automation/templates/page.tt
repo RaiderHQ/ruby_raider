@@ -3,7 +3,7 @@ require_relative '../components/header'
 <%- end -%>
 
 class Page
-<%- if automation == 'cross_platform' -%>
+<%- if cross_platform? -%>
   include AppiumHelper
 <%- end -%>
 <%=- ERB.new(File.read(File.expand_path('./partials/initialize_selector.tt', __dir__))).result(binding) -%>
@@ -14,13 +14,13 @@ class Page
     self.class.to_s.sub('Page', ' Page')
   end
 
-  <%- if automation == 'selenium'  -%>
+  <%- if selenium_based?  -%>
   # Components
 
   def header
     Header.new(driver.find_element(id: 'customer_menu_top'))
   end
-  <%- elsif automation == 'watir'  -%>
+  <%- elsif watir?  -%>
   # Components
 
   def header

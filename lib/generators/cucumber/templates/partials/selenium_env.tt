@@ -1,5 +1,5 @@
-<%- if visual_automation -%>
 # frozen_string_literal: true
+<%- if visual? -%>
 
 require 'tmpdir'
 require_relative '../../helpers/allure_helper'
@@ -30,13 +30,13 @@ After do |scenario|
 end
 
 <%- else -%>
-# frozen_string_literal: true
 
+<%- if axe? && cucumber? -%>
+require 'axe-rspec'
+<%- end -%>
+require 'rspec'
 require 'tmpdir'
-require_relative '../../helpers/driver_helper'
 require_relative '../../helpers/allure_helper'
-
-include DriverHelper
 
 Before do
   driver.manage.window.maximize

@@ -4,7 +4,7 @@ require_relative '../generator'
 
 class RspecGenerator < Generator
   def generate_login_spec
-    return unless web?
+    return unless web? && !visual?
 
     template('spec.tt', "#{name}/spec/login_page_spec.rb")
   end

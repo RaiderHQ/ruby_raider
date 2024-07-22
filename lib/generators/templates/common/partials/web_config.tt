@@ -1,7 +1,7 @@
 browser: :chrome
 url: 'https://automationteststore.com/'
 
-<%- if automation == 'selenium' -%>
+<%- if selenium_based? -%>
 driver_options:
   :timeouts:
     :implicit: 10000 # 10 seconds

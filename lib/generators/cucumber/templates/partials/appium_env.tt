@@ -1,8 +1,5 @@
 require 'tmpdir'
 require_relative '../../helpers/allure_helper'
-require_relative '../../helpers/driver_helper'
-
-include DriverHelper
 
 Before do
   AllureHelper.configure

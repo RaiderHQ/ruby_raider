@@ -19,9 +19,7 @@ module InvokeGenerators
                          automation: structure[:automation],
                          framework:,
                          generator:,
-                         name: structure[:name],
-                         visual: to_bool(structure[:visual]),
-                         axe_support: to_bool(structure[:axe_support])
+                         name: structure[:name]
                        })
     end
   end
@@ -34,9 +32,7 @@ module InvokeGenerators
     Object.const_get("#{structure[:generator]}Generator")
           .new([structure[:automation],
                 structure[:framework],
-                structure[:name],
-                structure[:visual],
-                structure[:axe_support]]).invoke_all
+                structure[:name]]).invoke_all
   end
 
   def to_bool(string)

@@ -1,4 +1,4 @@
-<% if framework == 'rspec' -%>
+<% if rspec? -%>
 require:
   - rubocop-rspec
 <% end -%>
