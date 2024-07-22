@@ -13,6 +13,12 @@ When('I login with my credentials') do
   @login_page.login(@user['username'], @user['password'])
 end
 
+<%- if axe? -%>
+Then('the page should be axe clean') do
+  account = Account.new(driver)
+  expect(account.page).to be_axe_clean
+end
+<%- else -%>
 Then("I'm logged in") do
   account_page = Account.new(<% if watir? %>browser<% else %>driver<% end %>)
   <%- if visual? -%>
@@ -21,3 +27,4 @@ Then("I'm logged in") do
   expect(account_page.header.customer_name).to eq "Welcome back #{@user['name']}"
   <%- end -%>
 end
+<%- end -%>

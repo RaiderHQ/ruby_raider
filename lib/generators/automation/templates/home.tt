@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../abstract/page'
+
 class Home < Page
 
   # Actions
@@ -14,6 +15,6 @@ class Home < Page
   # Elements
 
   def backpack_image
-    <%= ERB.new(File.read(File.expand_path('./partials/home_page_selector.tt', __dir__)), trim_mode: '-').result(binding) %>
+    <%= ERB.new(File.read(File.expand_path('./partials/home_page_selector.tt', __dir__)), trim_mode: '-').result(binding) -%>
   end
 end

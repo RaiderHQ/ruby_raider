@@ -21,11 +21,11 @@ module AllureHelper
         test_case: true
        )
      end
-
   <%- if rspec? -%>
+
     def formatter
       AllureRspecFormatter
     end
-      <%- end -%>
+  <%- end -%>
   end
 end
