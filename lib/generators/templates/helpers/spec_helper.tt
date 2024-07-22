@@ -6,7 +6,7 @@ require 'axe-rspec'
 require 'rspec'
 require 'tmpdir'
 require_relative 'allure_helper'
-<%- if automation == 'watir' -%>
+<%- if watir? -%>
 require_relative 'browser_helper'
 <%- else -%>
 require_relative 'driver_helper'
@@ -17,16 +17,16 @@ module SpecHelper
   AllureHelper.configure
   RSpec.configure do |config|
     config.formatter = AllureHelper.formatter
-    <% if automation == 'watir' %>config.include(BrowserHelper)<% else %>config.include(DriverHelper)<% end %>
-    <%- if %w[android ios cross_platform].include? automation -%>
+    <% if watir? %>config.include(BrowserHelper)<% else %>config.include(DriverHelper)<% end %>
+    <%- if mobile? -%>
     config.before(:each) do
       driver.start_driver
     end
-    <%- elsif automation == 'selenium' -%>
+    <%- elsif selenium_based? -%>
     config.before(:each) do
       driver.manage.window.maximize
     end
-    <%- elsif automation == 'watir' -%>
+    <%- elsif watir? -%>
     config.before(:each) do
       browser.window.maximize
     end

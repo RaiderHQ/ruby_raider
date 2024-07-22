@@ -1,4 +1,4 @@
-<% if %w[selenium appium_ios appium_android].include?(automation) -%>
+<% if %w[selenium axe applitools appium_ios appium_android].include?(automation) -%>
   driver.find_element
 <% else -%>
   browser.element

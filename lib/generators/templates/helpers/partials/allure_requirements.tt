@@ -1,4 +1,4 @@
-<% if framework == 'cucumber' %>
+<% if cucumber? %>
 require 'allure-cucumber'
 <% else %>
 require 'allure-ruby-commons'

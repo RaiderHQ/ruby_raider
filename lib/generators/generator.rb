@@ -8,8 +8,6 @@ class Generator < Thor::Group
   argument :automation
   argument :framework
   argument :name
-  argument :visual_automation, optional: true
-  argument :axe_support, optional: true
 
   def self.source_paths
     base_path = File.dirname(__FILE__)
@@ -38,6 +36,14 @@ class Generator < Thor::Group
     (args & %w[android ios]).count.positive?
   end
 
+  def ios?
+    args.include?('ios')
+  end
+
+  def android?
+    args.include?('android')
+  end
+
   def rspec?
     args.include?('rspec')
   end
@@ -47,7 +53,7 @@ class Generator < Thor::Group
   end
 
   def visual?
-    args[3]
+    args.include?('applitools')
   end
 
   def watir?
@@ -55,11 +61,15 @@ class Generator < Thor::Group
   end
 
   def web?
-    (args & (%w[selenium watir])).count.positive?
+    (args & (%w[selenium watir axe applitools])).count.positive?
   end
 
   def axe?
-    args.last
+    args.include?('axe')
+  end
+
+  def selenium_based?
+    (args & %w[selenium axe applitools]).count.positive?
   end
 
   private

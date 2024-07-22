@@ -2,9 +2,6 @@
 
 require 'tmpdir'
 require_relative '../../helpers/allure_helper'
-require_relative '../../helpers/browser_helper'
-
-include BrowserHelper
 
 Before do
   browser.window.maximize

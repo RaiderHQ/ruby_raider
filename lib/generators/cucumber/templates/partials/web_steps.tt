@@ -5,7 +5,7 @@ require_relative '../../page_objects/pages/login'
 
 Given("I'm a {user} on the login page") do |user|
   @user = user
-  @login_page = Login.new(<% if automation == 'watir' %>browser<% else %>driver<% end %>)
+  @login_page = Login.new(<% if watir? %>browser<% else %>driver<% end %>)
   @login_page.visit
 end
 
@@ -13,11 +13,18 @@ When('I login with my credentials') do
   @login_page.login(@user['username'], @user['password'])
 end
 
+<%- if axe? -%>
+Then('the page should be axe clean') do
+  account = Account.new(driver)
+  expect(account.page).to be_axe_clean
+end
+<%- else -%>
 Then("I'm logged in") do
-  account_page = Account.new(<% if automation == 'watir' %>browser<% else %>driver<% end %>)
-  <%- if visual_automation == true -%>
+  account_page = Account.new(<% if watir? %>browser<% else %>driver<% end %>)
+  <%- if visual? -%>
   check_page account_page
   <%- else -%>
   expect(account_page.header.customer_name).to eq "Welcome back #{@user['name']}"
   <%- end -%>
 end
+<%- end -%>

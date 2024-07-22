@@ -3,24 +3,26 @@
 require 'axe-selenium'
 <% end -%>
 require 'yaml'
-<% if automation == 'selenium' -%>
+<%- unless axe? %>
+<%- if selenium_based? -%>
 require 'active_support/inflector'
 require 'selenium-webdriver'
-<% else -%>
+<%- else -%>
 require 'appium_lib'
-<% end -%>
+<%- end -%>
+<%- end -%>
 
 module DriverHelper
-  <% if automation == 'selenium' && axe? == false -%>
+  <%- if selenium_based? && !axe? -%>
   def driver(*opts)
     @driver ||= create_driver(*opts)
   end
-  <% elsif axe? == true -%>
+  <%- elsif axe? -%>
   def driver(browser = :chrome, js_path = nil, skip_iframes = nil)
     @driver ||= create_driver(browser, js_path, skip_iframes)
   end
-  <% else -%>
-def driver
+  <%- else -%>
+  def driver
     @driver ||= create_driver
   end
   <%- end -%>
