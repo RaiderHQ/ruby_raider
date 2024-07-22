@@ -33,21 +33,25 @@
 Ruby Raider is a generator and scaffolding gem to make UI test automation easier
 
 ### At the moment Ruby Raider supports generating the following frameworks:
-| Web Testing Framework      | Visual Testing Framework                    | Mobile Testing Framework                  |
-|----------------------------|---------------------------------------------|-------------------------------------------|
-| Cucumber and Selenium      | Cucumber, Applitools and Selenium           | Cucumber and Appium for IOS               |
-| Rspec and Selenium         | Rspec, Applitools and Selenium              | Rspec and Appium for IOS                  |
-| Cucumber and Watir         |                                             | Cucumber and Appium for Android           |
-| Rspec and Watir            |                                             | Rspec and Appium for Android              |
-|                            |                                             | Cucumber and Appium Cross-platform        |
-|                            |                                             | Rspec and Appium Cross-platform           |
+
+| Web Testing Framework | Visual Testing Framework          | Mobile Testing Framework           | Accessibility Testing Framework |
+|-----------------------|-----------------------------------|------------------------------------|---------------------------------|
+| Cucumber and Selenium | Cucumber, Applitools and Selenium | Cucumber and Appium for IOS        | Cucumber and Axe for web        |
+| Rspec and Selenium    | Rspec, Applitools and Selenium    | Rspec and Appium for IOS           | Rspec and Axe for web           |
+| Cucumber and Watir    |                                   | Cucumber and Appium for Android    |                                 |
+| Rspec and Watir       |                                   | Rspec and Appium for Android       |                                 |
+|                       |                                   | Cucumber and Appium Cross-platform |                                 |
+|                       |                                   | Rspec and Appium Cross-platform    |                                 |
 
 ***In order to run the Appium tests, download the example [app](https://github.com/saucelabs/my-demo-app-rn).***
-***Remember to use the full path of the app that you download in the capabilities file and start the server using one of the commands below:***
+***Remember to use the full path of the app that you download in the capabilities file and start the server using one of
+the commands below:***
+
 ```ruby
 raider u start_appium
-appium  --base-path /wd/hub  
+appium --base - path /wd/ hub  
 ```
+
 ***In order to run the visual tests with applitools, you need to create an account and get your api key, you can read
 more [here](https://applitools.com/docs/topics/overview/obtain-api-key.html#:~:text=If%20you%20already%20have%20an,Your%20key%20will%20be%20displayed.)
 .***
@@ -81,13 +85,13 @@ Select the ones you will like to work with.
 If you already know which frameworks you want to use, you can do:
 
 ```ruby
-raider new [name_of_project] -p framework:[framework] automation:[automation_type] visual:[boolean] axe:[boolean]
+raider new [name_of_project] - p framework : [framework] automation : [automation_type] visual : [boolean] axe : [boolean]
 ```
 
 An example of the command above would be:
 
 ```ruby
-raider new test_project -p framework:rspec automation:selenium visual:false axe:true
+raider new test_project -p framework : rspec automation: selenium visual : false axe : true
 ```
 
 Where [frameworks] is a comma separated list of the frameworks you want to use.
@@ -97,12 +101,12 @@ Where [frameworks] is a comma separated list of the frameworks you want to use.
 ###### Anything between square brackets([...]) is where your imput goes
 
 ```ruby
-Commands:
+Commands :
   raider generate # Provides access to all the scaffolding commands
-  raider help [COMMAND] # Describe available commands or one specific command
-  raider new [PROJECT_NAME] # Creates a new framework based on settings picked
-  raider utility # Provides access to all the utility commands 
-  raider version # It shows the version of Ruby Raider you are currently using
+raider help [COMMAND] # Describe available commands or one specific command
+raider new [PROJECT_NAME] # Creates a new framework based on settings picked
+raider utility # Provides access to all the utility commands 
+raider version # It shows the version of Ruby Raider you are currently using
 ```
 
 All the basic commands have their corresponding shortcut:
@@ -113,6 +117,7 @@ All the basic commands have their corresponding shortcut:
 * v for version
 
 ### Scaffolding Commands
+
 Ruby Raider also supports scaffolding:
 
 * To create a new page object you do: ```raider g page [PAGE_NAME]```
@@ -134,9 +139,10 @@ raider u path [PATH_NAME] - -helper or -h
 
 If you don't specify an option, path will assume you want to change the default path for pages.
 
-
 ### Appium Server Command
+
 To initialise Appium server run this command:
+
 ```ruby
 raider u start_appium
 ```
