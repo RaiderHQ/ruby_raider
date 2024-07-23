@@ -1,4 +1,4 @@
-<%- if %w[selenium watir].include? automation -%>
+<%- if selenium_based? || watir? -%>
 # frozen_string_literal: true
 
 require_relative '../helpers/spec_helper'
@@ -33,13 +33,13 @@ describe 'Login' do
     end
   end
 end
-<%- elsif %w[selenium watir].include? automation -%>
+<%- elsif selenium_based? || watir? -%>
 describe 'Login' do
   subject(:header) { account_page.header.customer_name }
 
   let(:user) { ModelFactory.for('users')['registered user'] }
-  let(:login_page) { Login.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
-  let(:account_page) { Account.new(<% if automation == 'watir' -%>browser<% else -%>driver<% end -%>) }
+  let(:login_page) { Login.new(<% if watir? -%>browser<% else -%>driver<% end -%>) }
+  let(:account_page) { Account.new(<% if watir? -%>browser<% else -%>driver<% end -%>) }
 
   before do
     login_page.visit
@@ -50,7 +50,7 @@ describe 'Login' do
     let(:password) { user['password'] }
 
     it 'can successfully log in' do
-    <%- if visual_automation == true -%>
+    <%- if visual? -%>
       check_page account_page
     <%- else -%>
       expect(header).to eq "Welcome back #{user['name']}"
@@ -62,7 +62,7 @@ describe 'Login' do
     let(:password) { 'wrongPassword' }
 
     it 'cannot log in' do
-    <%- if visual_automation == true -%>
+    <%- if visual? -%>
       check_page login_page
     <%- else -%>
       expect(header).to eq 'Login or register'
@@ -71,25 +71,8 @@ describe 'Login' do
   end
 end
 <%- end -%>
-<%- elsif automation == 'sparkling_ios' -%>
-require_relative '../helpers/spec_helper'
-require_relative '../page_objects/pages/home'
-require_relative '../page_objects/pages/pdp'
-
-class PdpSpec
-  describe 'PDP page' do
-
-    let(:home_page) { Home.new(app) }
-    let(:pdp_page) { Pdp.new(app) }
-
-    it 'shows add to cart button' do
-      home_page.go_to_backpack_pdp
-      expect(pdp_page.add_to_cart_text).to eq 'Add To Cart'
-    end
-  end
-end
 <%- else -%>
-<% if automation == 'cross_platform' -%>
+<% if cross_platform? -%>
 require_relative '../helpers/appium_helper'
 <%- end -%>
 require_relative '../helpers/spec_helper'

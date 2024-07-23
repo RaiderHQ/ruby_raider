@@ -1,4 +1,4 @@
-<% if %w[ios android cross_platform].include?(automation) -%>
+<% if mobile? -%>
 <%= ERB.new(File.read(File.expand_path('./partials/mobile_config.tt', __dir__))).result(binding) %>
 <% else -%>
 <%= ERB.new(File.read(File.expand_path('./partials/web_config.tt', __dir__)), trim_mode: '-').result(binding) %>

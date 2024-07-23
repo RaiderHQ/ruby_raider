@@ -1,22 +1,4 @@
 require_relative '../abstract/page'
-<%- if automation == 'sparkling_ios' -%>
-class Pdp < Page
-
-  # Actions
-
-  def add_to_cart_text
-    add_to_cart_button.wait_until(&:present?).text
-  end
-
-  private
-
-  # Elements
-
-  def add_to_cart_button
-    app.element(accessibility_id: 'Add To Cart button')
-  end
-end
-<%- else -%>
 
 class Pdp < Page
 
@@ -31,7 +13,6 @@ class Pdp < Page
   # Elements
 
   def add_to_cart_button
-    <%= ERB.new(File.read(File.expand_path('./partials/pdp_page_selector.tt', __dir__)), trim_mode: '-').result(binding) %>
+    <%= ERB.new(File.read(File.expand_path('./partials/pdp_page_selector.tt', __dir__)), trim_mode: '-').result(binding) -%>
   end
 end
-<%- end -%>

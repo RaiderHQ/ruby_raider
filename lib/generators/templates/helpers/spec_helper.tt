@@ -1,33 +1,3 @@
-<%- if automation == 'sparkling_ios' -%>
-# frozen_string_literal: true
-
-require 'rspec'
-require 'tmpdir'
-require_relative 'allure_helper'
-require_relative 'driver_helper'
-require 'sparkling_watir'
-
-module SpecHelper
-
-  AllureHelper.configure
-  RSpec.configure do |config|
-    config.formatter = AllureHelper.formatter
-    config.include(DriverHelper)
-    config.before(:each) do
-      app
-    end
-
-    config.after(:each) do |example|
-      example_name = example.description
-      Dir.mktmpdir do |temp_folder|
-        screenshot = app.screenshot.save("#{temp_folder}/#{example_name}.png")
-        AllureHelper.add_screenshot(example_name, screenshot)
-      end
-      app.close
-    end
-  end
-end
-<%- else -%>
 # frozen_string_literal: true
 
 <%- if axe? %>
@@ -36,7 +6,7 @@ require 'axe-rspec'
 require 'rspec'
 require 'tmpdir'
 require_relative 'allure_helper'
-<%- if automation == 'watir' -%>
+<%- if watir? -%>
 require_relative 'browser_helper'
 <%- else -%>
 require_relative 'driver_helper'
@@ -47,16 +17,16 @@ module SpecHelper
   AllureHelper.configure
   RSpec.configure do |config|
     config.formatter = AllureHelper.formatter
-    <% if automation == 'watir' %>config.include(BrowserHelper)<% else %>config.include(DriverHelper)<% end %>
-    <%- if %w[android ios cross_platform].include? automation -%>
+    <% if watir? %>config.include(BrowserHelper)<% else %>config.include(DriverHelper)<% end %>
+    <%- if mobile? -%>
     config.before(:each) do
       driver.start_driver
     end
-    <%- elsif automation == 'selenium' -%>
+    <%- elsif selenium_based? -%>
     config.before(:each) do
       driver.manage.window.maximize
     end
-    <%- elsif automation == 'watir' -%>
+    <%- elsif watir? -%>
     config.before(:each) do
       browser.window.maximize
     end
@@ -72,4 +42,3 @@ module SpecHelper
     end
   end
 end
-<%- end -%>

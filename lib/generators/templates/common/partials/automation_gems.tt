@@ -2,7 +2,7 @@
  when 'watir' %>
 gem 'selenium-webdriver'
 gem 'watir'
-<% when 'selenium' %>
+<% when selenium_based? %>
 gem 'selenium-webdriver'
 <% else %>
 gem 'appium_lib'

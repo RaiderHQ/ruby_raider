@@ -1,61 +1,33 @@
-<%- if automation == 'sparkling_ios' -%>
-# frozen_string_literal: true
-require 'yaml'
-require 'sparkling_watir'
-
-module DriverHelper
-    def app
-      @app ||= create_app
-    end
-
-  private
-
-  def create_app
-    @app = SparklingWatir::App.new(caps: caps)
-  end
-
-  # :reek:UtilityFunction
-  def caps
-    YAML.load_file('config/capabilities.yml')
-  end
-end
-<%- else -%>
 # frozen_string_literal: true
 <% if axe? -%>
 require 'axe-selenium'
 <% end -%>
 require 'yaml'
-<% if automation == 'selenium' -%>
+<%- unless axe? %>
+<%- if selenium_based? -%>
 require 'active_support/inflector'
 require 'selenium-webdriver'
-<% else -%>
+<%- else -%>
 require 'appium_lib'
-<% end -%>
+<%- end -%>
+<%- end -%>
 
 module DriverHelper
-  <% if automation == 'selenium' && axe? == false -%>
+  <%- if selenium_based? && !axe? -%>
   def driver(*opts)
     @driver ||= create_driver(*opts)
   end
-  <% elsif axe? == true -%>
+  <%- elsif axe? -%>
   def driver(browser = :chrome, js_path = nil, skip_iframes = nil)
     @driver ||= create_driver(browser, js_path, skip_iframes)
   end
-  <% else -%>
+  <%- else -%>
   def driver
-      @driver ||= create_driver
+    @driver ||= create_driver
   end
   <%- end -%>
 
   private
 
   <%= ERB.new(File.read(File.expand_path('./partials/driver_and_options.tt', __dir__)), trim_mode: '-').result(binding).strip! %>
-
-<%- if automation != 'selenium'  -%>
-  # :reek:UtilityFunction
-  def caps
-    YAML.load_file('config/capabilities.yml')
-  end
-<%- end -%>
 end
-<%- end -%>
