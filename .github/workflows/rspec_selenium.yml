@@ -22,7 +22,7 @@ jobs:
         run: bin/raider new rspec_selenium -p framework:rspec automation:selenium
 
       - name: Setup Raider tests
-        run: cd rspec_selenium && bundle install && raider utility browser_options chrome headless && ls
+        run: cd rspec_selenium && bundle install && raider utility browser_options chrome headless
 
       - name: Run Raider tests
-        run: rspec spec/
+        run: cd rspec_selenium && rspec spec/
