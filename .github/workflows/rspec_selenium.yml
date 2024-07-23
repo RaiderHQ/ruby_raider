@@ -1,28 +1,28 @@
-name: Rspec Selenium Test on Ubuntu
+name: Rspec Watir Test on Ubuntu
 on: [ pull_request ]
 
 jobs:
   build:
-    name: Integration pipeline
+    name: Selenium-Rspec pipeline
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@f20f1eae726df008313d2e0d78c5e602562a1bcf
-        with:
-          ruby-version: head
-
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.1.0
 
       - name: Install gems
         run: bundle install
 
       - name: Create Raider framework
-        run: bin/raider new rspec_selenium -p framework:rspec automation:selenium
+        run: bin/raider new rspec_watir -p framework:rspec automation:watir
 
       - name: Setup Raider tests
-        run: cd rspec_selenium && bundle install && raider utility browser_options chrome headless
+        run: cd rspec_watir && bundle install && raider utility browser_options chrome headless
 
       - name: Run Raider tests
-        run: cd rspec_selenium && rspec spec/
+        run: cd rspec_watir && rspec spec/
