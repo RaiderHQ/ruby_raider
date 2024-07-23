@@ -18,11 +18,5 @@ jobs:
       - name: Install gems
         run: bundle install
 
-      - name: Create Raider framework
-        run: bin/raider new rspec_watir -p framework:rspec automation:watir
-
-      - name: Setup Raider tests
-        run: cd rspec_watir && bundle install && raider utility browser_options chrome headless
-
-      - name: Run Raider tests
-        run: cd rspec_watir && rspec spec/
+      - name: Build and run system tests
+        run: spec spec/system/selenium_rspec_spec.rb
