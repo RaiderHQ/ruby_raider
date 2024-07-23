@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../../../lib/generators/common_generator'
-require_relative '../../spec_helper'
+require_relative '../spec_helper'
 
 describe CommonGenerator do
   shared_examples 'creates common files' do |name|

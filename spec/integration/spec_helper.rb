@@ -2,8 +2,8 @@
 
 require 'fileutils'
 require 'rspec'
-require_relative '../lib/generators/invoke_generators'
-require_relative 'support/settings_helper'
+require_relative '../../lib/generators/invoke_generators'
+require_relative 'settings_helper'
 
 AUTOMATION_TYPES = %w[android ios selenium watir cross_platform axe applitools].freeze
 FRAMEWORKS = %w[cucumber rspec].freeze
@@ -23,10 +23,8 @@ RSpec.configure do |config|
   config.after(:all) do
     FRAMEWORKS.each do |framework|
       AUTOMATION_TYPES.each do |automation|
-        [true, false].each do |visual|
-          settings = create_settings(framework:, automation:, visual:)
-          FileUtils.rm_rf(settings[:name])
-        end
+        settings = create_settings(framework:, automation:)
+        FileUtils.rm_rf(settings[:name])
       end
     end
   end

@@ -4,7 +4,7 @@ require 'yaml'
 require_relative '../../../lib/generators/common_generator'
 require_relative '../../../lib/commands/utility_commands'
 require_relative '../../../lib/scaffolding/scaffolding'
-require_relative '../../spec_helper'
+require_relative '../spec_helper'
 
 describe UtilityCommands do
   let(:utility) { described_class }

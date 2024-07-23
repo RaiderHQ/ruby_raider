@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../../../lib/generators/rspec/rspec_generator'
-require_relative '../../spec_helper'
+require_relative '../spec_helper'
 
 describe RspecGenerator do
   shared_examples 'creates factory files' do |project_name|
