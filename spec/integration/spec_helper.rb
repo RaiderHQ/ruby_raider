@@ -11,6 +11,7 @@ FRAMEWORKS = %w[cucumber rspec].freeze
 RSpec.configure do |config|
   config.include(InvokeGenerators)
   config.include(SettingsHelper)
+  # rubocop:disable RSpec/BeforeAfterAll
   config.before(:all) do
     FRAMEWORKS.each do |framework|
       AUTOMATION_TYPES.each do |automation|
@@ -29,3 +30,4 @@ RSpec.configure do |config|
     end
   end
 end
+# rubocop:enable RSpec/BeforeAfterAll

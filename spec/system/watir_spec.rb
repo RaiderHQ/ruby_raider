@@ -34,6 +34,7 @@ describe 'Watir based frameworks' do
   private
 
   def run_tests_with(framework)
-    system("cd selenium_#{framework} && bundle install && raider utility browser_options chrome headless && bundle exec #{framework}")
+    folder = framework == 'rspec' ? 'spec' : 'features'
+    system("cd watir_#{framework} && bundle install && raider utility browser_options chrome headless && bundle exec #{framework} #{folder}")
   end
 end
