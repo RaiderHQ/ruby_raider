@@ -2,41 +2,27 @@ name: Rspec Watir Test on Ubuntu
 on: [ pull_request ]
 
 jobs:
-  ubuntu-job:
-    name: BrowserStack Test on Ubuntu
+  build:
+    name: Integration pipeline
     runs-on: ubuntu-latest
+
     steps:
-      - name: BrowserStack Env Setup
-        uses: browserstack/github-actions/setup-env@master
-        with:
-          username: ${{ secrets.BROWSERSTACK_USERNAME }}
-          access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-          build-name: BUILD_INFO
-          project-name: REPO_NAME
-      - name: BrowserStackLocal Setup
-        uses: browserstack/github-actions/setup-local@master
-        with:
-          local-testing: start
-
-
-      - name: Checkout the repository
-        uses: actions/checkout@v2
-
       - name: Set up Ruby
         uses: ruby/setup-ruby@f20f1eae726df008313d2e0d78c5e602562a1bcf
         with:
           ruby-version: head
 
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
       - name: Install gems
         run: bundle install
 
       - name: Create Raider framework
-        run: bin/raider new rspec_watir -p framework:rspec automation:watir visual:false axe:true
+        run: bin/raider new rspec_watir -p framework:rspec automation:watir
+
+      - name: Setup Raider tests
+        run: cd rspec_watir && bundle install && raider utility browser_options chrome headless
 
       - name: Run Raider tests
-        run: cd rspec_watir && bundle install && raider utility browser_options chrome headless && rspec spec/
-
-      - name: BrowserStackLocal Stop
-        uses: browserstack/github-actions/setup-local@master
-        with:
-          local-testing: stop
+        run: rspec rspec_watir/spec/
