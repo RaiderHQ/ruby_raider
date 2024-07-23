@@ -1,4 +1,4 @@
-name: Watir Test on Ubuntu
+name: Watir Tests on Ubuntu
 on: [ pull_request ]
 
 jobs:
