@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../../../lib/generators/cucumber/cucumber_generator'
-require_relative '../../spec_helper'
+require_relative '../spec_helper'
 
 describe CucumberGenerator do
   shared_examples 'creates cucumber files' do |project_name, file_name|
@@ -49,7 +49,7 @@ describe CucumberGenerator do
   end
 
   context 'with cucumber and appium cross platform' do
-    include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}", 'home'
+    include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}", 'home'
   end
 
   context 'with cucumber and selenium' do

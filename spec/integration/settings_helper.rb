@@ -4,13 +4,11 @@
 module SettingsHelper
   def create_settings(options)
     automation = options[:automation]
-    visual = options[:visual]
     framework = options[:framework]
     {
       automation:,
       framework:,
-      name: "#{framework}_#{automation}#{'_visual' if visual}",
-      visual:
+      name: "#{framework}_#{automation}"
     }
   end
 end
