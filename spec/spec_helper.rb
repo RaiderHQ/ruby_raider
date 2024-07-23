@@ -5,7 +5,7 @@ require 'rspec'
 require_relative '../lib/generators/invoke_generators'
 require_relative 'support/settings_helper'
 
-AUTOMATION_TYPES = %w[android ios selenium watir cross_platform].freeze
+AUTOMATION_TYPES = %w[android ios selenium watir cross_platform axe applitools].freeze
 FRAMEWORKS = %w[cucumber rspec].freeze
 
 RSpec.configure do |config|
@@ -14,10 +14,8 @@ RSpec.configure do |config|
   config.before(:all) do
     FRAMEWORKS.each do |framework|
       AUTOMATION_TYPES.each do |automation|
-        [true, false].each do |visual|
-          settings = create_settings(framework:, automation:, visual:)
-          generate_framework(settings)
-        end
+        settings = create_settings(framework:, automation:)
+        generate_framework(settings)
       end
     end
   end

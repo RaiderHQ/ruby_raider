@@ -49,7 +49,7 @@ describe CucumberGenerator do
   end
 
   context 'with cucumber and appium cross platform' do
-    include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}", 'home'
+    include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}", 'home'
   end
 
   context 'with cucumber and selenium' do

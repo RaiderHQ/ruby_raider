@@ -61,17 +61,10 @@ describe CommonGenerator do
   end
 
   context 'with rspec, selenium and applitools' do
-    include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}_visual"
-    include_examples 'creates a config file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}_visual"
-    include_examples 'creates an options file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}_visual"
-    include_examples 'creates a gitignore file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}_visual"
-  end
-
-  context 'with rspec, watir and applitools' do
-    include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}_visual"
-    include_examples 'creates a config file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}_visual"
-    include_examples 'creates an options file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}_visual"
-    include_examples 'creates a gitignore file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}_visual"
+    include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
+    include_examples 'creates a config file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
+    include_examples 'creates an options file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
+    include_examples 'creates a gitignore file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
   end
 
   context 'with cucumber and selenium' do
@@ -115,16 +108,16 @@ describe CommonGenerator do
   end
 
   context 'with cucumber and appium cross platform' do
-    include_examples 'creates common files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates a capabilities file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates a config file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates a gitignore file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
+    include_examples 'creates common files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
+    include_examples 'creates a capabilities file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
+    include_examples 'creates a config file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
+    include_examples 'creates a gitignore file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
   end
 
   context 'with rspec and appium cross platform' do
-    include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates a capabilities file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates a config file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates a gitignore file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
+    include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}"
+    include_examples 'creates a capabilities file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}"
+    include_examples 'creates a config file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}"
+    include_examples 'creates a gitignore file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}"
   end
 end

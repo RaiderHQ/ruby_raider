@@ -35,7 +35,7 @@ describe HelpersGenerator do
   end
 
   shared_examples 'creates cross platform helpers' do |name|
-    it 'creates a browser helper file' do
+    it 'creates an appium helper file' do
       expect(File).to exist("#{name}/helpers/appium_helper.rb")
     end
   end
@@ -59,9 +59,9 @@ describe HelpersGenerator do
   end
 
   context 'with rspec, selenium and applitools' do
-    include_examples 'creates common visual helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}_visual"
-    include_examples 'creates selenium helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}_visual"
-    include_examples 'creates rspec helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}_visual"
+    include_examples 'creates common visual helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
+    include_examples 'creates selenium helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
+    include_examples 'creates rspec helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
   end
 
   context 'with cucumber and selenium' do
@@ -101,16 +101,16 @@ describe HelpersGenerator do
   end
 
   context 'with rspec and appium cross platform' do
-    include_examples 'creates common helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates selenium helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates rspec helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates cross platform helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
+    include_examples 'creates common helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}"
+    include_examples 'creates selenium helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}"
+    include_examples 'creates rspec helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}"
+    include_examples 'creates cross platform helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}"
   end
 
   context 'with cucumber and appium cross platform' do
-    include_examples 'creates common helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates selenium helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates cucumber helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates cross platform helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
+    include_examples 'creates common helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
+    include_examples 'creates selenium helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
+    include_examples 'creates cucumber helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
+    include_examples 'creates cross platform helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
   end
 end

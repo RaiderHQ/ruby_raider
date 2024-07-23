@@ -48,7 +48,7 @@ describe AutomationGenerator do
 
   context 'with rspec and selenium' do
     include_examples 'creates web automation framework', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
-    include_examples 'creates web visual framework', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}_visual"
+    include_examples 'creates web visual framework', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
   end
 
   context 'with rspec and watir' do
@@ -57,7 +57,7 @@ describe AutomationGenerator do
 
   context 'with cucumber and selenium' do
     include_examples 'creates web automation framework', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}"
-    include_examples 'creates web visual framework', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}_visual"
+    include_examples 'creates web visual framework', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
   end
 
   context 'with cucumber and watir' do
@@ -81,6 +81,6 @@ describe AutomationGenerator do
   end
 
   context 'with cucumber and appium cross platform' do
-    include_examples 'creates mobile automation framework', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
+    include_examples 'creates mobile automation framework', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
   end
 end

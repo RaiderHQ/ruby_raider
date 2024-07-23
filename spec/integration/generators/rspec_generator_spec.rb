@@ -44,6 +44,6 @@ describe RspecGenerator do
 
   context 'with rspec and appium cross platform' do
     include_examples 'creates rspec files examples',
-                     "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}", 'pdp'
+                     "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}", 'pdp'
   end
 end
