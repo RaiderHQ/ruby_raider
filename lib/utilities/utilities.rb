@@ -45,7 +45,7 @@ module Utilities
       args = opts.flatten
       browser_args = config['browser_arguments']
       browser = args.first&.to_sym
-      browser_args[browser] = browser_args[browser] + args[1..]
+      browser_args[browser] = browser_args[browser] + args[1..] if browser_args.key?(browser)
       overwrite_yaml
     end
 

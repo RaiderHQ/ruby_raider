@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../../../lib/generators/rspec/rspec_generator'
-require_relative '../../spec_helper'
+require_relative '../spec_helper'
 
 describe RspecGenerator do
   shared_examples 'creates factory files' do |project_name|
@@ -44,6 +44,6 @@ describe RspecGenerator do
 
   context 'with rspec and appium cross platform' do
     include_examples 'creates rspec files examples',
-                     "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}", 'pdp'
+                     "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}", 'pdp'
   end
 end
