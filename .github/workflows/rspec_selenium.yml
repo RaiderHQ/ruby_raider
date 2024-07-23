@@ -1,4 +1,4 @@
-name: Rspec Watir Test on Ubuntu
+name: Rspec Selenium Test on Ubuntu
 on: [ pull_request ]
 
 jobs:
@@ -19,4 +19,4 @@ jobs:
         run: bundle install
 
       - name: Build and run system tests
-        run: spec spec/system/selenium_rspec_spec.rb
+        run: rspec spec/system/selenium_rspec_spec.rb
