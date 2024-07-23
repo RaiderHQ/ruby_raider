@@ -22,7 +22,7 @@ jobs:
         run: bin/raider new rspec_watir -p framework:rspec automation:watir
 
       - name: Setup Raider tests
-        run: cd rspec_watir && bundle install && raider utility browser_options chrome headless
+        run: cd rspec_watir && bundle install && raider utility browser_options chrome headless && ls
 
       - name: Run Raider tests
-        run: rspec rspec_watir/spec/
+        run: rspec spec/
