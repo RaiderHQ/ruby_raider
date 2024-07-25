@@ -1,0 +1,17 @@
+module RubyRaider
+  class UtilityCommands < Thor
+    def path: (String default_path) -> String
+
+    def url: (String default_url) -> String
+
+    def browser: (String default_browser) -> File
+
+    def browser_options: (*String opts) -> File
+
+    def raid: () -> bool?
+
+    def platform: (String platform) -> String
+
+    def start_appium: () -> bool?
+  end
+end

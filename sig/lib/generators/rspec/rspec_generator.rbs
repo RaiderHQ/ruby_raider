@@ -1,0 +1,9 @@
+module RubyRaider
+  class RspecGenerator < Generator
+    def generate_login_spec: () -> File
+
+    def generate_pdp_spec: () -> File
+
+    def generate_account_spec: () -> File
+  end
+end

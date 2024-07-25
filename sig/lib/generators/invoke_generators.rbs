@@ -1,0 +1,11 @@
+module RubyRaider
+  module InvokeGenerators
+    def self?.generate_framework: (Hash[Symbol, String] structure) -> void
+
+    def self?.add_generator: (Array[String] generators, *String gens) -> untyped
+
+    def self?.invoke_generator: (Hash[Symbol, String] structure) -> void
+
+    def self?.to_bool: (String string) -> bool
+  end
+end

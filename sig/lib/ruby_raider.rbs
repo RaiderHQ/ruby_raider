@@ -1,0 +1,11 @@
+# :reek:FeatureEnvy { enabled: false }
+# :reek:UtilityFunction { enabled: false }
+module RubyRaider
+  class Raider < Thor
+    def current_version: -> String
+
+    def new: (String project_name) -> void
+
+    def version: () -> String?
+  end
+end

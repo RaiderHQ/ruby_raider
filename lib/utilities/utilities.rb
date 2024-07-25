@@ -2,10 +2,10 @@
 
 require 'yaml'
 
-module Utilities
-  @path = 'config/config.yml'
+module RubyRaider
+  module Utilities
+    module_function
 
-  class << self
     def browser=(browser)
       config['browser'] = browser
       overwrite_yaml
@@ -45,12 +45,12 @@ module Utilities
       args = opts.flatten
       browser_args = config['browser_arguments']
       browser = args.first&.to_sym
-      browser_args[browser] = browser_args[browser] + args[1..] if browser_args.key?(browser)
+      browser_args[browser] = browser_args[browser] + args[1..] if browser_args.&key?(browser)
       overwrite_yaml
     end
 
     def delete_browser_options
-      config.delete('browser_options')
+      config&.delete('browser_options')
       overwrite_yaml
     end
 
@@ -59,19 +59,21 @@ module Utilities
       system "#{command} #{opts}"
     end
 
-    def parallel_run(opts = nil, _settings = nil)
+    def parallel_run(opts = nil)
       command = File.directory?('spec') ? 'parallel_rspec spec/' : 'parallel_cucumber features'
       system "#{command} #{opts}"
     end
 
     private
 
+    PATH = 'config/config.yml'
+
     def overwrite_yaml
-      File.open(@path, 'w') { |file| YAML.dump(config, file) }
+      File.open(PATH, 'w') { |file| YAML.dump(config, file) }
     end
 
     def config
-      @config ||= File.exist?(@path) ? YAML.load_file(@path) : nil
+      @config ||= File.exist?(PATH) ? YAML.load_file(PATH) : nil
     end
   end
 end

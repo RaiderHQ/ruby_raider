@@ -1,0 +1,35 @@
+module RubyRaider
+  module Utilities
+    @config: String?
+
+    def self?.browser=: (String browser) -> File
+
+    def self?.page_path=: (String path) -> File
+
+    def self?.spec_path=: (String path) -> File
+
+    def self?.feature_path=: (String path) -> File
+
+    def self?.helper_path=: (String path) -> File
+
+    def self?.url=: (String url) -> File
+
+    def self?.platform=: (String platform) -> File
+
+    def self?.browser_options=: (*String opts) -> File
+
+    def self?.delete_browser_options: () -> File
+
+    def self?.run: (Array[String]? opts) -> bool?
+
+    def self?.parallel_run: (Array[String]? opts) -> bool?
+
+    private
+
+    PATH: String
+
+    def self?.overwrite_yaml: () -> File
+
+    def self?.config: () -> String?
+  end
+end

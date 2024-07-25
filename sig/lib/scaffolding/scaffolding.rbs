@@ -1,0 +1,33 @@
+module RubyRaider
+  class Scaffolding < Thor::Group
+    include Thor::Actions
+
+    def self.source_root: () -> String
+
+    def generate_page: () -> File
+
+    def generate_feature: () -> File
+
+    def generate_spec: () -> File
+
+    def generate_helper: () -> File
+
+    def generate_steps: () -> File
+
+    def generate_config: () -> File
+
+    def delete_page: () -> void
+
+    def delete_feature: () -> void
+
+    def delete_spec: () -> void
+
+    def delete_helper: () -> void
+
+    def delete_steps: () -> void
+
+    def delete_config: () -> void
+
+    def default_path: (String standard_path, String file_type) -> String
+  end
+end

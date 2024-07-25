@@ -1,0 +1,37 @@
+module RubyRaider
+  class MenuGenerator
+    @prompt: TTY::Prompt
+
+    @name: String
+
+    attr_reader prompt: TTY::Prompt
+
+    attr_reader name: String
+
+    include InvokeGenerators
+
+    def initialize: (String project_name) -> void
+
+    def generate_choice_menu: () -> Array[String]
+
+    def choose_test_framework: (String automation) -> Array[String]
+
+    def set_up_framework: (Hash[Symbol, String] options) -> bool?
+
+    def choose_mobile_platform: () -> Array[String]
+
+    private
+
+    def select_test_framework: (String automation) -> Array[String]
+
+    FrameworkOptions: untyped
+
+    def create_framework_options: (Hash[Symbol, String] params) -> untyped
+
+    def create_framework: (untyped framework, untyped automation_type) -> untyped
+
+    def yes_no_menu_choices: () -> { Yes: bool, No: bool, Quit: bool }
+
+    def select_automation_framework: (Symbol menu) -> Array[String]
+  end
+end

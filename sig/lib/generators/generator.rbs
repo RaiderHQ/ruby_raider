@@ -1,0 +1,43 @@
+module RubyRaider
+  class Generator < Thor::Group
+    @_initializer: Array[String]
+
+    include Thor::Actions
+
+    def self.source_paths: () -> Array[String]
+
+    def args: () -> String?
+
+    def cucumber?: () -> bool
+
+    def cross_platform?: () -> bool
+
+    def mobile?: () -> bool
+
+    def single_platform?: () -> bool
+
+    def ios?: () -> bool
+
+    def android?: () -> bool
+
+    def rspec?: () -> bool
+
+    def selenium?: () -> bool
+
+    def visual?: () -> bool
+
+    def watir?: () -> bool
+
+    def web?: () -> bool
+
+    def axe?: () -> bool
+
+    def selenium_based?: () -> bool
+
+    private
+
+    def _initializer: () -> Array[String]
+
+    alias initializer _initializer
+  end
+end

@@ -1,0 +1,4 @@
+module TTY
+  class Prompt
+  end
+end

@@ -1,0 +1,35 @@
+module RubyRaider
+  class AutomationGenerator < Generator
+    def generate_automation_files: () -> File
+
+    private
+
+    def generate_pages: () -> File
+
+    def generate_components: () -> File
+
+    def generate_model_files: () -> File
+
+    def generate_abstract_page: () -> File
+
+    def generate_abstract_component: () -> File
+
+    def generate_appium_settings: () -> File
+
+    def generate_visual_options: () -> File
+
+    def generate_login_page: () -> File
+
+    def generate_account_page: () -> File
+
+    def generate_home_page: () -> File
+
+    def generate_pdp_page: () -> File
+
+    def generate_header_component: () -> File
+
+    def generate_model_factory: () -> File
+
+    def generate_model_data: () -> File
+  end
+end

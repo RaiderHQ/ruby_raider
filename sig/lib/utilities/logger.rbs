@@ -1,0 +1,9 @@
+module RubyRaider
+  module Logger
+    self.@logger: Logger
+
+    extend Forwardable
+
+    def self.logger: () -> Logger
+  end
+end

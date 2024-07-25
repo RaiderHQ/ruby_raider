@@ -1,0 +1,21 @@
+module RubyRaider
+  class HelpersGenerator < Generator
+    def generate_helpers: () -> File
+
+    private
+
+    def generate_allure_helper: () -> File
+
+    def generate_browser_helper: () -> File
+
+    def generate_spec_helper: () -> File
+
+    def generate_driver_helper: () -> File
+
+    def generate_appium_helper: () -> File
+
+    def generate_visual_helper: () -> File
+
+    def generate_visual_spec_helper: () -> File
+  end
+end

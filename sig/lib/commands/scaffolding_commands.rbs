@@ -1,0 +1,19 @@
+class ScaffoldingCommands < Thor
+  def delete_scaffolding: -> File
+
+  def generate_scaffolding: -> File
+
+  def load_config_path: -> String?
+
+  def page: (String name) -> File
+
+  def feature: (String name) -> File
+
+  def spec: (String name) -> File
+
+  def helper: (String name) -> File
+
+  def steps: (String name) -> File
+
+  def scaffold: (String name) -> File
+end

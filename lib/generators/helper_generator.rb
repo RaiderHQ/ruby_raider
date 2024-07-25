@@ -2,58 +2,60 @@
 
 require_relative 'generator'
 
-class HelpersGenerator < Generator
-  def generate_helpers
-    generate_browser_helper
-    generate_driver_helper
-    generate_appium_helper
-    generate_allure_helper
+module RubyRaider
+  class HelpersGenerator < Generator
+    def generate_helpers
+      generate_browser_helper
+      generate_driver_helper
+      generate_appium_helper
+      generate_allure_helper
 
-    if visual?
-      generate_visual_helper
-      generate_visual_spec_helper
-    else
-      generate_spec_helper
+      if visual?
+        generate_visual_helper
+        generate_visual_spec_helper
+      else
+        generate_spec_helper
+      end
     end
-  end
 
-  private
+    private
 
-  def generate_allure_helper
-    template('helpers/allure_helper.tt', "#{name}/helpers/allure_helper.rb")
-  end
+    def generate_allure_helper
+      template('helpers/allure_helper.tt', "#{name}/helpers/allure_helper.rb")
+    end
 
-  def generate_browser_helper
-    return if selenium_based? || mobile?
+    def generate_browser_helper
+      return if selenium_based? || mobile?
 
-    template('helpers/browser_helper.tt', "#{name}/helpers/browser_helper.rb")
-  end
+      template('helpers/browser_helper.tt', "#{name}/helpers/browser_helper.rb")
+    end
 
-  def generate_spec_helper
-    return if cucumber?
+    def generate_spec_helper
+      return if cucumber?
 
-    template('helpers/spec_helper.tt', "#{name}/helpers/spec_helper.rb")
-  end
+      template('helpers/spec_helper.tt', "#{name}/helpers/spec_helper.rb")
+    end
 
-  def generate_driver_helper
-    return if watir?
+    def generate_driver_helper
+      return if watir?
 
-    template('helpers/driver_helper.tt', "#{name}/helpers/driver_helper.rb")
-  end
+      template('helpers/driver_helper.tt', "#{name}/helpers/driver_helper.rb")
+    end
 
-  def generate_appium_helper
-    return unless cross_platform?
+    def generate_appium_helper
+      return unless cross_platform?
 
-    template('helpers/appium_helper.tt', "#{name}/helpers/appium_helper.rb")
-  end
+      template('helpers/appium_helper.tt', "#{name}/helpers/appium_helper.rb")
+    end
 
-  def generate_visual_helper
-    template('helpers/visual_helper.tt', "#{name}/helpers/visual_helper.rb")
-  end
+    def generate_visual_helper
+      template('helpers/visual_helper.tt', "#{name}/helpers/visual_helper.rb")
+    end
 
-  def generate_visual_spec_helper
-    return if cucumber?
+    def generate_visual_spec_helper
+      return if cucumber?
 
-    template('helpers/visual_spec_helper.tt', "#{name}/helpers/spec_helper.rb")
+      template('helpers/visual_spec_helper.tt', "#{name}/helpers/spec_helper.rb")
+    end
   end
 end

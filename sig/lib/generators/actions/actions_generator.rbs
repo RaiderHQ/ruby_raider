@@ -1,0 +1,5 @@
+module RubyRaider
+  class ActionsGenerator < Generator
+    def generate_actions_file: () -> File
+  end
+end

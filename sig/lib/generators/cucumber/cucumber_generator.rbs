@@ -1,0 +1,19 @@
+module RubyRaider
+  class CucumberGenerator < Generator
+    @template_name: String
+
+    def generate_feature: () -> File
+
+    def generate_steps: () -> File
+
+    def generate_user_factory: () -> File
+
+    def generate_env_file: () -> File
+
+    def generate_world: () -> File
+
+    def generate_cucumber_file: () -> File
+
+    def template_name: () -> String
+  end
+end

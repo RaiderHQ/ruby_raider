@@ -1,0 +1,19 @@
+module RubyRaider
+  class CommonGenerator < Generator
+    def generate_readme_file: () -> File
+
+    def generate_config_file: () -> File
+
+    def generate_rake_file: () -> File
+
+    def generate_gemfile: () -> File
+
+    def generate_reek_file: () -> File
+
+    def generate_rubocop_file: () -> File
+
+    def generate_gitignore_file: () -> File
+
+    def create_allure_folder: () -> File
+  end
+end
