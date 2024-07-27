@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require 'great_axe'
+require_relative '../lib/plugin/plugin'
+require_relative '../lib/commands/plugin_commands'
 require_relative '../lib/commands/scaffolding_commands'
 require_relative '../lib/commands/utility_commands'
 
@@ -9,7 +12,7 @@ module RubyRaider
   class Raider < Thor
     desc 'new [PROJECT_NAME]', 'Creates a new framework based on settings picked'
     option :parameters,
-           type: :hash, required: false, desc: 'Parameters to avoid using the menu', aliases: '-p'
+           type: :hash, required: false, desc: 'Parameters to avoid using the menu', aliases: 'p'
 
     def new(project_name)
       params = options[:parameters]
@@ -22,7 +25,7 @@ module RubyRaider
       MenuGenerator.new(project_name).generate_choice_menu
     end
 
-    map '-n' => 'new'
+    map 'n' => 'new'
 
     desc 'version', 'It shows the version of Ruby Raider you are currently using'
 
@@ -40,8 +43,16 @@ module RubyRaider
     subcommand 'utility', UtilityCommands
     map 'u' => 'utility'
 
+    desc 'plugin', 'Provides access to all the plugin commands'
+    subcommand 'plugin', PluginCommands
+    map 'pl' => 'plugin'
+
     no_commands do
       def current_version = File.read(File.expand_path('version', __dir__)).strip
+
+      def load_installed_plugins
+
+      end
     end
   end
 end
