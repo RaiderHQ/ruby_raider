@@ -49,10 +49,6 @@ module RubyRaider
 
     no_commands do
       def current_version = File.read(File.expand_path('version', __dir__)).strip
-
-      def load_installed_plugins
-
-      end
     end
   end
 end
