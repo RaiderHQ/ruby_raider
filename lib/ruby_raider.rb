@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'great_axe'
 require_relative '../lib/plugin/plugin'
 require_relative '../lib/commands/plugin_commands'
+require_relative '../lib/commands/loaded_commands'
 require_relative '../lib/commands/scaffolding_commands'
 require_relative '../lib/commands/utility_commands'
 
@@ -46,6 +46,12 @@ module RubyRaider
     desc 'plugin', 'Provides access to all the plugin commands'
     subcommand 'plugin', PluginCommands
     map 'pl' => 'plugin'
+
+    if  File.readlines(File.expand_path('/Users/apeque01/Desktop/main_folder/Projects/open_source/ruby_raider/lib/commands/loaded_commands.rb')).any? do |line|
+      line.include?('subcommand')
+    end
+      RubyRaider::LoadedCommands.start
+    end
 
     no_commands do
       def current_version = File.read(File.expand_path('version', __dir__)).strip

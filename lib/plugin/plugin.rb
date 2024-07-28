@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'yaml'
+require_relative 'plugin_exposer'
 
 module RubyRaider
   module Plugin
@@ -12,6 +13,7 @@ module RubyRaider
         pp "Adding #{plugin_name}..."
         add_plugin_to_gemfile(plugin_name)
         system('bundle install')
+        PluginExposer.expose_commands(plugin_name)
         pp "The plugin #{plugin_name} is added"
       end
 
@@ -20,6 +22,7 @@ module RubyRaider
 
         pp "Deleting #{plugin_name}..."
         remove_plugin_from_gemfile(plugin_name)
+        PluginExposer.remove_command(plugin_name)
         system('bundle install')
         pp "The plugin #{plugin_name} is deleted"
       end
