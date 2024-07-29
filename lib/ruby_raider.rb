@@ -10,6 +10,16 @@ require_relative '../lib/commands/utility_commands'
 # :reek:UtilityFunction { enabled: false }
 module RubyRaider
   class Raider < Thor
+    no_tasks do
+      def self.plugin_commands?
+        File.readlines(File.expand_path('/Users/apeque01/Desktop/main_folder/Projects/open_source/ruby_raider/lib/commands/loaded_commands.rb')).any? do |line|
+          line.include?('subcommand')
+        end
+      end
+
+      def current_version = File.read(File.expand_path('version', __dir__)).strip
+    end
+
     desc 'new [PROJECT_NAME]', 'Creates a new framework based on settings picked'
     option :parameters,
            type: :hash, required: false, desc: 'Parameters to avoid using the menu', aliases: 'p'
@@ -43,18 +53,14 @@ module RubyRaider
     subcommand 'utility', UtilityCommands
     map 'u' => 'utility'
 
-    desc 'plugin', 'Provides access to all the plugin commands'
-    subcommand 'plugin', PluginCommands
-    map 'pl' => 'plugin'
+    desc 'plugin_manager', 'Provides access to all the commands to manager your plugins'
+    subcommand 'plugin_manager', PluginCommands
+    map 'pm' => 'plugin_manager'
 
-    if  File.readlines(File.expand_path('/Users/apeque01/Desktop/main_folder/Projects/open_source/ruby_raider/lib/commands/loaded_commands.rb')).any? do |line|
-      line.include?('subcommand')
-    end
-      RubyRaider::LoadedCommands.start
-    end
-
-    no_commands do
-      def current_version = File.read(File.expand_path('version', __dir__)).strip
+    if plugin_commands?
+      desc 'plugins', 'loaded plugin commands'
+      subcommand 'plugins', LoadedCommands
+      map 'ps' => 'plugins'
     end
   end
 end
