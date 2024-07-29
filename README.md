@@ -10,11 +10,11 @@
 <br />
 <div align="center">
    <a href="https://github.com/RubyRaider/ruby_raider">
-   <img src="https://rubyraiderdotcom.files.wordpress.com/2022/05/logo_transparent_background-1.png" alt="Logo">
+   <img src="	https://ruby-raider.com/wp-content/uploads/2022/05/logo-160x160.png?w=890" alt="Logo">
    </a>
    <h1 align="center">Ruby Raider</h1>
    <p align="center">
-      This is a gem to make setup and start of UI automation projects easier.
+      This is a gem to make up and start UI automation projects easier.
       <br />
       <a href="https://github.com/RubyRaider/ruby_raider#getting-started"><strong>Explore the docs »</strong></a>
       <br />
