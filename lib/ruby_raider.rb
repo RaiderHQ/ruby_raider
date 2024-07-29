@@ -12,7 +12,7 @@ module RubyRaider
   class Raider < Thor
     no_tasks do
       def self.plugin_commands?
-        File.readlines(File.expand_path('/Users/apeque01/Desktop/main_folder/Projects/open_source/ruby_raider/lib/commands/loaded_commands.rb')).any? do |line|
+        File.readlines(File.expand_path('commands/loaded_commands.rb', __dir__)).any? do |line|
           line.include?('subcommand')
         end
       end
