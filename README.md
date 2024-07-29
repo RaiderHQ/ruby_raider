@@ -10,7 +10,7 @@
 <br />
 <div align="center">
    <a href="https://github.com/RubyRaider/ruby_raider">
-   <img src="	https://ruby-raider.com/wp-content/uploads/2022/05/logo-160x160.png?w=890" alt="Logo">
+   <img src="https://ruby-raider.com/wp-content/uploads/2022/05/logo-160x160.png?w=890" alt="Logo">
    </a>
    <h1 align="center">Ruby Raider</h1>
    <p align="center">
