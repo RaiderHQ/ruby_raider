@@ -13,8 +13,6 @@
    <img src="https://ruby-raider.com/wp-content/uploads/2022/05/logo-160x160.png?w=890" alt="Logo" style="width:600px;">
    </a>
    <p align="center">
-      This is a gem to make up and start UI automation projects easier.
-      <br />
       <a href="https://github.com/RubyRaider/ruby_raider#getting-started"><strong>Explore the docs »</strong></a>
       <br />
       <br />
