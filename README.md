@@ -99,7 +99,7 @@ Where [frameworks] is a comma separated list of the frameworks you want to use.
 
 ```ruby
 Commands :
-  raider generate # Provides access to all the scaffolding commands
+raider generate # Provides access to all the scaffolding commands
 raider help [COMMAND] # Describe available commands or one specific command
 raider new [PROJECT_NAME] # Creates a new framework based on settings picked
 raider utility # Provides access to all the utility commands 
