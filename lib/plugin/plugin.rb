@@ -52,19 +52,14 @@ module RubyRaider
 
       def add_plugin_to_gemfile(plugin_name)
         File.open('Gemfile', 'a') do |file|
-          file.puts "\n# Ruby Raider Plugins\n" unless File.readlines('Gemfile').grep(/Ruby Raider Plugins/).any?
-          file.puts "gem '#{plugin_name}'" unless File.readlines('Gemfile').grep(/#{plugin_name}/).any?
+          file.puts "\n# Ruby Raider Plugins\n" unless comment_present?
+          file.puts "gem '#{plugin_name}'" unless plugin_present?(plugin_name)
         end
       end
 
       def remove_plugin_from_gemfile(plugin_name)
-        input_lines = File.readlines('Gemfile')
-        output_lines = input_lines.reject do |line|
-          line.include?(plugin_name) || line.include?('Ruby Raider Plugins') && last_plugin?
-        end
-        File.open('Gemfile', 'w') do |file|
-          output_lines.each { |line| file.puts line }
-        end
+        output_lines = remove_plugins_and_comments(plugin_name)
+        update_gemfile(output_lines)
       end
 
       def last_plugin?
@@ -73,6 +68,31 @@ module RubyRaider
 
       def plugins
         @plugins ||= YAML.load_file('plugins.yml')
+      end
+
+      def read_gemfile
+        File.readlines('Gemfile')
+      end
+
+      def comment_present?
+        read_gemfile.grep(/Ruby Raider Plugins/).any?
+      end
+
+      def plugin_present?(plugin_name)
+        read_gemfile.grep(/#{plugin_name}/).any?
+      end
+
+      def remove_plugins_and_comments(plugin_name)
+        read_gemfile.reject do |line|
+          line.include?(plugin_name) || line.include?('Ruby Raider Plugins') && last_plugin?
+        end
+      end
+
+      # :reek:NestedIterators { enabled: false }
+      def update_gemfile(output_lines)
+        File.open('Gemfile', 'w') do |file|
+          output_lines.each { |line| file.puts line }
+        end
       end
     end
   end
