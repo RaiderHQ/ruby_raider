@@ -82,13 +82,13 @@ Select the ones you will like to work with.
 If you already know which frameworks you want to use, you can do:
 
 ```ruby
-raider new [name_of_project] - p framework : [framework] automation : [automation_type] visual : [boolean] axe : [boolean]
+raider new [name_of_project] p framework : [framework] automation : [automation_type]
 ```
 
 An example of the command above would be:
 
 ```ruby
-raider new test_project -p framework : rspec automation: selenium visual : false axe : true
+raider new test_project p framework : rspec automation: selenium
 ```
 
 Where [frameworks] is a comma separated list of the frameworks you want to use.
@@ -123,15 +123,15 @@ Ruby Raider also supports scaffolding:
 * To create a new steps definition you do: ```raider g steps [STEPS_NAME]```
 * To create both a page/spec or a page/feature/steps you do: ```raider g scaffold [SCAFFOLD_NAME]```
 
-It's possible to add the option --path or -p if you want to specify where to create your features, pages, helpers and
+It's possible to add the option --path or p if you want to specify where to create your features, pages, helpers and
 specs.
 
 If you want to set the default path for the creation of your features, helpers and specs:
 
 ```ruby
-raider u path [PATH_NAME] - -feature or -f
-raider u path [PATH_NAME] - -spec or -s
-raider u path [PATH_NAME] - -helper or -h
+raider u path [PATH_NAME] - -feature or f
+raider u path [PATH_NAME] - -spec or s
+raider u path [PATH_NAME] - -helper or h
 ```
 
 If you don't specify an option, path will assume you want to change the default path for pages.
