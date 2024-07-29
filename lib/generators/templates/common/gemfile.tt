@@ -29,5 +29,5 @@ gem 'rubocop'
 <%- if rspec? -%>
 gem 'rubocop-rspec'
 <%- end -%>
-gem 'ruby_raider', '~> 1.0.1'
+gem 'ruby_raider', '~> 1.0.4'
 <%= ERB.new(File.read(File.expand_path('./partials/automation_gems.tt', __dir__))).result(binding).strip! %>

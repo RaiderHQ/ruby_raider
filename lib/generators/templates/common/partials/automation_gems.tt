@@ -4,7 +4,7 @@ gem 'selenium-webdriver'
 gem 'watir'
 <% when selenium_based? %>
 gem 'selenium-webdriver'
-<% else %>
+<% when mobile? %>
 gem 'appium_lib'
 gem 'appium_console'
 <% end %>

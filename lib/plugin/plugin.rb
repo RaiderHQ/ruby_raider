@@ -7,6 +7,7 @@ module RubyRaider
   module Plugin
     class << self
       def add_plugin(plugin_name)
+        return gemfile_guard unless File.exist?('Gemfile')
         return pp 'The plugin was not found' unless available?(plugin_name)
         return pp 'The plugin is already installed' if installed?(plugin_name)
 
@@ -18,6 +19,7 @@ module RubyRaider
       end
 
       def delete_plugin(plugin_name)
+        return gemfile_guard unless File.exist?('Gemfile')
         return 'The plugin is not installed' unless installed_plugins.include?(plugin_name)
 
         pp "Deleting #{plugin_name}..."
@@ -28,6 +30,8 @@ module RubyRaider
       end
 
       def installed_plugins
+        return gemfile_guard unless File.exist?('Gemfile')
+
         parsed_gemfile = File.readlines('Gemfile').map { |line| line.sub('gem ', '').strip.delete("'") }
         parsed_gemfile.select { |line| plugins.include?(line) }
       end
@@ -51,6 +55,8 @@ module RubyRaider
       private
 
       def add_plugin_to_gemfile(plugin_name)
+        return gemfile_guard unless File.exist?('Gemfile')
+
         File.open('Gemfile', 'a') do |file|
           file.puts "\n# Ruby Raider Plugins\n" unless comment_present?
           file.puts "gem '#{plugin_name}'" unless plugin_present?(plugin_name)
@@ -67,6 +73,8 @@ module RubyRaider
       end
 
       def read_gemfile
+        return gemfile_guard unless File.exist?('Gemfile')
+
         File.readlines('Gemfile')
       end
 
@@ -86,9 +94,15 @@ module RubyRaider
 
       # :reek:NestedIterators { enabled: false }
       def update_gemfile(output_lines)
+        return gemfile_guard unless File.exist?('Gemfile')
+
         File.open('Gemfile', 'w') do |file|
           output_lines.each { |line| file.puts line }
         end
+      end
+
+      def gemfile_guard
+        pp 'There is no Gemfile, please create one to install plugins'
       end
     end
   end
