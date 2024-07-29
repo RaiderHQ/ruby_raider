@@ -84,11 +84,15 @@ class MenuGenerator
   end
 
   def select_automation_framework(menu)
+    automation_options(menu)
+    menu.choice :Quit, -> { exit }
+  end
+
+  def automation_options(menu)
     menu.choice :Selenium, -> { choose_test_framework('selenium') }
     menu.choice :Appium, -> { choose_test_framework('appium') }
     menu.choice :Watir, -> { choose_test_framework('watir') }
     menu.choice :Applitools, -> { choose_test_framework('applitools') }
     menu.choice :Axe, -> { choose_test_framework('axe') }
-    menu.choice :Quit, -> { exit }
   end
 end
