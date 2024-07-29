@@ -10,7 +10,7 @@
 <br />
 <div align="center">
    <a href="https://github.com/RubyRaider/ruby_raider">
-   <img src="https://ruby-raider.com/wp-content/uploads/2022/05/logo-160x160.png?w=890" alt="Logo" style="width:200px;">
+   <img src="https://ruby-raider.com/wp-content/uploads/2022/05/logo-160x160.png?w=890" alt="Logo" style="width:600px;">
    </a>
    <p align="center">
       This is a gem to make up and start UI automation projects easier.
