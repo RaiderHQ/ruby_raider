@@ -19,6 +19,7 @@ module RubyRaider
       end
 
       def delete_plugin(plugin_name)
+        return gemfile_guard unless File.exist?('Gemfile')
         return 'The plugin is not installed' unless installed_plugins.include?(plugin_name)
 
         pp "Deleting #{plugin_name}..."
