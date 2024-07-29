@@ -67,7 +67,7 @@ module RubyRaider
       end
 
       def plugins
-        @plugins ||= YAML.load_file('plugins.yml')
+        @plugins ||= YAML.load_file(File.expand_path('plugins.yml'))
       end
 
       def read_gemfile
