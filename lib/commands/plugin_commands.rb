@@ -28,7 +28,7 @@ module RubyRaider
     desc 'list', 'Lists all the available plugin'
 
     def list
-      pp Plugin.available_plugins
+      pp Plugin.plugins
     end
   end
 end

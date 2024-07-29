@@ -29,11 +29,7 @@ module RubyRaider
 
       def installed_plugins
         parsed_gemfile = File.readlines('Gemfile').map { |line| line.sub('gem ', '').strip.delete("'") }
-        parsed_gemfile.select { |line| available_plugins.include?(line) }
-      end
-
-      def available_plugins
-        plugins['plugins']
+        parsed_gemfile.select { |line| plugins.include?(line) }
       end
 
       def installed?(plugin_name)
@@ -41,11 +37,15 @@ module RubyRaider
       end
 
       def available?(plugin_name)
-        available_plugins.include?(plugin_name)
+        plugins.include?(plugin_name)
       end
 
       def camelize(str)
         str.split('_').collect(&:capitalize).join
+      end
+
+      def plugins
+        ['great_axe']
       end
 
       private
@@ -64,10 +64,6 @@ module RubyRaider
 
       def last_plugin?
         installed_plugins.count == 1
-      end
-
-      def plugins
-        @plugins ||= YAML.load_file(File.expand_path('plugins.yml'))
       end
 
       def read_gemfile
