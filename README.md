@@ -46,7 +46,7 @@ the commands below:***
 
 ```ruby
 raider u start_appium
-appium --base - path /wd/hub  
+appium --base /wd/hub  
 ```
 
 ***In order to run the visual tests with applitools, you need to create an account and get your api key, you can read
