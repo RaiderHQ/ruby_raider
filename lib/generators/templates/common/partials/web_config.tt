@@ -12,6 +12,7 @@ browser_arguments:
     - no-sandbox
     - disable-dev-shm-usage
     - ignore-certificate-errors
+    - search-engine-choice-country
   :firefox:
     - acceptInsecureCerts
     - no-sandbox
