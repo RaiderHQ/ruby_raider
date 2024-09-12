@@ -6,10 +6,10 @@ gem 'appium_lib'
 gem 'appium_console'
 <% end %>
 <%- if cucumber? -%>
-gem 'allure-cucumber'
+gem 'allure-cucumber', '~> 2.24.0'
 <%- else -%>
-gem 'allure-rspec'
-gem 'allure-ruby-commons'
+gem 'allure-rspec', '~> 2.24.0'
+gem 'allure-ruby-commons', '~> 2.24.0'
 <%- end -%>
 <%- if axe? -%>
 gem 'axe-core-rspec'
@@ -33,7 +33,7 @@ gem 'rubocop'
 <%- if rspec? -%>
 gem 'rubocop-rspec'
 <%- end -%>
-gem 'ruby_raider', '~> 1.0.4'
+gem 'ruby_raider', '~> 1.0.0'
 <%- if selenium_based? %>
 gem 'selenium-webdriver'
 <%- end -%>

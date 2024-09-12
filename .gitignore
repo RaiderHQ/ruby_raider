@@ -2,3 +2,5 @@ ruby_raider-*.gem
 .idea/
 ruby_raider.iml
 Gemfile.lock
+.DS_Store
+lib/.DS_Store
