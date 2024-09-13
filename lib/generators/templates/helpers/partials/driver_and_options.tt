@@ -31,7 +31,7 @@
   end
 <% elsif cross_platform? -%>
   def create_driver
-    @driver = Appium::Driver.new({ caps: parsed_caps })
+    @driver = configure_driver
   end
 
   def platform
@@ -51,19 +51,65 @@
   def parse_app_path(path)
     File.expand_path(path, Dir.pwd)
   end
+
+  def browserstack?
+    ENV['TEST_ENV'] == 'browserstack'
+  end
+
+  def browserstack_caps
+    @browserstack_caps ||= YAML.load_file('config/capabilities.yml')['browserstack']
+  end
+
+  def configure_driver
+    if browserstack?
+      Appium::Driver.new({ caps: browserstack_caps,
+                           'appium_lib': { server_url: parsed_browserstack_url}}, true)
+    else
+      Appium::Driver.new({ caps: parsed_caps })
+    end
+  end
+
+  def parsed_browserstack_url
+    username = ENV['BROWSERSTACK_USER']
+    access_key = ENV['BROWSERSTACK_KEY']
+    "https://#{username}:#{access_key}@hub-cloud.browserstack.com/wd/hub"
+  end
 <% else -%>
-  def create_driver
-    @driver = Appium::Driver.new({ caps: parsed_caps })
-  end
+    def create_driver
+      @driver = configure_driver
+    end
 
-  # :reek:UtilityFunction
-  def parsed_caps
-    caps = YAML.load_file('config/capabilities.yml')
-    caps['appium:options']['app'] = app_path(caps['appium:options']['app'])
-    caps
-  end
+     # :reek:UtilityFunction
+     def parsed_caps
+       caps = YAML.load_file('config/capabilities.yml')
+       caps['appium:options']['app'] = app_path(caps['appium:options']['app'])
+       caps
+     end
 
-  def app_path(path)
-    File.expand_path(path, Dir.pwd)
-  end
+     def app_path(path)
+       File.expand_path(path, Dir.pwd)
+     end
+
+    def browserstack?
+      ENV['TEST_ENV'] == 'browserstack'
+    end
+
+    def browserstack_caps
+      @browserstack_caps ||= YAML.load_file('config/capabilities.yml')['browserstack']
+    end
+
+    def configure_driver
+      if browserstack?
+        Appium::Driver.new({ caps: browserstack_caps,
+                             'appium_lib': { server_url: parsed_browserstack_url}}, true)
+      else
+        Appium::Driver.new({ caps: parsed_caps })
+      end
+    end
+
+    def parsed_browserstack_url
+      username = ENV['BROWSERSTACK_USER']
+      access_key = ENV['BROWSERSTACK_KEY']
+      "https://#{username}:#{access_key}@hub-cloud.browserstack.com/wd/hub"
+    end
 <% end -%>

@@ -13,3 +13,13 @@ ios:
     automationName: XCUITest
     app: MyRNDemoApp.app
     autoDismissAlerts: true
+
+browserstack:
+  platformName: Android
+  os_version: '9.0'
+  deviceName: Google Pixel 3
+  app: app: <%= ENV['APP_URL'] %>
+  browserstack.user: <%= ENV['BROWSERSTACK_USER'] %>
+  browserstack.key: <%= ENV['BROWSERSTACK_KEY'] %>
+  project: 'MyDemoAppRN'
+  name: 'MyDemoAppRN-Android'
