@@ -6,3 +6,13 @@ appium:options:
   automationName: XCUITest
   app: MyRNDemoApp.app
   autoDismissAlerts: true
+
+browserstack:
+  platformName: iOS
+  os_version: '17.5.1'
+  deviceName: iPhone 15
+  app: <%= ENV['APP_URL'] %>
+  browserstack.user: <%= ENV['BROWSERSTACK_USER'] %>
+  browserstack.key: <%= ENV['BROWSERSTACK_KEY'] %>
+  project: 'MyDemoAppRN'
+  name: 'MyDemoAppRN-IOS'
