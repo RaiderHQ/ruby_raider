@@ -82,16 +82,14 @@ Select the ones you will like to work with.
 If you already know which frameworks you want to use, you can do:
 
 ```ruby
-raider new [name_of_project] p framework : [framework] automation : [automation_type]
+raider new [name_of_project] -p framework:[framework] automation:[automation_type]
 ```
 
 An example of the command above would be:
 
 ```ruby
-raider new test_project p framework : rspec automation: selenium
+raider new test_project -p framework:rspec automation:selenium
 ```
-
-Where [frameworks] is a comma separated list of the frameworks you want to use.
 
 ### Ruby raider provides the following list of basic commands
 
