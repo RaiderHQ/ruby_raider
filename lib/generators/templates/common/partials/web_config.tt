@@ -1,4 +1,4 @@
-browser: :chrome
+browser: chrome
 url: 'https://automationteststore.com/'
 
 <%- if selenium_based? -%>
@@ -8,11 +8,11 @@ driver_options:
 <% end -%>
 
 browser_arguments:
-  :chrome:
+  chrome:
     - no-sandbox
     - disable-dev-shm-usage
     - ignore-certificate-errors
     - search-engine-choice-country
-  :firefox:
+  firefox:
     - acceptInsecureCerts
     - no-sandbox

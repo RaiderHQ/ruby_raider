@@ -33,7 +33,7 @@ gem 'rubocop'
 <%- if rspec? -%>
 gem 'rubocop-rspec'
 <%- end -%>
-gem 'ruby_raider', '~> 1.0.0'
+gem 'ruby_raider', '~> 1.1.0'
 <%- if selenium_based? %>
 gem 'selenium-webdriver'
 <%- end -%>
