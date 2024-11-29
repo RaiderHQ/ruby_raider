@@ -10,7 +10,7 @@
 <br />
 <div align="center">
    <a href="https://github.com/RubyRaider/ruby_raider">
-   <img src="https://ruby-raider.com/wp-content/uploads/2022/05/logo-160x160.png?w=890" alt="Logo" style="width:600px;">
+   <img src="[https://ruby-raider.com/wp-content/uploads/2022/05/logo-160x160.png?w=890](https://private-user-images.githubusercontent.com/33221555/391053089-3a1a492f-a70e-45ff-8fd0-5f83cef91f49.svg?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MzI4NzYzMjUsIm5iZiI6MTczMjg3NjAyNSwicGF0aCI6Ii8zMzIyMTU1NS8zOTEwNTMwODktM2ExYTQ5MmYtYTcwZS00NWZmLThmZDAtNWY4M2NlZjkxZjQ5LnN2Zz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDExMjklMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQxMTI5VDEwMjcwNVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWI0MjdiYmNiY2ZlOGNhYTg0MzZhY2UwMzExMDVhZDBlNzhhNjlkNjE0OTcwYjcwMmU2MjRhN2ZhOWFjNmE5MGMmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.uEjQuwaiufJcctC6_tFb1aL_pG5DExkeAwlL8F4Ntso)" alt="Logo" style="width:600px;">
    </a>
    <p align="center">
       <a href="https://github.com/RubyRaider/ruby_raider#getting-started"><strong>Explore the docs »</strong></a>
