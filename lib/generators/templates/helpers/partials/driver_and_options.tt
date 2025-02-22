@@ -9,7 +9,7 @@
   def create_driver(*opts)
     @config = YAML.load_file('config/config.yml')
     browser = @config['browser']
-    Selenium::WebDriver.for(browser, options: create_webdriver_options(*opts))
+    Selenium::WebDriver.for(browser.to_sym, options: create_webdriver_options(*opts))
   end
 
   def browser_arguments(*opts)
