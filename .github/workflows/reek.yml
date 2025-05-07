@@ -13,7 +13,7 @@ jobs:
           ruby-version: head
 
       - name: Check out code
-        uses: actions/checkout@v1
+        uses: infrastructure/checkout@v1
           
       - name: reek
         uses: reviewdog/action-reek@v1

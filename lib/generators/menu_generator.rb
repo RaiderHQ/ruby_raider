@@ -31,6 +31,7 @@ class MenuGenerator
     structure = {
       automation: options[:automation],
       framework: options[:framework],
+      ci_platform: options[:ci_platform],
       name: @name
     }
     generate_framework(structure)
@@ -50,26 +51,27 @@ class MenuGenerator
 
   def select_test_framework(automation)
     prompt.select('Please select your test framework') do |menu|
-      menu.choice :Cucumber, -> { create_framework('Cucumber', automation) }
-      menu.choice :Rspec, -> { create_framework('Rspec', automation) }
+      menu.choice :Cucumber, -> { select_ci_platform('Cucumber', automation) }
+      menu.choice :Rspec, -> { select_ci_platform('Rspec', automation) }
       menu.choice :Quit, -> { exit }
     end
   end
 
-  FrameworkOptions = Struct.new(:automation, :framework)
+  FrameworkOptions = Struct.new(:automation, :framework, :ci_platform)
 
   def create_framework_options(params)
-    FrameworkOptions.new(params[:automation], params[:framework])
+    FrameworkOptions.new(params[:automation], params[:framework], params[:ci_platform])
   end
 
-  def create_framework(framework, automation_type)
+  def create_framework(framework, automation_type, ci_platform = nil)
     options = create_framework_options(automation: automation_type,
-                                       framework: framework.downcase)
+                                       framework: framework.downcase,
+                                       ci_platform:)
 
-    # Print the chosen options
     puts 'Chosen Options:'
     puts "  Automation Type: #{options[:automation]}"
     puts "  Framework: #{options[:framework]}"
+    puts "  CI Platform: #{options[:ci_platform]}" if options[:ci_platform]
 
     set_up_framework(options)
     prompt.say("You have chosen to use #{framework} with #{automation_type}")
@@ -94,5 +96,13 @@ class MenuGenerator
     menu.choice :Watir, -> { choose_test_framework('watir') }
     menu.choice :Applitools, -> { choose_test_framework('applitools') }
     menu.choice :Axe, -> { choose_test_framework('axe') }
+  end
+
+  def select_ci_platform(framework, automation)
+    prompt.select('Would you like to configure CI?') do |menu|
+      menu.choice :'Github Actions', -> { create_framework(framework, automation, 'github') }
+      menu.choice :No, -> { create_framework(framework, automation) }
+      menu.choice :Quit, -> { exit }
+    end
   end
 end
