@@ -12,7 +12,7 @@ class Generator < Thor::Group
   def self.source_paths
     base_path = File.dirname(__FILE__)
     %W[#{base_path}/automation/templates #{base_path}/cucumber/templates
-       #{base_path}/rspec/templates #{base_path}/templates #{base_path}/actions/templates ]
+       #{base_path}/rspec/templates #{base_path}/templates #{base_path}/infrastructure/templates ]
   end
 
   def args

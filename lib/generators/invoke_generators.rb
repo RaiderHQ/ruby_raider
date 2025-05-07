@@ -1,4 +1,4 @@
-require_relative 'actions/actions_generator'
+require_relative 'infrastructure/github_generator'
 require_relative 'automation/automation_generator'
 require_relative 'common_generator'
 require_relative 'cucumber/cucumber_generator'
@@ -11,14 +11,16 @@ module InvokeGenerators
   module_function
 
   def generate_framework(structure = {})
-    generators = %w[Automation Actions Common Helpers]
+    generators = %w[Automation Common Helpers]
     framework = structure[:framework]
     add_generator(generators, framework.capitalize)
+    add_generator(generators, structure[:ci_platform].capitalize) if structure[:ci_platform]
     generators.each do |generator|
       invoke_generator({
                          automation: structure[:automation],
                          framework:,
                          generator:,
+                         ci_platform: structure[:ci_platform],
                          name: structure[:name]
                        })
     end
@@ -32,7 +34,8 @@ module InvokeGenerators
     Object.const_get("#{structure[:generator]}Generator")
           .new([structure[:automation],
                 structure[:framework],
-                structure[:name]]).invoke_all
+                structure[:name],
+                structure[:ci_platform]]).invoke_all
   end
 
   def to_bool(string)

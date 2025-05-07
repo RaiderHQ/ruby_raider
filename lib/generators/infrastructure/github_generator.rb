@@ -2,10 +2,10 @@
 
 require_relative '../generator'
 
-class ActionsGenerator < Generator
+class GithubGenerator < Generator
   def generate_actions_file
     return unless web?
 
-    template('actions.tt', "#{name}/.github/workflows/test_pipeline.yml")
+    template('github.tt', "#{name}/.github/workflows/test_pipeline.yml")
   end
 end
