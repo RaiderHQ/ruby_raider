@@ -101,6 +101,7 @@ class MenuGenerator
   def select_ci_platform(framework, automation)
     prompt.select('Would you like to configure CI?') do |menu|
       menu.choice :'Github Actions', -> { create_framework(framework, automation, 'github') }
+      menu.choice :'Gitlab CI/CD', -> { create_framework(framework, automation, 'gitlab') }
       menu.choice :No, -> { create_framework(framework, automation) }
       menu.choice :Quit, -> { exit }
     end
