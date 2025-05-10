@@ -1,0 +1,43 @@
+stages:
+  - setup
+  - test
+  - report
+
+variables:
+  RUBY_VERSION: "3.4.0"
+
+setup_ruby:
+  stage: setup
+  image: ruby:${RUBY_VERSION}
+  script:
+    - bundle install --jobs $(nproc) --retry 3
+  cache:
+    paths:
+      - vendor/bundle
+
+run_tests:
+  stage: test
+  image: ruby:${RUBY_VERSION}
+  script:
+    - mkdir -p allure-results
+    - <%- if framework == 'cucumber' -%> cucumber features --format pretty <%- else -%> bundle exec rspec spec --format documentation <%- end%>
+  artifacts:
+    paths:
+      - allure-results/
+    when: always
+
+pages:
+  stage: report
+  image: alpine/git
+  dependencies:
+    - run_tests
+  script:
+    - apk add --no-cache curl unzip
+    - curl -o allure.zip -L https://github.com/allure-framework/allure2/releases/latest/download/allure-commandline.zip
+    - unzip allure.zip -d /tmp/
+    - /tmp/allure-*/bin/allure generate allure-results --clean -o public
+  artifacts:
+    paths:
+      - public
+  only:
+    - main
