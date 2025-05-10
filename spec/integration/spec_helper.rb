@@ -7,7 +7,7 @@ require_relative 'settings_helper'
 
 AUTOMATION_TYPES = %w[android ios selenium watir cross_platform axe applitools].freeze
 FRAMEWORKS = %w[cucumber rspec].freeze
-CI_PLATFORMS = [nil, 'github'].freeze
+CI_PLATFORMS = [nil, 'github', 'gitlab'].freeze
 
 RSpec.configure do |config|
   config.include(InvokeGenerators)
