@@ -1,4 +1,5 @@
 require_relative 'infrastructure/github_generator'
+require_relative 'infrastructure/gitlab_generator'
 require_relative 'automation/automation_generator'
 require_relative 'common_generator'
 require_relative 'cucumber/cucumber_generator'
