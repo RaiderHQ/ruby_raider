@@ -1,0 +1,186 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Automated release script for Ruby Raider
+# Usage: bin/release [major|minor|patch]
+
+require 'fileutils'
+
+class ReleaseManager
+  VERSION_FILE = 'lib/version'
+  GEMSPEC_FILE = 'ruby_raider.gemspec'
+
+  def initialize(bump_type)
+    @bump_type = bump_type
+    @current_version = read_version
+  end
+
+  def run
+    validate_clean_repo
+    validate_branch
+    validate_tests
+
+    new_version = calculate_new_version
+    confirm_release(new_version)
+
+    update_version(new_version)
+    commit_and_tag(new_version)
+    push_release
+
+    success_message(new_version)
+  end
+
+  private
+
+  def read_version
+    File.read(VERSION_FILE).strip
+  end
+
+  def validate_clean_repo
+    status = `git status --porcelain`.strip
+    return if status.empty?
+
+    puts "❌ Error: Working directory is not clean"
+    puts "Please commit or stash your changes first:"
+    puts status
+    exit 1
+  end
+
+  def validate_branch
+    branch = `git branch --show-current`.strip
+    if branch != 'master' && branch != 'main'
+      puts "⚠️  Warning: You're on branch '#{branch}', not master/main"
+      print "Continue anyway? [y/N] "
+      exit 1 unless gets.strip.downcase == 'y'
+    end
+  end
+
+  def validate_tests
+    puts "🧪 Running tests..."
+
+    # Run unit tests
+    unless system('bundle exec rspec spec/generators/ --format progress')
+      puts "❌ Unit tests failed"
+      exit 1
+    end
+
+    # Run integration tests (skip slow e2e tests)
+    unless system('bundle exec rspec spec/integration/ --tag ~slow --format progress')
+      puts "❌ Integration tests failed"
+      exit 1
+    end
+
+    # Run linters
+    unless system('bundle exec rubocop')
+      puts "❌ RuboCop failed"
+      exit 1
+    end
+
+    unless system('bundle exec reek')
+      puts "❌ Reek failed"
+      exit 1
+    end
+
+    puts "✓ All tests and linters passed"
+  end
+
+  def calculate_new_version
+    major, minor, patch = @current_version.split('.').map(&:to_i)
+
+    case @bump_type
+    when 'major'
+      "#{major + 1}.0.0"
+    when 'minor'
+      "#{major}.#{minor + 1}.0"
+    when 'patch'
+      "#{major}.#{minor}.#{patch + 1}"
+    else
+      puts "❌ Error: Invalid bump type '#{@bump_type}'"
+      puts "Usage: bin/release [major|minor|patch]"
+      exit 1
+    end
+  end
+
+  def confirm_release(new_version)
+    puts "\n📦 Release Summary"
+    puts "  Current version: #{@current_version}"
+    puts "  New version:     #{new_version}"
+    puts "  Bump type:       #{@bump_type}"
+    puts "\nThis will:"
+    puts "  1. Update lib/version to #{new_version}"
+    puts "  2. Commit changes"
+    puts "  3. Create git tag v#{new_version}"
+    puts "  4. Push to GitHub (triggers automated release)"
+    puts "  5. Publish gem to RubyGems (via GitHub Actions)"
+    puts "  6. Create GitHub release with changelog"
+
+    print "\nProceed with release? [y/N] "
+    exit 0 unless gets.strip.downcase == 'y'
+  end
+
+  def update_version(new_version)
+    puts "\n📝 Updating version to #{new_version}..."
+    File.write(VERSION_FILE, "#{new_version}\n")
+    puts "✓ Updated #{VERSION_FILE}"
+  end
+
+  def commit_and_tag(new_version)
+    puts "\n📌 Creating commit and tag..."
+
+    # Commit version change
+    system("git add #{VERSION_FILE}")
+    system("git commit -m 'Bump version to #{new_version}'")
+
+    # Create annotated tag
+    system("git tag -a v#{new_version} -m 'Release version #{new_version}'")
+
+    puts "✓ Created commit and tag v#{new_version}"
+  end
+
+  def push_release
+    puts "\n🚀 Pushing to GitHub..."
+
+    # Push commit
+    unless system('git push origin HEAD')
+      puts "❌ Failed to push commits"
+      exit 1
+    end
+
+    # Push tag (this triggers the release workflow)
+    unless system('git push origin --tags')
+      puts "❌ Failed to push tags"
+      exit 1
+    end
+
+    puts "✓ Pushed to GitHub"
+  end
+
+  def success_message(new_version)
+    puts "\n" + "=" * 60
+    puts "🎉 Release #{new_version} initiated successfully!"
+    puts "=" * 60
+    puts "\nThe GitHub Actions workflow is now:"
+    puts "  1. Running tests"
+    puts "  2. Building the gem"
+    puts "  3. Publishing to RubyGems"
+    puts "  4. Creating GitHub release"
+    puts "\nMonitor progress at:"
+    puts "  https://github.com/RubyRaider/ruby_raider/actions"
+    puts "\nRelease will be available at:"
+    puts "  https://github.com/RubyRaider/ruby_raider/releases/tag/v#{new_version}"
+    puts "  https://rubygems.org/gems/ruby_raider/versions/#{new_version}"
+    puts "\n✨ Thank you for contributing to Ruby Raider!"
+  end
+end
+
+# Main execution
+if ARGV.length != 1
+  puts "Usage: bin/release [major|minor|patch]"
+  puts "\nExamples:"
+  puts "  bin/release patch   # 1.1.4 -> 1.1.5 (bug fixes)"
+  puts "  bin/release minor   # 1.1.4 -> 1.2.0 (new features)"
+  puts "  bin/release major   # 1.1.4 -> 2.0.0 (breaking changes)"
+  exit 1
+end
+
+ReleaseManager.new(ARGV[0]).run

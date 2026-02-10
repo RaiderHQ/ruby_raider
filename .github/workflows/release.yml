@@ -1,0 +1,138 @@
+name: Automated Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.2.0
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    name: Build and Release Gem
+    runs-on: ubuntu-latest
+    if: github.repository == 'RubyRaider/ruby_raider'
+
+    environment:
+      name: rubygems.org
+      url: https://rubygems.org/gems/ruby_raider
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for changelog
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Releasing version: $VERSION"
+
+      - name: Verify version matches lib/version
+        run: |
+          LIB_VERSION=$(cat lib/version | tr -d '[:space:]')
+          TAG_VERSION="${{ steps.version.outputs.version }}"
+          if [ "$LIB_VERSION" != "$TAG_VERSION" ]; then
+            echo "ERROR: lib/version ($LIB_VERSION) does not match tag version ($TAG_VERSION)"
+            exit 1
+          fi
+          echo "✓ Version verified: $LIB_VERSION"
+
+      - name: Run tests
+        run: |
+          bundle exec rspec spec/generators/
+          bundle exec rspec spec/integration/ --tag ~slow
+
+      - name: Run RuboCop
+        run: bundle exec rubocop
+
+      - name: Run Reek
+        run: bundle exec reek
+
+      - name: Build gem
+        run: |
+          gem build ruby_raider.gemspec
+          echo "Built: $(ls -1 *.gem)"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            echo "First release - no previous tag"
+            CHANGELOG="Initial release"
+          else
+            echo "Generating changelog from $PREV_TAG to $GITHUB_REF_NAME"
+
+            # Generate changelog from git commits
+            CHANGELOG=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
+
+            # Count changes by type
+            FEATURES=$(echo "$CHANGELOG" | grep -i "feat\|add\|new" | wc -l)
+            FIXES=$(echo "$CHANGELOG" | grep -i "fix\|bug" | wc -l)
+            CHANGES=$(echo "$CHANGELOG" | wc -l)
+          fi
+
+          # Save changelog to file
+          cat > RELEASE_NOTES.md << EOF
+          ## What's Changed
+
+          $CHANGELOG
+
+          ## Statistics
+          - Total commits: $CHANGES
+          - Features/Additions: $FEATURES
+          - Bug fixes: $FIXES
+
+          ## Installation
+
+          \`\`\`bash
+          gem install ruby_raider -v ${{ steps.version.outputs.version }}
+          \`\`\`
+
+          ## Documentation
+
+          - [RubyGems](https://rubygems.org/gems/ruby_raider)
+          - [GitHub](https://github.com/RubyRaider/ruby_raider)
+          - [Website](https://ruby-raider.com)
+          EOF
+
+          cat RELEASE_NOTES.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.version.outputs.version }}
+          body_path: RELEASE_NOTES.md
+          files: |
+            *.gem
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to RubyGems
+        uses: rubygems/release-gem@v1
+        with:
+          gem-push: true
+        env:
+          RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+
+      - name: Notify success
+        if: success()
+        run: |
+          echo "✓ Release ${{ steps.version.outputs.version }} published successfully!"
+          echo "  - GitHub: https://github.com/RubyRaider/ruby_raider/releases/tag/v${{ steps.version.outputs.version }}"
+          echo "  - RubyGems: https://rubygems.org/gems/ruby_raider/versions/${{ steps.version.outputs.version }}"
