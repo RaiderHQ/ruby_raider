@@ -1,0 +1,13 @@
+  def browserstack?
+    ENV['TEST_ENV'] == 'browserstack'
+  end
+
+  def browserstack_caps
+    @browserstack_caps ||= YAML.load_file('config/capabilities.yml')['browserstack']
+  end
+
+  def parsed_browserstack_url
+    username = ENV['BROWSERSTACK_USER']
+    access_key = ENV['BROWSERSTACK_KEY']
+    "https://#{username}:#{access_key}@hub-cloud.browserstack.com/wd/hub"
+  end

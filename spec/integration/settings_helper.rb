@@ -10,7 +10,7 @@ module SettingsHelper
       automation:,
       framework:,
       ci_platform:,
-      name: ci_platform ? "#{framework}_#{automation}_#{ci_platform}" : "#{framework}_#{automation}",
+      name: ci_platform ? "#{framework}_#{automation}_#{ci_platform}" : "#{framework}_#{automation}"
     }
   end
 end

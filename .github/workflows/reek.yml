@@ -7,13 +7,14 @@ jobs:
     name: runner / reek
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@f20f1eae726df008313d2e0d78c5e602562a1bcf
-        with:
-          ruby-version: head
-
       - name: Check out code
         uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
           
       - name: reek
         uses: reviewdog/action-reek@v1

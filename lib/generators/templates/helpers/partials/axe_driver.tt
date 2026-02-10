@@ -1,0 +1,6 @@
+  def create_driver(browser, js_path, skip_iframes)
+    AxeSelenium.configure(browser) do |config|
+      config.jslib_path = js_path if js_path
+      config.skip_iframes = skip_iframes if skip_iframes
+    end.page
+  end

@@ -13,6 +13,6 @@ class Pdp < Page
   # Elements
 
   def add_to_cart_button
-    <%= ERB.new(File.read(File.expand_path('./partials/pdp_page_selector.tt', __dir__)), trim_mode: '-').result(binding) -%>
+    <%= partial('pdp_page_selector') -%>
   end
 end
