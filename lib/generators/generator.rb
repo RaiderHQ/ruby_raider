@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
 require 'thor'
+require_relative 'template_renderer'
 
 class Generator < Thor::Group
   include Thor::Actions
+  include TemplateRenderer
 
   argument :automation
   argument :framework

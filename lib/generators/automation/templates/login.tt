@@ -1,5 +1,53 @@
+# frozen_string_literal: true
+
+require_relative '../abstract/page'
+
+class Login < Page
+  def url(_page)
+    'index.php?rt=account/login'
+  end
+
+  # Actions
+
+  def login(username, password)
 <%- if selenium_based? -%>
-<%=- ERB.new(File.read(File.expand_path('./partials/selenium_login.tt', __dir__)), trim_mode: '-').result(binding) -%>
-<%- elsif watir? -%>
-<%=- ERB.new(File.read(File.expand_path('./partials/watir_login.tt', __dir__)), trim_mode: '-').result(binding) -%>
+    username_field.send_keys username
+    password_field.send_keys password
+<%- else -%>
+    username_field.set username
+    password_field.set password
 <%- end -%>
+    login_button.click
+  end
+<%- if selenium_based? -%>
+  alias log_as login
+<%- end -%>
+
+  private
+
+  # Elements
+
+  def username_field
+<%- if selenium_based? -%>
+    driver.find_element(id: 'loginFrm_loginname')
+<%- else -%>
+    browser.text_field(id: 'loginFrm_loginname')
+<%- end -%>
+  end
+
+  def password_field
+<%- if selenium_based? -%>
+    driver.find_element(id: 'loginFrm_password')
+<%- else -%>
+    browser.text_field(id: 'loginFrm_password')
+<%- end -%>
+  end
+
+  def login_button
+<%- if selenium_based? -%>
+    driver.find_element(xpath: "//button[@title='Login']")
+<%- else -%>
+    browser.button(xpath: "//button[@title='Login']")
+<%- end -%>
+  end
+end

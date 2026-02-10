@@ -29,6 +29,8 @@ Metrics/AbcSize:
 
 Metrics/BlockLength:
   Max: 150
+  Exclude:
+    - 'spec/**/*_spec.rb'
 
 Metrics/BlockNesting:
   Max: 4
@@ -90,4 +92,26 @@ Style/SafeNavigation:
 
 Style/SingleLineBlockParams:
   Description: 'Enforces the names of some block params.'
+  Enabled: false
+
+# RSpec
+RSpec/MultipleDescribes:
+  Enabled: false
+
+RSpec/DescribeClass:
+  Enabled: false
+
+RSpec/MultipleExpectations:
+  Max: 5
+
+RSpec/ExampleLength:
+  Max: 20
+
+RSpec/ContextWording:
+  Enabled: false
+
+RSpec/AnyInstance:
+  Enabled: false
+
+RSpec/MessageSpies:
   Enabled: false

@@ -1,7 +1,61 @@
-<% if ios? %>
-<%= ERB.new(File.read(File.expand_path('./partials/ios_caps.tt', __dir__))).result(binding) -%>
-<% elsif android? %>
-<%= ERB.new(File.read(File.expand_path('./partials/android_caps.tt', __dir__))).result(binding) -%>
-<% else %>
-<%= ERB.new(File.read(File.expand_path('./partials/cross_platform_caps.tt', __dir__))).result(binding) -%>
+<% if cross_platform? %>android:
+  platformName: Android
+  appium:options:
+    platformVersion: '12'
+    automationName: UiAutomator2
+    deviceName: Pixel 3 API 32
+    app: Android-MyDemoAppRN.1.3.0.build-244.apk
+ios:
+  platformName: iOS
+  appium:options:
+    platformVersion: '17.0'
+    deviceName: iPhone 15
+    automationName: XCUITest
+    app: MyRNDemoApp.app
+    autoDismissAlerts: true
+
+browserstack:
+  platformName: Android
+  os_version: '9.0'
+  deviceName: Google Pixel 3
+  app: app: <%= ENV['APP_URL'] %>
+  browserstack.user: <%= ENV['BROWSERSTACK_USER'] %>
+  browserstack.key: <%= ENV['BROWSERSTACK_KEY'] %>
+  project: 'MyDemoAppRN'
+  name: 'MyDemoAppRN-Android'
+<% elsif ios? %>platformName: iOS
+appium:options:
+  url: http://localhost:4723/wd/hub
+  platformVersion: '17.0'
+  deviceName: iPhone 15
+  automationName: XCUITest
+  app: MyRNDemoApp.app
+  autoDismissAlerts: true
+
+browserstack:
+  platformName: iOS
+  os_version: '17.5.1'
+  deviceName: iPhone 15
+  app: <%= ENV['APP_URL'] %>
+  browserstack.user: <%= ENV['BROWSERSTACK_USER'] %>
+  browserstack.key: <%= ENV['BROWSERSTACK_KEY'] %>
+  project: 'MyDemoAppRN'
+  name: 'MyDemoAppRN-IOS'
+<% elsif android? %>platformName: Android
+appium:options:
+  url: http://localhost:4723/wd/hub
+  platformVersion: '12'
+  automationName: UiAutomator2
+  deviceName: Pixel 3 API 32
+  app: Android-MyDemoAppRN.1.3.0.build-244.apk
+
+browserstack:
+  platformName: Android
+  os_version: '9.0'
+  deviceName: Google Pixel 3
+  app: app: <%= ENV['APP_URL'] %>
+  browserstack.user: <%= ENV['BROWSERSTACK_USER'] %>
+  browserstack.key: <%= ENV['BROWSERSTACK_KEY'] %>
+  project: 'MyDemoAppRN'
+  name: 'MyDemoAppRN-Android'
 <% end %>
