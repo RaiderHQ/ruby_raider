@@ -19,7 +19,7 @@ jobs:
   release:
     name: Build and Release Gem
     runs-on: ubuntu-latest
-    if: github.repository == 'RubyRaider/ruby_raider'
+    if: github.repository_owner == 'RubyRaider'
 
     environment:
       name: rubygems.org
