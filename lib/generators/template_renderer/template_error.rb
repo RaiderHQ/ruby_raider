@@ -30,7 +30,7 @@ module TemplateRenderer
   # Raised when a template has syntax errors or rendering fails
   class TemplateRenderError < TemplateError
     def initialize(message, partial_name:, original_error: nil)
-      super(message, partial_name: partial_name, original_error: original_error)
+      super(message, partial_name:, original_error:)
     end
 
     def to_s

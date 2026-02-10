@@ -45,7 +45,7 @@ describe 'End-to-End Project Generation and Execution' do
     result = run_in_project(project_name, 'bundle install --quiet', timeout: 180)
 
     unless result[:success]
-      puts "❌ Bundle install failed:"
+      puts '❌ Bundle install failed:'
       puts result[:stderr]
       puts result[:stdout]
     end
@@ -61,7 +61,7 @@ describe 'End-to-End Project Generation and Execution' do
     puts result[:stdout] if result[:stdout].length.positive?
 
     unless result[:success]
-      puts "❌ RSpec tests failed:"
+      puts '❌ RSpec tests failed:'
       puts result[:stderr] if result[:stderr].length.positive?
     end
 
@@ -76,7 +76,7 @@ describe 'End-to-End Project Generation and Execution' do
     puts result[:stdout] if result[:stdout].length.positive?
 
     unless result[:success]
-      puts "❌ Cucumber tests failed:"
+      puts '❌ Cucumber tests failed:'
       puts result[:stderr] if result[:stderr].length.positive?
     end
 
@@ -97,9 +97,9 @@ describe 'End-to-End Project Generation and Execution' do
       result = run_rspec(project)
 
       expect(result[:success]).to be(true),
-        "RSpec tests failed with exit code #{result[:exit_code]}.\n" \
-        "STDOUT: #{result[:stdout]}\n" \
-        "STDERR: #{result[:stderr]}"
+                                  "RSpec tests failed with exit code #{result[:exit_code]}.\n" \
+                                  "STDOUT: #{result[:stdout]}\n" \
+                                  "STDERR: #{result[:stderr]}"
     end
   end
 
@@ -117,9 +117,9 @@ describe 'End-to-End Project Generation and Execution' do
       result = run_cucumber(project)
 
       expect(result[:success]).to be(true),
-        "Cucumber tests failed with exit code #{result[:exit_code]}.\n" \
-        "STDOUT: #{result[:stdout]}\n" \
-        "STDERR: #{result[:stderr]}"
+                                  "Cucumber tests failed with exit code #{result[:exit_code]}.\n" \
+                                  "STDOUT: #{result[:stdout]}\n" \
+                                  "STDERR: #{result[:stderr]}"
     end
   end
 

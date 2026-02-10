@@ -88,9 +88,9 @@ module TemplateRenderer
       if cached.nil? || cached[:mtime] < current_mtime
         erb = compile_template(path, trim_mode)
         @cache[cache_key] = {
-          erb: erb,
+          erb:,
           mtime: current_mtime,
-          path: path
+          path:
         }
         return erb
       end
@@ -102,7 +102,7 @@ module TemplateRenderer
     # Compile an ERB template
     def compile_template(path, trim_mode)
       content = File.read(path)
-      ERB.new(content, trim_mode: trim_mode)
+      ERB.new(content, trim_mode:)
     end
 
     # Rough estimate of cache memory usage
