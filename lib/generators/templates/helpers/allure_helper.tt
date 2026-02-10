@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-<%=- ERB.new(File.read(File.expand_path('./partials/allure_requirements.tt', __dir__))).result(binding).strip! -%>
-<%- allure = ERB.new(File.read(File.expand_path('./partials/allure_imports.tt', __dir__))).result(binding).strip! -%>
+<%=- partial('allure_requirements', trim: false, strip: true) -%>
+<%- allure = partial('allure_imports', trim: false, strip: true) -%>
 
 
 module AllureHelper
