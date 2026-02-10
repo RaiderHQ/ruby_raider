@@ -1,4 +1,4 @@
-name: Automated Release
+name: Build and GitHub Release
 
 on:
   push:
@@ -17,13 +17,9 @@ permissions:
 
 jobs:
   release:
-    name: Build and Release Gem
+    name: Build and Create GitHub Release
     runs-on: ubuntu-latest
     if: github.repository_owner == 'RubyRaider'
-
-    environment:
-      name: rubygems.org
-      url: https://rubygems.org/gems/ruby_raider
 
     steps:
       - name: Checkout code
@@ -124,14 +120,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish to RubyGems
-        uses: rubygems/release-gem@v1
-        with:
-          gem-push: true
-        env:
-          RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
-
       - name: Notify success
         if: success()
         run: |
-          echo "✓ Release ${{ steps.version.outputs.version }} published successfully!"
+          echo "✓ GitHub Release ${{ steps.version.outputs.version }} created successfully!"
+          echo "📦 Gem file attached to release - publish to RubyGems manually when ready"
