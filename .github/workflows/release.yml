@@ -19,7 +19,7 @@ jobs:
   release:
     name: Build and Create GitHub Release
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'RubyRaider'
+    if: github.repository_owner == 'RaiderHQ'
 
     steps:
       - name: Checkout code
@@ -75,23 +75,25 @@ jobs:
       - name: Generate changelog
         id: changelog
         run: |
-          # Get the previous tag for comparison
-          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          
+          VERSION="v${{ steps.version.outputs.version }}"
+
+          # Get the previous tag (exclude current tag)
+          PREV_TAG=$(git tag --sort=-v:refname | grep -v "^${VERSION}$" | head -n 1)
+
           if [ -z "$PREV_TAG" ]; then
             echo "First release - no previous tag"
             CHANGELOG="Initial release"
           else
             echo "Generating changelog since $PREV_TAG"
-            CHANGELOG=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
+            CHANGELOG=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges)
           fi
 
           # Extract stats
-          FEATURES=$(echo "$CHANGELOG" | grep -iE "feat|add|new" | wc -l || echo 0)
-          FIXES=$(echo "$CHANGELOG" | grep -iE "fix|bug" | wc -l || echo 0)
-          CHANGES=$(echo "$CHANGELOG" | grep -c "^-" || echo 0)
+          FEATURES=$(echo "$CHANGELOG" | grep -ciE "feat|add|new" || true)
+          FIXES=$(echo "$CHANGELOG" | grep -ciE "fix|bug" || true)
+          CHANGES=$(echo "$CHANGELOG" | grep -c "^-" || true)
 
-          cat > RELEASE_NOTES.md << EOF
+          cat > RELEASE_NOTES.md <<EOF
           ## What's Changed
           $CHANGELOG
 
