@@ -34,7 +34,7 @@ module TemplateRenderer
     end
 
     def to_s
-      message_parts = ["Error rendering partial '#{@partial_name}': #{message}"]
+      message_parts = ["Error rendering partial '#{@partial_name}': #{super()}"]
 
       if @original_error
         message_parts << "\nOriginal error: #{@original_error.class}: #{@original_error.message}"

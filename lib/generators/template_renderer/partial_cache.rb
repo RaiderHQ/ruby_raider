@@ -49,6 +49,8 @@ module TemplateRenderer
         searched_paths: @resolver.search_paths(name, binding),
         original_error: e
       )
+    rescue TemplateError
+      raise
     rescue StandardError => e
       # Catch ERB syntax errors or other rendering issues
       raise TemplateRenderError.new(
