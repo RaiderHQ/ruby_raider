@@ -16,23 +16,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.4.0
           bundler-cache: true
 
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Install gems
-        run: bundle install
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
 
       - name: Create allure-results folder
         run: mkdir -p allure-results
 
-      - name: Build and test with rspec
-        run: <%- if framework == 'cucumber' -%>cucumber features --format pretty <%- else -%>bundle exec rspec spec --format documentation<%- end -%>
+      - name: Run tests
+        run: <%- if framework == 'cucumber' -%>bundle exec cucumber features --format pretty<%- elsif minitest? -%>bundle exec ruby -Itest test/test_login_page.rb<%- else -%>bundle exec rspec spec --format documentation<%- end %>
+        env:
+          HEADLESS: true
 
       - name: Get Allure history
         uses: actions/checkout@v2

@@ -1,0 +1,23 @@
+# frozen_string_literal: true
+
+require 'capybara'
+require 'capybara/dsl'
+require 'selenium-webdriver'
+require 'yaml'
+
+module CapybaraHelper
+  def self.configure
+    config = YAML.load_file('config/config.yml')
+
+    Capybara.configure do |capybara_config|
+      capybara_config.default_driver = :selenium
+      capybara_config.app_host = config['url']
+      capybara_config.default_max_wait_time = 10
+    end
+
+    Capybara.register_driver :selenium do |app|
+      browser = config['browser'].to_sym
+      Capybara::Selenium::Driver.new(app, browser:)
+    end
+  end
+end

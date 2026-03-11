@@ -1,8 +1,8 @@
 <%- if ios? -%>
-driver.find_element(predicate: 'label == "Sauce Labs Backpack"')
+driver.find_element(accessibility_id: 'product-item-1')
 <%- elsif android? -%>
-driver.find_element(xpath: '(//android.view.ViewGroup[@content-desc="store item"])[1]/android.view.ViewGroup[1]')
+driver.find_element(accessibility_id: 'product-item-1')
 <%- else -%>
-element(ios: { predicate: 'label == "Sauce Labs Backpack"' },
-            android: { xpath: '(//android.view.ViewGroup[@content-desc="store item"])[1]/android.view.ViewGroup[1]' })
+element(ios: { accessibility_id: 'product-item-1' },
+            android: { accessibility_id: 'product-item-1' })
 <%- end -%>

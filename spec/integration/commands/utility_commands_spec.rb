@@ -19,7 +19,7 @@ describe UtilityCommands do
   context 'with a spec folder' do
     let(:new_path) { 'test_folder' }
 
-    path = "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
+    path = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
 
     before do
       Dir.chdir path
@@ -53,7 +53,7 @@ describe UtilityCommands do
   context 'with a features folder' do
     let(:new_path) { 'test_folder' }
 
-    path = "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
+    path = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::APPLITOOLS}"
 
     before do
       Dir.chdir path

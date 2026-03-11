@@ -7,9 +7,16 @@ gem 'appium_console'
 <% end %>
 <%- if cucumber? -%>
 gem 'allure-cucumber', '2.23.0'
+<%- elsif minitest? -%>
+gem 'allure-minitest', '2.23.0'
+gem 'allure-ruby-commons', '2.23.0'
 <%- else -%>
 gem 'allure-rspec', '2.23.0'
 gem 'allure-ruby-commons', '2.23.0'
+<%- end -%>
+<%- if capybara? -%>
+gem 'capybara'
+gem 'selenium-webdriver'
 <%- end -%>
 <%- if axe? -%>
 gem 'axe-core-rspec'
@@ -29,9 +36,15 @@ gem '<%= framework %>'
 <%- if cucumber? -%>
 gem 'rspec'
 <%- end -%>
+<%- if minitest? -%>
+gem 'minitest-reporters'
+<%- end -%>
 gem 'rubocop'
 <%- if rspec? -%>
 gem 'rubocop-rspec'
+<%- end -%>
+<%- if minitest? -%>
+gem 'rubocop-minitest'
 <%- end -%>
 gem 'ruby_raider', '~> 1.1.0'
 <%- if selenium_based? %>

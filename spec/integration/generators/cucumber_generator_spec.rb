@@ -41,24 +41,24 @@ describe CucumberGenerator do
   end
 
   context 'with cucumber and appium android' do
-    include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.first}", 'home'
+    include_examples 'creates cucumber files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}", 'home'
   end
 
   context 'with cucumber and appium ios' do
-    include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}", 'home'
+    include_examples 'creates cucumber files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}", 'home'
   end
 
   context 'with cucumber and appium cross platform' do
-    include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}", 'home'
+    include_examples 'creates cucumber files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}", 'home'
   end
 
   context 'with cucumber and selenium' do
-    include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}", 'login'
-    include_examples 'creates factories for web projects', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}", 'login'
+    include_examples 'creates cucumber files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}", 'login'
+    include_examples 'creates factories for web projects', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}", 'login'
   end
 
   context 'with cucumber and watir' do
-    include_examples 'creates cucumber files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[3]}", 'login'
-    include_examples 'creates factories for web projects', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[3]}", 'login'
+    include_examples 'creates cucumber files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}", 'login'
+    include_examples 'creates factories for web projects', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}", 'login'
   end
 end

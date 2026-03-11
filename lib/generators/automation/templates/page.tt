@@ -14,13 +14,19 @@ class Page
     self.class.to_s.sub('Page', ' Page')
   end
 
-  <%- if selenium_based?  -%>
+  <%- if capybara? -%>
+  # Components
+
+  def header
+    Header.new(find('#customer_menu_top'))
+  end
+  <%- elsif selenium_based? -%>
   # Components
 
   def header
     Header.new(driver.find_element(id: 'customer_menu_top'))
   end
-  <%- elsif watir?  -%>
+  <%- elsif watir? -%>
   # Components
 
   def header

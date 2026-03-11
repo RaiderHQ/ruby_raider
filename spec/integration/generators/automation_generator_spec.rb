@@ -47,40 +47,40 @@ describe AutomationGenerator do
   end
 
   context 'with rspec and selenium' do
-    include_examples 'creates web automation framework', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
-    include_examples 'creates web visual framework', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
+    include_examples 'creates web automation framework', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates web visual framework', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
   end
 
   context 'with rspec and watir' do
-    include_examples 'creates web automation framework', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}"
+    include_examples 'creates web automation framework', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
   end
 
   context 'with cucumber and selenium' do
-    include_examples 'creates web automation framework', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}"
-    include_examples 'creates web visual framework', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.last}"
+    include_examples 'creates web automation framework', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates web visual framework', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::APPLITOOLS}"
   end
 
   context 'with cucumber and watir' do
-    include_examples 'creates web automation framework', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[3]}"
+    include_examples 'creates web automation framework', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
   end
 
   context 'with rspec and appium android' do
-    include_examples 'creates mobile automation framework', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.first}"
+    include_examples 'creates mobile automation framework', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
   end
 
   context 'with rspec and appium ios' do
-    include_examples 'creates mobile automation framework', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[1]}"
+    include_examples 'creates mobile automation framework', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
   end
 
   context 'with cucumber and appium android' do
-    include_examples 'creates mobile automation framework', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.first}"
+    include_examples 'creates mobile automation framework', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
   end
 
   context 'with cucumber and appium ios' do
-    include_examples 'creates mobile automation framework', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}"
+    include_examples 'creates mobile automation framework', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
   end
 
   context 'with cucumber and appium cross platform' do
-    include_examples 'creates mobile automation framework', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
+    include_examples 'creates mobile automation framework', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
   end
 end

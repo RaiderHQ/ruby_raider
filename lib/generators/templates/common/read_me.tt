@@ -34,7 +34,9 @@ Ruby Raider is a generator and scaffolding gem to make UI test automation easier
 |                       |                                   | Cucumber and Appium Cross-platform |                                 |
 |                       |                                   | Rspec and Appium Cross-platform    |                                 |
 
-***In order to run the Appium tests, download the example [app](https://github.com/saucelabs/my-demo-app-rn).***
+***The web tests run against the [Raider Test Store](https://raider-test-site.onrender.com/).***
+
+***In order to run the Appium tests, download the example [app](https://github.com/RaiderHQ/raider_test_app).***
 ***Remember to use the full path of the app that you download in the capabilities file and start the server using one of
 the commands below:***
 

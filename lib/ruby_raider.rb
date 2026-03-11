@@ -3,6 +3,7 @@
 require_relative '../lib/plugin/plugin'
 require_relative '../lib/commands/plugin_commands'
 require_relative '../lib/commands/loaded_commands'
+require_relative '../lib/commands/adopt_commands'
 require_relative '../lib/commands/scaffolding_commands'
 require_relative '../lib/commands/utility_commands'
 
@@ -44,6 +45,10 @@ module RubyRaider
     end
 
     map 'v' => 'version'
+
+    desc 'adopt', 'Adopts an existing test project into Ruby Raider conventions'
+    subcommand 'adopt', AdoptCommands
+    map 'a' => 'adopt'
 
     desc 'generate', 'Provides access to all the scaffolding commands'
     subcommand 'generate', ScaffoldingCommands

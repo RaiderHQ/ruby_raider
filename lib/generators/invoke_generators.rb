@@ -4,6 +4,7 @@ require_relative 'automation/automation_generator'
 require_relative 'common_generator'
 require_relative 'cucumber/cucumber_generator'
 require_relative 'helper_generator'
+require_relative 'minitest/minitest_generator'
 require_relative 'rspec/rspec_generator'
 
 # :reek:FeatureEnvy { enabled: false }

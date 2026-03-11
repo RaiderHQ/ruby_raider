@@ -1,4 +1,6 @@
-<%- if watir? -%>
+<%- if capybara? -%>
+<%=- partial('capybara_world', strip: true) -%>
+<%- elsif watir? -%>
 <%=- partial('watir_world', strip: true) -%>
 <%- else -%>
 <%=- partial('driver_world', strip: true) -%>
