@@ -6,7 +6,9 @@ require 'axe-rspec'
 require 'rspec'
 require 'tmpdir'
 require_relative 'allure_helper'
-<%- if watir? -%>
+<%- if capybara? -%>
+require_relative 'capybara_helper'
+<%- elsif watir? -%>
 require_relative 'browser_helper'
 <%- else -%>
 require_relative 'driver_helper'
@@ -17,10 +19,21 @@ module SpecHelper
   AllureHelper.configure
   RSpec.configure do |config|
     config.formatter = AllureHelper.formatter
-    <% if watir? %>config.include(BrowserHelper)<% else %>config.include(DriverHelper)<% end %>
+    <%- if capybara? -%>
+    config.include(Capybara::DSL)
+    CapybaraHelper.configure
+    <%- elsif watir? -%>
+    config.include(BrowserHelper)
+    <%- else -%>
+    config.include(DriverHelper)
+    <%- end -%>
     <%- if mobile? -%>
     config.before(:each) do
       driver.start_driver
+    end
+    <%- elsif capybara? -%>
+    config.before(:each) do
+      Capybara.current_session.driver.browser.manage.window.maximize
     end
     <%- elsif selenium_based? -%>
     config.before(:each) do

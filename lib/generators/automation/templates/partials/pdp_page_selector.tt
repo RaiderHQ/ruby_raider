@@ -1,8 +1,8 @@
 <%- if ios? -%>
-driver.find_element(accessibility_id: 'Add To Cart button')
+driver.find_element(accessibility_id: 'add-to-cart-button')
 <%- elsif android? -%>
-driver.find_element(xpath: '//android.view.ViewGroup[@content-desc="Add To Cart button"]/android.widget.TextView')
+driver.find_element(accessibility_id: 'add-to-cart-button')
 <%- else -%>
-element(ios: { accessibility_id: 'Add To Cart button' },
-            android: { xpath: '//android.view.ViewGroup[@content-desc="Add To Cart button"]/android.widget.TextView' })
+element(ios: { accessibility_id: 'add-to-cart-button' },
+            android: { accessibility_id: 'add-to-cart-button' })
 <%- end -%>

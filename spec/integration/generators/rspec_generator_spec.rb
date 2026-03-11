@@ -21,29 +21,29 @@ describe RspecGenerator do
   end
 
   context 'with rspec and selenium' do
-    include_examples 'creates factory files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
+    include_examples 'creates factory files', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates rspec files examples',
-                     "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}", 'login'
+                     "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}", 'login'
   end
 
   context 'with rspec and watir' do
-    include_examples 'creates factory files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
+    include_examples 'creates factory files', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates rspec files examples',
-                     "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}", 'login'
+                     "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}", 'login'
   end
 
   context 'with rspec and appium android' do
     include_examples 'creates rspec files examples',
-                     "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.first}", 'pdp'
+                     "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}", 'pdp'
   end
 
   context 'with rspec and appium ios' do
     include_examples 'creates rspec files examples',
-                     "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[1]}", 'pdp'
+                     "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}", 'pdp'
   end
 
   context 'with rspec and appium cross platform' do
     include_examples 'creates rspec files examples',
-                     "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}", 'pdp'
+                     "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}", 'pdp'
   end
 end

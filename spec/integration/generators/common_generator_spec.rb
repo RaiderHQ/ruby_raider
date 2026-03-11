@@ -49,75 +49,75 @@ describe CommonGenerator do
   end
 
   context 'with rspec and selenium' do
-    include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
-    include_examples 'creates a config file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
-    include_examples 'creates a gitignore file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
+    include_examples 'creates common files', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates a config file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates a gitignore file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
   end
 
   context 'with rspec and watir' do
-    include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}"
-    include_examples 'creates a config file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}"
-    include_examples 'creates a gitignore file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}"
+    include_examples 'creates common files', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
+    include_examples 'creates a config file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
+    include_examples 'creates a gitignore file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
   end
 
   context 'with rspec, selenium and applitools' do
-    include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates a config file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates an options file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates a gitignore file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
+    include_examples 'creates common files', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
+    include_examples 'creates a config file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
+    include_examples 'creates an options file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
+    include_examples 'creates a gitignore file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
   end
 
   context 'with cucumber and selenium' do
-    include_examples 'creates common files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}"
-    include_examples 'creates a config file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}"
-    include_examples 'creates a gitignore file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}"
+    include_examples 'creates common files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates a config file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates a gitignore file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
   end
 
   context 'with cucumber and watir' do
-    include_examples 'creates common files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[3]}"
-    include_examples 'creates a config file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[3]}"
-    include_examples 'creates a gitignore file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[3]}"
+    include_examples 'creates common files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
+    include_examples 'creates a config file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
+    include_examples 'creates a gitignore file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
   end
 
   context 'with rspec and appium android' do
-    include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.first}"
-    include_examples 'creates a capabilities file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.first}"
-    include_examples "doesn't create a config file", "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.first}"
-    include_examples 'creates a gitignore file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.first}"
+    include_examples 'creates common files', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
+    include_examples 'creates a capabilities file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
+    include_examples "doesn't create a config file", "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
+    include_examples 'creates a gitignore file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
   end
 
   context 'with rspec and appium ios' do
-    include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[1]}"
-    include_examples 'creates a capabilities file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[1]}"
-    include_examples "doesn't create a config file", "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[1]}"
-    include_examples 'creates a gitignore file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[1]}"
+    include_examples 'creates common files', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
+    include_examples 'creates a capabilities file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
+    include_examples "doesn't create a config file", "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
+    include_examples 'creates a gitignore file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
   end
 
   context 'with cucumber and appium android' do
-    include_examples 'creates common files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.first}"
-    include_examples 'creates a capabilities file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.first}"
-    include_examples "doesn't create a config file", "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.first}"
-    include_examples 'creates a gitignore file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.first}"
+    include_examples 'creates common files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
+    include_examples 'creates a capabilities file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
+    include_examples "doesn't create a config file", "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
+    include_examples 'creates a gitignore file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
   end
 
   context 'with cucumber and appium ios' do
-    include_examples 'creates common files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}"
-    include_examples 'creates a capabilities file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}"
-    include_examples "doesn't create a config file", "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}"
-    include_examples 'creates a gitignore file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.first}"
+    include_examples 'creates common files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
+    include_examples 'creates a capabilities file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
+    include_examples "doesn't create a config file", "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
+    include_examples 'creates a gitignore file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
   end
 
   context 'with cucumber and appium cross platform' do
-    include_examples 'creates common files', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
-    include_examples 'creates a capabilities file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
-    include_examples 'creates a config file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
-    include_examples 'creates a gitignore file', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
+    include_examples 'creates common files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'creates a capabilities file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'creates a config file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'creates a gitignore file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
   end
 
   context 'with rspec and appium cross platform' do
-    include_examples 'creates common files', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}"
-    include_examples 'creates a capabilities file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}"
-    include_examples 'creates a config file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}"
-    include_examples 'creates a gitignore file', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}"
+    include_examples 'creates common files', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'creates a capabilities file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'creates a config file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'creates a gitignore file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
   end
 end

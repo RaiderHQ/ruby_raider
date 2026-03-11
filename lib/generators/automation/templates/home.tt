@@ -6,15 +6,15 @@ class Home < Page
 
   # Actions
 
-  def go_to_backpack_pdp
-    driver.wait { backpack_image }.click
+  def go_to_product_detail
+    driver.wait { first_product }.click
   end
 
   private
 
   # Elements
 
-  def backpack_image
+  def first_product
     <%= partial('home_page_selector') -%>
   end
 end

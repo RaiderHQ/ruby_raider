@@ -3,6 +3,7 @@
 require 'thor'
 require_relative 'template_renderer'
 
+# :reek:TooManyMethods { enabled: false }
 class Generator < Thor::Group
   include Thor::Actions
   include TemplateRenderer
@@ -14,7 +15,8 @@ class Generator < Thor::Group
   def self.source_paths
     base_path = File.dirname(__FILE__)
     %W[#{base_path}/automation/templates #{base_path}/cucumber/templates
-       #{base_path}/rspec/templates #{base_path}/templates #{base_path}/infrastructure/templates ]
+       #{base_path}/rspec/templates #{base_path}/minitest/templates
+       #{base_path}/templates #{base_path}/infrastructure/templates ]
   end
 
   def args
@@ -50,8 +52,16 @@ class Generator < Thor::Group
     args.include?('rspec')
   end
 
+  def minitest?
+    args.include?('minitest')
+  end
+
   def selenium?
     args.include?('selenium')
+  end
+
+  def capybara?
+    args.include?('capybara')
   end
 
   def visual?
@@ -63,7 +73,7 @@ class Generator < Thor::Group
   end
 
   def web?
-    (args & (%w[selenium watir axe applitools])).count.positive?
+    (args & %w[selenium watir axe applitools capybara]).count.positive?
   end
 
   def axe?

@@ -53,6 +53,7 @@ class MenuGenerator
     prompt.select('Please select your test framework') do |menu|
       menu.choice :Cucumber, -> { select_ci_platform('Cucumber', automation) }
       menu.choice :Rspec, -> { select_ci_platform('Rspec', automation) }
+      menu.choice :Minitest, -> { select_ci_platform('Minitest', automation) }
       menu.choice :Quit, -> { exit }
     end
   end
@@ -92,6 +93,7 @@ class MenuGenerator
 
   def automation_options(menu)
     menu.choice :Selenium, -> { choose_test_framework('selenium') }
+    menu.choice :Capybara, -> { choose_test_framework('capybara') }
     menu.choice :Appium, -> { choose_test_framework('appium') }
     menu.choice :Watir, -> { choose_test_framework('watir') }
     menu.choice :Applitools, -> { choose_test_framework('applitools') }

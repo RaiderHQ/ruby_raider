@@ -1,0 +1,21 @@
+# frozen_string_literal: true
+
+<%- if axe? %>
+require 'axe-minitest'
+<%- end -%>
+require 'minitest/autorun'
+require 'tmpdir'
+require_relative 'allure_helper'
+<%- if watir? -%>
+require_relative 'browser_helper'
+<%- elsif capybara? -%>
+require_relative 'capybara_helper'
+<%- else -%>
+require_relative 'driver_helper'
+<%- end -%>
+
+module TestHelper
+  <% if watir? %>include BrowserHelper<% elsif capybara? %>include CapybaraHelper<% else %>include DriverHelper<% end %>
+end
+
+Minitest::Test.include(TestHelper)

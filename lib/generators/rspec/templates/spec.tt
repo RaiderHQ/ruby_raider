@@ -1,4 +1,4 @@
-<%- if selenium_based? || watir? -%>
+<%- if selenium_based? || watir? || capybara? -%>
 # frozen_string_literal: true
 
 require_relative '../helpers/spec_helper'
@@ -23,26 +23,26 @@ describe 'Login' do
     end
 
     it 'no accessibility errors are present on the transaction history' do
-      transaction_history = '.dash-tile.dash-tile-balloon.clearfix'
-      expect(account.page).to be_axe_clean.within transaction_history
+      account_details = '.account-card'
+      expect(account.page).to be_axe_clean.within account_details
     end
 
     it 'no accessibility errors are present on the heading' do
-      heading = '.maintext'
+      heading = '.page-title'
       expect(account.page).to be_axe_clean.within heading
     end
   end
 end
-<%- elsif selenium_based? || watir? -%>
+<%- elsif selenium_based? || watir? || capybara? -%>
 describe 'Login' do
   subject(:header) { account_page.header.customer_name }
 
   let(:user) { ModelFactory.for('users')['registered user'] }
-  let(:login_page) { Login.new(<% if watir? -%>browser<% else -%>driver<% end -%>) }
-  let(:account_page) { Account.new(<% if watir? -%>browser<% else -%>driver<% end -%>) }
+  let(:login_page) { <% if capybara? -%>Login.new<% elsif watir? -%>Login.new(browser)<% else -%>Login.new(driver)<% end -%> }
+  let(:account_page) { <% if capybara? -%>Account.new<% elsif watir? -%>Account.new(browser)<% else -%>Account.new(driver)<% end -%> }
 
   before do
-    login_page.visit
+    login_page.<% if capybara? -%>visit_page<% else -%>visit<% end %>
     login_page.login(user['username'], password)
   end
 
@@ -86,8 +86,8 @@ class PdpSpec
     let(:pdp_page) { Pdp.new(driver) }
 
     it 'shows add to cart button' do
-      home_page.go_to_backpack_pdp
-      expect(pdp_page.add_to_cart_text).to eq 'Add To Cart'
+      home_page.go_to_product_detail
+      expect(pdp_page.add_to_cart_text).to eq 'Add to Cart'
     end
   end
 end

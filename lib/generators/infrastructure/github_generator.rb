@@ -8,4 +8,10 @@ class GithubGenerator < Generator
 
     template('github.tt', "#{name}/.github/workflows/test_pipeline.yml")
   end
+
+  def generate_appium_pipeline
+    return unless mobile?
+
+    template('github_appium.tt', "#{name}/.github/workflows/appium_pipeline.yml")
+  end
 end
