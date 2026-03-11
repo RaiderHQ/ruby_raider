@@ -1,13 +1,10 @@
-name: Build and GitHub Release
+name: Release
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'  # Triggers on version tags like v1.2.0
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 1.2.0)'
+        description: 'Version to release (e.g., 2.0.0)'
         required: true
         type: string
 
@@ -17,15 +14,20 @@ permissions:
 
 jobs:
   release:
-    name: Build and Create GitHub Release
+    name: Release
     runs-on: ubuntu-latest
     if: github.repository_owner == 'RaiderHQ'
+
+    environment:
+      name: rubygems.org
+      url: https://rubygems.org/gems/ruby_raider
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -33,28 +35,32 @@ jobs:
           ruby-version: '3.3'
           bundler-cache: true
 
-      - name: Extract version
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update version file
         id: version
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            # Use input from manual trigger
-            VERSION="${{ github.event.inputs.version }}"
-          else
-            # Extract from tag (strips the 'v' prefix)
-            VERSION=${GITHUB_REF#refs/tags/v}
-          fi
+          VERSION="${{ github.event.inputs.version }}"
+          echo "$VERSION" > lib/version
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Releasing version: $VERSION"
 
-      - name: Verify version matches lib/version
+      - name: Commit and push version bump
         run: |
-          LIB_VERSION=$(cat lib/version | tr -d '[:space:]')
-          TAG_VERSION="${{ steps.version.outputs.version }}"
-          if [ "$LIB_VERSION" != "$TAG_VERSION" ]; then
-            echo "ERROR: lib/version ($LIB_VERSION) does not match requested version ($TAG_VERSION)"
-            exit 1
+          VERSION="${{ steps.version.outputs.version }}"
+          git add lib/version
+          if git diff --cached --quiet; then
+            echo "Version already up to date"
+          else
+            git commit -m "Bump version to ${VERSION}"
+            git push origin HEAD
           fi
-          echo "✓ Version verified: $LIB_VERSION"
+
+      - name: Install dependencies
+        run: bundle install
 
       - name: Run tests
         run: |
@@ -70,25 +76,25 @@ jobs:
       - name: Build gem
         run: |
           gem build ruby_raider.gemspec
-          echo "Built: $(ls -1 *.gem)"
+          GEM_FILE=$(ls -1 ruby_raider-*.gem)
+          echo "gem_file=$GEM_FILE" >> $GITHUB_OUTPUT
+          echo "Built: $GEM_FILE"
+        id: build
 
       - name: Generate changelog
-        id: changelog
         run: |
           VERSION="v${{ steps.version.outputs.version }}"
 
-          # Get the previous tag (exclude current tag)
+          # Get the previous tag (exclude current version tag if it exists)
           PREV_TAG=$(git tag --sort=-v:refname | grep -v "^${VERSION}$" | head -n 1)
 
           if [ -z "$PREV_TAG" ]; then
-            echo "First release - no previous tag"
             CHANGELOG="Initial release"
           else
             echo "Generating changelog since $PREV_TAG"
             CHANGELOG=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges)
           fi
 
-          # Extract stats
           FEATURES=$(echo "$CHANGELOG" | grep -ciE "feat|add|new" || true)
           FIXES=$(echo "$CHANGELOG" | grep -ciE "fix|bug" || true)
           CHANGES=$(echo "$CHANGELOG" | grep -c "^-" || true)
@@ -108,10 +114,24 @@ jobs:
           \`\`\`
           EOF
 
+      - name: Check if GitHub release exists
+        id: check_release
+        run: |
+          VERSION="v${{ steps.version.outputs.version }}"
+          if gh release view "$VERSION" > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "GitHub release $VERSION already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "GitHub release $VERSION does not exist yet"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        if: steps.check_release.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
         with:
-          # Use the version for the tag name if triggered manually
           tag_name: v${{ steps.version.outputs.version }}
           name: Release ${{ steps.version.outputs.version }}
           body_path: RELEASE_NOTES.md
@@ -122,8 +142,27 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Notify success
-        if: success()
+      - name: Check if gem version exists on RubyGems
+        id: check_gem
         run: |
-          echo "✓ GitHub Release ${{ steps.version.outputs.version }} created successfully!"
-          echo "📦 Gem file attached to release - publish to RubyGems manually when ready"
+          VERSION="${{ steps.version.outputs.version }}"
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://rubygems.org/api/v1/versions/ruby_raider.json")
+          if [ "$HTTP_CODE" = "200" ]; then
+            if curl -s "https://rubygems.org/api/v1/versions/ruby_raider.json" | ruby -rjson -e "
+              versions = JSON.parse(STDIN.read).map { |v| v['number'] }
+              exit(versions.include?('$VERSION') ? 0 : 1)
+            "; then
+              echo "published=true" >> $GITHUB_OUTPUT
+              echo "Gem version $VERSION already on RubyGems — skipping push"
+            else
+              echo "published=false" >> $GITHUB_OUTPUT
+              echo "Gem version $VERSION not on RubyGems — will push"
+            fi
+          else
+            echo "published=false" >> $GITHUB_OUTPUT
+            echo "Could not check RubyGems (HTTP $HTTP_CODE) — will attempt push"
+          fi
+
+      - name: Push gem to RubyGems
+        if: steps.check_gem.outputs.published == 'false'
+        uses: rubygems/release-gem@v1
