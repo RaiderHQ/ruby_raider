@@ -53,6 +53,7 @@ describe 'Login' do
     <%- if visual? -%>
       check_page account_page
     <%- else -%>
+      account_page.<% if capybara? -%>visit_page<% else -%>visit<% end %>
       expect(header).to eq "Welcome back #{user['name']}"
     <%- end -%>
     end
@@ -65,6 +66,7 @@ describe 'Login' do
     <%- if visual? -%>
       check_page login_page
     <%- else -%>
+      login_page.<% if capybara? -%>visit_page<% else -%>visit<% end %>
       expect(header).to eq 'Login or register'
     <%- end -%>
     end

@@ -1,40 +1,42 @@
-require_relative '../../lib/ruby_raider'
+# frozen_string_literal: true
 
-FRAMEWORKS = %w[cucumber rspec].freeze
+require_relative '../../lib/ruby_raider'
+require_relative 'support/system_test_helper'
+
+FRAMEWORKS = %w[cucumber rspec minitest].freeze unless defined?(FRAMEWORKS)
 
 describe 'Watir based frameworks' do
-  before do
+  include SystemTestHelper
+
+  before(:all) do # rubocop:disable RSpec/BeforeAfterAll
     FRAMEWORKS.each do |framework|
       RubyRaider::Raider
         .new.invoke(:new, nil, %W[watir_#{framework} -p framework:#{framework} automation:watir])
     end
   end
 
-  after do
-    FRAMEWORKS.each do |framework|
-      FileUtils.rm_rf("watir_#{framework}")
-    end
+  after(:all) do # rubocop:disable RSpec/BeforeAfterAll
+    FRAMEWORKS.each { |framework| FileUtils.rm_rf("watir_#{framework}") }
   end
 
-  shared_examples 'creates web automation framework' do |type|
-    it 'executes without errors' do
-      run_tests_with(type)
-      expect($stdout).not_to match(/StandardError/)
+  shared_examples 'runs tests successfully' do |framework|
+    it 'installs dependencies and runs tests without errors' do
+      result = run_tests_with(framework, 'watir')
+      expect(result[:success]).to be(true),
+                                  "Tests failed for watir_#{framework}.\n" \
+                                  "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
     end
   end
 
   context 'with rspec' do
-    include_examples 'creates web automation framework', 'rspec'
+    include_examples 'runs tests successfully', 'rspec'
   end
 
   context 'with cucumber' do
-    include_examples 'creates web automation framework', 'cucumber'
+    include_examples 'runs tests successfully', 'cucumber'
   end
 
-  private
-
-  def run_tests_with(framework)
-    folder = framework == 'rspec' ? 'spec' : 'features'
-    system("cd watir_#{framework} && bundle install && raider utility browser_options chrome headless && bundle exec #{framework} #{folder}")
+  context 'with minitest' do
+    include_examples 'runs tests successfully', 'minitest'
   end
 end

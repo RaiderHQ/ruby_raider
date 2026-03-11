@@ -18,19 +18,19 @@ class Page
   # Components
 
   def header
-    Header.new(find('#customer_menu_top'))
+    Header.new(find('.welcome-msg'))
   end
   <%- elsif selenium_based? -%>
   # Components
 
   def header
-    Header.new(driver.find_element(id: 'customer_menu_top'))
+    Header.new(driver.find_element(css: '.welcome-msg'))
   end
   <%- elsif watir? -%>
   # Components
 
   def header
-    Header.new(browser.element(id: 'customer_menu_top'))
+    Header.new(browser.element(css: '.welcome-msg'))
   end
   <%- end -%>
 end
