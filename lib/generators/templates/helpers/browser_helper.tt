@@ -17,6 +17,7 @@ module BrowserHelper
 
   def create_browser(*args)
     args = args.empty? ? config['browser_arguments'][config['browser']] : args
+    args += ['--headless'] if ENV['HEADLESS'] && !args.include?('--headless')
     Watir::Browser.new(config['browser'], options: { args: args })
   end
 end

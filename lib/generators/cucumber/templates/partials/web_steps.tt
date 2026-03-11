@@ -24,6 +24,7 @@ Then("I'm logged in") do
   <%- if visual? -%>
   check_page account_page
   <%- else -%>
+  account_page.<% if capybara? %>visit_page<% else %>visit<% end %>
   expect(account_page.header.customer_name).to eq "Welcome back #{@user['name']}"
   <%- end -%>
 end
