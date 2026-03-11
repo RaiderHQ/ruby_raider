@@ -17,7 +17,10 @@ module CapybaraHelper
 
     Capybara.register_driver :selenium do |app|
       browser = config['browser'].to_sym
-      Capybara::Selenium::Driver.new(app, browser:)
+      args = config['browser_arguments'][config['browser']] || []
+      args += ['--headless'] if ENV['HEADLESS'] && !args.include?('--headless')
+      options = Selenium::WebDriver::Chrome::Options.new(args:)
+      Capybara::Selenium::Driver.new(app, browser:, options:)
     end
   end
 end

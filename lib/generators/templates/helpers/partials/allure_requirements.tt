@@ -1,6 +1,8 @@
 <% if cucumber? %>
 require 'allure-cucumber'
-<% else %>
+<% elsif rspec? %>
 require 'allure-ruby-commons'
 require 'allure-rspec'
+<% else %>
+require 'allure-ruby-commons'
 <% end %>

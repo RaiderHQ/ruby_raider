@@ -6,13 +6,12 @@ gem 'appium_lib'
 gem 'appium_console'
 <% end %>
 <%- if cucumber? -%>
-gem 'allure-cucumber', '2.23.0'
+gem 'allure-cucumber', '2.28.0'
 <%- elsif minitest? -%>
-gem 'allure-minitest', '2.23.0'
-gem 'allure-ruby-commons', '2.23.0'
+gem 'allure-ruby-commons', '2.28.0'
 <%- else -%>
-gem 'allure-rspec', '2.23.0'
-gem 'allure-ruby-commons', '2.23.0'
+gem 'allure-rspec', '2.28.0'
+gem 'allure-ruby-commons', '2.28.0'
 <%- end -%>
 <%- if capybara? -%>
 gem 'capybara'

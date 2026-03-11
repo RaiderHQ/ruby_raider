@@ -5,17 +5,17 @@ require 'open3'
 
 FRAMEWORKS = %w[cucumber rspec minitest].freeze unless defined?(FRAMEWORKS)
 
-describe 'Watir based frameworks' do
+describe 'Capybara based frameworks' do
   before(:all) do
     FRAMEWORKS.each do |framework|
       RubyRaider::Raider
-        .new.invoke(:new, nil, %W[watir_#{framework} -p framework:#{framework} automation:watir])
+        .new.invoke(:new, nil, %W[capybara_#{framework} -p framework:#{framework} automation:capybara])
     end
   end
 
   after(:all) do
     FRAMEWORKS.each do |framework|
-      FileUtils.rm_rf("watir_#{framework}")
+      FileUtils.rm_rf("capybara_#{framework}")
     end
   end
 
@@ -23,7 +23,7 @@ describe 'Watir based frameworks' do
     it 'installs dependencies and runs tests without errors' do
       result = run_tests_with(framework)
       expect(result[:success]).to be(true),
-                                  "Tests failed for watir_#{framework}.\n" \
+                                  "Tests failed for capybara_#{framework}.\n" \
                                   "STDOUT: #{result[:stdout]}\n" \
                                   "STDERR: #{result[:stderr]}"
     end
@@ -44,7 +44,7 @@ describe 'Watir based frameworks' do
   private
 
   def run_tests_with(framework)
-    project = "watir_#{framework}"
+    project = "capybara_#{framework}"
     test_command = case framework
                    when 'cucumber' then 'bundle exec cucumber features --format pretty'
                    when 'minitest' then 'bundle exec ruby -Itest test/test_login_page.rb'

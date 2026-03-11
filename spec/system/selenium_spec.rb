@@ -1,40 +1,64 @@
-require_relative '../../lib/ruby_raider'
+# frozen_string_literal: true
 
-FRAMEWORKS = %w[cucumber rspec].freeze
+require_relative '../../lib/ruby_raider'
+require 'open3'
+
+FRAMEWORKS = %w[cucumber rspec minitest].freeze
 
 describe 'Selenium based frameworks' do
-  before do
+  before(:all) do
     FRAMEWORKS.each do |framework|
       RubyRaider::Raider
         .new.invoke(:new, nil, %W[selenium_#{framework} -p framework:#{framework} automation:selenium])
     end
   end
 
-  after do
+  after(:all) do
     FRAMEWORKS.each do |framework|
       FileUtils.rm_rf("selenium_#{framework}")
     end
   end
 
-  shared_examples 'creates web automation framework' do |type|
-    it 'executes without errors' do
-      run_tests_with(type)
-      expect($stdout).not_to match(/StandardError/)
+  shared_examples 'runs tests successfully' do |framework|
+    it 'installs dependencies and runs tests without errors' do
+      result = run_tests_with(framework)
+      expect(result[:success]).to be(true),
+                                  "Tests failed for selenium_#{framework}.\n" \
+                                  "STDOUT: #{result[:stdout]}\n" \
+                                  "STDERR: #{result[:stderr]}"
     end
   end
 
   context 'with rspec' do
-    include_examples 'creates web automation framework', 'rspec'
+    include_examples 'runs tests successfully', 'rspec'
   end
 
   context 'with cucumber' do
-    include_examples 'creates web automation framework', 'cucumber'
+    include_examples 'runs tests successfully', 'cucumber'
+  end
+
+  context 'with minitest' do
+    include_examples 'runs tests successfully', 'minitest'
   end
 
   private
 
   def run_tests_with(framework)
-    folder = framework == 'rspec' ? 'spec' : 'features'
-    system("cd selenium_#{framework} && bundle install && raider utility browser_options chrome headless && bundle exec #{framework} #{folder}")
+    project = "selenium_#{framework}"
+    test_command = case framework
+                   when 'cucumber' then 'bundle exec cucumber features --format pretty'
+                   when 'minitest' then 'bundle exec ruby -Itest test/test_login_page.rb'
+                   else 'bundle exec rspec spec --format documentation'
+                   end
+
+    Bundler.with_unbundled_env do
+      Dir.chdir(project) do
+        stdout, stderr, status = Open3.capture3('bundle install --quiet')
+        return { success: false, stdout:, stderr: } unless status.success?
+
+        stdout, stderr, status = Open3.capture3({ 'HEADLESS' => 'true' }, test_command)
+        { success: status.success?, stdout:, stderr: }
+      end
+    end
   end
 end

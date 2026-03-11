@@ -23,12 +23,14 @@ describe 'End-to-End Project Generation and Execution' do
     }
 
     Dir.chdir(project_name) do
-      Timeout.timeout(timeout) do
-        stdout, stderr, status = Open3.capture3(command)
-        result[:stdout] = stdout
-        result[:stderr] = stderr
-        result[:exit_code] = status.exitstatus
-        result[:success] = status.success?
+      Bundler.with_unbundled_env do
+        Timeout.timeout(timeout) do
+          stdout, stderr, status = Open3.capture3(command)
+          result[:stdout] = stdout
+          result[:stderr] = stderr
+          result[:exit_code] = status.exitstatus
+          result[:success] = status.success?
+        end
       end
     end
 
