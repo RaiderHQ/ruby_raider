@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   push:
-    if: github.repository == 'RubyRaider/ruby_raider'
+    if: github.repository == 'RaiderHQ/ruby_raider'
     runs-on: ubuntu-latest
 
     environment:
