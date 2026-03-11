@@ -3,8 +3,22 @@ name: System Tests
 on: [pull_request]
 
 jobs:
+  setup:
+    name: Install dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+
   selenium:
     name: Selenium frameworks
+    needs: setup
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -26,6 +40,7 @@ jobs:
 
   watir:
     name: Watir frameworks
+    needs: setup
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -47,6 +62,7 @@ jobs:
 
   capybara:
     name: Capybara frameworks
+    needs: setup
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

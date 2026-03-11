@@ -11,8 +11,10 @@ module CapybaraHelper
 
     Capybara.configure do |capybara_config|
       capybara_config.default_driver = :selenium
+      capybara_config.javascript_driver = :selenium
       capybara_config.app_host = config['url']
       capybara_config.default_max_wait_time = 10
+      capybara_config.run_server = false
     end
 
     Capybara.register_driver :selenium do |app|

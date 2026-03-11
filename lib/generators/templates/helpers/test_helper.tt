@@ -15,9 +15,12 @@ require_relative 'driver_helper'
 <%- end -%>
 
 AllureHelper.configure
+<%- if capybara? -%>
+CapybaraHelper.configure
+<%- end -%>
 
 module TestHelper
-  <% if watir? %>include BrowserHelper<% elsif capybara? %>include CapybaraHelper<% else %>include DriverHelper<% end %>
+  <% if watir? %>include BrowserHelper<% elsif capybara? %>include Capybara::DSL<% else %>include DriverHelper<% end %>
 end
 
 Minitest::Test.include(TestHelper)
