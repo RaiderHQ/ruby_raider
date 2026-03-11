@@ -1,5 +1,5 @@
 browser: chrome
-url: 'https://automationteststore.com/'
+url: 'https://raider-test-site.onrender.com/'
 
 <%- if selenium_based? -%>
 driver_options:

@@ -5,8 +5,8 @@ require_relative '../../page_objects/pages/login'
 
 Given("I'm a {user} on the login page") do |user|
   @user = user
-  @login_page = Login.new(<% if watir? %>browser<% else %>driver<% end %>)
-  @login_page.visit
+  @login_page = <% if capybara? %>Login.new<% elsif watir? %>Login.new(browser)<% else %>Login.new(driver)<% end %>
+  @login_page.<% if capybara? %>visit_page<% else %>visit<% end %>
 end
 
 When('I login with my credentials') do
@@ -20,7 +20,7 @@ Then('the page should be axe clean') do
 end
 <%- else -%>
 Then("I'm logged in") do
-  account_page = Account.new(<% if watir? %>browser<% else %>driver<% end %>)
+  account_page = <% if capybara? %>Account.new<% elsif watir? %>Account.new(browser)<% else %>Account.new(driver)<% end %>
   <%- if visual? -%>
   check_page account_page
   <%- else -%>

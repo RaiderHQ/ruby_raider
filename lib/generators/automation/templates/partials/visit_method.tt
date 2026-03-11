@@ -1,5 +1,15 @@
 <% if web? %>
-  def visit(*page)
-    <% if selenium_based? %>@driver.navigate.to full_url(page.first) <% else %>@browser.goto full_url(page.first)<% end %>
+<% if capybara? %>
+  def visit_page(*page)
+    Capybara.visit full_url(page.first)
   end
+<% elsif selenium_based? %>
+  def visit(*page)
+    @driver.navigate.to full_url(page.first)
+  end
+<% else %>
+  def visit(*page)
+    @browser.goto full_url(page.first)
+  end
+<% end %>
 <% end %>

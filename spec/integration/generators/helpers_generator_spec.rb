@@ -47,70 +47,108 @@ describe HelpersGenerator do
   end
 
   context 'with rspec and selenium' do
-    include_examples 'creates common helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
-    include_examples 'creates selenium helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
-    include_examples 'creates rspec helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[2]}"
+    include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
   end
 
   context 'with rspec and watir' do
-    include_examples 'creates common helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}"
-    include_examples 'creates watir helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}"
-    include_examples 'creates rspec helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[3]}"
+    include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
+    include_examples 'creates watir helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
+    include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
   end
 
   context 'with rspec, selenium and applitools' do
-    include_examples 'creates common visual helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates selenium helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
-    include_examples 'creates rspec helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.last}"
+    include_examples 'creates common visual helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
+    include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
+    include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
   end
 
   context 'with cucumber and selenium' do
-    include_examples 'creates common helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}"
-    include_examples 'creates selenium helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}"
-    include_examples 'creates cucumber helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[2]}"
+    include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates selenium helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates cucumber helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
   end
 
   context 'with cucumber and watir' do
-    include_examples 'creates common helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[3]}"
-    include_examples 'creates watir helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[3]}"
-    include_examples 'creates cucumber helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[3]}"
+    include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
+    include_examples 'creates watir helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
+    include_examples 'creates cucumber helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
   end
 
   context 'with rspec and appium android' do
-    include_examples 'creates common helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.first}"
-    include_examples 'creates selenium helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.first}"
-    include_examples 'creates rspec helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES.first}"
+    include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
+    include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
+    include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
   end
 
   context 'with rspec and appium ios' do
-    include_examples 'creates common helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[1]}"
-    include_examples 'creates selenium helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[1]}"
-    include_examples 'creates rspec helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[1]}"
+    include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
+    include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
+    include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
   end
 
   context 'with cucumber and appium android' do
-    include_examples 'creates common helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.first}"
-    include_examples 'creates selenium helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.first}"
-    include_examples 'creates cucumber helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES.first}"
+    include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
+    include_examples 'creates selenium helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
+    include_examples 'creates cucumber helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
   end
 
   context 'with cucumber and appium ios' do
-    include_examples 'creates common helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}"
-    include_examples 'creates selenium helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}"
-    include_examples 'creates cucumber helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[1]}"
+    include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
+    include_examples 'creates selenium helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
+    include_examples 'creates cucumber helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
   end
 
   context 'with rspec and appium cross platform' do
-    include_examples 'creates common helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}"
-    include_examples 'creates selenium helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}"
-    include_examples 'creates rspec helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}"
-    include_examples 'creates cross platform helpers', "#{FRAMEWORKS.last}_#{AUTOMATION_TYPES[4]}"
+    include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'creates cross platform helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
   end
 
   context 'with cucumber and appium cross platform' do
-    include_examples 'creates common helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
-    include_examples 'creates selenium helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
-    include_examples 'creates cucumber helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
-    include_examples 'creates cross platform helpers', "#{FRAMEWORKS.first}_#{AUTOMATION_TYPES[4]}"
+    include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'creates selenium helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'creates cucumber helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'creates cross platform helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
+  end
+
+  shared_examples 'creates minitest helpers' do |name|
+    it 'creates a test helper file' do
+      expect(File).to exist("#{name}/helpers/test_helper.rb")
+    end
+
+    it 'does not create a spec helper' do
+      expect(File).not_to exist("#{name}/helpers/spec_helper.rb")
+    end
+  end
+
+  shared_examples 'creates capybara helpers' do |name|
+    it 'creates a capybara helper file' do
+      expect(File).to exist("#{name}/helpers/capybara_helper.rb")
+    end
+
+    it 'does not create a driver helper' do
+      expect(File).not_to exist("#{name}/helpers/driver_helper.rb")
+    end
+  end
+
+  context 'with minitest and selenium' do
+    include_examples 'creates common helpers', "#{FrameworkIndex::MINITEST}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates selenium helpers', "#{FrameworkIndex::MINITEST}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates minitest helpers', "#{FrameworkIndex::MINITEST}_#{AutomationIndex::SELENIUM}"
+  end
+
+  context 'with minitest and watir' do
+    include_examples 'creates common helpers', "#{FrameworkIndex::MINITEST}_#{AutomationIndex::WATIR}"
+    include_examples 'creates watir helpers', "#{FrameworkIndex::MINITEST}_#{AutomationIndex::WATIR}"
+    include_examples 'creates minitest helpers', "#{FrameworkIndex::MINITEST}_#{AutomationIndex::WATIR}"
+  end
+
+  context 'with minitest and capybara' do
+    include_examples 'creates common helpers', "#{FrameworkIndex::MINITEST}_#{AutomationIndex::CAPYBARA}"
+    include_examples 'creates capybara helpers', "#{FrameworkIndex::MINITEST}_#{AutomationIndex::CAPYBARA}"
+    include_examples 'creates minitest helpers', "#{FrameworkIndex::MINITEST}_#{AutomationIndex::CAPYBARA}"
   end
 end

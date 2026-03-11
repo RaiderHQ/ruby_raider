@@ -6,12 +6,15 @@ class HelpersGenerator < Generator
   def generate_helpers
     generate_browser_helper
     generate_driver_helper
+    generate_capybara_helper
     generate_appium_helper
     generate_allure_helper
 
     if visual?
       generate_visual_helper
       generate_visual_spec_helper
+    elsif minitest?
+      generate_test_helper
     else
       generate_spec_helper
     end
@@ -24,27 +27,37 @@ class HelpersGenerator < Generator
   end
 
   def generate_browser_helper
-    return if selenium_based? || mobile?
+    return if selenium_based? || mobile? || capybara?
 
     template('helpers/browser_helper.tt', "#{name}/helpers/browser_helper.rb")
   end
 
   def generate_spec_helper
-    return if cucumber?
+    return if cucumber? || minitest?
 
     template('helpers/spec_helper.tt', "#{name}/helpers/spec_helper.rb")
   end
 
   def generate_driver_helper
-    return if watir?
+    return if watir? || capybara?
 
     template('helpers/driver_helper.tt', "#{name}/helpers/driver_helper.rb")
+  end
+
+  def generate_capybara_helper
+    return unless capybara?
+
+    template('helpers/capybara_helper.tt', "#{name}/helpers/capybara_helper.rb")
   end
 
   def generate_appium_helper
     return unless cross_platform?
 
     template('helpers/appium_helper.tt', "#{name}/helpers/appium_helper.rb")
+  end
+
+  def generate_test_helper
+    template('helpers/test_helper.tt', "#{name}/helpers/test_helper.rb")
   end
 
   def generate_visual_helper
