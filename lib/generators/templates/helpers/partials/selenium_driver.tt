@@ -5,7 +5,9 @@
   end
 
   def browser_arguments(*opts)
-    opts.empty? ? @config['browser_arguments'][@config['browser']] : opts
+    args = opts.empty? ? @config['browser_arguments'][@config['browser']] : opts
+    args += ['--headless'] if ENV['HEADLESS'] && !args.include?('--headless')
+    args
   end
 
   def driver_options

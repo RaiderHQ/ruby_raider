@@ -3,27 +3,27 @@
 require_relative '../../lib/ruby_raider'
 require_relative 'support/system_test_helper'
 
-FRAMEWORKS = %w[cucumber rspec minitest].freeze
+FRAMEWORKS = %w[cucumber rspec minitest].freeze unless defined?(FRAMEWORKS)
 
-describe 'Selenium based frameworks' do
+describe 'Capybara based frameworks' do
   include SystemTestHelper
 
   before(:all) do # rubocop:disable RSpec/BeforeAfterAll
     FRAMEWORKS.each do |framework|
       RubyRaider::Raider
-        .new.invoke(:new, nil, %W[selenium_#{framework} -p framework:#{framework} automation:selenium])
+        .new.invoke(:new, nil, %W[capybara_#{framework} -p framework:#{framework} automation:capybara])
     end
   end
 
   after(:all) do # rubocop:disable RSpec/BeforeAfterAll
-    FRAMEWORKS.each { |framework| FileUtils.rm_rf("selenium_#{framework}") }
+    FRAMEWORKS.each { |framework| FileUtils.rm_rf("capybara_#{framework}") }
   end
 
   shared_examples 'runs tests successfully' do |framework|
     it 'installs dependencies and runs tests without errors' do
-      result = run_tests_with(framework, 'selenium')
+      result = run_tests_with(framework, 'capybara')
       expect(result[:success]).to be(true),
-                                  "Tests failed for selenium_#{framework}.\n" \
+                                  "Tests failed for capybara_#{framework}.\n" \
                                   "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
     end
   end
