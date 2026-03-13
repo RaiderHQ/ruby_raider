@@ -1,0 +1,17 @@
+# Type definitions for NameNormalizer
+module NameNormalizer
+  SUFFIXES: Array[String]
+
+  def self?.normalize: (String input) -> String
+  def self?.to_class_name: (String input, String suffix) -> String
+  def self?.to_page_class: (String input) -> String
+  def self?.to_file_name: (String input) -> String
+  def self?.nested?: (String input) -> bool
+  def self?.module_parts: (String input) -> Array[String]
+  def self?.leaf_name: (String input) -> String
+
+  private
+
+  def self?.camel_to_snake: (String str) -> String
+  def self?.strip_suffixes: (String name) -> String
+end

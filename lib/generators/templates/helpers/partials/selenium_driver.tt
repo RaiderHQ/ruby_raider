@@ -1,7 +1,9 @@
   def create_driver(*opts)
     @config = YAML.load_file('config/config.yml')
     browser = @config['browser']
-    Selenium::WebDriver.for(browser.to_sym, options: create_webdriver_options(*opts))
+    driver = Selenium::WebDriver.for(browser.to_sym, options: create_webdriver_options(*opts))
+    driver.manage.timeouts.implicit_wait = @config.fetch('timeout', 10)
+    driver
   end
 
   def browser_arguments(*opts)
@@ -10,16 +12,16 @@
     args
   end
 
-  def driver_options
-    @config['driver_options']
-  end
-
   # :reek:FeatureEnvy
   def create_webdriver_options(*opts)
     load_browser = @config['browser'].to_s
     browser = load_browser == 'ie' ? load_browser.upcase : load_browser.capitalize
     options = "Selenium::WebDriver::#{browser}::Options".constantize.new
     browser_arguments(*opts).each { |arg| options.add_argument(arg) }
-    driver_options.each { |opt| options.add_option(opt.first, opt.last) }
+    debug_cfg = @config['debug'] || {}
+    if %w[chrome edge msedge].include?(@config['browser'].to_s.downcase) &&
+       (debug_cfg.fetch('enabled', false) || ENV['DEBUG']&.downcase == 'true')
+      options.add_option('goog:loggingPrefs', { browser: 'ALL', performance: 'ALL' })
+    end
     options
   end

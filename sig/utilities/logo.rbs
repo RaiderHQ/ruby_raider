@@ -1,0 +1,12 @@
+# Type definitions for Logo
+module RubyRaider
+  module Logo
+    LOGO_PATH: String
+
+    def self.display: () -> void
+
+    private
+
+    def self.terminal_width: () -> Integer
+  end
+end

@@ -77,14 +77,30 @@ module TemplateRenderer
     end
 
     # Clear the template cache (useful for testing)
+    # Clears cache for this class and all subclasses
     def clear_template_cache
       @template_renderer&.clear
       @template_renderer = nil
+      subclasses.each do |subclass|
+        subclass.clear_template_cache if subclass.respond_to?(:clear_template_cache)
+      end
     end
 
     # Get cache statistics (useful for debugging)
+    # Aggregates stats across this class and all subclasses
     def template_cache_stats
-      @template_renderer&.stats || { size: 0, entries: [], memory_estimate: 0 }
+      own = @template_renderer&.stats || { size: 0, entries: [], memory_estimate: 0 }
+      subclasses.each do |subclass|
+        next unless subclass.respond_to?(:template_cache_stats)
+
+        sub_stats = subclass.instance_variable_get(:@template_renderer)&.stats
+        next unless sub_stats
+
+        own[:size] += sub_stats[:size]
+        own[:entries].concat(sub_stats[:entries])
+        own[:memory_estimate] += sub_stats[:memory_estimate]
+      end
+      own
     end
   end
 end

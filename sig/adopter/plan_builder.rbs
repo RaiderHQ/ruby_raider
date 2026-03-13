@@ -1,0 +1,38 @@
+# Type definitions for Adopter::PlanBuilder
+module Adopter
+  class PlanBuilder
+    def initialize: (Hash[Symbol, untyped] analysis, Hash[Symbol, untyped] params) -> void
+    def build: () -> MigrationPlan
+
+    private
+
+    def build_skeleton_structure: () -> Hash[Symbol, untyped]
+    def plan_page_conversions: () -> Array[ConvertedFile]
+    def plan_test_conversions: () -> Array[ConvertedFile]
+    def plan_feature_conversions: () -> Array[ConvertedFile]
+    def plan_step_conversions: () -> Array[ConvertedFile]
+    def convert_page: (String content, Hash[Symbol, untyped] page) -> String
+    def convert_page_dsl: (String content, Hash[Symbol, untyped] page, Symbol source_dsl, String target) -> String
+    def find_page_converter: (Symbol source_dsl, String target) -> (^(String, Hash[Symbol, untyped]) -> String)?
+    def page_converters: () -> Hash[Symbol, ^(String, Hash[Symbol, untyped]) -> String]
+    def convert_test: (String content, Hash[Symbol, untyped] test) -> String
+    def convert_test_framework: (String content, Hash[Symbol, untyped] test, Symbol source_framework, String target) -> String
+    def find_test_converter: (Symbol source_framework, String target) -> (^(String, Hash[Symbol, untyped]) -> String)?
+    def test_converters: () -> Hash[Symbol, ^(String, Hash[Symbol, untyped]) -> String]
+    def identity_converter: () -> Converters::IdentityConverter
+    def restructure_page: (String content) -> String
+    def restructure_test: (String content) -> String
+    def convert_step_page_references: (String content) -> String
+    def raider_page_path: (String class_name) -> String
+    def raider_test_path: (Hash[Symbol, untyped] test) -> String
+    def raider_feature_path: (String source_path) -> String
+    def raider_step_path: (String source_path) -> String
+    def extract_config_overrides: () -> Hash[String, untyped]
+    def same_automation_dsl?: (Symbol source_dsl, String target) -> bool
+    def normalize_dsl: (Symbol dsl) -> String
+    def target_cucumber?: () -> bool
+    def page_conversion_notes: () -> String
+    def test_conversion_notes: (Symbol source_type) -> String
+    def add_warning: (String message) -> void
+  end
+end

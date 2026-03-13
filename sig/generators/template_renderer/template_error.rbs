@@ -1,0 +1,19 @@
+# Type definitions for template errors
+module TemplateRenderer
+  class TemplateError < StandardError
+    attr_reader partial_name: String?
+    attr_reader searched_paths: Array[String]?
+    attr_reader original_error: StandardError?
+
+    def initialize: (String message, ?partial_name: String?, ?searched_paths: Array[String]?, ?original_error: StandardError?) -> void
+  end
+
+  class TemplateNotFoundError < TemplateError
+    def to_s: () -> String
+  end
+
+  class TemplateRenderError < TemplateError
+    def initialize: (String message, partial_name: String?, ?original_error: StandardError?) -> void
+    def to_s: () -> String
+  end
+end

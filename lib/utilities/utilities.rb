@@ -7,50 +7,77 @@ module Utilities
 
   class << self
     def browser=(browser)
-      config['browser'] = browser
-      overwrite_yaml
+      set('browser', browser)
     end
 
     def page_path=(path)
-      config['page_path'] = path
-      overwrite_yaml
+      set('page_path', path)
     end
 
     def spec_path=(path)
-      config['spec_path'] = path
-      overwrite_yaml
+      set('spec_path', path)
     end
 
     def feature_path=(path)
-      config['feature_path'] = path
-      overwrite_yaml
+      set('feature_path', path)
     end
 
     def helper_path=(path)
-      config['helper_path'] = path
-      overwrite_yaml
+      set('helper_path', path)
     end
 
     def url=(url)
-      config['url'] = url
-      overwrite_yaml
+      set('url', url)
+    end
+
+    def timeout=(seconds)
+      set('timeout', seconds.to_i)
+    end
+
+    def viewport=(dimensions)
+      width, height = dimensions.split('x').map(&:to_i)
+      set('viewport', { 'width' => width, 'height' => height })
     end
 
     def platform=(platform)
-      config['platform'] = platform
-      overwrite_yaml
+      set('platform', platform)
     end
 
-    def browser_options=(*opts)
-      args = opts.flatten
-      browser_args = config['browser_arguments']
-      browser = args.first&.to_sym
-      browser_args[browser] = browser_args[browser] + args[1..] if browser_args.key?(browser)
-      overwrite_yaml
+    def browser_options=(opts)
+      set('browser_options', Array(opts).flatten)
     end
 
     def delete_browser_options
       config.delete('browser_options')
+      overwrite_yaml
+    end
+
+    def llm_provider=(provider)
+      set('llm_provider', provider)
+    end
+
+    def llm_api_key=(key)
+      set('llm_api_key', key)
+    end
+
+    def llm_model=(model)
+      set('llm_model', model)
+    end
+
+    def llm_url=(url)
+      set('llm_url', url)
+    end
+
+    def debug=(enabled)
+      config['debug'] ||= {}
+      config['debug']['enabled'] = enabled
+      overwrite_yaml
+    end
+
+    # Set multiple config keys in a single YAML write.
+    # Usage: Utilities.batch_update(browser: 'chrome', timeout: 30)
+    def batch_update(**settings)
+      settings.each { |key, value| config[key.to_s] = value }
       overwrite_yaml
     end
 
@@ -65,6 +92,12 @@ module Utilities
     end
 
     private
+
+    # Single-key setter: updates in-memory config and writes once
+    def set(key, value)
+      config[key] = value
+      overwrite_yaml
+    end
 
     def overwrite_yaml
       File.open(@path, 'w') { |file| YAML.dump(config, file) }

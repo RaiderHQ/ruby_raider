@@ -13,6 +13,7 @@ module RubyRaider
 
         pp "Adding #{plugin_name}..."
         add_plugin_to_gemfile(plugin_name)
+        invalidate_gemfile_cache
         system('bundle install')
         PluginExposer.expose_commands(plugin_name)
         pp "The plugin #{plugin_name} is added"
@@ -24,6 +25,7 @@ module RubyRaider
 
         pp "Deleting #{plugin_name}..."
         remove_plugin_from_gemfile(plugin_name)
+        invalidate_gemfile_cache
         PluginExposer.remove_command(plugin_name)
         system('bundle install')
         pp "The plugin #{plugin_name} is deleted"
@@ -32,8 +34,10 @@ module RubyRaider
       def installed_plugins
         return gemfile_guard unless File.exist?('Gemfile')
 
-        parsed_gemfile = File.readlines('Gemfile').map { |line| line.sub('gem ', '').strip.delete("'") }
-        parsed_gemfile.select { |line| plugins.include?(line) }
+        cached_gemfile_lines.filter_map do |line|
+          stripped = line.sub('gem ', '').strip.delete("'")
+          stripped if plugins.include?(stripped)
+        end
       end
 
       def installed?(plugin_name)
@@ -54,12 +58,25 @@ module RubyRaider
 
       private
 
+      # Read Gemfile once and cache until explicitly invalidated
+      def cached_gemfile_lines
+        @cached_gemfile_lines ||= File.readlines('Gemfile')
+      end
+
+      def invalidate_gemfile_cache
+        @cached_gemfile_lines = nil
+      end
+
       def add_plugin_to_gemfile(plugin_name)
         return gemfile_guard unless File.exist?('Gemfile')
 
+        lines = cached_gemfile_lines
+        has_comment = lines.any? { |l| l.include?('Ruby Raider Plugins') }
+        has_plugin = lines.any? { |l| l.include?(plugin_name) }
+
         File.open('Gemfile', 'a') do |file|
-          file.puts "\n# Ruby Raider Plugins\n" unless comment_present?
-          file.puts "gem '#{plugin_name}'" unless plugin_present?(plugin_name)
+          file.puts "\n# Ruby Raider Plugins\n" unless has_comment
+          file.puts "gem '#{plugin_name}'" unless has_plugin
         end
       end
 
@@ -72,22 +89,8 @@ module RubyRaider
         installed_plugins.count == 1
       end
 
-      def read_gemfile
-        return gemfile_guard unless File.exist?('Gemfile')
-
-        File.readlines('Gemfile')
-      end
-
-      def comment_present?
-        read_gemfile.grep(/Ruby Raider Plugins/).any?
-      end
-
-      def plugin_present?(plugin_name)
-        read_gemfile.grep(/#{plugin_name}/).any?
-      end
-
       def remove_plugins_and_comments(plugin_name)
-        read_gemfile.reject do |line|
+        cached_gemfile_lines.reject do |line|
           line.include?(plugin_name) || line.include?('Ruby Raider Plugins') && last_plugin?
         end
       end

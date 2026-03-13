@@ -1,0 +1,20 @@
+# Type definitions for PartialCache
+module TemplateRenderer
+  class PartialCache
+    @cache: Hash[String, Hash[Symbol, untyped]]
+    @generator_class: Class
+    @resolver: PartialResolver
+
+    def initialize: (Class generator_class) -> void
+    def render_partial: (String name, Binding binding, ?Hash[Symbol, untyped] options) -> String
+    def clear: () -> void
+    def stats: () -> Hash[Symbol, untyped]
+
+    private
+
+    def build_cache_key: (String name, String? trim_mode) -> String
+    def get_or_compile: (String cache_key, String path, String? trim_mode) -> ERB
+    def compile_template: (String path, String? trim_mode) -> ERB
+    def estimate_cache_size: () -> Integer
+  end
+end

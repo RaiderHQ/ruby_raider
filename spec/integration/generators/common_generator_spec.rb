@@ -30,12 +30,6 @@ describe CommonGenerator do
     end
   end
 
-  shared_examples 'creates an options file' do |name|
-    it 'creates an options file' do
-      expect(File).to exist("#{name}/config/options.yml")
-    end
-  end
-
   shared_examples 'creates a capabilities file' do |name|
     it 'creates a capabilities file' do
       expect(File).to exist("#{name}/config/capabilities.yml")
@@ -58,13 +52,6 @@ describe CommonGenerator do
     include_examples 'creates common files', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'creates a config file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'creates a gitignore file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-  end
-
-  context 'with rspec, selenium and applitools' do
-    include_examples 'creates common files', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
-    include_examples 'creates a config file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
-    include_examples 'creates an options file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
-    include_examples 'creates a gitignore file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
   end
 
   context 'with cucumber and selenium' do

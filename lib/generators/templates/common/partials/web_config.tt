@@ -1,11 +1,9 @@
 browser: chrome
 url: 'https://raider-test-site.onrender.com/'
-
-<%- if selenium_based? -%>
-driver_options:
-  :timeouts:
-    :implicit: 10000 # 10 seconds
-<% end -%>
+timeout: 10 # seconds — used for implicit waits and max wait time
+viewport:
+  width: 1920
+  height: 1080
 
 browser_arguments:
   chrome:
@@ -16,3 +14,14 @@ browser_arguments:
   firefox:
     - acceptInsecureCerts
     - no-sandbox
+
+video:
+  enabled: false
+  strategy: auto # auto, cdp, or screen
+
+debug:
+  enabled: false        # also toggled by DEBUG=true env var
+  console_logs: true    # capture browser console logs on failure
+  action_logging: true  # log driver actions with timestamps
+  network_logging: true # capture HTTP requests on failure (Chrome/Edge only)
+  log_dir: 'debug_logs'

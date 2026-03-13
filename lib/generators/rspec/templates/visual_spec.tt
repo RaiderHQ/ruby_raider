@@ -1,0 +1,20 @@
+# frozen_string_literal: true
+
+require_relative '../helpers/spec_helper'
+require_relative '../helpers/visual_helper'
+require_relative '../page_objects/pages/login'
+
+describe 'Visual Regression' do
+  include VisualHelper
+
+  let(:login_page) { <% if capybara? -%>Login.new<% elsif watir? -%>Login.new(browser)<% else -%>Login.new(driver)<% end -%> }
+
+  it 'login page matches baseline' do
+    login_page.<% if capybara? -%>visit_page<% else -%>visit<% end %>
+    screenshot_path = <% if capybara? -%>page.save_screenshot('tmp/visual_login.png')<% elsif watir? -%>browser.screenshot.save('tmp/visual_login.png')<% else -%>driver.save_screenshot('tmp/visual_login.png')<% end %>
+    result = compare_screenshot('login_page', screenshot_path)
+
+    expect(result[:status]).not_to eq(:mismatch),
+      "Visual diff: #{(result[:diff].to_f * 100).round(2)}% difference. See: #{result[:diff_path]}"
+  end
+end

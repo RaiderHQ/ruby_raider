@@ -1,0 +1,25 @@
+# frozen_string_literal: true
+
+require_relative '../helpers/spec_helper'
+
+describe 'Accessibility' do
+  before do
+    <% if capybara? -%>
+visit '/'
+    <% elsif watir? -%>
+browser.goto 'https://raider-test-site.onrender.com/'
+    <% else -%>
+driver.get 'https://raider-test-site.onrender.com/'
+    <% end -%>
+  end
+
+  it 'has no accessibility violations on the page' do
+    <% if capybara? -%>
+expect(page).to be_axe_clean
+    <% elsif watir? -%>
+expect(browser.driver).to be_axe_clean
+    <% else -%>
+expect(driver).to be_axe_clean
+    <% end -%>
+  end
+end

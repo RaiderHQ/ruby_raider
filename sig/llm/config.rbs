@@ -1,0 +1,20 @@
+# Type definitions for Llm::Config
+module Llm
+  class Config
+    PROVIDERS: Array[String]
+
+    attr_reader provider_name: String?
+    attr_reader api_key: String?
+    attr_reader model: String?
+    attr_reader url: String?
+
+    def initialize: () -> void
+    def configured?: () -> bool
+    def build_provider: () -> Provider?
+
+    private
+
+    def env: (String key) -> String?
+    def config_value: (String key) -> String?
+  end
+end

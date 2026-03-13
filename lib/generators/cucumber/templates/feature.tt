@@ -4,11 +4,7 @@ Feature: Login Page
 Scenario: A user can login
     Given I'm a registered user on the login page
     When I login with my credentials
-<%- if axe? -%>
-    Then the page should be axe clean
-<%- else -%>
     Then I'm logged in
-<% end -%>
 
 <%- else -%>
 Feature: Home Page

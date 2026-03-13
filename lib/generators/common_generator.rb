@@ -33,7 +33,15 @@ class CommonGenerator < Generator
     template('common/git_ignore.tt', "#{name}/.gitignore")
   end
 
+  def generate_rspec_file
+    return unless rspec?
+
+    template('common/rspec.tt', "#{name}/.rspec")
+  end
+
   def create_allure_folder
+    return unless allure_reporter?
+
     empty_directory "#{name}/allure-results"
   end
 end

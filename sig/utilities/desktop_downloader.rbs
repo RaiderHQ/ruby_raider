@@ -1,0 +1,23 @@
+# Type definitions for DesktopDownloader
+module DesktopDownloader
+  REPO: String
+  API_URL: String
+  PLATFORM_PATTERNS: Hash[String, Regexp]
+
+  def self?.download: (?String? destination_dir) -> String?
+  def self?.latest_version: () -> String?
+  def self?.download_url: () -> String?
+  def self?.clear_cache: () -> void
+  def self?.platform: () -> String
+  def self?.platform_display_name: () -> String
+
+  private
+
+  def self?.find_asset: () -> Hash[Symbol, untyped]?
+  def self?.fetch_latest_release: () -> Hash[String, untyped]?
+  def self?.download_file: (String url, String destination) -> void
+  def self?.follow_redirects: (URI::Generic uri, String destination, ?Integer limit) -> void
+  def self?.write_response: (Net::HTTPResponse response, String destination) -> void
+  def self?.print_progress: (Integer downloaded, Integer total) -> void
+  def self?.default_download_dir: () -> String
+end

@@ -62,9 +62,4 @@ describe MinitestGenerator do
                      "#{FrameworkIndex::MINITEST}_#{AutomationIndex::CROSS_PLATFORM}", 'pdp'
   end
 
-  context 'with minitest and axe' do
-    include_examples 'creates minitest files examples',
-                     "#{FrameworkIndex::MINITEST}_#{AutomationIndex::AXE}", 'login'
-    include_examples 'creates test helper', "#{FrameworkIndex::MINITEST}_#{AutomationIndex::AXE}"
-  end
 end

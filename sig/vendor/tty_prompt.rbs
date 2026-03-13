@@ -1,0 +1,15 @@
+# Minimal TTY::Prompt stubs
+module TTY
+  class Prompt
+    def initialize: (**untyped options) -> void
+    def select: (String question, ?Array[String] choices, **untyped options) ?{ (untyped menu) -> void } -> String
+    def multi_select: (String question, ?Array[String] choices, **untyped options) ?{ (untyped menu) -> void } -> Array[String]
+    def ask: (String question, **untyped options) -> String?
+    def yes?: (String question, **untyped options) -> bool
+    def no?: (String question, **untyped options) -> bool
+    def say: (String message) -> void
+    def warn: (String message) -> void
+    def error: (String message) -> void
+    def ok: (String message) -> void
+  end
+end

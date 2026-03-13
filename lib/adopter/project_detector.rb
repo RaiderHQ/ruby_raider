@@ -9,9 +9,9 @@ module Adopter
       'selenium-webdriver' => 'selenium',
       'watir' => 'watir',
       'appium_lib' => 'appium',
-      'eyes_selenium' => 'applitools',
-      'axe-core-selenium' => 'axe',
-      'axe-core-rspec' => 'axe'
+      'eyes_selenium' => 'selenium',
+      'axe-core-selenium' => 'selenium',
+      'axe-core-rspec' => 'selenium'
     }.freeze
 
     GEM_FRAMEWORK_MAP = {

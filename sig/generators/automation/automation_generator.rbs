@@ -1,0 +1,20 @@
+# Type definitions for AutomationGenerator
+class AutomationGenerator < Generator
+  def generate_automation_files: () -> void
+
+  private
+
+  def generate_pages: () -> void
+  def generate_components: () -> void
+  def generate_model_files: () -> void
+  def generate_abstract_page: () -> void
+  def generate_abstract_component: () -> void
+  def generate_appium_settings: () -> void
+  def generate_login_page: () -> void
+  def generate_account_page: () -> void
+  def generate_home_page: () -> void
+  def generate_pdp_page: () -> void
+  def generate_header_component: () -> void
+  def generate_model_factory: () -> void
+  def generate_model_data: () -> void
+end

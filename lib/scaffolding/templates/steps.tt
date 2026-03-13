@@ -1,12 +1,24 @@
 # frozen_string_literal: true
 
-require_relative '../../page_objects/pages/<%= name %>'
+require_relative '../../page_objects/pages/<%= normalized_name %>'
+<%- uses_list.each do |dep| -%>
+require_relative '../../page_objects/pages/<%= dep %>'
+<%- end -%>
 
-Given ('') do
+Given('I am on the <%= normalized_name.tr("_", " ") %> page') do
+<%- if selenium? -%>
+  @page = <%= page_class_name %>.new(driver)
+<%- elsif watir? -%>
+  @page = <%= page_class_name %>.new(browser)
+<%- elsif capybara? -%>
+  visit '<%= normalized_name %>'
+<%- end -%>
 end
 
-When ('') do
+When('I perform an action') do
+  pending 'implement step'
 end
 
-Then ('') do
+Then('I see the expected result') do
+  pending 'implement step'
 end

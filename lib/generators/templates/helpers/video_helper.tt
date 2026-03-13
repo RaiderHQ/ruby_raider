@@ -1,0 +1,271 @@
+# frozen_string_literal: true
+
+require 'fileutils'
+require 'yaml'
+require 'json'
+require 'base64'
+
+# :reek:TooManyMethods { enabled: false }
+module VideoHelper
+  VIDEO_DIR = 'videos'
+
+  module_function
+
+  def config
+    @config ||= begin
+      yml = YAML.load_file('config/config.yml')
+      yml['video'] || {}
+    rescue StandardError
+      {}
+    end
+  end
+
+  def enabled?
+    config.fetch('enabled', false)
+  end
+
+  def recorder_for(driver_or_browser)
+    return NullRecorder.new unless enabled?
+
+    strategy = config.fetch('strategy', 'auto')
+    case strategy
+    when 'cdp' then CdpRecorder.new(resolve_selenium_driver(driver_or_browser))
+    when 'screen' then ScreenCaptureRecorder.new
+<%- if mobile? -%>
+    when 'appium' then AppiumRecorder.new(driver_or_browser)
+<%- end -%>
+    when 'auto' then auto_detect(driver_or_browser)
+    else NullRecorder.new
+    end
+  end
+
+  def auto_detect(driver_or_browser)
+    sel_driver = resolve_selenium_driver(driver_or_browser)
+<%- if mobile? -%>
+    return AppiumRecorder.new(driver_or_browser) if defined?(Appium::Driver)
+<%- end -%>
+    return CdpRecorder.new(sel_driver) if chrome_or_edge?(sel_driver)
+
+    if ffmpeg_available?
+      ScreenCaptureRecorder.new
+    else
+      NullRecorder.new
+    end
+  end
+
+  def resolve_selenium_driver(obj)
+    if obj.respond_to?(:driver) && !obj.is_a?(Selenium::WebDriver::Driver)
+      obj.driver
+    elsif obj.respond_to?(:browser) && obj.browser.respond_to?(:driver)
+      obj.browser.driver
+    else
+      obj
+    end
+  rescue StandardError
+    obj
+  end
+
+  def chrome_or_edge?(driver)
+    browser_name = driver.capabilities[:browser_name].to_s.downcase
+    %w[chrome chromium msedge edge].any? { |b| browser_name.include?(b) }
+  rescue StandardError
+    false
+  end
+
+  def ffmpeg_available?
+    system('ffmpeg -version > /dev/null 2>&1') ||
+      system('ffmpeg -version > NUL 2>&1')
+  end
+
+  def ensure_video_dir
+    FileUtils.mkdir_p(VIDEO_DIR)
+  end
+
+  # --- CDP Recorder: Chrome/Edge, works headless ---
+
+  class CdpRecorder
+    def initialize(driver)
+      @driver = driver
+      @frames = []
+      @recording = false
+    end
+
+    def start(test_name)
+      @test_name = sanitize(test_name)
+      @frames = []
+      @frame_index = 0
+      @recording = true
+      @driver.execute_cdp('Page.startScreencast',
+                          format: 'jpeg', quality: 60,
+                          maxWidth: 1280, maxHeight: 720,
+                          everyNthFrame: 2)
+      start_frame_collector
+    rescue StandardError => e
+      warn "[video] CDP recording failed to start: #{e.message}"
+      @recording = false
+    end
+
+    def stop
+      return nil unless @recording
+
+      @recording = false
+      @driver.execute_cdp('Page.stopScreencast')
+      sleep 0.2 # allow final frames to arrive
+      assemble_video
+    rescue StandardError => e
+      warn "[video] CDP recording failed to stop: #{e.message}"
+      nil
+    end
+
+    private
+
+    def start_frame_collector
+      @collector = Thread.new do
+        while @recording
+          begin
+            collect_frame
+          rescue StandardError
+            sleep 0.1
+          end
+          sleep 0.05
+        end
+      end
+    end
+
+    def collect_frame
+      # CDP screencast events are handled by polling via execute_cdp
+      # We capture screenshots at intervals as a reliable alternative
+      VideoHelper.ensure_video_dir
+      frame_path = File.join(VideoHelper::VIDEO_DIR, "#{@test_name}_frame_#{format('%04d', @frame_index)}.jpg")
+      @driver.save_screenshot(frame_path)
+      @frames << frame_path
+      @frame_index += 1
+    end
+
+    def assemble_video
+      return nil if @frames.empty?
+
+      @collector&.join(2)
+      VideoHelper.ensure_video_dir
+      output = File.join(VideoHelper::VIDEO_DIR, "#{@test_name}.mp4")
+      pattern = File.join(VideoHelper::VIDEO_DIR, "#{@test_name}_frame_%04d.jpg")
+
+      system("ffmpeg -y -framerate 10 -i \"#{pattern}\" -c:v libx264 -pix_fmt yuv420p " \
+             "-movflags +faststart -loglevel error \"#{output}\"")
+
+      cleanup_frames
+      File.exist?(output) ? output : nil
+    end
+
+    def cleanup_frames
+      @frames.each { |f| FileUtils.rm_f(f) }
+    end
+
+    def sanitize(name)
+      name.gsub(/[^a-zA-Z0-9_-]/, '_')[0..80]
+    end
+  end
+
+  # --- Screen Capture Recorder: Any browser, requires FFmpeg + display ---
+
+  class ScreenCaptureRecorder
+    def initialize
+      @recording = false
+    end
+
+    def start(test_name)
+      @test_name = sanitize(test_name)
+      VideoHelper.ensure_video_dir
+      @output = File.join(VideoHelper::VIDEO_DIR, "#{@test_name}.mp4")
+      @recording = true
+
+      input = screen_input
+      @pid = spawn("ffmpeg -y #{input} -r 15 -c:v libx264 -pix_fmt yuv420p " \
+                   "-loglevel error \"#{@output}\"",
+                   %i[out err] => '/dev/null')
+    rescue StandardError => e
+      warn "[video] Screen recording failed to start: #{e.message}"
+      @recording = false
+    end
+
+    def stop
+      return nil unless @recording
+
+      @recording = false
+      Process.kill('INT', @pid)
+      Process.wait(@pid)
+      File.exist?(@output) ? @output : nil
+    rescue StandardError => e
+      warn "[video] Screen recording failed to stop: #{e.message}"
+      nil
+    end
+
+    private
+
+    def screen_input
+      case RbConfig::CONFIG['host_os']
+      when /darwin/i
+        '-f avfoundation -i "1:none"'
+      when /linux/i
+        display = ENV.fetch('DISPLAY', ':99')
+        "-f x11grab -i #{display}"
+      when /mswin|mingw|cygwin/i
+        '-f gdigrab -i desktop'
+      else
+        '-f x11grab -i :0'
+      end
+    end
+
+    def sanitize(name)
+      name.gsub(/[^a-zA-Z0-9_-]/, '_')[0..80]
+    end
+  end
+
+<%- if mobile? -%>
+  # --- Appium Recorder: Mobile, uses native API ---
+
+  class AppiumRecorder
+    def initialize(driver)
+      @driver = driver
+      @recording = false
+    end
+
+    def start(test_name)
+      @test_name = sanitize(test_name)
+      @recording = true
+      @driver.start_recording_screen
+    rescue StandardError => e
+      warn "[video] Appium recording failed to start: #{e.message}"
+      @recording = false
+    end
+
+    def stop
+      return nil unless @recording
+
+      @recording = false
+      video_base64 = @driver.stop_recording_screen
+      VideoHelper.ensure_video_dir
+      output = File.join(VideoHelper::VIDEO_DIR, "#{@test_name}.mp4")
+      File.write(output, Base64.decode64(video_base64), mode: 'wb')
+      output
+    rescue StandardError => e
+      warn "[video] Appium recording failed to stop: #{e.message}"
+      nil
+    end
+
+    private
+
+    def sanitize(name)
+      name.gsub(/[^a-zA-Z0-9_-]/, '_')[0..80]
+    end
+  end
+
+<%- end -%>
+  # --- Null Recorder: Fallback when recording unavailable ---
+
+  class NullRecorder
+    def start(_test_name) = nil
+
+    def stop = nil
+  end
+end

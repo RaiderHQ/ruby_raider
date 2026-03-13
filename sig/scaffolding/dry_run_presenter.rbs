@@ -1,0 +1,4 @@
+# Type definitions for DryRunPresenter
+module DryRunPresenter
+  def self?.preview: (Array[String] planned_files) -> Array[String]
+end
