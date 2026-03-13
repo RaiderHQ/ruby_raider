@@ -17,6 +17,10 @@ class CommonGenerator < Generator
     template('common/rakefile.tt', "#{name}/Rakefile")
   end
 
+  def generate_ruby_version_file
+    template('common/ruby_version.tt', "#{name}/.ruby-version")
+  end
+
   def generate_gemfile
     template('common/gemfile.tt', "#{name}/Gemfile")
   end

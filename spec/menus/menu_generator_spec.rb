@@ -197,6 +197,37 @@ RSpec.describe MenuGenerator do
     end
   end
 
+  describe 'ruby version selection menu' do
+    it 'presents ruby version choices' do # rubocop:disable RSpec/MultipleExpectations
+      menu = double('menu') # rubocop:disable RSpec/VerifiedDoubles
+      allow(menu).to receive(:choice)
+      allow(prompt).to receive(:select).with('Select Ruby version for your project').and_yield(menu)
+
+      menu_generator.send(:select_ruby_version, 'Rspec', 'selenium')
+
+      expect(menu).to have_received(:choice).with(:'3.4 (latest)', anything)
+      expect(menu).to have_received(:choice).with(:'3.3', anything)
+      expect(menu).to have_received(:choice).with(:'3.2', anything)
+      expect(menu).to have_received(:choice).with(:'3.1', anything)
+      expect(menu).to have_received(:choice).with(:Quit, anything)
+    end
+  end
+
+  describe 'ruby_version propagation' do
+    it 'passes ruby_version through to generate_framework' do
+      allow(menu_generator).to receive(:generate_framework)
+      allow(menu_generator).to receive(:system)
+      allow(prompt).to receive(:say)
+      allow(prompt).to receive(:yes?).and_return(false)
+
+      menu_generator.send(:create_framework, 'Rspec', 'selenium', ruby_version: '3.3')
+
+      expect(menu_generator).to have_received(:generate_framework).with(
+        hash_including(ruby_version: '3.3')
+      )
+    end
+  end
+
   describe 'reporter selection menu' do
     it 'includes JSON and All reporter choices' do # rubocop:disable RSpec/MultipleExpectations
       menu = double('menu') # rubocop:disable RSpec/VerifiedDoubles

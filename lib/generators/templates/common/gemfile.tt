@@ -1,5 +1,7 @@
 source 'https://rubygems.org'
 
+ruby '~> <%= ruby_version %>.0'
+
 gem 'activesupport'
 <% if mobile? %>
 gem 'appium_lib'
