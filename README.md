@@ -22,7 +22,7 @@
       ·
       <a href="https://github.com/RubyRaider/ruby_raider/issues">Request Feature</a>
    </p>
-   <p align="center"> For more information and updates on releases, see (https://ruby-raider.onrender.com/)[ruby raider website]</p>
+   <p align="center"> For more information and updates on releases, see https://ruby-raider.onrender.com/</p>
 </div>
 
 ## What is Ruby Raider?
