@@ -1,0 +1,14 @@
+# Type definitions for ScaffoldProjectDetector
+module ScaffoldProjectDetector
+  AUTOMATION_GEMS: Hash[String, String]
+  FRAMEWORK_GEMS: Hash[String, String]
+
+  def self?.detect: () -> Hash[Symbol, String | bool | nil]
+  def self?.detect_automation: (?String? gemfile) -> String
+  def self?.detect_framework: (?String? gemfile) -> String
+  def self?.read_gemfile: () -> String
+  def self?.selenium?: () -> bool
+  def self?.capybara?: () -> bool
+  def self?.watir?: () -> bool
+  def self?.config: () -> Hash[String, untyped]
+end

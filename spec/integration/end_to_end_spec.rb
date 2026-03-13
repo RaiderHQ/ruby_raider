@@ -186,10 +186,6 @@ describe 'End-to-End Project Generation and Execution' do
       include_examples 'executable cucumber project', 'cucumber_capybara'
     end
 
-    describe 'Axe + Cucumber' do
-      include_examples 'executable cucumber project', 'cucumber_axe'
-    end
-
     describe 'Selenium + Minitest' do
       include_examples 'executable minitest project', 'minitest_selenium'
     end
@@ -218,6 +214,32 @@ describe 'End-to-End Project Generation and Execution' do
       end
     end
 
+    describe 'iOS + Cucumber' do
+      it 'generates valid project structure' do
+        expect(File).to exist('cucumber_ios/features/support/env.rb')
+        expect(File).to exist('cucumber_ios/Gemfile')
+        expect(File).to exist('cucumber_ios/features')
+      end
+
+      it 'has valid Ruby syntax in generated files' do
+        result = run_in_project('cucumber_ios', 'ruby -c features/support/env.rb')
+        expect(result[:success]).to be true
+      end
+    end
+
+    describe 'Android + RSpec' do
+      it 'generates valid project structure' do
+        expect(File).to exist('rspec_android/helpers/spec_helper.rb')
+        expect(File).to exist('rspec_android/Gemfile')
+        expect(File).to exist('rspec_android/spec')
+      end
+
+      it 'has valid Ruby syntax in generated files' do
+        result = run_in_project('rspec_android', 'ruby -c helpers/spec_helper.rb')
+        expect(result[:success]).to be true
+      end
+    end
+
     describe 'Android + Cucumber' do
       it 'generates valid project structure' do
         expect(File).to exist('cucumber_android/features/support/env.rb')
@@ -235,6 +257,25 @@ describe 'End-to-End Project Generation and Execution' do
       it 'generates valid project structure' do
         expect(File).to exist('rspec_cross_platform/helpers/appium_helper.rb')
         expect(File).to exist('rspec_cross_platform/Gemfile')
+        expect(File).to exist('rspec_cross_platform/spec')
+      end
+
+      it 'has valid Ruby syntax in generated files' do
+        result = run_in_project('rspec_cross_platform', 'ruby -c helpers/spec_helper.rb')
+        expect(result[:success]).to be true
+      end
+    end
+
+    describe 'Cross-Platform + Cucumber' do
+      it 'generates valid project structure' do
+        expect(File).to exist('cucumber_cross_platform/helpers/appium_helper.rb')
+        expect(File).to exist('cucumber_cross_platform/Gemfile')
+        expect(File).to exist('cucumber_cross_platform/features')
+      end
+
+      it 'has valid Ruby syntax in generated files' do
+        result = run_in_project('cucumber_cross_platform', 'ruby -c features/support/env.rb')
+        expect(result[:success]).to be true
       end
     end
   end
@@ -265,22 +306,17 @@ describe 'End-to-End Project Generation and Execution' do
         expect(result[:success]).to be true
       end
     end
-  end
 
-  context 'Visual Testing Frameworks (structure validation only)' do
-    describe 'Applitools + RSpec' do
-      it 'generates valid project structure with visual helper' do
-        expect(File).to exist('rspec_applitools/helpers/visual_helper.rb')
-        expect(File).to exist('rspec_applitools/helpers/spec_helper.rb')
-      end
-
-      it 'includes Applitools dependencies' do
-        gemfile = File.read('rspec_applitools/Gemfile')
-        expect(gemfile).to include('eyes_selenium')
+    describe 'Cross-Platform + Minitest' do
+      it 'generates valid project structure' do
+        expect(File).to exist('minitest_cross_platform/helpers/test_helper.rb')
+        expect(File).to exist('minitest_cross_platform/helpers/appium_helper.rb')
+        expect(File).to exist('minitest_cross_platform/Gemfile')
+        expect(File).to exist('minitest_cross_platform/test')
       end
 
       it 'has valid Ruby syntax in generated files' do
-        result = run_in_project('rspec_applitools', 'ruby -c helpers/visual_helper.rb')
+        result = run_in_project('minitest_cross_platform', 'ruby -c helpers/test_helper.rb')
         expect(result[:success]).to be true
       end
     end

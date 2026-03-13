@@ -5,7 +5,6 @@ require_relative 'project_detector'
 module Adopter
   class MobileProjectError < StandardError; end
 
-  # :reek:TooManyMethods { enabled: false }
   class ProjectAnalyzer
     KNOWN_FRAMEWORK_GEMS = %w[
       activesupport allure-cucumber allure-rspec allure-minitest allure-ruby-commons
@@ -79,7 +78,6 @@ module Adopter
             'Mobile (Appium) projects cannot be adopted. Only web-based projects are supported.'
     end
 
-    # :reek:FeatureEnvy { enabled: false }
     def discover_pages
       page_path = detect_page_dir
       return [] unless page_path
@@ -115,7 +113,6 @@ module Adopter
       results
     end
 
-    # :reek:FeatureEnvy { enabled: false }
     def discover_helpers
       helper_files = Dir.glob(File.join(@source_path, '**', '*helper*.rb')) +
                      Dir.glob(File.join(@source_path, '**', 'support', '*.rb')) +
@@ -129,7 +126,7 @@ module Adopter
 
         {
           path: relative_path(file),
-          role: role,
+          role:,
           modules_defined: extract_modules(content)
         }
       end
@@ -153,7 +150,6 @@ module Adopter
       end
     end
 
-    # :reek:NestedIterators { enabled: false }
     def discover_custom_gems
       gemfile = File.join(@source_path, 'Gemfile')
       return [] unless File.exist?(gemfile)

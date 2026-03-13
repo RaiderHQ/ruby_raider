@@ -1,0 +1,16 @@
+# Type definitions for Adopter::Converters::IdentityConverter
+module Adopter
+  module Converters
+    class IdentityConverter < BaseConverter
+      def initialize: (String target_automation) -> void
+      def convert_page: (String content, untyped _page_info) -> String
+      def convert_test: (String content, untyped _test_info) -> String
+      def convert_step: (String content) -> String
+
+      private
+
+      def add_page_require: (String content) -> String
+      def update_page_instantiation: (String content) -> String
+    end
+  end
+end

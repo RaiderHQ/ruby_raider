@@ -1,0 +1,40 @@
+# Type definitions for the base Generator class
+class Generator < Thor::Group
+  include Thor::Actions
+  include TemplateRenderer
+
+  def self.source_paths: () -> Array[String]
+  def self.clear_template_cache: () -> void
+  def self.template_cache_stats: () -> Hash[Symbol, untyped]
+
+  # Predicate methods for framework/automation detection
+  def cucumber?: () -> bool
+  def cross_platform?: () -> bool
+  def mobile?: () -> bool
+  def single_platform?: () -> bool
+  def ios?: () -> bool
+  def android?: () -> bool
+  def rspec?: () -> bool
+  def minitest?: () -> bool
+  def selenium?: () -> bool
+  def capybara?: () -> bool
+  def watir?: () -> bool
+  def web?: () -> bool
+  def selenium_based?: () -> bool
+
+  # Add-on predicates
+  def axe_addon?: () -> bool
+  def visual_addon?: () -> bool
+  def lighthouse_addon?: () -> bool
+
+  # Skip/reporter predicates
+  def skip_allure?: () -> bool
+  def skip_video?: () -> bool
+  def allure_reporter?: () -> bool
+  def junit_reporter?: () -> bool
+  def json_reporter?: () -> bool
+
+  private
+
+  def _initializer: () -> Array[untyped]
+end

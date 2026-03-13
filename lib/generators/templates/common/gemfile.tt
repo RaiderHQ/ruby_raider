@@ -1,10 +1,13 @@
 source 'https://rubygems.org'
 
+ruby '~> <%= ruby_version %>.0'
+
 gem 'activesupport'
 <% if mobile? %>
 gem 'appium_lib'
 gem 'appium_console'
 <% end %>
+<%- if allure_reporter? -%>
 <%- if cucumber? -%>
 gem 'allure-cucumber', '2.28.0'
 <%- elsif minitest? -%>
@@ -13,24 +16,32 @@ gem 'allure-ruby-commons', '2.28.0'
 gem 'allure-rspec', '2.28.0'
 gem 'allure-ruby-commons', '2.28.0'
 <%- end -%>
+<%- end -%>
 <%- if capybara? -%>
 gem 'capybara'
 gem 'selenium-webdriver'
 <%- end -%>
-<%- if axe? -%>
+<%- if axe_addon? -%>
+<%- if minitest? -%>
+gem 'axe-core-minitest'
+<%- else -%>
 gem 'axe-core-rspec'
+<%- end -%>
 gem 'axe-core-selenium'
 <%- end -%>
-<%- if visual? -%>
-gem 'eyes_selenium', '~> 4.6', '>= 4.6.1'
-gem 'eyes_universal', '~> 3.3', '>= 3.3.1'
+<%- if visual_addon? -%>
+gem 'chunky_png'
 <%- end -%>
-<%- unless visual? -%>
 gem 'parallel_split_test'
 gem 'parallel_tests'
-<%- end -%>
 gem 'rake'
 gem 'reek'
+<%- if rspec? -%>
+gem 'rspec-retry'
+<%- end -%>
+<%- if junit_reporter? && rspec? -%>
+gem 'rspec_junit_formatter'
+<%- end -%>
 gem '<%= framework %>'
 <%- if cucumber? -%>
 gem 'rspec'
@@ -51,4 +62,8 @@ gem 'selenium-webdriver'
 <%- end -%>
 <%- if watir? -%>
 gem 'watir'
+<%- end -%>
+<%- if web? -%>
+gem 'debug', '>= 1.0'
+gem 'pry'
 <%- end -%>

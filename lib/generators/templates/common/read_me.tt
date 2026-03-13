@@ -4,10 +4,10 @@
 <br />
 <div align="center">
    <a href="https://github.com/RubyRaider/ruby_raider">
-   <img src="https://private-user-images.githubusercontent.com/33221555/391053089-3a1a492f-a70e-45ff-8fd0-5f83cef91f49.svg?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MzI4ODUyNTEsIm5iZiI6MTczMjg4NDk1MSwicGF0aCI6Ii8zMzIyMTU1NS8zOTEwNTMwODktM2ExYTQ5MmYtYTcwZS00NWZmLThmZDAtNWY4M2NlZjkxZjQ5LnN2Zz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDExMjklMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQxMTI5VDEyNTU1MVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTQ1MDM2ZjAzMmIwMWRmZjdlMjBkMWYxNGFkNTAxYTM0OTEyZjhmNjQ4YmE5NWMwOWE4MTY1Njc5ZjllNTMxYjQmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.EnwLs1vZClwzNl1el0SRflyUJrwzno_LhBnnAXMHz7E" alt="Logo" style="width:200px;">
+   <img src="https://www.ruby-raider.com/assets/icon-DYY74ofR.png" alt="Logo" style="width:200px;">
    </a>
    <p align="center">
-      <a href="https://github.com/RubyRaider/ruby_raider#getting-started"><strong>Explore the docs »</strong></a>
+      <a href="https://github.com/RubyRaider/ruby_raider#getting-started"><strong>Explore the docs</strong></a>
       <br />
       <br />
       <a href="https://rubygems.org/gems/ruby_raider">Rubygems</a>
@@ -21,121 +21,71 @@
 
 ## What is Ruby Raider?
 
-Ruby Raider is a generator and scaffolding gem to make UI test automation easier
+Ruby Raider is a generator and scaffolding gem to make UI test automation easier.
 
-### At the moment Ruby Raider supports generating the following frameworks:
+### Supported Frameworks
 
-| Web Testing Framework | Visual Testing Framework          | Mobile Testing Framework           | Accessibility Testing Framework |
-|-----------------------|-----------------------------------|------------------------------------|---------------------------------|
-| Cucumber and Selenium | Cucumber, Applitools and Selenium | Cucumber and Appium for IOS        | Cucumber and Axe for web        |
-| Rspec and Selenium    | Rspec, Applitools and Selenium    | Rspec and Appium for IOS           | Rspec and Axe for web           |
-| Cucumber and Watir    |                                   | Cucumber and Appium for Android    |                                 |
-| Rspec and Watir       |                                   | Rspec and Appium for Android       |                                 |
-|                       |                                   | Cucumber and Appium Cross-platform |                                 |
-|                       |                                   | Rspec and Appium Cross-platform    |                                 |
+| Web Testing Framework | Mobile Testing Framework           |
+|-----------------------|------------------------------------|
+| Cucumber and Selenium | Cucumber and Appium for iOS        |
+| RSpec and Selenium    | RSpec and Appium for iOS           |
+| Cucumber and Watir    | Cucumber and Appium for Android    |
+| RSpec and Watir       | RSpec and Appium for Android       |
+| Cucumber and Capybara | Cucumber and Appium Cross-platform |
+| RSpec and Capybara    | RSpec and Appium Cross-platform    |
+| Minitest and Selenium | Minitest and Appium for iOS        |
+| Minitest and Watir    | Minitest and Appium for Android    |
+| Minitest and Capybara | Minitest and Appium Cross-platform |
+
+**Optional add-ons for web projects:**
+- **Accessibility testing (axe)**: `--accessibility` flag
+- **Visual regression testing (chunky_png)**: `--visual` flag
+- **Performance auditing (Lighthouse)**: `--performance` flag
 
 ***The web tests run against the [Raider Test Store](https://raider-test-site.onrender.com/).***
 
-***In order to run the Appium tests, download the example [app](https://github.com/RaiderHQ/raider_test_app).***
-***Remember to use the full path of the app that you download in the capabilities file and start the server using one of
-the commands below:***
+***To run Appium tests, download the example [app](https://github.com/RaiderHQ/raider_test_app) and start the server:***
 
-```ruby
+```bash
 raider u start_appium
-appium --base /wd/hub  
 ```
 
-***In order to run the visual tests with applitools, you need to create an account and get your api key, you can read
-more [here](https://applitools.com/docs/topics/overview/obtain-api-key.html#:~:text=If%20you%20already%20have%20an,Your%20key%20will%20be%20displayed.)
-.***
+This works on all platforms (Mac OS, Linux and Windows).
 
-***To use the open ai integration you need to set up the OPENAI_ACCESS_TOKEN environment variable and
-you can also set the optional OPENAI_ORGANIZATION_ID if you have an organization***
+## Getting Started
 
-This works in all the platforms (Tested on Mac OS, Linux and Windows).
-
-## Getting started
-
-To get the project up and running.
-
-**Just do:**
-
-```ruby
+```bash
 gem install ruby_raider
-```
-
-**Then do:**
-
-```ruby
 raider new [name_of_project]
 ```
 
-Then a TUI/CLI will appear where the configuration of which frameworks you want to be generated/scaffolded can be
-selected.
+Or with parameters:
 
-Select the ones you will like to work with.
-
-If you already know which frameworks you want to use, you can do:
-
-```ruby
+```bash
 raider new [name_of_project] -p framework:[framework] automation:[automation_type]
 ```
 
-An example of the command above would be:
+### Commands
 
-```ruby
-raider new test_project -p framework:rspec automation:selenium
+```
+raider generate         # Scaffolding commands
+raider utility          # Utility commands
+raider plugin_manager   # Plugin management
+raider new [NAME]       # Create new project
+raider version          # Show version
+raider help [COMMAND]   # Describe commands
 ```
 
-### Ruby raider provides the following list of basic commands
+Shortcuts: `g` (generate), `n` (new), `u` (utility), `v` (version), `pm` (plugin_manager)
 
-###### Anything between square brackets([...]) is where your imput goes
+### Scaffolding
 
-```ruby
-Commands :
-raider generate # Provides access to all the scaffolding commands
-raider help [COMMAND] # Describe available commands or one specific command
-raider new [PROJECT_NAME] # Creates a new framework based on settings picked
-raider utility # Provides access to all the utility commands 
-raider version # It shows the version of Ruby Raider you are currently using
 ```
-
-All the basic commands have their corresponding shortcut:
-
-* g for generate
-* n for new
-* u for utility
-* v for version
-
-### Scaffolding Commands
-
-Ruby Raider also supports scaffolding:
-
-* To create a new page object you do: ```raider g page [PAGE_NAME]```
-* To create a new spec you do: ```raider g spec [SPEC_NAME]```
-* To create a new feature you do: ```raider g feature [FEATURE_NAME]```
-* To create a new steps definition you do: ```raider g steps [STEPS_NAME]```
-* To create both a page/spec or a page/feature/steps you do: ```raider g scaffold [SCAFFOLD_NAME]```
-
-It's possible to add the option --path or p if you want to specify where to create your features, pages, helpers and
-specs.
-
-If you want to set the default path for the creation of your features, helpers and specs:
-
-```ruby
-raider u path [PATH_NAME] - -feature or f
-raider u path [PATH_NAME] - -spec or s
-raider u path [PATH_NAME] - -helper or h
-```
-
-If you don't specify an option, path will assume you want to change the default path for pages.
-
-### Appium Server Command
-
-To initialise Appium server run this command:
-
-```ruby
-raider u start_appium
+raider g page [NAME]      # Create page object
+raider g spec [NAME]      # Create RSpec test
+raider g feature [NAME]   # Create Cucumber feature
+raider g steps [NAME]     # Create step definitions
+raider g scaffold [NAME]  # Create page + test + steps
 ```
 
 ### Sponsors

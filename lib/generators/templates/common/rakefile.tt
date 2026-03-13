@@ -2,3 +2,39 @@ desc 'Print Ruby Raider version'
 task :raider do
   system 'raider version'
 end
+<%- if rspec? -%>
+
+require 'rspec/core/rake_task'
+
+RSpec::Core::RakeTask.new(:spec)
+RSpec::Core::RakeTask.new(:smoke) do |t|
+  t.rspec_opts = '--tag smoke'
+end
+RSpec::Core::RakeTask.new(:regression) do |t|
+  t.rspec_opts = '--tag regression'
+end
+
+task default: :spec
+<%- elsif cucumber? -%>
+
+require 'cucumber/rake/task'
+
+Cucumber::Rake::Task.new(:features)
+Cucumber::Rake::Task.new(:smoke) do |t|
+  t.cucumber_opts = '--tags @smoke'
+end
+Cucumber::Rake::Task.new(:regression) do |t|
+  t.cucumber_opts = '--tags @regression'
+end
+
+task default: :features
+<%- elsif minitest? -%>
+
+require 'rake/testtask'
+
+Rake::TestTask.new(:test) do |t|
+  t.test_files = FileList['test/**/test_*.rb']
+end
+
+task default: :test
+<%- end -%>

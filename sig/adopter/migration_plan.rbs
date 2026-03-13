@@ -1,0 +1,34 @@
+# Type definitions for Adopter::MigrationPlan and ConvertedFile
+module Adopter
+  class MigrationPlan
+    attr_reader source_path: String
+    attr_reader output_path: String
+    attr_reader target_automation: String
+    attr_reader target_framework: String
+    attr_reader ci_platform: String?
+    attr_reader skeleton_structure: Hash[Symbol, untyped]
+    attr_reader converted_pages: Array[ConvertedFile]
+    attr_reader converted_tests: Array[ConvertedFile]
+    attr_reader converted_features: Array[ConvertedFile]
+    attr_reader converted_steps: Array[ConvertedFile]
+    attr_reader gemfile_additions: Array[String]
+    attr_reader config_overrides: Hash[String, untyped]
+    attr_reader warnings: Array[String]
+    attr_reader manual_actions: Array[String]
+
+    def initialize: (?Hash[Symbol, untyped]? attrs) -> void
+    def to_h: () -> Hash[Symbol, untyped]
+    def to_json: (*untyped args) -> String
+    def summary: () -> Hash[Symbol, untyped]
+  end
+
+  class ConvertedFile
+    attr_accessor output_path: String
+    attr_accessor content: String
+    attr_accessor source_file: String?
+    attr_accessor conversion_notes: String?
+
+    def initialize: (?output_path: String, ?content: String, ?source_file: String?, ?conversion_notes: String?) -> void
+    def to_h: () -> Hash[Symbol, untyped]
+  end
+end

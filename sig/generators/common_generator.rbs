@@ -1,0 +1,12 @@
+# Type definitions for CommonGenerator
+class CommonGenerator < Generator
+  def generate_readme_file: () -> void
+  def generate_config_file: () -> void
+  def generate_rake_file: () -> void
+  def generate_gemfile: () -> void
+  def generate_reek_file: () -> void
+  def generate_rubocop_file: () -> void
+  def generate_gitignore_file: () -> void
+  def generate_rspec_file: () -> void
+  def create_allure_folder: () -> void
+end

@@ -1,0 +1,28 @@
+# Type definitions for UrlAnalyzer
+class UrlAnalyzer
+  INTERACTIVE_TAGS: Array[String]
+
+  attr_reader url: String
+  attr_reader page_name: String
+  attr_reader elements: Array[Hash[Symbol, untyped]]
+
+  def initialize: (String url, ?name_override: String?, ?ai: bool) -> void
+  def analyze: () -> UrlAnalyzer
+  def to_h: () -> Hash[Symbol, untyped]
+
+  private
+
+  def fetch_html: () -> String
+  def parse_elements: (String html) -> void
+  def parse_inputs: (String html) -> void
+  def parse_selects: (String html) -> void
+  def parse_textareas: (String html) -> void
+  def parse_buttons: (String html) -> void
+  def parse_links: (String html) -> void
+  def parse_attributes: (String attr_string) -> Hash[String, String]
+  def best_locator: (Hash[String, String] attrs, ?text: String?) -> Hash[Symbol, Symbol | String]
+  def infer_tag: (Hash[String, String] attrs) -> String
+  def build_element: (name: String, type: Symbol, locator: Hash[Symbol, Symbol | String], **untyped extra) -> Hash[Symbol, untyped]
+  def analyze_with_llm: (String html) -> Array[Hash[Symbol, untyped]]?
+  def derive_page_name: () -> String
+end

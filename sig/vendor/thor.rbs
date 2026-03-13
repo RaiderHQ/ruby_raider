@@ -1,0 +1,34 @@
+# Minimal Thor stubs for type checking
+class Thor
+  def self.desc: (String usage, String description, ?Hash[Symbol, untyped] options) -> void
+  def self.method_option: (Symbol name, **untyped options) -> void
+  def self.class_option: (Symbol name, **untyped options) -> void
+  def self.option: (Symbol name, **untyped options) -> void
+  def self.map: (Hash[String, Symbol] mappings) -> void
+  def self.subcommand: (String name, Class subcommand_class) -> void
+  def self.no_commands: () { () -> void } -> void
+  def self.start: (?Array[String] args, ?Hash[Symbol, untyped] config) -> void
+  def invoke: (Symbol command, ?Array[untyped]? args, ?Array[String]? flags) -> void
+  def options: () -> Hash[Symbol, untyped]
+  def say: (String message, ?Symbol? color) -> void
+end
+
+class Thor::Group
+  include Thor::Actions
+
+  def self.argument: (Symbol name, **untyped options) -> void
+  def self.source_root: (?String path) -> String
+  def self.source_paths: () -> Array[String]
+  def invoke_all: () -> void
+  def args: () -> Array[String]
+end
+
+module Thor::Actions
+  def template: (String source, ?String destination, **untyped options) -> void
+  def create_file: (String destination, ?String data) -> void
+  def empty_directory: (String destination) -> void
+  def copy_file: (String source, ?String destination) -> void
+  def remove_file: (String path) -> void
+  def destination_root: () -> String
+  def self.included: (Module base) -> void
+end

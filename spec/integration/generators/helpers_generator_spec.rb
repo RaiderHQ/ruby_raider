@@ -40,12 +40,6 @@ describe HelpersGenerator do
     end
   end
 
-  shared_examples 'creates common visual helpers' do |name|
-    it 'creates a visual helper file' do
-      expect(File).to exist("#{name}/helpers/visual_helper.rb")
-    end
-  end
-
   context 'with rspec and selenium' do
     include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
@@ -56,12 +50,6 @@ describe HelpersGenerator do
     include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'creates watir helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-  end
-
-  context 'with rspec, selenium and applitools' do
-    include_examples 'creates common visual helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
-    include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
-    include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
   end
 
   context 'with cucumber and selenium' do

@@ -1,6 +1,4 @@
-<% if axe? -%>
-<%= partial('axe_driver', strip: true) %>
-<%- elsif selenium_based? -%>
+<% if selenium_based? -%>
 <%= partial('selenium_driver', strip: true) %>
 <%- else -%>
 <%= partial('appium_driver', strip: true) %>

@@ -1,0 +1,9 @@
+# Type definitions for PluginCommands
+module RubyRaider
+  class PluginCommands < Thor
+    def add: (String plugin_name) -> void
+    def delete: (String plugin_name) -> void
+    def local: () -> void
+    def list: () -> void
+  end
+end

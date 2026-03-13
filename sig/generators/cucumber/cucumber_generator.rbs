@@ -1,0 +1,16 @@
+# Type definitions for CucumberGenerator
+class CucumberGenerator < Generator
+  def generate_feature: () -> void
+  def generate_steps: () -> void
+  def generate_user_factory: () -> void
+  def generate_env_file: () -> void
+  def generate_world: () -> void
+  def generate_cucumber_file: () -> void
+  def generate_visual_feature: () -> void
+  def generate_visual_steps: () -> void
+  def generate_accessibility_feature: () -> void
+  def generate_accessibility_steps: () -> void
+  def generate_performance_feature: () -> void
+  def generate_performance_steps: () -> void
+  def template_name: () -> String
+end

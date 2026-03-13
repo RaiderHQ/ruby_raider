@@ -1,6 +1,3 @@
-# :reek:FeatureEnvy { enabled: false }
-# :reek:UtilityFunction { enabled: false }
-
 module SettingsHelper
   def create_settings(options)
     automation = options[:automation]

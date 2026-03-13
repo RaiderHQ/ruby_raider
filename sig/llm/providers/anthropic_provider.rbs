@@ -1,0 +1,16 @@
+# Type definitions for Anthropic provider
+module Llm
+  module Providers
+    class AnthropicProvider < Provider
+      DEFAULT_MODEL: String
+
+      def initialize: (api_key: String, ?model: String?) -> void
+      def complete: (String prompt, ?system_prompt: String?) -> String?
+      def available?: () -> bool
+
+      private
+
+      def build_client: () -> untyped
+    end
+  end
+end

@@ -1,0 +1,18 @@
+# frozen_string_literal: true
+
+require_relative '../helpers/test_helper'
+require_relative '../helpers/performance_helper'
+
+class TestPerformance < Minitest::Test
+  include PerformanceHelper
+
+  def test_meets_performance_threshold
+    result = assert_performance_above('https://raider-test-site.onrender.com/', threshold: 0.7)
+
+    refute_equal :error, result[:status],
+      "Lighthouse error: #{result[:message]}"
+
+    assert result[:passed],
+      "Performance below threshold (#{result[:threshold]}): #{result[:scores]}"
+  end
+end

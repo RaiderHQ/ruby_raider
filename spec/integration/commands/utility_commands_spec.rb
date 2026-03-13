@@ -43,17 +43,37 @@ describe UtilityCommands do
       expect(config['browser']).to eql ':firefox'
     end
 
-    it 'updates the browser options', skip: 'review browser options method' do
+    it 'updates the browser options' do
       utility.new.invoke(:browser, nil, %w[:firefox --opts headless start-maximized start-fullscreen])
       config = YAML.load_file('config/config.yml')
       expect(config['browser_options']).to eql %w[headless start-maximized start-fullscreen]
     end
   end
 
+  context 'with timeout and viewport commands' do
+    path = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
+
+    before do
+      Dir.chdir path
+    end
+
+    it 'updates the timeout' do
+      utility.new.invoke(:timeout, nil, %w[30])
+      config = YAML.load_file('config/config.yml')
+      expect(config['timeout']).to eq 30
+    end
+
+    it 'updates the viewport' do
+      utility.new.invoke(:viewport, nil, %w[375x812])
+      config = YAML.load_file('config/config.yml')
+      expect(config['viewport']).to eq({ 'width' => 375, 'height' => 812 })
+    end
+  end
+
   context 'with a features folder' do
     let(:new_path) { 'test_folder' }
 
-    path = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::APPLITOOLS}"
+    path = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
 
     before do
       Dir.chdir path
@@ -71,7 +91,7 @@ describe UtilityCommands do
       expect(config['feature_path']).to eql path
     end
 
-    it 'updates only the browser options', skip: 'review browser options method' do
+    it 'updates only the browser options' do
       utility.new.invoke(:browser, nil, %w[:firefox --opts headless])
       config = YAML.load_file('config/config.yml')
       expect(config['browser_options']).to eql %w[headless]

@@ -4,7 +4,6 @@ require_relative 'migration_plan'
 require_relative 'converters/identity_converter'
 
 module Adopter
-  # :reek:TooManyMethods { enabled: false }
   class PlanBuilder
     def initialize(analysis, params)
       @analysis = analysis
@@ -63,7 +62,7 @@ module Adopter
       tests = @analysis[:tests] || []
       return [] if target_cucumber?
 
-      tests.select { |t| t[:type] != :cucumber }.map do |test|
+      tests.reject { |t| t[:type] == :cucumber }.map do |test|
         source_file = File.join(@params[:source_path], test[:path])
         content = File.read(source_file)
         converted = convert_test(content, test)
@@ -87,7 +86,7 @@ module Adopter
 
         ConvertedFile.new(
           output_path: raider_feature_path(feature[:path]),
-          content: content,
+          content:,
           source_file: feature[:path],
           conversion_notes: 'Feature file copied as-is'
         )
@@ -125,7 +124,6 @@ module Adopter
       end
     end
 
-    # :reek:ControlParameter { enabled: false }
     def convert_page_dsl(content, page, source_dsl, target)
       converter = find_page_converter(source_dsl, target)
       if converter
@@ -162,7 +160,6 @@ module Adopter
       end
     end
 
-    # :reek:ControlParameter { enabled: false }
     def convert_test_framework(content, test, source_framework, target)
       converter = find_test_converter(source_framework, target)
       if converter

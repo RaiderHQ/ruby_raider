@@ -22,7 +22,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.4.0
+          ruby-version: <%= ruby_version %>.0
           bundler-cache: true
 
       - name: Set up Chrome

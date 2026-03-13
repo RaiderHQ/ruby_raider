@@ -63,7 +63,7 @@ describe ScaffoldingCommands do
   context 'with a features folder' do
     let(:new_path) { 'test_folder' }
 
-    path = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::APPLITOOLS}"
+    path = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
 
     before do
       Dir.chdir path

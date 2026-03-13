@@ -17,6 +17,10 @@ class CommonGenerator < Generator
     template('common/rakefile.tt', "#{name}/Rakefile")
   end
 
+  def generate_ruby_version_file
+    template('common/ruby_version.tt', "#{name}/.ruby-version")
+  end
+
   def generate_gemfile
     template('common/gemfile.tt', "#{name}/Gemfile")
   end
@@ -33,7 +37,15 @@ class CommonGenerator < Generator
     template('common/git_ignore.tt', "#{name}/.gitignore")
   end
 
+  def generate_rspec_file
+    return unless rspec?
+
+    template('common/rspec.tt', "#{name}/.rspec")
+  end
+
   def create_allure_folder
+    return unless allure_reporter?
+
     empty_directory "#{name}/allure-results"
   end
 end

@@ -1,0 +1,30 @@
+# frozen_string_literal: true
+
+require_relative '../abstract/component'
+
+class <%= class_name %> < Component
+<%- if capybara? -%>
+
+  # Example: find('.selector').text
+<%- elsif selenium? -%>
+
+  def content
+    component.text
+  end
+
+  private
+
+  # Elements
+  # Example: driver.find_element(css: '.selector')
+<%- elsif watir? -%>
+
+  def content
+    component.text
+  end
+
+  private
+
+  # Elements
+  # Example: browser.element(css: '.selector')
+<%- end -%>
+end
