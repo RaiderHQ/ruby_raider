@@ -82,7 +82,7 @@ class MenuGenerator
   end
 
   FrameworkOptions = Struct.new(:automation, :framework, :ci_platform, :reporter, :accessibility, :visual, :performance,
-                               :ruby_version)
+                                :ruby_version)
 
   def create_framework_options(params)
     FrameworkOptions.new(params[:automation], params[:framework], params[:ci_platform], params[:reporter],
