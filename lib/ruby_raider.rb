@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'thor'
+
 # Lazy-load top-level command classes to reduce CLI startup time.
 autoload :AdoptCommands, File.expand_path('commands/adopt_commands', __dir__)
 autoload :ScaffoldingCommands, File.expand_path('commands/scaffolding_commands', __dir__)
