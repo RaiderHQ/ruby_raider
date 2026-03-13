@@ -1,0 +1,10 @@
+# Type definitions for TemplateRenderer module
+module TemplateRenderer
+  def partial: (String name, ?Hash[Symbol, untyped] options) -> String
+
+  module ClassMethods
+    def template_renderer: () -> TemplateRenderer::PartialCache
+    def clear_template_cache: () -> void
+    def template_cache_stats: () -> Hash[Symbol, untyped]
+  end
+end

@@ -9,7 +9,6 @@ class AutomationGenerator < Generator
       generate_home_page
       generate_pdp_page
     else
-      generate_visual_options
       generate_components
       generate_model_files
       generate_pages
@@ -45,12 +44,6 @@ class AutomationGenerator < Generator
 
   def generate_appium_settings
     template('appium_caps.tt', "#{name}/config/capabilities.yml")
-  end
-
-  def generate_visual_options
-    return unless visual?
-
-    template('visual_options.tt', "#{name}/config/options.yml")
   end
 
   def generate_login_page

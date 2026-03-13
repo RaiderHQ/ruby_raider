@@ -1,0 +1,21 @@
+# Type definitions for UtilityCommands
+class UtilityCommands < Thor
+  def path: (String default_path) -> void
+  def url: (String default_url) -> void
+  def browser: (?String? default_browser) -> void
+  def browser_options: (*String opts) -> void
+  def raid: () -> void
+  def config: () -> void
+  def timeout: (String seconds) -> void
+  def viewport: (String dimensions) -> void
+  def platform: (String platform) -> void
+  def debug: (String toggle) -> void
+  def start_appium: () -> void
+  def desktop: () -> void
+  def llm: (?String? provider) -> void
+
+  private
+
+  def configure_llm: (String provider) -> void
+  def show_llm_status: () -> void
+end

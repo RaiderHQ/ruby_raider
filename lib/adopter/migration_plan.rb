@@ -7,7 +7,6 @@ module Adopter
                 :converted_features, :converted_steps, :gemfile_additions,
                 :config_overrides, :warnings, :manual_actions
 
-    # :reek:LongParameterList { enabled: false }
     def initialize(attrs = {})
       @source_path = attrs[:source_path]
       @output_path = attrs[:output_path]

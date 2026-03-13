@@ -1,4 +1,35 @@
-require_relative '../page_objects/pages/<%= name %>'
+# frozen_string_literal: true
 
-describe '<%= name.split('_').map {|word| word.capitalize }.join %>' do
+require_relative '../page_objects/pages/<%= normalized_name %>'
+<%- uses_list.each do |dep| -%>
+require_relative '../page_objects/pages/<%= dep %>'
+<%- end -%>
+
+describe '<%= page_class_name %>' do
+<%- if selenium? -%>
+  let(:page) { <%= page_class_name %>.new(driver) }
+<%- elsif watir? -%>
+  let(:page) { <%= page_class_name %>.new(browser) }
+<%- elsif capybara? -%>
+  let(:page) { <%= page_class_name %>.new }
+<%- end -%>
+<%- uses_list.each do |dep| -%>
+  let(:<%= dep %>) { <%= NameNormalizer.to_page_class(dep) %>.new<%= selenium? ? '(driver)' : watir? ? '(browser)' : '' %> }
+<%- end -%>
+<%- if project_config['url'] -%>
+
+  before do
+<%- if capybara? -%>
+    visit '<%= normalized_name %>'
+<%- elsif selenium? -%>
+    driver.navigate.to "\#{project_config['url']}/<%= normalized_name %>"
+<%- elsif watir? -%>
+    browser.goto "\#{project_config['url']}/<%= normalized_name %>"
+<%- end -%>
+  end
+<%- end -%>
+
+  it 'loads successfully' do
+    pending 'implement test'
+  end
 end

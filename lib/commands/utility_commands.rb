@@ -3,8 +3,6 @@
 require 'thor'
 require_relative '../utilities/utilities'
 
-# :reek:FeatureEnvy { enabled: false }
-# :reek:UtilityFunction { enabled: false }
 class UtilityCommands < Thor
   desc 'path [PATH]', 'Sets the default path for scaffolding'
   option :feature,
@@ -67,14 +65,96 @@ class UtilityCommands < Thor
   option :delete,
          type: :boolean, required: false, desc: 'This will delete the selected config file', aliases: '-d'
 
+  desc 'timeout [SECONDS]', 'Sets the default test timeout in seconds'
+
+  def timeout(seconds)
+    Utilities.timeout = seconds
+  end
+
+  desc 'viewport [DIMENSIONS]', 'Sets the default viewport size (e.g. 1920x1080, 375x812)'
+
+  def viewport(dimensions)
+    Utilities.viewport = dimensions
+  end
+
   desc 'platform [PLATFORM]', 'Sets the default platform for a cross-platform project'
 
   def platform(platform)
     Utilities.platform = platform
   end
 
+  desc 'debug [on/off]', 'Toggles debug mode for failure diagnostics and logging'
+
+  def debug(toggle)
+    enabled = %w[on true 1 yes].include?(toggle.downcase)
+    Utilities.debug = enabled
+    state = enabled ? 'enabled' : 'disabled'
+    say "Debug mode #{state}", :green
+  end
+
   desc 'start_appium', 'It starts the appium server'
   def start_appium
     system 'appium  --base-path /wd/hub'
+  end
+
+  desc 'desktop', 'Downloads the Raider Desktop GUI application'
+  option :path, type: :string, required: false,
+                desc: 'Directory to save the download', aliases: '-p'
+
+  def desktop
+    require_relative '../utilities/desktop_downloader'
+    version = DesktopDownloader.latest_version
+    unless version
+      say 'Could not reach GitHub releases. Check your internet connection.', :red
+      return
+    end
+
+    say "Raider Desktop v#{version} available for #{DesktopDownloader.platform_display_name}"
+    DesktopDownloader.download(options[:path])
+    say 'Raider Desktop downloaded successfully!', :green
+  end
+
+  desc 'llm [PROVIDER]', 'Configures the LLM provider (openai, anthropic, ollama)'
+  option :key, type: :string, required: false, desc: 'API key for the provider', aliases: '-k'
+  option :model, type: :string, required: false, desc: 'Model name to use', aliases: '-m'
+  option :url, type: :string, required: false, desc: 'API URL (for ollama)', aliases: '-u'
+  option :status, type: :boolean, required: false, desc: 'Show current LLM configuration', aliases: '-s'
+
+  def llm(provider = nil)
+    if options[:status] || provider.nil?
+      show_llm_status
+      return
+    end
+    configure_llm(provider)
+  end
+
+  no_commands do
+    def configure_llm(provider)
+      unless %w[openai anthropic ollama].include?(provider)
+        say "Unknown provider '#{provider}'. Choose: openai, anthropic, ollama", :red
+        return
+      end
+
+      Utilities.llm_provider = provider
+      Utilities.llm_api_key = options[:key] if options[:key]
+      Utilities.llm_model = options[:model] if options[:model]
+      Utilities.llm_url = options[:url] if options[:url]
+      say "LLM configured: #{provider}", :green
+    end
+
+    def show_llm_status
+      require_relative '../llm/client'
+      status = Llm::Client.status
+      if status[:configured]
+        say "Provider: #{status[:provider]}"
+        say "Model: #{status[:model] || 'default'}"
+        say "Available: #{status[:available] ? 'yes' : 'no'}"
+      else
+        say 'No LLM configured. Use: raider u llm <provider>', :yellow
+        say '  Providers: openai, anthropic, ollama'
+        say '  Example:   raider u llm ollama'
+        say '  Example:   raider u llm openai -k sk-...'
+      end
+    end
   end
 end

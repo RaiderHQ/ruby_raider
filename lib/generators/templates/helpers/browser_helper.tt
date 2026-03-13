@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'active_support/core_ext/string/inflections'
 require 'yaml'
 require 'watir'
 
@@ -16,8 +17,17 @@ module BrowserHelper
   end
 
   def create_browser(*args)
-    args = args.empty? ? config['browser_arguments'][config['browser']] : args
+    Watir.default_timeout = config.fetch('timeout', 10)
+    browser_name = config['browser'].to_s
+    args = args.empty? ? config['browser_arguments'][browser_name] : args
     args += ['--headless'] if ENV['HEADLESS'] && !args.include?('--headless')
-    Watir::Browser.new(config['browser'], options: { args: args })
+    capitalized = browser_name == 'ie' ? browser_name.upcase : browser_name.capitalize
+    browser_options = "Selenium::WebDriver::#{capitalized}::Options".constantize.new(args:)
+    debug_cfg = config['debug'] || {}
+    if %w[chrome edge msedge].include?(browser_name.downcase) &&
+       (debug_cfg.fetch('enabled', false) || ENV['DEBUG']&.downcase == 'true')
+      browser_options.add_option('goog:loggingPrefs', { browser: 'ALL', performance: 'ALL' })
+    end
+    Watir::Browser.new(browser_name.to_sym, options: browser_options)
   end
 end

@@ -1,0 +1,18 @@
+# Type definitions for ScaffoldMenu
+class ScaffoldMenu
+  COMPONENTS: Hash[String, Symbol]
+
+  def initialize: () -> void
+  def run: () -> Hash[Symbol, untyped]?
+  def self.build_options: (names: Array[String] | String, components: Array[Symbol] | Symbol, ?uses: Array[String] | String) -> Hash[Symbol, untyped]
+
+  private
+
+  def ask_names: () -> Array[String]
+  def ask_components: () -> Array[Symbol]
+  def ask_relationships: () -> Array[String]
+  def preview_and_confirm: (Array[String] names, Array[Symbol] components, Array[String] uses) -> Hash[Symbol, untyped]?
+  def planned_files: (Array[String] names, Array[Symbol] components) -> Array[String]
+  def file_for: (String name, Symbol component) -> String?
+  def default_components: (Hash[Symbol, untyped] project) -> Array[String]
+end

@@ -1,0 +1,8 @@
+# Type definitions for AdoptCommands
+class AdoptCommands < Thor
+  def project: (String source_path) -> void
+
+  private
+
+  def print_programmatic_results: (Hash[Symbol, untyped] result) -> void
+end

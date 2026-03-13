@@ -1,0 +1,17 @@
+# frozen_string_literal: true
+
+require_relative '../../helpers/performance_helper'
+
+include PerformanceHelper
+
+Given('I audit the home page performance') do
+  @result = assert_performance_above('https://raider-test-site.onrender.com/', threshold: 0.7)
+end
+
+Then('the performance score should be above the threshold') do
+  expect(@result[:status]).not_to eq(:error),
+    "Lighthouse error: #{@result[:message]}"
+
+  expect(@result[:passed]).to be(true),
+    "Performance below threshold (#{@result[:threshold]}): #{@result[:scores]}"
+end

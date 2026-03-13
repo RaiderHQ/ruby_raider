@@ -15,24 +15,21 @@ module Adopter
         result = ensure_frozen_string_literal(result)
         result = update_base_class(result)
         result = add_page_require(result)
-        result = update_page_instantiation(result)
-        result
+        update_page_instantiation(result)
       end
 
       def convert_test(content, _test_info)
         result = content.dup
         result = ensure_frozen_string_literal(result)
         result = update_require_paths(result, @target_automation)
-        result = update_page_instantiation(result)
-        result
+        update_page_instantiation(result)
       end
 
       def convert_step(content)
         result = content.dup
         result = ensure_frozen_string_literal(result)
         result = update_require_paths(result, @target_automation)
-        result = update_page_instantiation(result)
-        result
+        update_page_instantiation(result)
       end
 
       private

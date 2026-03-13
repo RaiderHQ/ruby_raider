@@ -78,18 +78,13 @@ module TemplateRenderer
       nil
     end
 
-    # Search all Generator.source_paths for the partial
-    # Checks both source_path/partials/ and source_path/*/partials/
+    # Search all Generator.source_paths for the partial.
+    # Uses a cached directory index to avoid repeated Dir.glob calls.
     def search_source_paths(partial_filename)
-      source_paths.each do |source_path|
-        # First try direct partials directory
-        full_path = File.join(source_path, PARTIALS_DIR, partial_filename)
+      # Check the pre-built index first (fast path)
+      partial_dirs.each do |dir|
+        full_path = File.join(dir, partial_filename)
         return { found: File.expand_path(full_path), searched: [full_path] } if File.exist?(full_path)
-
-        # Then try subdirectories (e.g., templates/common/partials/, templates/helpers/partials/)
-        Dir.glob(File.join(source_path, '*', PARTIALS_DIR, partial_filename)).each do |path|
-          return { found: File.expand_path(path), searched: [path] } if File.exist?(path)
-        end
       end
 
       { found: nil, searched: [] }
@@ -98,6 +93,18 @@ module TemplateRenderer
     # Get all configured source paths from the generator class
     def source_paths
       @source_paths ||= @generator_class.source_paths || []
+    end
+
+    # Pre-built index of all directories that could contain partials.
+    # Scanned once via Dir.glob, then reused for every partial lookup.
+    def partial_dirs
+      @partial_dirs ||= source_paths.flat_map do |source_path|
+        dirs = []
+        direct = File.join(source_path, PARTIALS_DIR)
+        dirs << direct if File.directory?(direct)
+        Dir.glob(File.join(source_path, '*', PARTIALS_DIR)).each { |d| dirs << d }
+        dirs
+      end
     end
   end
 end

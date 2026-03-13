@@ -1,0 +1,26 @@
+# frozen_string_literal: true
+
+require_relative '../helpers/test_helper'
+
+class TestAccessibility < Minitest::Test
+  def setup
+    super
+    <% if capybara? -%>
+visit '/'
+    <% elsif watir? -%>
+browser.goto 'https://raider-test-site.onrender.com/'
+    <% else -%>
+driver.get 'https://raider-test-site.onrender.com/'
+    <% end -%>
+  end
+
+  def test_no_accessibility_violations_on_page
+    <% if capybara? -%>
+assert_axe_clean page
+    <% elsif watir? -%>
+assert_axe_clean browser.driver
+    <% else -%>
+assert_axe_clean driver
+    <% end -%>
+  end
+end

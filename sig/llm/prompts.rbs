@@ -1,0 +1,8 @@
+# Type definitions for Llm::Prompts
+module Llm
+  module Prompts
+    def self?.analyze_page: (String html, String url) -> String
+    def self?.generate_test_scenarios: (String class_name, Array[Hash[Symbol, untyped]] methods, String automation, String framework) -> String
+    def self?.system_prompt: () -> String
+  end
+end

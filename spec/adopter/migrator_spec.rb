@@ -231,8 +231,8 @@ RSpec.describe Adopter::Migrator do
           },
           converted_pages: [
             Adopter::ConvertedFile.new(
-              output_path: "/dev/null/impossible/path/file.rb",
-              content: "content",
+              output_path: '/dev/null/impossible/path/file.rb',
+              content: 'content',
               source_file: 'pages/bad.rb',
               conversion_notes: 'Will fail'
             )

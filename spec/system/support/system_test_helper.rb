@@ -2,9 +2,7 @@
 
 require 'open3'
 
-# :reek:UtilityFunction
 module SystemTestHelper
-  # :reek:ControlParameter
   def test_command_for(framework)
     case framework
     when 'cucumber' then 'bundle exec cucumber features --format pretty'

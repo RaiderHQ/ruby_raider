@@ -18,6 +18,16 @@ describe CommonGenerator do
     end
   end
 
+  shared_examples 'creates a ruby-version file' do |name|
+    it 'creates a .ruby-version file' do
+      expect(File).to exist("#{name}/.ruby-version")
+    end
+
+    it 'contains the default ruby version' do
+      expect(File.read("#{name}/.ruby-version").strip).to eq('3.4')
+    end
+  end
+
   shared_examples 'creates a config file' do |name|
     it 'creates a config file' do
       expect(File).to exist("#{name}/config/config.yml")
@@ -27,12 +37,6 @@ describe CommonGenerator do
   shared_examples "doesn't create a config file" do |name|
     it "doesn't create a config file" do
       expect(File).not_to exist("#{name}/config/config.yml")
-    end
-  end
-
-  shared_examples 'creates an options file' do |name|
-    it 'creates an options file' do
-      expect(File).to exist("#{name}/config/options.yml")
     end
   end
 
@@ -52,6 +56,7 @@ describe CommonGenerator do
     include_examples 'creates common files', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates a config file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates a gitignore file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates a ruby-version file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
   end
 
   context 'with rspec and watir' do
@@ -60,17 +65,11 @@ describe CommonGenerator do
     include_examples 'creates a gitignore file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
   end
 
-  context 'with rspec, selenium and applitools' do
-    include_examples 'creates common files', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
-    include_examples 'creates a config file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
-    include_examples 'creates an options file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
-    include_examples 'creates a gitignore file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::APPLITOOLS}"
-  end
-
   context 'with cucumber and selenium' do
     include_examples 'creates common files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates a config file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates a gitignore file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates a ruby-version file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
   end
 
   context 'with cucumber and watir' do

@@ -1,0 +1,26 @@
+# Type definitions for Adopter::ProjectDetector
+module Adopter
+  module ProjectDetector
+    GEM_AUTOMATION_MAP: Hash[String, String]
+    GEM_FRAMEWORK_MAP: Hash[String, String]
+    BROWSERS: Array[String]
+
+    def self?.detect: (String path) -> Hash[Symbol, String?]
+    def self?.detect_automation: (String path) -> String?
+    def self?.detect_framework: (String path) -> String?
+    def self?.detect_page_path: (String path) -> String?
+    def self?.detect_spec_path: (String path) -> String?
+    def self?.detect_feature_path: (String path) -> String?
+    def self?.detect_helper_path: (String path) -> String?
+    def self?.detect_browser: (String path) -> String?
+    def self?.detect_url: (String path) -> String?
+    def self?.detect_ci_platform: (String path) -> String?
+    def self?.parse_gemfile: (String path) -> Array[String]
+
+    private
+
+    def self?.detect_automation_from_requires: (String path) -> String?
+    def self?.find_existing_dir: (String path, Array[String] candidates) -> String?
+    def self?.helper_and_config_files: (String path) -> Array[String]
+  end
+end

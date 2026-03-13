@@ -32,7 +32,7 @@ RSpec.describe Adopter::MigrationPlan do
   end
 
   describe '#to_h' do
-    it 'serializes all fields' do
+    it 'serializes all fields' do # rubocop:disable RSpec/MultipleExpectations
       hash = plan.to_h
       expect(hash[:source_path]).to eq('/source')
       expect(hash[:output_path]).to eq('/output')

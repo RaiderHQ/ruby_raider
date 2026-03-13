@@ -4,7 +4,7 @@ stages:
   - report
 
 variables:
-  RUBY_VERSION: "3.4.0"
+  RUBY_VERSION: "<%= ruby_version %>.0"
   HEADLESS: "true"
 
 setup_ruby:

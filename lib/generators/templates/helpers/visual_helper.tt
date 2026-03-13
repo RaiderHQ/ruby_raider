@@ -1,65 +1,58 @@
 # frozen_string_literal: true
 
-require 'active_support/inflector'
-require 'eyes_selenium'
-require 'yaml'
+require 'chunky_png'
+require 'fileutils'
 
 module VisualHelper
-    attr_reader :eyes
+  BASELINE_DIR = 'visual_baselines'
+  DIFF_DIR = 'visual_diffs'
 
-    SELENIUM = Applitools::Selenium
-    VISUAL_GRID = SELENIUM::VisualGridRunner
-    EYES = SELENIUM::Eyes
-    TARGET = SELENIUM::Target
-    BATCHINFO = Applitools::BatchInfo
-    REGTANGLE_SIZE = Applitools::RectangleSize
+  def compare_screenshot(name, screenshot_path, threshold: 0.01)
+    FileUtils.mkdir_p(BASELINE_DIR)
+    FileUtils.mkdir_p(DIFF_DIR)
 
-    def create_grid_runner(concurrency = 1)
-      VISUAL_GRID.new(concurrency)
+    baseline_path = File.join(BASELINE_DIR, "#{name}.png")
+
+    unless File.exist?(baseline_path)
+      FileUtils.cp(screenshot_path, baseline_path)
+      return { status: :baseline_created, path: baseline_path }
     end
 
-    def create_eyes(grid_runner)
-      EYES.new(runner: grid_runner)
-    end
+    baseline = ChunkyPNG::Image.from_file(baseline_path)
+    current = ChunkyPNG::Image.from_file(screenshot_path)
 
-    def check_page(page)
-      page = format_page(page)
-      @eyes.check(page, TARGET.window.fully)
-    end
+    diff_pixels = 0
+    total_pixels = baseline.width * baseline.height
 
-    def configure_eyes(eyes, options = nil)
-      options ||= YAML.load_file('config/options.yml')
+    diff_image = ChunkyPNG::Image.new(baseline.width, baseline.height)
 
-      eyes.configure do |conf|
-        #  You can get your api key from the Applitools dashboard
-        general_config(options, conf)
-        add_browsers(options[:browsers], conf)
-        add_devices(options[:devices], conf)
+    baseline.height.times do |y|
+      baseline.width.times do |x|
+        if pixel_match?(baseline[x, y], current[x, y])
+          diff_image[x, y] = ChunkyPNG::Color.rgba(0, 0, 0, 50)
+        else
+          diff_pixels += 1
+          diff_image[x, y] = ChunkyPNG::Color.rgb(255, 0, 0)
+        end
       end
     end
 
-    def format_page(page)
-      page.instance_of?(String) ? page : page.to_s
-    end
+    diff_percentage = diff_pixels.to_f / total_pixels
 
-    def add_browsers(browsers, conf)
-      browsers.each do |browser|
-        conf.add_browser(browser[:height], browser[:width], "BrowserType::#{browser[:name].upcase}".constantize)
-      end
+    if diff_percentage > threshold
+      diff_path = File.join(DIFF_DIR, "#{name}_diff.png")
+      diff_image.save(diff_path)
+      { status: :mismatch, diff: diff_percentage, diff_path: }
+    else
+      { status: :match, diff: diff_percentage }
     end
+  end
 
-    def add_devices(devices, conf)
-      devices.each do |device|
-        conf.add_device_emulation("Devices::#{device[:name]}".constantize,
-                                  "Orientation::#{device[:orientation]}".constantize)
-      end
-    end
+  private
 
-    def general_config(options, conf)
-      conf.api_key = ENV['APPLITOOLS_API_KEY']
-      conf.batch = BATCHINFO.new(options[:batch_name])
-      conf.app_name = options[:app_name]
-      conf.test_name = options[:test_name]
-      conf.viewport_size = REGTANGLE_SIZE.new(options[:viewport_size][:height], options[:viewport_size][:width])
-    end
+  def pixel_match?(pixel1, pixel2)
+    r1, g1, b1 = ChunkyPNG::Color.r(pixel1), ChunkyPNG::Color.g(pixel1), ChunkyPNG::Color.b(pixel1)
+    r2, g2, b2 = ChunkyPNG::Color.r(pixel2), ChunkyPNG::Color.g(pixel2), ChunkyPNG::Color.b(pixel2)
+    (r1 - r2).abs <= 5 && (g1 - g2).abs <= 5 && (b1 - b2).abs <= 5
+  end
 end

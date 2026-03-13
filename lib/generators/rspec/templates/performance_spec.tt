@@ -1,0 +1,18 @@
+# frozen_string_literal: true
+
+require_relative '../helpers/spec_helper'
+require_relative '../helpers/performance_helper'
+
+describe 'Performance Audit' do
+  include PerformanceHelper
+
+  it 'meets performance threshold' do
+    result = assert_performance_above('https://raider-test-site.onrender.com/', threshold: 0.7)
+
+    expect(result[:status]).not_to eq(:error),
+      "Lighthouse error: #{result[:message]}"
+
+    expect(result[:passed]).to be(true),
+      "Performance below threshold (#{result[:threshold]}): #{result[:scores]}"
+  end
+end
