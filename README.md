@@ -208,7 +208,3 @@ bundle exec reek        # Run code smell detection
 * [GitHub](https://github.com/RubyRaider/ruby_raider)
 * [Website](https://ruby-raider.com)
 * [Community](https://gitter.im/RubyRaider/community)
-
-## Sponsors
-
-This project is tested with BrowserStack.
