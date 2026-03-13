@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Adopter
-  # :reek:TooManyMethods { enabled: false }
   module ProjectDetector
     GEM_AUTOMATION_MAP = {
       'site_prism' => 'capybara',
@@ -78,7 +77,6 @@ module Adopter
       find_existing_dir(path, candidates)
     end
 
-    # :reek:NestedIterators { enabled: false }
     def detect_browser(path)
       config_files = helper_and_config_files(path)
       config_files.each do |file|

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# :reek:UtilityFunction { enabled: false }
-# :reek:TooManyStatements { enabled: false }
 module ScaffoldProjectDetector
   AUTOMATION_GEMS = {
     'capybara' => 'capybara',

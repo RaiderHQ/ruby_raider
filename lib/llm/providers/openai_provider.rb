@@ -4,7 +4,6 @@ require_relative '../provider'
 
 module Llm
   module Providers
-    # :reek:FeatureEnvy { enabled: false }
     class OpenaiProvider < Provider
       DEFAULT_MODEL = 'gpt-4o-mini'
 

@@ -69,8 +69,6 @@ module TemplateRenderer
   end
 
   # Class methods added to the including class
-  # :reek:FeatureEnvy { enabled: false }
-  # :reek:ManualDispatch { enabled: false }
   module ClassMethods
     # Get the shared template renderer instance
     # Each generator class gets its own cache instance

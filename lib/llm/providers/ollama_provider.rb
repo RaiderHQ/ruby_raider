@@ -7,9 +7,6 @@ require_relative '../provider'
 
 module Llm
   module Providers
-    # :reek:FeatureEnvy { enabled: false }
-    # :reek:TooManyStatements { enabled: false }
-    # :reek:ControlParameter { enabled: false }
     class OllamaProvider < Provider
       DEFAULT_MODEL = 'llama3.2'
       DEFAULT_URL = 'http://localhost:11434'

@@ -9,15 +9,6 @@ require_relative '../scaffolding/dry_run_presenter'
 require_relative '../scaffolding/project_detector'
 require_relative '../commands/utility_commands'
 
-# :reek:FeatureEnvy { enabled: false }
-# :reek:UtilityFunction { enabled: false }
-# :reek:RepeatedConditional { enabled: false }
-# :reek:TooManyMethods { enabled: false }
-# :reek:DuplicateMethodCall { enabled: false }
-# :reek:BooleanParameter { enabled: false }
-# :reek:LongParameterList { enabled: false }
-# :reek:NestedIterators { enabled: false }
-# :reek:UncommunicativeVariableName { enabled: false }
 class ScaffoldingCommands < Thor
   class_option :dry_run, type: :boolean, default: false,
                          desc: 'Preview files without creating them', banner: ''

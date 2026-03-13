@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-# :reek:UtilityFunction { enabled: false }
 module NameNormalizer
   SUFFIXES = %w[_page _spec _steps _helper _test _feature].freeze
 

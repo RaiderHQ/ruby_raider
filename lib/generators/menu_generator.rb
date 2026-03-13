@@ -3,13 +3,6 @@
 require 'tty-prompt'
 require_relative '../generators/invoke_generators'
 
-# :reek:FeatureEnvy { enabled: false }
-# :reek:UtilityFunction { enabled: false }
-# :reek:BooleanParameter { enabled: false }
-# :reek:DataClump { enabled: false }
-# :reek:DuplicateMethodCall { enabled: false }
-# :reek:LongParameterList { enabled: false }
-# :reek:TooManyStatements { enabled: false }
 class MenuGenerator
   attr_reader :prompt, :name
 
@@ -41,6 +34,7 @@ class MenuGenerator
       accessibility: options[:accessibility],
       visual: options[:visual],
       performance: options[:performance],
+      ruby_version: options[:ruby_version],
       name: @name
     }
     generate_framework(structure)
@@ -87,11 +81,12 @@ class MenuGenerator
     end
   end
 
-  FrameworkOptions = Struct.new(:automation, :framework, :ci_platform, :reporter, :accessibility, :visual, :performance)
+  FrameworkOptions = Struct.new(:automation, :framework, :ci_platform, :reporter, :accessibility, :visual, :performance,
+                               :ruby_version)
 
   def create_framework_options(params)
     FrameworkOptions.new(params[:automation], params[:framework], params[:ci_platform], params[:reporter],
-                         params[:accessibility], params[:visual], params[:performance])
+                         params[:accessibility], params[:visual], params[:performance], params[:ruby_version])
   end
 
   def select_reporter(framework, automation_type, ci_platform = nil)
@@ -132,10 +127,34 @@ class MenuGenerator
                          visual: false)
     prompt.select('Add Lighthouse performance auditing?') do |menu|
       menu.choice :Yes, lambda {
-        create_framework(framework, automation_type, ci_platform:, reporter:, accessibility:, visual:, performance: true)
+        select_ruby_version(framework, automation_type, ci_platform:, reporter:, accessibility:, visual:,
+                            performance: true)
       }
       menu.choice :No, lambda {
-        create_framework(framework, automation_type, ci_platform:, reporter:, accessibility:, visual:)
+        select_ruby_version(framework, automation_type, ci_platform:, reporter:, accessibility:, visual:)
+      }
+      menu.choice :Quit, -> { exit }
+    end
+  end
+
+  def select_ruby_version(framework, automation_type, ci_platform: nil, reporter: nil, accessibility: false,
+                          visual: false, performance: false)
+    prompt.select('Select Ruby version for your project') do |menu|
+      menu.choice :'3.4 (latest)', lambda {
+        create_framework(framework, automation_type, ci_platform:, reporter:, accessibility:, visual:, performance:,
+                         ruby_version: '3.4')
+      }
+      menu.choice :'3.3', lambda {
+        create_framework(framework, automation_type, ci_platform:, reporter:, accessibility:, visual:, performance:,
+                         ruby_version: '3.3')
+      }
+      menu.choice :'3.2', lambda {
+        create_framework(framework, automation_type, ci_platform:, reporter:, accessibility:, visual:, performance:,
+                         ruby_version: '3.2')
+      }
+      menu.choice :'3.1', lambda {
+        create_framework(framework, automation_type, ci_platform:, reporter:, accessibility:, visual:, performance:,
+                         ruby_version: '3.1')
       }
       menu.choice :Quit, -> { exit }
     end
@@ -145,16 +164,16 @@ class MenuGenerator
     %w[ios android cross_platform].include?(automation_type)
   end
 
-  # :reek:LongParameterList { enabled: false }
   def create_framework(framework, automation_type, ci_platform: nil, reporter: nil, accessibility: false,
-                       visual: false, performance: false)
+                       visual: false, performance: false, ruby_version: nil)
     options = create_framework_options(automation: automation_type,
                                        framework: framework.downcase,
                                        ci_platform:,
                                        reporter:,
                                        accessibility:,
                                        visual:,
-                                       performance:)
+                                       performance:,
+                                       ruby_version:)
 
     puts 'Chosen Options:'
     puts "  Automation Type: #{options[:automation]}"
@@ -164,6 +183,7 @@ class MenuGenerator
     puts '  Accessibility: enabled' if options[:accessibility]
     puts '  Visual Testing: enabled' if options[:visual]
     puts '  Performance Auditing: enabled' if options[:performance]
+    puts "  Ruby Version: #{options[:ruby_version]}" if options[:ruby_version]
 
     set_up_framework(options)
     prompt.say("You have chosen to use #{framework} with #{automation_type}")

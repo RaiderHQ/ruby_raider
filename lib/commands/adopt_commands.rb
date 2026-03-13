@@ -3,7 +3,6 @@
 require 'thor'
 require_relative '../adopter/adopt_menu'
 
-# :reek:FeatureEnvy { enabled: false }
 class AdoptCommands < Thor
   desc 'project [SOURCE_PATH]', 'Adopts an existing test project into Ruby Raider conventions'
   option :parameters,

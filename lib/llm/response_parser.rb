@@ -32,7 +32,6 @@ module Llm
       parsed[:scenarios]
     end
 
-    # :reek:FeatureEnvy { enabled: false }
     def normalize_element(element)
       return nil unless element[:name] && element[:type] && element[:locator]
 

@@ -5,7 +5,6 @@ require 'yaml'
 require_relative 'name_normalizer'
 require_relative 'project_detector'
 
-# :reek:TooManyMethods { enabled: false }
 class Scaffolding < Thor::Group
   include Thor::Actions
 
@@ -189,7 +188,6 @@ class Scaffolding < Thor::Group
 
   private
 
-  # :reek:TooManyStatements { enabled: false }
   def enrich_with_ai_scenarios
     require_relative '../llm/client'
     require_relative '../llm/prompts'

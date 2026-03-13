@@ -4,7 +4,6 @@ require_relative 'migration_plan'
 require_relative 'converters/identity_converter'
 
 module Adopter
-  # :reek:TooManyMethods { enabled: false }
   class PlanBuilder
     def initialize(analysis, params)
       @analysis = analysis
@@ -125,7 +124,6 @@ module Adopter
       end
     end
 
-    # :reek:ControlParameter { enabled: false }
     def convert_page_dsl(content, page, source_dsl, target)
       converter = find_page_converter(source_dsl, target)
       if converter
@@ -162,7 +160,6 @@ module Adopter
       end
     end
 
-    # :reek:ControlParameter { enabled: false }
     def convert_test_framework(content, test, source_framework, target)
       converter = find_test_converter(source_framework, target)
       if converter

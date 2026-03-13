@@ -12,7 +12,6 @@
     args
   end
 
-  # :reek:FeatureEnvy
   def create_webdriver_options(*opts)
     load_browser = @config['browser'].to_s
     browser = load_browser == 'ie' ? load_browser.upcase : load_browser.capitalize

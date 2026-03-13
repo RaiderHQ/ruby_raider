@@ -7,12 +7,6 @@ require_relative 'helper_generator'
 require_relative 'minitest/minitest_generator'
 require_relative 'rspec/rspec_generator'
 
-# :reek:FeatureEnvy { enabled: false }
-# :reek:UtilityFunction { enabled: false }
-# :reek:ControlParameter { enabled: false }
-# :reek:DuplicateMethodCall { enabled: false }
-# :reek:ManualDispatch { enabled: false }
-# :reek:UncommunicativeVariableName { enabled: false }
 module InvokeGenerators
   module_function
 
@@ -58,6 +52,7 @@ module InvokeGenerators
     flags << 'axe_addon' if structure[:accessibility] && !mobile_automation?(structure[:automation])
     flags << 'visual_addon' if structure[:visual] && !mobile_automation?(structure[:automation])
     flags << 'lighthouse_addon' if structure[:performance] && !mobile_automation?(structure[:automation])
+    flags << "ruby_version:#{structure[:ruby_version]}" if structure[:ruby_version]
     flags.concat(reporter_flags(structure[:reporter]))
     flags
   end

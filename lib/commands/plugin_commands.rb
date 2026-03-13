@@ -4,8 +4,6 @@ require 'thor'
 require_relative '../plugin/plugin'
 
 module RubyRaider
-  # :reek:FeatureEnvy { enabled: false }
-  # :reek:UtilityFunction { enabled: false }
   class PluginCommands < Thor
     desc 'add [NAME]', 'Adds a plugin to your project'
 

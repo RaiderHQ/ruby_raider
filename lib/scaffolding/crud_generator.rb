@@ -2,7 +2,6 @@
 
 require_relative 'name_normalizer'
 
-# :reek:TooManyStatements { enabled: false }
 class CrudGenerator
   ACTIONS = %w[list create detail edit].freeze
 

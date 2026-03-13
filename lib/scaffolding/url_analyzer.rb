@@ -3,8 +3,6 @@
 require 'uri'
 require 'net/http'
 
-# :reek:TooManyStatements { enabled: false }
-# :reek:FeatureEnvy { enabled: false }
 class UrlAnalyzer
   INTERACTIVE_TAGS = %w[input select textarea button].freeze
 

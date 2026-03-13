@@ -2,7 +2,6 @@
 
 require 'ripper'
 
-# :reek:TooManyStatements { enabled: false }
 class PageIntrospector
   SKIP_METHODS = %w[initialize url to_s inspect].freeze
 
@@ -21,7 +20,6 @@ class PageIntrospector
     match ? match[1] : 'UnknownPage'
   end
 
-  # :reek:FeatureEnvy { enabled: false }
   def extract_public_methods
     in_private = false
     results = []

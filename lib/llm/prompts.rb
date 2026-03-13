@@ -3,9 +3,6 @@
 module Llm
   # Centralized prompt templates for LLM-enhanced code generation.
   # All prompts instruct the model to return JSON matching specific schemas.
-  # :reek:DuplicateMethodCall { enabled: false }
-  # :reek:LongParameterList { enabled: false }
-  # :reek:UncommunicativeVariableName { enabled: false }
   module Prompts
     module_function
 

@@ -3,7 +3,6 @@
 require 'tty-prompt'
 require_relative 'project_detector'
 
-# :reek:TooManyMethods { enabled: false }
 class ScaffoldMenu
   COMPONENTS = {
     'Page object' => :page,

@@ -7,8 +7,6 @@ require 'rbconfig'
 
 # Downloads the latest Raider Desktop release for the current platform.
 # Uses the GitHub API to discover the latest release and match the right artifact.
-# :reek:TooManyStatements { enabled: false }
-# :reek:FeatureEnvy { enabled: false }
 module DesktopDownloader
   REPO = 'RaiderHQ/raider_desktop'
   API_URL = "https://api.github.com/repos/#{REPO}/releases/latest".freeze

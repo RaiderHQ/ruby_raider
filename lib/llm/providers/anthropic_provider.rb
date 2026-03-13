@@ -4,10 +4,6 @@ require_relative '../provider'
 
 module Llm
   module Providers
-    # :reek:FeatureEnvy { enabled: false }
-    # :reek:ControlParameter { enabled: false }
-    # :reek:NilCheck { enabled: false }
-    # :reek:UncommunicativeVariableName { enabled: false }
     class AnthropicProvider < Provider
       DEFAULT_MODEL = 'claude-sonnet-4-20250514'
 

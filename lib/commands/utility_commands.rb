@@ -3,10 +3,6 @@
 require 'thor'
 require_relative '../utilities/utilities'
 
-# :reek:FeatureEnvy { enabled: false }
-# :reek:UtilityFunction { enabled: false }
-# :reek:DuplicateMethodCall { enabled: false }
-# :reek:NilCheck { enabled: false }
 class UtilityCommands < Thor
   desc 'path [PATH]', 'Sets the default path for scaffolding'
   option :feature,

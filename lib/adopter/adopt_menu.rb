@@ -6,7 +6,6 @@ require_relative 'plan_builder'
 require_relative 'migrator'
 
 module Adopter
-  # :reek:TooManyMethods { enabled: false }
   class AdoptMenu
     WEB_AUTOMATIONS = %w[selenium capybara watir].freeze
     TEST_FRAMEWORKS = %w[rspec cucumber minitest].freeze
@@ -34,7 +33,6 @@ module Adopter
     end
 
     # Programmatic entry point for raider_desktop and CLI --parameters
-    # :reek:LongParameterList { enabled: false }
     def self.adopt(params)
       validate_params!(params)
 

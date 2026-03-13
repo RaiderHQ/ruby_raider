@@ -8,8 +8,6 @@ module TemplateRenderer
   # Resolution strategy:
   # 1. Try relative to calling template: ./partials/{name}.tt
   # 2. Fall back to all Generator.source_paths searching for partials/{name}.tt
-  # :reek:NestedIterators { enabled: false }
-  # :reek:UncommunicativeVariableName { enabled: false }
   class PartialResolver
     PARTIAL_EXTENSION = '.tt'
     PARTIALS_DIR = 'partials'

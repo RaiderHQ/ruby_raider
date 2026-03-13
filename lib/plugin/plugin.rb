@@ -95,7 +95,6 @@ module RubyRaider
         end
       end
 
-      # :reek:NestedIterators { enabled: false }
       def update_gemfile(output_lines)
         return gemfile_guard unless File.exist?('Gemfile')
 

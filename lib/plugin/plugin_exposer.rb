@@ -6,7 +6,6 @@ module RubyRaider
   module PluginExposer
     class << self
       FILE_PATH = File.expand_path('../commands/loaded_commands.rb', __dir__)
-      # :reek:NestedIterators { enabled: false }
       def expose_commands(plugin_name)
         commands = read_loaded_commands
         return pp 'The plugin is already installed' if commands.any? { |l| l.include?(plugin_name) }

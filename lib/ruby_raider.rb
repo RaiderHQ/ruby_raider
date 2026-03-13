@@ -7,8 +7,6 @@ autoload :AdoptCommands, File.expand_path('commands/adopt_commands', __dir__)
 autoload :ScaffoldingCommands, File.expand_path('commands/scaffolding_commands', __dir__)
 autoload :UtilityCommands, File.expand_path('commands/utility_commands', __dir__)
 
-# :reek:FeatureEnvy { enabled: false }
-# :reek:UtilityFunction { enabled: false }
 module RubyRaider
   # Lazy-load namespaced classes within the correct module scope.
   autoload :Plugin, File.expand_path('plugin/plugin', __dir__)
@@ -43,6 +41,8 @@ module RubyRaider
            type: :boolean, required: false, desc: 'Add visual regression testing'
     option :performance,
            type: :boolean, required: false, desc: 'Add Lighthouse performance auditing'
+    option :ruby_version,
+           type: :string, required: false, desc: 'Ruby version for generated project (e.g. 3.4, 3.3)'
 
     def new(project_name)
       require_relative 'utilities/logo'
@@ -99,6 +99,7 @@ module RubyRaider
         params[:accessibility] = true if options[:accessibility]
         params[:visual] = true if options[:visual]
         params[:performance] = true if options[:performance]
+        params[:ruby_version] = options[:ruby_version] if options[:ruby_version]
       end
     end
   end

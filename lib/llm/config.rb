@@ -5,9 +5,6 @@ require 'yaml'
 module Llm
   # Reads LLM configuration from env vars and config/config.yml
   # Env vars take precedence over config file values.
-  # :reek:TooManyStatements { enabled: false }
-  # :reek:NilCheck { enabled: false }
-  # :reek:UtilityFunction { enabled: false }
   class Config
     PROVIDERS = %w[openai anthropic ollama].freeze
 
@@ -27,7 +24,6 @@ module Llm
       !@api_key.nil? && !@api_key.empty?
     end
 
-    # :reek:FeatureEnvy { enabled: false }
     def build_provider
       return nil unless configured?
 

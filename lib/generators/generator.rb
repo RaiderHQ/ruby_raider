@@ -3,11 +3,11 @@
 require 'thor'
 require_relative 'template_renderer'
 
-# :reek:TooManyMethods { enabled: false }
-# :reek:UncommunicativeVariableName { enabled: false }
 class Generator < Thor::Group
   include Thor::Actions
   include TemplateRenderer
+
+  LATEST_RUBY = '3.4'
 
   argument :automation
   argument :framework
@@ -108,6 +108,11 @@ class Generator < Thor::Group
 
   def json_reporter?
     args.include?('reporter_json')
+  end
+
+  def ruby_version
+    arg = args.find { |a| a&.start_with?('ruby_version:') }
+    arg ? arg.split(':', 2).last : LATEST_RUBY
   end
 
   private
