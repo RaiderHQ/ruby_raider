@@ -20,7 +20,7 @@ module BrowserHelper
     Watir.default_timeout = config.fetch('timeout', 10)
     browser_name = config['browser'].to_s
     args = args.empty? ? config['browser_arguments'][browser_name] : args
-    args += ['--headless'] if ENV['HEADLESS'] && !args.include?('--headless')
+    args += ['--headless'] if (ENV['HEADLESS'] || config['headless']) && !args.include?('--headless')
     capitalized = browser_name == 'ie' ? browser_name.upcase : browser_name.capitalize
     browser_options = "Selenium::WebDriver::#{capitalized}::Options".constantize.new(args:)
     debug_cfg = config['debug'] || {}

@@ -44,12 +44,20 @@ module Utilities
     end
 
     def browser_options=(opts)
-      set('browser_options', Array(opts).flatten)
+      browser_name = config['browser'] || 'chrome'
+      config['browser_arguments'] ||= {}
+      config['browser_arguments'][browser_name] = Array(opts).flatten
+      overwrite_yaml
     end
 
     def delete_browser_options
-      config.delete('browser_options')
+      browser_name = config['browser'] || 'chrome'
+      config['browser_arguments']&.delete(browser_name)
       overwrite_yaml
+    end
+
+    def headless=(enabled)
+      set('headless', enabled)
     end
 
     def llm_provider=(provider)
