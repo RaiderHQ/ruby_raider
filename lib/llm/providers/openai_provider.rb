@@ -17,7 +17,7 @@ module Llm
       def complete(prompt, system_prompt: nil)
         client = build_client
         messages = build_messages(prompt, system_prompt)
-        response = client.chat(parameters: { model: @model, messages: messages, temperature: 0.2 })
+        response = client.chat(parameters: { model: @model, messages:, temperature: 0.2 })
         response.dig('choices', 0, 'message', 'content')
       rescue StandardError => e
         warn "[Ruby Raider] OpenAI error: #{e.message}"

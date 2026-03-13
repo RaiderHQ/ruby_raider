@@ -5,7 +5,7 @@ require_relative '../../lib/utilities/desktop_downloader'
 describe DesktopDownloader do
   describe '.platform' do
     it 'returns a recognized platform string' do
-      expect(%w[mac_arm mac_intel windows linux_appimage linux_deb]).to include(described_class.platform)
+      expect(%w[mac_arm mac_intel windows linux_appimage linux_deb]).to include(described_class.platform) # rubocop:disable RSpec/ExpectActual
     end
   end
 
@@ -35,25 +35,25 @@ describe DesktopDownloader do
     end
 
     it 'mac patterns match .dmg files' do
-      expect('Raider-Desktop-1.0.0.dmg').to match(described_class::PLATFORM_PATTERNS['mac_arm'])
-      expect('Raider-Desktop-1.0.0.dmg').to match(described_class::PLATFORM_PATTERNS['mac_intel'])
+      expect(described_class::PLATFORM_PATTERNS['mac_arm']).to match('Raider-Desktop-1.0.0.dmg')
+      expect(described_class::PLATFORM_PATTERNS['mac_intel']).to match('Raider-Desktop-1.0.0.dmg')
     end
 
     it 'windows pattern matches setup.exe files' do
-      expect('Raider-Desktop-1.0.0-setup.exe').to match(described_class::PLATFORM_PATTERNS['windows'])
+      expect(described_class::PLATFORM_PATTERNS['windows']).to match('Raider-Desktop-1.0.0-setup.exe')
     end
 
     it 'linux deb pattern matches .deb files' do
-      expect('raider-desktop_1.0.0_amd64.deb').to match(described_class::PLATFORM_PATTERNS['linux_deb'])
+      expect(described_class::PLATFORM_PATTERNS['linux_deb']).to match('raider-desktop_1.0.0_amd64.deb')
     end
 
     it 'linux appimage pattern matches .AppImage files' do
-      expect('Raider-Desktop-1.0.0.AppImage').to match(described_class::PLATFORM_PATTERNS['linux_appimage'])
+      expect(described_class::PLATFORM_PATTERNS['linux_appimage']).to match('Raider-Desktop-1.0.0.AppImage')
     end
 
     it 'does not cross-match patterns' do
-      expect('Raider-Desktop.dmg').not_to match(described_class::PLATFORM_PATTERNS['windows'])
-      expect('Raider-Desktop-setup.exe').not_to match(described_class::PLATFORM_PATTERNS['mac_arm'])
+      expect(described_class::PLATFORM_PATTERNS['windows']).not_to match('Raider-Desktop.dmg')
+      expect(described_class::PLATFORM_PATTERNS['mac_arm']).not_to match('Raider-Desktop-setup.exe')
     end
   end
 

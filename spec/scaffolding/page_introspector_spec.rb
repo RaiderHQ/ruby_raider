@@ -4,6 +4,8 @@ require 'fileutils'
 require_relative '../../lib/scaffolding/page_introspector'
 
 RSpec.describe PageIntrospector do
+  subject(:introspector) { described_class.new(page_file) }
+
   let(:tmp_dir) { 'tmp_introspector_test' }
   let(:page_file) { "#{tmp_dir}/login_page.rb" }
 
@@ -45,8 +47,6 @@ RSpec.describe PageIntrospector do
   after do
     FileUtils.rm_rf(tmp_dir)
   end
-
-  subject(:introspector) { described_class.new(page_file) }
 
   it 'extracts class name' do
     expect(introspector.class_name).to eq('LoginPage')

@@ -22,7 +22,7 @@ module Llm
 
       def complete(prompt, system_prompt: nil)
         uri = URI("#{@base_url}/api/generate")
-        body = { model: @model, prompt: prompt, stream: false }
+        body = { model: @model, prompt:, stream: false }
         body[:system] = system_prompt if system_prompt
 
         response = post_request(uri, body)
@@ -39,7 +39,7 @@ module Llm
         response = Net::HTTP.get_response(uri)
         response.is_a?(Net::HTTPSuccess)
       rescue StandardError
-        warn "[Ruby Raider] Ollama not reachable. Start it with: ollama serve"
+        warn '[Ruby Raider] Ollama not reachable. Start it with: ollama serve'
         false
       end
 

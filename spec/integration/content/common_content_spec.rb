@@ -9,7 +9,7 @@ describe 'Common file content' do
     subject(:rakefile) { read_generated(project_name, 'Rakefile') }
 
     it 'has raider version task' do
-      expect(rakefile).to include("task :raider")
+      expect(rakefile).to include('task :raider')
     end
   end
 

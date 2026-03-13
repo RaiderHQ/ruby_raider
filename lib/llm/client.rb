@@ -25,7 +25,7 @@ module Llm
         attempt = 0
         begin
           attempt += 1
-          provider.complete(prompt, system_prompt: system_prompt)
+          provider.complete(prompt, system_prompt:)
         rescue *RETRYABLE_ERRORS => e
           if attempt < MAX_RETRIES
             sleep(BASE_DELAY * (2**(attempt - 1)))

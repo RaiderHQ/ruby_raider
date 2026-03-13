@@ -24,7 +24,7 @@ RSpec::Matchers.define :have_valid_ruby_syntax do
   rescue SyntaxError
     false
   end
-  failure_message { |content| "expected valid Ruby syntax but got SyntaxError: #{$ERROR_INFO&.message}" }
+  failure_message { |_content| "expected valid Ruby syntax but got SyntaxError: #{$ERROR_INFO&.message}" }
 end
 
 RSpec.configure do |config|

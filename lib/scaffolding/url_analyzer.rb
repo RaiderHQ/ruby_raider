@@ -10,7 +10,7 @@ class UrlAnalyzer
 
   attr_reader :url, :page_name, :elements
 
-  def initialize(url, name_override: nil, ai: false)
+  def initialize(url, name_override: nil, ai: false) # rubocop:disable Naming/MethodParameterName
     @url = url
     @uri = URI.parse(url)
     @page_name = name_override || derive_page_name
@@ -87,14 +87,14 @@ class UrlAnalyzer
   end
 
   def parse_buttons(html)
-    html.scan(/<button\s+([^>]*)>([^<]*)<\/button>/i).each do |match|
+    html.scan(%r{<button\s+([^>]*)>([^<]*)</button>}i).each do |match|
       attrs = parse_attributes(match[0])
       text = match[1].strip
       @elements << build_element(
         name: attrs['id'] || attrs['name'] || text.downcase.gsub(/\s+/, '_') || 'button',
         type: :button,
-        text: text,
-        locator: best_locator(attrs, text: text)
+        text:,
+        locator: best_locator(attrs, text:)
       )
     end
 
@@ -110,7 +110,7 @@ class UrlAnalyzer
   end
 
   def parse_links(html)
-    html.scan(/<a\s+([^>]*)>([^<]*)<\/a>/i).first(5)&.each do |match|
+    html.scan(%r{<a\s+([^>]*)>([^<]*)</a>}i).first(5)&.each do |match|
       attrs = parse_attributes(match[0])
       text = match[1].strip
       next if text.empty?
@@ -118,8 +118,8 @@ class UrlAnalyzer
       @elements << build_element(
         name: text.downcase.gsub(/\s+/, '_'),
         type: :link,
-        text: text,
-        locator: best_locator(attrs, text: text)
+        text:,
+        locator: best_locator(attrs, text:)
       )
     end
   end
@@ -155,7 +155,7 @@ class UrlAnalyzer
 
   def build_element(name:, type:, locator:, **extra)
     clean_name = name.to_s.gsub(/[^a-z0-9_]/i, '_').gsub(/_+/, '_').downcase.delete_prefix('_').delete_suffix('_')
-    { name: clean_name, type: type, locator: locator }.merge(extra)
+    { name: clean_name, type:, locator: }.merge(extra)
   end
 
   def analyze_with_llm(html)

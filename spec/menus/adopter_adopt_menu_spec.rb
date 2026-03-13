@@ -4,7 +4,7 @@ require 'fileutils'
 require 'rspec'
 require_relative '../../lib/adopter/adopt_menu'
 
-RSpec.describe Adopter::AdoptMenu do
+RSpec.describe Adopter::AdoptMenu do # rubocop:disable RSpec/FilePath
   let(:prompt) { instance_double(TTY::Prompt) }
   let(:source_dir) { 'tmp_adopt_interactive_source' }
   let(:output_dir) { 'tmp_adopt_interactive_output' }

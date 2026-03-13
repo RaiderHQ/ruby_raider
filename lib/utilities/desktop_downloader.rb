@@ -11,7 +11,7 @@ require 'rbconfig'
 # :reek:FeatureEnvy { enabled: false }
 module DesktopDownloader
   REPO = 'RaiderHQ/raider_desktop'
-  API_URL = "https://api.github.com/repos/#{REPO}/releases/latest"
+  API_URL = "https://api.github.com/repos/#{REPO}/releases/latest".freeze
 
   PLATFORM_PATTERNS = {
     'mac_arm' => /\.dmg$/i,
@@ -133,7 +133,7 @@ module DesktopDownloader
       raise 'Too many redirects' if limit.zero?
 
       Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https',
-                      open_timeout: HTTP_OPEN_TIMEOUT, read_timeout: 60) do |http|
+                                          open_timeout: HTTP_OPEN_TIMEOUT, read_timeout: 60) do |http|
         request = Net::HTTP::Get.new(uri)
         http.request(request) do |response|
           case response

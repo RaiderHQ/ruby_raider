@@ -8,7 +8,7 @@ describe 'Lighthouse addon generation' do
   include InvokeGenerators
   include SettingsHelper
 
-  # rubocop:disable RSpec/BeforeAfterAll
+  # rubocop:disable RSpec/BeforeAfterAll, RSpec/InstanceVariable
   before(:all) do
     @lighthouse_projects = []
     %w[rspec cucumber minitest].each do |framework|
@@ -25,7 +25,7 @@ describe 'Lighthouse addon generation' do
   after(:all) do
     @lighthouse_projects.each { |p| FileUtils.rm_rf(p[:name]) }
   end
-  # rubocop:enable RSpec/BeforeAfterAll
+  # rubocop:enable RSpec/BeforeAfterAll, RSpec/InstanceVariable
 
   context 'with rspec and selenium' do
     let(:name) { 'lighthouse_rspec_selenium' }

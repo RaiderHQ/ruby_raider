@@ -44,13 +44,11 @@ class ScaffoldMenu
     project = ScaffoldProjectDetector.detect
     defaults = default_components(project)
 
-    selected = @prompt.multi_select('Select components to generate:', default: defaults) do |menu|
+    @prompt.multi_select('Select components to generate:', default: defaults) do |menu|
       COMPONENTS.each do |label, value|
         menu.choice label, value
       end
     end
-
-    selected
   end
 
   def ask_relationships
@@ -71,7 +69,7 @@ class ScaffoldMenu
 
     return nil unless @prompt.yes?('Proceed?')
 
-    { names: names, components: components, uses: uses }
+    { names:, components:, uses: }
   end
 
   def planned_files(names, components)

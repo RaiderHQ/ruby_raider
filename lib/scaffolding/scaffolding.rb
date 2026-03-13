@@ -61,7 +61,7 @@ class Scaffolding < Thor::Group
              default_path('config/config.yml', '.yml'))
   end
 
-  def generate_spec_from_page(source_file, ai: false)
+  def generate_spec_from_page(source_file, ai: false) # rubocop:disable Naming/MethodParameterName
     require_relative 'page_introspector'
     @introspected = PageIntrospector.new(source_file)
     enrich_with_ai_scenarios if ai
@@ -177,13 +177,7 @@ class Scaffolding < Thor::Group
     Array(@uses).reject(&:empty?)
   end
 
-  def introspected
-    @introspected
-  end
-
-  def url_data
-    @url_data
-  end
+  attr_reader :introspected, :url_data
 
   def ai_scenarios
     @ai_scenarios || {}

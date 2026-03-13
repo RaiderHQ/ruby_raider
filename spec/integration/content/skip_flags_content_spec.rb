@@ -14,7 +14,7 @@ describe 'Skip flags content validation' do
       'skip_all_content' => { skip_allure: true, skip_video: true, skip_ci: true, ci_platform: 'github' }
     }.each do |name, flags|
       InvokeGenerators.generate_framework(
-        { automation: 'selenium', framework: 'rspec', name: name }.merge(flags)
+        { automation: 'selenium', framework: 'rspec', name: }.merge(flags)
       )
     end
   end

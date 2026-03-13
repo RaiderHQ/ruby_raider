@@ -42,7 +42,7 @@ module Llm
       {
         name: element[:name].to_s.gsub(/[^a-z0-9_]/i, '_').downcase,
         type: element[:type].to_sym,
-        locator: locator,
+        locator:,
         purpose: element[:purpose],
         input_type: element[:input_type],
         text: element[:text]

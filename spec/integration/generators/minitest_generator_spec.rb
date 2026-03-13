@@ -61,5 +61,4 @@ describe MinitestGenerator do
     include_examples 'creates minitest files examples',
                      "#{FrameworkIndex::MINITEST}_#{AutomationIndex::CROSS_PLATFORM}", 'pdp'
   end
-
 end

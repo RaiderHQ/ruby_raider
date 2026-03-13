@@ -54,17 +54,17 @@ RSpec.describe 'Scaffolding features' do
 
   describe 'dry run' do
     it 'does not create files with --dry-run' do
-      expect {
+      expect do
         scaffold.new.invoke(:page, nil, %w[checkout --dry-run])
-      }.to output(/checkout/).to_stdout
+      end.to output(/checkout/).to_stdout
 
       expect(Pathname.new('page_objects/pages/checkout.rb')).not_to be_file
     end
 
     it 'shows planned file path' do
-      expect {
+      expect do
         scaffold.new.invoke(:spec, nil, %w[checkout --dry-run])
-      }.to output(/checkout/).to_stdout
+      end.to output(/checkout/).to_stdout
     end
   end
 
@@ -101,7 +101,7 @@ RSpec.describe 'Scaffolding features' do
     it 'page object includes url method when config has url' do
       scaffold.new.invoke(:page, nil, %w[checkout])
       content = File.read('page_objects/pages/checkout.rb')
-      expect(content).to include("def url(_page)")
+      expect(content).to include('def url(_page)')
     end
 
     it 'page object includes selenium-specific comments' do
@@ -214,7 +214,7 @@ RSpec.describe 'Scaffolding features' do
       expect(Pathname.new('spec/login_page_spec.rb')).not_to be_file
     end
 
-    it 'removes only specified components with --with' do
+    it 'removes only specified components with --with' do # rubocop:disable RSpec/MultipleExpectations
       scaffold.new.invoke(:scaffold, nil, %w[checkout --with page spec helper])
       expect(Pathname.new('page_objects/pages/checkout.rb')).to be_file
       expect(Pathname.new('spec/checkout_page_spec.rb')).to be_file

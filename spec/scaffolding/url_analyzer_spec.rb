@@ -3,6 +3,8 @@
 require_relative '../../lib/scaffolding/url_analyzer'
 
 RSpec.describe UrlAnalyzer do
+  subject(:analyzer) { described_class.new('https://example.com/login') }
+
   let(:sample_html) do
     <<~HTML
       <html>
@@ -26,8 +28,6 @@ RSpec.describe UrlAnalyzer do
     stub_request = instance_double(Net::HTTPSuccess, body: sample_html)
     allow(Net::HTTP).to receive(:get_response).and_return(stub_request)
   end
-
-  subject(:analyzer) { described_class.new('https://example.com/login') }
 
   describe '#analyze' do
     before { analyzer.analyze }

@@ -172,5 +172,4 @@ describe 'Config file content' do
       expect(caps).to match(/platformName/i)
     end
   end
-
 end

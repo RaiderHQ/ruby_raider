@@ -206,5 +206,4 @@ describe 'Gemfile content' do
     include_examples 'contains capybara gems', name
     include_examples 'contains debug gems', name
   end
-
 end

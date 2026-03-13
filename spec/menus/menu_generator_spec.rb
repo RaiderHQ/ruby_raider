@@ -13,7 +13,7 @@ RSpec.describe MenuGenerator do
 
   describe '#generate_choice_menu' do
     it 'presents automation framework selection' do
-      menu = double('menu')
+      menu = double('menu') # rubocop:disable RSpec/VerifiedDoubles
       allow(menu).to receive(:choice)
       allow(prompt).to receive(:select).with('Please select your automation framework').and_yield(menu)
 
@@ -30,7 +30,7 @@ RSpec.describe MenuGenerator do
   describe '#choose_test_framework' do
     context 'with a web automation' do
       it 'presents test framework selection' do
-        menu = double('menu')
+        menu = double('menu') # rubocop:disable RSpec/VerifiedDoubles
         allow(menu).to receive(:choice)
         allow(prompt).to receive(:select).with('Please select your test framework').and_yield(menu)
 
@@ -45,7 +45,7 @@ RSpec.describe MenuGenerator do
 
     context 'with appium' do
       it 'presents mobile platform selection' do
-        menu = double('menu')
+        menu = double('menu') # rubocop:disable RSpec/VerifiedDoubles
         allow(menu).to receive(:choice)
         allow(prompt).to receive(:select).with('Please select your mobile platform').and_yield(menu)
 
@@ -198,8 +198,8 @@ RSpec.describe MenuGenerator do
   end
 
   describe 'reporter selection menu' do
-    it 'includes JSON and All reporter choices' do
-      menu = double('menu')
+    it 'includes JSON and All reporter choices' do # rubocop:disable RSpec/MultipleExpectations
+      menu = double('menu') # rubocop:disable RSpec/VerifiedDoubles
       allow(menu).to receive(:choice)
       allow(prompt).to receive(:select).with('Select your test reporter').and_yield(menu)
 

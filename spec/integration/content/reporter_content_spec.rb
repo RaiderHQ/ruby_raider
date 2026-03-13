@@ -12,7 +12,7 @@ describe 'Reporter content validation' do
       %w[rspec cucumber minitest].each do |framework|
         name = "reporter_#{reporter}_#{framework}"
         InvokeGenerators.generate_framework(
-          automation: 'selenium', framework: framework, name: name, reporter: reporter
+          automation: 'selenium', framework:, name:, reporter:
         )
       end
     end

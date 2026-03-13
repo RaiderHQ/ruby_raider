@@ -39,7 +39,7 @@ class PageIntrospector
       next if method_name.start_with?('_')
 
       params = match[3]&.split(',')&.map(&:strip) || []
-      results << { name: method_name, params: params }
+      results << { name: method_name, params: }
     end
 
     results
