@@ -87,6 +87,44 @@ RSpec.describe ScaffoldProjectDetector do
     end
   end
 
+  describe '.validate_project' do
+    it 'warns when Gemfile is missing' do
+      warnings = described_class.validate_project
+      expect(warnings).to include(match(/Gemfile not found/))
+    end
+
+    it 'warns when config/config.yml is missing' do
+      File.write('Gemfile', "gem 'rspec'\n")
+      warnings = described_class.validate_project
+      expect(warnings).to include(match(/config\.yml not found/))
+    end
+
+    it 'returns no warnings for valid project' do
+      File.write('Gemfile', "gem 'rspec'\n")
+      FileUtils.mkdir_p('config')
+      File.write('config/config.yml', "browser: chrome\n")
+      expect(described_class.validate_project).to be_empty
+    end
+  end
+
+  describe '.config' do
+    it 'returns empty hash when config missing' do
+      expect(described_class.config).to eq({})
+    end
+
+    it 'parses valid config' do
+      FileUtils.mkdir_p('config')
+      File.write('config/config.yml', "browser: chrome\nurl: http://localhost\n")
+      expect(described_class.config).to eq({ 'browser' => 'chrome', 'url' => 'http://localhost' })
+    end
+
+    it 'raises Error on malformed YAML' do
+      FileUtils.mkdir_p('config')
+      File.write('config/config.yml', "browser: chrome\n  bad:\nindent")
+      expect { described_class.config }.to raise_error(ScaffoldProjectDetector::Error, /invalid YAML syntax/)
+    end
+  end
+
   describe '.detect' do
     before do
       File.write('Gemfile', "gem 'selenium-webdriver'\ngem 'rspec'\n")
