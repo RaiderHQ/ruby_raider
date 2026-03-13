@@ -5,6 +5,11 @@ require_relative '../generators/invoke_generators'
 
 # :reek:FeatureEnvy { enabled: false }
 # :reek:UtilityFunction { enabled: false }
+# :reek:BooleanParameter { enabled: false }
+# :reek:DataClump { enabled: false }
+# :reek:DuplicateMethodCall { enabled: false }
+# :reek:LongParameterList { enabled: false }
+# :reek:TooManyStatements { enabled: false }
 class MenuGenerator
   attr_reader :prompt, :name
 
@@ -102,36 +107,36 @@ class MenuGenerator
   end
 
   def select_accessibility(framework, automation_type, ci_platform = nil, reporter = nil)
-    if mobile_automation?(automation_type)
-      return create_framework(framework, automation_type, ci_platform, reporter, false, false, false)
-    end
+    return create_framework(framework, automation_type, ci_platform:, reporter:) if mobile_automation?(automation_type)
 
     prompt.select('Add accessibility testing (axe)?') do |menu|
-      menu.choice :Yes, -> { select_visual(framework, automation_type, ci_platform, reporter, true) }
-      menu.choice :No, -> { select_visual(framework, automation_type, ci_platform, reporter, false) }
+      menu.choice :Yes, -> { select_visual(framework, automation_type, ci_platform, reporter, accessibility: true) }
+      menu.choice :No, -> { select_visual(framework, automation_type, ci_platform, reporter) }
       menu.choice :Quit, -> { exit }
     end
   end
 
-  def select_visual(framework, automation_type, ci_platform = nil, reporter = nil, accessibility = false)
+  def select_visual(framework, automation_type, ci_platform = nil, reporter = nil, accessibility: false)
     prompt.select('Add visual regression testing?') do |menu|
-      menu.choice :Yes, -> { select_performance(framework, automation_type, ci_platform, reporter, accessibility, true) }
+      menu.choice :Yes, lambda {
+        select_performance(framework, automation_type, ci_platform, reporter, accessibility:, visual: true)
+      }
       menu.choice :No, lambda {
-                          select_performance(framework, automation_type, ci_platform, reporter, accessibility, false)
-                        }
+        select_performance(framework, automation_type, ci_platform, reporter, accessibility:)
+      }
       menu.choice :Quit, -> { exit }
     end
   end
 
-  def select_performance(framework, automation_type, ci_platform = nil, reporter = nil, accessibility = false,
-                         visual = false)
+  def select_performance(framework, automation_type, ci_platform = nil, reporter = nil, accessibility: false,
+                         visual: false)
     prompt.select('Add Lighthouse performance auditing?') do |menu|
       menu.choice :Yes, lambda {
-                          create_framework(framework, automation_type, ci_platform, reporter, accessibility, visual, true)
-                        }
+        create_framework(framework, automation_type, ci_platform:, reporter:, accessibility:, visual:, performance: true)
+      }
       menu.choice :No, lambda {
-                         create_framework(framework, automation_type, ci_platform, reporter, accessibility, visual, false)
-                       }
+        create_framework(framework, automation_type, ci_platform:, reporter:, accessibility:, visual:)
+      }
       menu.choice :Quit, -> { exit }
     end
   end
@@ -141,8 +146,8 @@ class MenuGenerator
   end
 
   # :reek:LongParameterList { enabled: false }
-  def create_framework(framework, automation_type, ci_platform = nil, reporter = nil, accessibility = false,
-                       visual = false, performance = false)
+  def create_framework(framework, automation_type, ci_platform: nil, reporter: nil, accessibility: false,
+                       visual: false, performance: false)
     options = create_framework_options(automation: automation_type,
                                        framework: framework.downcase,
                                        ci_platform:,

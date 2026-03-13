@@ -102,7 +102,7 @@ RSpec.describe MenuGenerator do
       allow(prompt).to receive(:say)
       allow(prompt).to receive(:yes?).and_return(false)
 
-      menu_generator.send(:create_framework, 'Rspec', 'selenium', nil, nil, false, false, false)
+      menu_generator.send(:create_framework, 'Rspec', 'selenium')
 
       expect(menu_generator).to have_received(:generate_framework).with(
         hash_including(automation: 'selenium', framework: 'rspec', name: 'test_project')
@@ -117,7 +117,7 @@ RSpec.describe MenuGenerator do
       allow(prompt).to receive(:say)
       allow(prompt).to receive(:yes?).and_return(false)
 
-      menu_generator.send(:create_framework, 'Minitest', 'capybara', 'github', nil, false, false, false)
+      menu_generator.send(:create_framework, 'Minitest', 'capybara', ci_platform: 'github')
 
       expect(menu_generator).to have_received(:generate_framework).with(
         hash_including(
@@ -138,7 +138,7 @@ RSpec.describe MenuGenerator do
       allow(prompt).to receive(:say)
       allow(prompt).to receive(:yes?).and_return(false)
 
-      menu_generator.send(:create_framework, 'Cucumber', 'watir', 'gitlab', nil, false, false, false)
+      menu_generator.send(:create_framework, 'Cucumber', 'watir', ci_platform: 'gitlab')
 
       expect(menu_generator).to have_received(:generate_framework).with(
         hash_including(
@@ -159,7 +159,7 @@ RSpec.describe MenuGenerator do
       allow(prompt).to receive(:say)
       allow(prompt).to receive(:yes?).and_return(false)
 
-      menu_generator.send(:create_framework, 'Rspec', 'selenium', nil, nil, true, false, false)
+      menu_generator.send(:create_framework, 'Rspec', 'selenium', accessibility: true)
 
       expect(menu_generator).to have_received(:generate_framework).with(
         hash_including(automation: 'selenium', framework: 'rspec', accessibility: true)
@@ -174,7 +174,7 @@ RSpec.describe MenuGenerator do
       allow(prompt).to receive(:say)
       allow(prompt).to receive(:yes?).and_return(false)
 
-      menu_generator.send(:create_framework, 'Rspec', 'selenium', nil, nil, false, true, false)
+      menu_generator.send(:create_framework, 'Rspec', 'selenium', visual: true)
 
       expect(menu_generator).to have_received(:generate_framework).with(
         hash_including(automation: 'selenium', framework: 'rspec', visual: true)
@@ -189,7 +189,7 @@ RSpec.describe MenuGenerator do
       allow(prompt).to receive(:say)
       allow(prompt).to receive(:yes?).and_return(false)
 
-      menu_generator.send(:create_framework, 'Rspec', 'selenium', nil, nil, false, false, true)
+      menu_generator.send(:create_framework, 'Rspec', 'selenium', performance: true)
 
       expect(menu_generator).to have_received(:generate_framework).with(
         hash_including(automation: 'selenium', framework: 'rspec', performance: true)
@@ -222,7 +222,7 @@ RSpec.describe MenuGenerator do
       allow(prompt).to receive(:say)
       allow(prompt).to receive(:yes?).and_return(false)
 
-      generator.send(:create_framework, 'Rspec', 'selenium', nil, nil, false, false, false)
+      generator.send(:create_framework, 'Rspec', 'selenium')
 
       expect(generator).to have_received(:generate_framework).with(
         hash_including(name: 'my_custom_project')

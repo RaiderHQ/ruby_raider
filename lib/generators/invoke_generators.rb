@@ -9,6 +9,10 @@ require_relative 'rspec/rspec_generator'
 
 # :reek:FeatureEnvy { enabled: false }
 # :reek:UtilityFunction { enabled: false }
+# :reek:ControlParameter { enabled: false }
+# :reek:DuplicateMethodCall { enabled: false }
+# :reek:ManualDispatch { enabled: false }
+# :reek:UncommunicativeVariableName { enabled: false }
 module InvokeGenerators
   module_function
 
@@ -16,9 +20,7 @@ module InvokeGenerators
     generators = %w[Automation Common Helpers]
     framework = structure[:framework]
     add_generator(generators, framework.capitalize)
-    unless structure[:skip_ci]
-      add_generator(generators, structure[:ci_platform].capitalize) if structure[:ci_platform]
-    end
+    add_generator(generators, structure[:ci_platform].capitalize) if !structure[:skip_ci] && (structure[:ci_platform])
     extra_args = collect_skip_flags(structure)
     generators.each do |generator|
       invoke_generator({

@@ -15,6 +15,8 @@ module TemplateRenderer
   #   "screenshot:" => ERB object with no trim_mode
   #
   # Performance: ~10x speedup on cached renders (135ms → ~13.5ms)
+  # :reek:Attribute { enabled: false }
+  # :reek:DuplicateMethodCall { enabled: false }
   class PartialCache
     # Set to true during batch generation to skip File.mtime syscalls on cache hits
     attr_accessor :batch_mode

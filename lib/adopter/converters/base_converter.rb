@@ -40,8 +40,7 @@ module Adopter
       def update_require_paths(content, target_automation)
         result = content.dup
         result = update_page_requires(result)
-        result = update_helper_requires(result, target_automation)
-        result
+        update_helper_requires(result, target_automation)
       end
 
       def update_page_requires(content)

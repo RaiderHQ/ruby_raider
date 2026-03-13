@@ -3,6 +3,7 @@
 module Llm
   # Abstract base class for LLM providers
   # :reek:UtilityFunction { enabled: false }
+  # :reek:UnusedParameters { enabled: false }
   class Provider
     def complete(prompt, system_prompt: nil)
       raise NotImplementedError, "#{self.class}#complete must be implemented"

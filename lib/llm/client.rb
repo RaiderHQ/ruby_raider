@@ -7,6 +7,8 @@ module Llm
   # Facade for LLM completion with retry logic and graceful fallback.
   # Returns nil on any failure — callers should always have a non-AI fallback.
   # :reek:TooManyStatements { enabled: false }
+  # :reek:DuplicateMethodCall { enabled: false }
+  # :reek:UncommunicativeVariableName { enabled: false }
   module Client
     MAX_RETRIES = 3
     BASE_DELAY = 1

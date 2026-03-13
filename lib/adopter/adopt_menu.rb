@@ -25,11 +25,11 @@ module Adopter
       ci_platform = ask_ci_platform(detection[:ci_platform])
 
       execute_adoption(
-        source_path: source_path,
-        output_path: output_path,
-        target_automation: target_automation,
-        target_framework: target_framework,
-        ci_platform: ci_platform
+        source_path:,
+        output_path:,
+        target_automation:,
+        target_framework:,
+        ci_platform:
       )
     end
 
@@ -42,7 +42,7 @@ module Adopter
       plan = PlanBuilder.new(analysis, params).build
       results = Migrator.new(plan).execute
 
-      { plan: plan, results: results }
+      { plan:, results: }
     end
 
     def self.validate_params!(params)
@@ -51,9 +51,7 @@ module Adopter
       raise ArgumentError, 'target_automation is required' unless params[:target_automation]
       raise ArgumentError, 'target_framework is required' unless params[:target_framework]
 
-      unless WEB_AUTOMATIONS.include?(params[:target_automation])
-        raise ArgumentError, "target_automation must be one of: #{WEB_AUTOMATIONS.join(', ')}"
-      end
+      raise ArgumentError, "target_automation must be one of: #{WEB_AUTOMATIONS.join(', ')}" unless WEB_AUTOMATIONS.include?(params[:target_automation])
 
       return if TEST_FRAMEWORKS.include?(params[:target_framework])
 
@@ -66,7 +64,7 @@ module Adopter
       path = @prompt.ask('Enter the path to your existing test project:') do |q|
         q.required true
         q.validate ->(input) { Dir.exist?(input) }
-        q.messages[:valid?] = 'Directory does not exist: %{value}'
+        q.messages[:valid?] = 'Directory does not exist: %<value>s'
       end
       File.expand_path(path)
     end
@@ -86,7 +84,7 @@ module Adopter
     def ask_target_automation(detected)
       default = WEB_AUTOMATIONS.include?(detected) ? detected : nil
       @prompt.select('Select target automation framework:', WEB_AUTOMATIONS.map(&:capitalize),
-                      default: default&.capitalize) do |menu|
+                     default: default&.capitalize) do |menu|
         menu.choice :Quit, -> { exit }
       end.downcase
     end
@@ -94,7 +92,7 @@ module Adopter
     def ask_target_framework(detected)
       default = TEST_FRAMEWORKS.include?(detected) ? detected : nil
       @prompt.select('Select target test framework:', TEST_FRAMEWORKS.map(&:capitalize),
-                      default: default&.capitalize) do |menu|
+                     default: default&.capitalize) do |menu|
         menu.choice :Quit, -> { exit }
       end.downcase
     end
@@ -113,7 +111,7 @@ module Adopter
                 when 'github' then 'Github Actions'
                 when 'gitlab' then 'Gitlab CI/CD'
                 end
-      @prompt.select('Configure CI/CD?', choices, default: default)
+      @prompt.select('Configure CI/CD?', choices, default:)
     end
 
     def execute_adoption(params)

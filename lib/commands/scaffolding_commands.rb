@@ -13,6 +13,11 @@ require_relative '../commands/utility_commands'
 # :reek:UtilityFunction { enabled: false }
 # :reek:RepeatedConditional { enabled: false }
 # :reek:TooManyMethods { enabled: false }
+# :reek:DuplicateMethodCall { enabled: false }
+# :reek:BooleanParameter { enabled: false }
+# :reek:LongParameterList { enabled: false }
+# :reek:NestedIterators { enabled: false }
+# :reek:UncommunicativeVariableName { enabled: false }
 class ScaffoldingCommands < Thor
   class_option :dry_run, type: :boolean, default: false,
                          desc: 'Preview files without creating them', banner: ''
@@ -51,7 +56,7 @@ class ScaffoldingCommands < Thor
   option :delete, type: :boolean, required: false,
                   desc: 'This will delete the selected spec', aliases: '-d'
   option :from, type: :string, required: false,
-               desc: 'Generate spec stubs from an existing page object file', aliases: '-f'
+                desc: 'Generate spec stubs from an existing page object file', aliases: '-f'
   option :uses, type: :array, required: false,
                 desc: 'Dependent pages to require', aliases: '-u'
   option :ai, type: :boolean, default: false,
@@ -108,7 +113,7 @@ class ScaffoldingCommands < Thor
   option :with, type: :array, required: false,
                 desc: 'Components to generate (page,spec,feature,steps,helper,component,model)', aliases: '-w'
   option :crud, type: :boolean, required: false,
-               desc: 'Generate CRUD pages (list, create, detail, edit) + tests + model'
+                desc: 'Generate CRUD pages (list, create, detail, edit) + tests + model'
   option :uses, type: :array, required: false,
                 desc: 'Dependent pages to require', aliases: '-u'
 
@@ -192,12 +197,12 @@ class ScaffoldingCommands < Thor
     def generate_default_scaffold(name)
       uses = options[:uses]
       if Pathname.new('spec').exist? && !Pathname.new('features').exist?
-        generate_scaffolding(name, 'spec', load_config_path('spec'), uses: uses)
+        generate_scaffolding(name, 'spec', load_config_path('spec'), uses:)
       else
         generate_scaffolding(name, 'feature', load_config_path('feature'))
-        generate_scaffolding(name, 'steps', load_config_path('steps'), uses: uses)
+        generate_scaffolding(name, 'steps', load_config_path('steps'), uses:)
       end
-      generate_scaffolding(name, 'page', load_config_path('page'), uses: uses)
+      generate_scaffolding(name, 'page', load_config_path('page'), uses:)
     end
 
     def generate_selected_components(name, components)
@@ -208,7 +213,7 @@ class ScaffoldingCommands < Thor
         when 'model'
           generate_model_data(name)
         else
-          generate_scaffolding(name, comp, load_config_path(comp), uses: uses)
+          generate_scaffolding(name, comp, load_config_path(comp), uses:)
         end
       end
     end
@@ -225,8 +230,8 @@ class ScaffoldingCommands < Thor
       say "Generated CRUD scaffold for: #{generated.join(', ')}"
     end
 
-    def generate_spec_from_page(name, source_file, ai: false)
-      Scaffolding.new([name]).generate_spec_from_page(source_file, ai: ai)
+    def generate_spec_from_page(name, source_file, ai: false) # rubocop:disable Naming/MethodParameterName
+      Scaffolding.new([name]).generate_spec_from_page(source_file, ai:)
     end
 
     def generate_model_data(name)

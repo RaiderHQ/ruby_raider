@@ -3,6 +3,7 @@
 require_relative '../spec_helper'
 
 module ContentHelper
+  # :reek:UtilityFunction { enabled: false }
   def read_generated(project, relative_path)
     File.read(File.join(project, relative_path))
   end

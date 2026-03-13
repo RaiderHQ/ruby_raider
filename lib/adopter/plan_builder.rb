@@ -63,7 +63,7 @@ module Adopter
       tests = @analysis[:tests] || []
       return [] if target_cucumber?
 
-      tests.select { |t| t[:type] != :cucumber }.map do |test|
+      tests.reject { |t| t[:type] == :cucumber }.map do |test|
         source_file = File.join(@params[:source_path], test[:path])
         content = File.read(source_file)
         converted = convert_test(content, test)
@@ -87,7 +87,7 @@ module Adopter
 
         ConvertedFile.new(
           output_path: raider_feature_path(feature[:path]),
-          content: content,
+          content:,
           source_file: feature[:path],
           conversion_notes: 'Feature file copied as-is'
         )

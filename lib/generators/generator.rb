@@ -4,6 +4,7 @@ require 'thor'
 require_relative 'template_renderer'
 
 # :reek:TooManyMethods { enabled: false }
+# :reek:UncommunicativeVariableName { enabled: false }
 class Generator < Thor::Group
   include Thor::Actions
   include TemplateRenderer

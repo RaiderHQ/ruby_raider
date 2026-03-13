@@ -129,7 +129,7 @@ module Adopter
 
         {
           path: relative_path(file),
-          role: role,
+          role:,
           modules_defined: extract_modules(content)
         }
       end

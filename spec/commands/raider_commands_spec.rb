@@ -100,15 +100,15 @@ RSpec.describe AdoptCommands do
 
   describe 'project command with parameters' do
     it 'calls AdoptMenu.adopt with parsed params' do
-      result = { plan: double(warnings: [], output_path: output_dir), results: { pages: 0, tests: 0, features: 0, steps: 0, errors: [] } }
+      result = { plan: double(warnings: [], output_path: output_dir), results: { pages: 0, tests: 0, features: 0, steps: 0, errors: [] } } # rubocop:disable RSpec/VerifiedDoubles
       allow(Adopter::AdoptMenu).to receive(:adopt).and_return(result)
 
-      expect {
+      expect do
         described_class.new.invoke(:project, nil, [source_dir, '-p',
-                                                    "output_path:#{output_dir}",
-                                                    'target_automation:selenium',
-                                                    'target_framework:rspec'])
-      }.to output(/Adoption complete/).to_stdout
+                                                   "output_path:#{output_dir}",
+                                                   'target_automation:selenium',
+                                                   'target_framework:rspec'])
+      end.to output(/Adoption complete/).to_stdout
 
       expect(Adopter::AdoptMenu).to have_received(:adopt).with(
         hash_including(source_path: source_dir, target_automation: 'selenium', target_framework: 'rspec')
