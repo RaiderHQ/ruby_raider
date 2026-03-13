@@ -22,7 +22,7 @@
       ·
       <a href="https://github.com/RubyRaider/ruby_raider/issues">Request Feature</a>
    </p>
-   <p align="center"> For more information and updates on releases, see https://ruby-raider.onrender.com/</p>
+   <p align="center"> For more information and updates on releases, see [ruby raider website](https://ruby-raider.onrender.com/)</p>
 </div>
 
 ## What is Ruby Raider?
@@ -206,5 +206,5 @@ bundle exec reek        # Run code smell detection
 
 * [RubyGems](https://rubygems.org/gems/ruby_raider)
 * [GitHub](https://github.com/RubyRaider/ruby_raider)
-* [Website](https://ruby-raider.com)
+* [Website](https://ruby-raider.onrender.com/)
 * [Community](https://gitter.im/RubyRaider/community)
