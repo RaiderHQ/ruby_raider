@@ -76,7 +76,7 @@ RSpec.describe Adopter::ProjectDetector do
       end
     end
 
-    { 'eyes_selenium' => 'applitools', 'axe-core-selenium' => 'axe',
+    { 'eyes_selenium' => 'selenium', 'axe-core-selenium' => 'selenium',
       'capybara' => 'capybara', 'site_prism' => 'capybara' }.each do |gem_name, expected|
       context "with #{gem_name} in Gemfile" do
         before { File.write("#{project_dir}/Gemfile", "gem '#{gem_name}'\n") }

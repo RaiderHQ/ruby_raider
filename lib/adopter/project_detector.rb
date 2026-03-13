@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Adopter
-  # :reek:TooManyMethods { enabled: false }
   module ProjectDetector
     GEM_AUTOMATION_MAP = {
       'site_prism' => 'capybara',
@@ -9,9 +8,9 @@ module Adopter
       'selenium-webdriver' => 'selenium',
       'watir' => 'watir',
       'appium_lib' => 'appium',
-      'eyes_selenium' => 'applitools',
-      'axe-core-selenium' => 'axe',
-      'axe-core-rspec' => 'axe'
+      'eyes_selenium' => 'selenium',
+      'axe-core-selenium' => 'selenium',
+      'axe-core-rspec' => 'selenium'
     }.freeze
 
     GEM_FRAMEWORK_MAP = {
@@ -78,7 +77,6 @@ module Adopter
       find_existing_dir(path, candidates)
     end
 
-    # :reek:NestedIterators { enabled: false }
     def detect_browser(path)
       config_files = helper_and_config_files(path)
       config_files.each do |file|

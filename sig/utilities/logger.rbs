@@ -1,0 +1,13 @@
+# Type definitions for RubyRaider::Logger
+module RubyRaider
+  module Logger
+    extend Forwardable
+
+    def self?.logger: () -> ::Logger
+    def self?.fatal: (*untyped args) -> void
+    def self?.error: (*untyped args) -> void
+    def self?.warn: (*untyped args) -> void
+    def self?.info: (*untyped args) -> void
+    def self?.debug: (*untyped args) -> void
+  end
+end

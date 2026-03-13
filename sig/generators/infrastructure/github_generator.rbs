@@ -1,0 +1,5 @@
+# Type definitions for GithubGenerator
+class GithubGenerator < Generator
+  def generate_actions_file: () -> void
+  def generate_appium_pipeline: () -> void
+end

@@ -1,0 +1,20 @@
+# Type definitions for PluginExposer
+module RubyRaider
+  module PluginExposer
+    FILE_PATH: String
+
+    def self?.expose_commands: (String plugin_name) -> void
+    def self?.remove_command: (String plugin_name) -> void
+
+    private
+
+    def self?.any_commands?: () -> bool
+    def self?.read_loaded_commands: () -> Array[String]
+    def self?.formatted_command_without_space: (String plugin_name) -> String
+    def self?.formatted_command_with_space: (String plugin_name) -> String
+    def self?.plugin_present?: (String plugin_name) -> bool
+    def self?.select_command_formatting: (String plugin_name, String line) -> String?
+    def self?.require_plugin: (String plugin_name, String line) -> String?
+    def self?.delete_plugin_command: (String plugin_name) -> void
+  end
+end

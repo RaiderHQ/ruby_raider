@@ -1,1 +1,6 @@
+<%- if allure_reporter? -%>
 allure-results
+<%- end -%>
+<%- if rspec? -%>
+spec/examples.txt
+<%- end -%>

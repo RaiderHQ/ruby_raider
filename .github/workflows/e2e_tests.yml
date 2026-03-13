@@ -1,0 +1,58 @@
+name: E2E and Content Validation Tests
+
+on: [pull_request]
+
+jobs:
+  content-validation:
+    name: Content validation tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Run content validation tests
+        run: bundle exec rspec spec/integration/content/ --format documentation
+
+  e2e-adopt:
+    name: Adopt E2E tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Run adopt system tests
+        run: bundle exec rspec spec/system/adopt_spec.rb --format documentation
+
+  command-and-menu-tests:
+    name: Command routing and menu tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Run command routing tests
+        run: bundle exec rspec spec/commands/ --format documentation
+
+      - name: Run menu tests
+        run: bundle exec rspec spec/menus/ --format documentation

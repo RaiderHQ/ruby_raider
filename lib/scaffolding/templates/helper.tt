@@ -1,3 +1,17 @@
-module <%= name.split('_').map {|word| word.capitalize }.join + 'Helper' %>
+# frozen_string_literal: true
+
+<% if nested? -%>
+<% module_parts.each_with_index do |mod, i| -%>
+<%= '  ' * i %>module <%= mod %>
+<% end -%>
+<%= '  ' * module_parts.size %>module <%= NameNormalizer.to_class_name(leaf_name) %>Helper
+<%= '  ' * module_parts.size %>  # Add your helper code here
+<%= '  ' * module_parts.size %>end
+<% module_parts.each_with_index do |_mod, i| -%>
+<%= '  ' * (module_parts.size - i - 1) %>end
+<% end -%>
+<% else -%>
+module <%= class_name %>Helper
   # Add your helper code here
 end
+<% end -%>

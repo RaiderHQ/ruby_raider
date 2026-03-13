@@ -1,0 +1,16 @@
+# Type definitions for Logo
+module RubyRaider
+  module Logo
+    PALETTE: Hash[Integer, String]
+    GEM: Array[Array[Integer]]
+    GLYPHS: Hash[String, Array[Array[Integer]]]
+    TEXT_COLOR: Integer
+
+    def self.display: () -> void
+
+    private
+
+    def self.halfblock: (Integer top, Integer bot) -> String
+    def self.build_text: (String str) -> Array[Array[Integer]]
+  end
+end

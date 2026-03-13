@@ -1,0 +1,3 @@
+-I .
+--require helpers/spec_helper
+--format documentation

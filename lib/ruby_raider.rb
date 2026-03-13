@@ -1,21 +1,24 @@
 # frozen_string_literal: true
 
-require_relative '../lib/plugin/plugin'
-require_relative '../lib/commands/plugin_commands'
-require_relative '../lib/commands/loaded_commands'
-require_relative '../lib/commands/adopt_commands'
-require_relative '../lib/commands/scaffolding_commands'
-require_relative '../lib/commands/utility_commands'
+require 'thor'
 
-# :reek:FeatureEnvy { enabled: false }
-# :reek:UtilityFunction { enabled: false }
+# Lazy-load top-level command classes to reduce CLI startup time.
+autoload :AdoptCommands, File.expand_path('commands/adopt_commands', __dir__)
+autoload :ScaffoldingCommands, File.expand_path('commands/scaffolding_commands', __dir__)
+autoload :UtilityCommands, File.expand_path('commands/utility_commands', __dir__)
+
 module RubyRaider
+  # Lazy-load namespaced classes within the correct module scope.
+  autoload :Plugin, File.expand_path('plugin/plugin', __dir__)
+  autoload :PluginCommands, File.expand_path('commands/plugin_commands', __dir__)
+  autoload :LoadedCommands, File.expand_path('commands/loaded_commands', __dir__)
+
   class Raider < Thor
     no_tasks do
       def self.plugin_commands?
-        File.readlines(File.expand_path('commands/loaded_commands.rb', __dir__)).any? do |line|
-          line.include?('subcommand')
-        end
+        @plugin_commands ||= File.read(
+          File.expand_path('commands/loaded_commands.rb', __dir__)
+        ).include?('subcommand')
       end
 
       def current_version = File.read(File.expand_path('version', __dir__)).strip
@@ -24,12 +27,31 @@ module RubyRaider
     desc 'new [PROJECT_NAME]', 'Creates a new framework based on settings picked'
     option :parameters,
            type: :hash, required: false, desc: 'Parameters to avoid using the menu', aliases: 'p'
+    option :skip_ci,
+           type: :boolean, required: false, desc: 'Skip CI/CD configuration generation'
+    option :skip_allure,
+           type: :boolean, required: false, desc: 'Skip Allure reporting setup'
+    option :skip_video,
+           type: :boolean, required: false, desc: 'Skip video recording setup'
+    option :reporter,
+           type: :string, required: false, desc: 'Reporter: allure, junit, json, both, all, none', aliases: '-r'
+    option :accessibility,
+           type: :boolean, required: false, desc: 'Add axe accessibility testing'
+    option :visual,
+           type: :boolean, required: false, desc: 'Add visual regression testing'
+    option :performance,
+           type: :boolean, required: false, desc: 'Add Lighthouse performance auditing'
+    option :ruby_version,
+           type: :string, required: false, desc: 'Ruby version for generated project (e.g. 3.4, 3.3)'
 
     def new(project_name)
+      require_relative 'utilities/logo'
+      RubyRaider::Logo.display
       params = options[:parameters]
       if params
         params[:name] = project_name
         parsed_hash = params.transform_keys(&:to_sym)
+        merge_skip_flags(parsed_hash)
         return InvokeGenerators.generate_framework(parsed_hash)
       end
 
@@ -66,6 +88,19 @@ module RubyRaider
       desc 'plugins', 'loaded plugin commands'
       subcommand 'plugins', LoadedCommands
       map 'ps' => 'plugins'
+    end
+
+    no_tasks do
+      def merge_skip_flags(params)
+        %i[skip_ci skip_allure skip_video].each do |flag|
+          params[flag] = true if options[flag]
+        end
+        params[:reporter] = options[:reporter] if options[:reporter]
+        params[:accessibility] = true if options[:accessibility]
+        params[:visual] = true if options[:visual]
+        params[:performance] = true if options[:performance]
+        params[:ruby_version] = options[:ruby_version] if options[:ruby_version]
+      end
     end
   end
 end

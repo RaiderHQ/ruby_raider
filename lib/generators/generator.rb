@@ -3,10 +3,11 @@
 require 'thor'
 require_relative 'template_renderer'
 
-# :reek:TooManyMethods { enabled: false }
 class Generator < Thor::Group
   include Thor::Actions
   include TemplateRenderer
+
+  LATEST_RUBY = '3.4'
 
   argument :automation
   argument :framework
@@ -64,8 +65,8 @@ class Generator < Thor::Group
     args.include?('capybara')
   end
 
-  def visual?
-    args.include?('applitools')
+  def visual_addon?
+    args.include?('visual_addon')
   end
 
   def watir?
@@ -73,15 +74,45 @@ class Generator < Thor::Group
   end
 
   def web?
-    (args & %w[selenium watir axe applitools capybara]).count.positive?
+    (args & %w[selenium watir capybara]).count.positive?
   end
 
-  def axe?
-    args.include?('axe')
+  def axe_addon?
+    args.include?('axe_addon')
+  end
+
+  def lighthouse_addon?
+    args.include?('lighthouse_addon')
   end
 
   def selenium_based?
-    (args & %w[selenium axe applitools]).count.positive?
+    args.include?('selenium')
+  end
+
+  def skip_allure?
+    args.include?('skip_allure')
+  end
+
+  def skip_video?
+    args.include?('skip_video')
+  end
+
+  def allure_reporter?
+    has_reporter = args.any? { |a| a&.start_with?('reporter_') }
+    has_reporter ? args.include?('reporter_allure') : !skip_allure?
+  end
+
+  def junit_reporter?
+    args.include?('reporter_junit')
+  end
+
+  def json_reporter?
+    args.include?('reporter_json')
+  end
+
+  def ruby_version
+    arg = args.find { |a| a&.start_with?('ruby_version:') }
+    arg ? arg.split(':', 2).last : LATEST_RUBY
   end
 
   private

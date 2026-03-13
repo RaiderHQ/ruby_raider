@@ -9,11 +9,12 @@ class HelpersGenerator < Generator
     generate_capybara_helper
     generate_appium_helper
     generate_allure_helper
+    generate_video_helper
+    generate_debug_helper
+    generate_visual_helper
+    generate_performance_helper
 
-    if visual?
-      generate_visual_helper
-      generate_visual_spec_helper
-    elsif minitest?
+    if minitest?
       generate_test_helper
     else
       generate_spec_helper
@@ -23,7 +24,15 @@ class HelpersGenerator < Generator
   private
 
   def generate_allure_helper
+    return unless allure_reporter?
+
     template('helpers/allure_helper.tt', "#{name}/helpers/allure_helper.rb")
+  end
+
+  def generate_video_helper
+    return if skip_video?
+
+    template('helpers/video_helper.tt', "#{name}/helpers/video_helper.rb")
   end
 
   def generate_browser_helper
@@ -60,13 +69,21 @@ class HelpersGenerator < Generator
     template('helpers/test_helper.tt', "#{name}/helpers/test_helper.rb")
   end
 
+  def generate_debug_helper
+    return unless web?
+
+    template('helpers/debug_helper.tt', "#{name}/helpers/debug_helper.rb")
+  end
+
   def generate_visual_helper
+    return unless visual_addon? && web?
+
     template('helpers/visual_helper.tt', "#{name}/helpers/visual_helper.rb")
   end
 
-  def generate_visual_spec_helper
-    return if cucumber?
+  def generate_performance_helper
+    return unless lighthouse_addon? && web?
 
-    template('helpers/visual_spec_helper.tt', "#{name}/helpers/spec_helper.rb")
+    template('helpers/performance_helper.tt', "#{name}/helpers/performance_helper.rb")
   end
 end

@@ -13,7 +13,7 @@ module CapybaraHelper
       capybara_config.default_driver = :selenium
       capybara_config.javascript_driver = :selenium
       capybara_config.app_host = config['url']
-      capybara_config.default_max_wait_time = 10
+      capybara_config.default_max_wait_time = config.fetch('timeout', 10)
       capybara_config.run_server = false
     end
 
@@ -22,6 +22,10 @@ module CapybaraHelper
       args = config['browser_arguments'][config['browser']] || []
       args += ['--headless'] if ENV['HEADLESS'] && !args.include?('--headless')
       options = Selenium::WebDriver::Chrome::Options.new(args:)
+      debug_cfg = config['debug'] || {}
+      if debug_cfg.fetch('enabled', false) || ENV['DEBUG']&.downcase == 'true'
+        options.add_option('goog:loggingPrefs', { browser: 'ALL', performance: 'ALL' })
+      end
       Capybara::Selenium::Driver.new(app, browser:, options:)
     end
   end

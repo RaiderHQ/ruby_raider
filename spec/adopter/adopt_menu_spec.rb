@@ -126,51 +126,51 @@ RSpec.describe Adopter::AdoptMenu do
     end
 
     it 'raises on missing target_automation' do
-      expect {
+      expect do
         described_class.validate_params!(source_path: 'x', output_path: 'y')
-      }.to raise_error(ArgumentError, /target_automation/)
+      end.to raise_error(ArgumentError, /target_automation/)
     end
 
     it 'raises on missing target_framework' do
-      expect {
+      expect do
         described_class.validate_params!(source_path: 'x', output_path: 'y', target_automation: 'selenium')
-      }.to raise_error(ArgumentError, /target_framework/)
+      end.to raise_error(ArgumentError, /target_framework/)
     end
 
     it 'raises on invalid target_automation' do
-      expect {
+      expect do
         described_class.validate_params!(
           source_path: 'x', output_path: 'y',
           target_automation: 'appium', target_framework: 'rspec'
         )
-      }.to raise_error(ArgumentError, /target_automation must be/)
+      end.to raise_error(ArgumentError, /target_automation must be/)
     end
 
     it 'raises on invalid target_framework' do
-      expect {
+      expect do
         described_class.validate_params!(
           source_path: 'x', output_path: 'y',
           target_automation: 'selenium', target_framework: 'junit'
         )
-      }.to raise_error(ArgumentError, /target_framework must be/)
+      end.to raise_error(ArgumentError, /target_framework must be/)
     end
 
     it 'accepts valid params without raising' do
-      expect {
+      expect do
         described_class.validate_params!(
           source_path: 'x', output_path: 'y',
           target_automation: 'selenium', target_framework: 'rspec'
         )
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it 'accepts capybara as valid automation' do
-      expect {
+      expect do
         described_class.validate_params!(
           source_path: 'x', output_path: 'y',
           target_automation: 'capybara', target_framework: 'minitest'
         )
-      }.not_to raise_error
+      end.not_to raise_error
     end
   end
 end

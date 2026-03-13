@@ -1,0 +1,20 @@
+# Type definitions for PartialResolver
+module TemplateRenderer
+  class PartialResolver
+    PARTIAL_EXTENSION: String
+    PARTIALS_DIR: String
+
+    @generator_class: Class
+
+    def initialize: (Class generator_class) -> void
+    def resolve: (String name, Binding binding) -> String
+    def search_paths: (String name, Binding binding) -> Array[String]
+
+    private
+
+    def caller_file_from_binding: (Binding binding) -> String?
+    def search_source_paths: (String partial_filename) -> { found: String?, searched: Array[String] }
+    def source_paths: () -> Array[String]
+    def partial_dirs: () -> Array[String]
+  end
+end

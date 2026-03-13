@@ -27,6 +27,42 @@ class CucumberGenerator < Generator
     template('cucumber.tt', "#{name}/cucumber.yml")
   end
 
+  def generate_visual_feature
+    return unless visual_addon? && web?
+
+    template('visual_feature.tt', "#{name}/features/visual.feature")
+  end
+
+  def generate_visual_steps
+    return unless visual_addon? && web?
+
+    template('visual_steps.tt', "#{name}/features/step_definitions/visual_steps.rb")
+  end
+
+  def generate_accessibility_feature
+    return unless axe_addon? && web?
+
+    template('accessibility_feature.tt', "#{name}/features/accessibility.feature")
+  end
+
+  def generate_accessibility_steps
+    return unless axe_addon? && web?
+
+    template('accessibility_steps.tt', "#{name}/features/step_definitions/accessibility_steps.rb")
+  end
+
+  def generate_performance_feature
+    return unless lighthouse_addon? && web?
+
+    template('performance_feature.tt', "#{name}/features/performance.feature")
+  end
+
+  def generate_performance_steps
+    return unless lighthouse_addon? && web?
+
+    template('performance_steps.tt', "#{name}/features/step_definitions/performance_steps.rb")
+  end
+
   def template_name
     @template_name ||= (@_initializer.first & %w[android ios cross_platform]).empty? ? 'login' : 'home'
   end

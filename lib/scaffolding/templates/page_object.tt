@@ -1,12 +1,61 @@
 # frozen_string_literal: true
 
 require_relative '../abstract/page'
+<%- uses_list.each do |dep| -%>
+require_relative '<%= dep %>'
+<%- end -%>
+<% if nested? -%>
+<% module_parts.each_with_index do |mod, i| -%>
+<%= '  ' * i %>module <%= mod %>
+<% end -%>
+<%= '  ' * module_parts.size %>class <%= NameNormalizer.to_class_name(leaf_name) %>Page < Page
+<%- if project_config['url'] -%>
+<%= '  ' * module_parts.size %>  def url(_page)
+<%= '  ' * module_parts.size %>    '<%= normalized_name %>'
+<%= '  ' * module_parts.size %>  end
+<%- end -%>
 
-class <%= name.split('_').map {|word| word.capitalize }.join %> < Page
+<%= '  ' * module_parts.size %>  # Actions
+<%- if capybara? -%>
+
+<%= '  ' * module_parts.size %>  # Example: fill_in 'field_id', with: value
+<%- else -%>
+
+<%= '  ' * module_parts.size %>  private
+
+<%= '  ' * module_parts.size %>  # Elements
+<%- if selenium? -%>
+<%= '  ' * module_parts.size %>  # Example: driver.find_element(id: 'element_id')
+<%- elsif watir? -%>
+<%= '  ' * module_parts.size %>  # Example: browser.text_field(id: 'element_id')
+<%- end -%>
+<%- end -%>
+<%= '  ' * module_parts.size %>end
+<% module_parts.each_with_index do |_mod, i| -%>
+<%= '  ' * (module_parts.size - i - 1) %>end
+<% end -%>
+<% else -%>
+class <%= page_class_name %> < Page
+<%- if project_config['url'] -%>
+  def url(_page)
+    '<%= normalized_name %>'
+  end
+<%- end -%>
 
   # Actions
+<%- if capybara? -%>
+
+  # Example: fill_in 'field_id', with: value
+<%- else -%>
 
   private
 
   # Elements
+<%- if selenium? -%>
+  # Example: driver.find_element(id: 'element_id')
+<%- elsif watir? -%>
+  # Example: browser.text_field(id: 'element_id')
+<%- end -%>
+<%- end -%>
 end
+<% end -%>

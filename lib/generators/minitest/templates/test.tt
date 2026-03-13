@@ -6,33 +6,11 @@ require_relative '../models/model_factory'
 require_relative '../page_objects/pages/account'
 require_relative '../page_objects/pages/login'
 
-<%- if axe? %>
-class TestLogin < Minitest::Test
-  def setup
-    @login = Login.new(driver)
-    @account = Account.new(driver)
-    @user = ModelFactory.for('users')['registered user']
-    @login.visit
-    @login.log_as(@user['username'], @user['password'])
-  end
+# Uncomment for interactive debugging:
+# require 'debug'    # Ruby's built-in debugger (binding.break)
+# require 'pry'      # Pry debugger (binding.pry)
 
-  def teardown
-    driver.quit
-  end
-
-  def test_no_accessibility_errors_on_page
-    assert_axe_clean @account.page
-  end
-
-  def test_no_accessibility_errors_on_transaction_history
-    assert_axe_clean @account.page, within: '.account-card'
-  end
-
-  def test_no_accessibility_errors_on_heading
-    assert_axe_clean @account.page, within: '.page-title'
-  end
-end
-<%- elsif selenium_based? || watir? || capybara? -%>
+<%- if selenium_based? || watir? || capybara? -%>
 class TestLogin < Minitest::Test
   def setup
     @user = ModelFactory.for('users')['registered user']
@@ -45,25 +23,18 @@ class TestLogin < Minitest::Test
   end
 
   def test_login_with_right_credentials
+    # binding.break  # Uncomment to pause here and inspect state
     @login_page.<% if capybara? -%>visit_page<% else -%>visit<% end %>
     @login_page.login(@user['username'], @user['password'])
-  <%- if visual? -%>
-    check_page @account_page
-  <%- else -%>
     @account_page.<% if capybara? -%>visit_page<% else -%>visit<% end %>
     assert_equal "Welcome back #{@user['name']}", @account_page.header.customer_name
-  <%- end -%>
   end
 
   def test_login_with_wrong_credentials
     @login_page.<% if capybara? -%>visit_page<% else -%>visit<% end %>
     @login_page.login(@user['username'], 'wrongPassword')
-  <%- if visual? -%>
-    check_page @login_page
-  <%- else -%>
     @login_page.<% if capybara? -%>visit_page<% else -%>visit<% end %>
     assert_equal 'Login or register', @account_page.header.customer_name
-  <%- end -%>
   end
 end
 <%- end -%>
