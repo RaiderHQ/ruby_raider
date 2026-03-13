@@ -8,7 +8,7 @@
 
   def browser_arguments(*opts)
     args = opts.empty? ? @config['browser_arguments'][@config['browser']] : opts
-    args += ['--headless'] if ENV['HEADLESS'] && !args.include?('--headless')
+    args += ['--headless'] if (ENV['HEADLESS'] || @config['headless']) && !args.include?('--headless')
     args
   end
 

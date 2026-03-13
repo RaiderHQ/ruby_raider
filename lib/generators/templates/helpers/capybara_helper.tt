@@ -20,7 +20,7 @@ module CapybaraHelper
     Capybara.register_driver :selenium do |app|
       browser = config['browser'].to_sym
       args = config['browser_arguments'][config['browser']] || []
-      args += ['--headless'] if ENV['HEADLESS'] && !args.include?('--headless')
+      args += ['--headless'] if (ENV['HEADLESS'] || config['headless']) && !args.include?('--headless')
       options = Selenium::WebDriver::Chrome::Options.new(args:)
       debug_cfg = config['debug'] || {}
       if debug_cfg.fetch('enabled', false) || ENV['DEBUG']&.downcase == 'true'

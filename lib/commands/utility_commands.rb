@@ -35,13 +35,22 @@ class UtilityCommands < Thor
     browser_options(selected_options) if selected_options || options[:delete]
   end
 
-  desc 'browser_options [OPTIONS]', 'Sets the browser options for the project'
+  desc 'browser_options [OPTIONS]', 'Sets the browser arguments for the current browser (e.g. no-sandbox, headless)'
   option :delete,
          type: :boolean, required: false, desc: 'This will delete your browser options', aliases: '-d'
 
   def browser_options(*opts)
     Utilities.browser_options = opts unless opts.empty?
     Utilities.delete_browser_options if options[:delete]
+  end
+
+  desc 'headless [on/off]', 'Toggles headless mode for browser tests'
+
+  def headless(toggle)
+    enabled = %w[on true 1 yes].include?(toggle.downcase)
+    Utilities.headless = enabled
+    state = enabled ? 'enabled' : 'disabled'
+    say "Headless mode #{state}", :green
   end
 
   desc 'raid', 'It runs all the tests in a project'
