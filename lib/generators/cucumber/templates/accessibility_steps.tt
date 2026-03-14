@@ -1,17 +1,17 @@
 # frozen_string_literal: true
 
 Given('I am on the home page') do
-  <% if watir? -%>
-browser.goto 'https://raider-test-site.onrender.com/'
-  <% else -%>
-driver.get 'https://raider-test-site.onrender.com/'
-  <% end -%>
+  <%- if watir? -%>
+  browser.goto 'https://raider-test-site.onrender.com/'
+  <%- else -%>
+  driver.get 'https://raider-test-site.onrender.com/'
+  <%- end -%>
 end
 
 Then('the page should be accessible') do
-  <% if watir? -%>
-expect(browser.driver).to be_axe_clean
-  <% else -%>
-expect(driver).to be_axe_clean
-  <% end -%>
+  <%- if watir? -%>
+  expect(browser.driver).to be_axe_clean
+  <%- else -%>
+  expect(driver).to be_axe_clean
+  <%- end -%>
 end
