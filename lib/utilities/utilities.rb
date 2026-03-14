@@ -62,13 +62,6 @@ module Utilities
       set('headless', enabled)
     end
 
-    def debug=(enabled)
-      reload_config
-      @config['debug'] ||= {}
-      @config['debug']['enabled'] = enabled
-      overwrite_yaml
-    end
-
     # Set multiple config keys in a single YAML write.
     # Usage: Utilities.batch_update(browser: 'chrome', timeout: 30)
     def batch_update(**settings)

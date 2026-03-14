@@ -8,7 +8,6 @@ class HelpersGenerator < Generator
     generate_driver_helper
     generate_appium_helper
     generate_allure_helper
-    generate_debug_helper
     generate_spec_helper
   end
 
@@ -40,12 +39,6 @@ class HelpersGenerator < Generator
     return unless cross_platform?
 
     template('helpers/appium_helper.tt', "#{name}/helpers/appium_helper.rb")
-  end
-
-  def generate_debug_helper
-    return unless web?
-
-    template('helpers/debug_helper.tt', "#{name}/helpers/debug_helper.rb")
   end
 
 end

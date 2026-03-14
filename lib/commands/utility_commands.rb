@@ -92,15 +92,6 @@ class UtilityCommands < Thor
     Utilities.platform = platform
   end
 
-  desc 'debug [on/off]', 'Toggles debug mode for failure diagnostics and logging'
-
-  def debug(toggle)
-    enabled = %w[on true 1 yes].include?(toggle.downcase)
-    Utilities.debug = enabled
-    state = enabled ? 'enabled' : 'disabled'
-    say "Debug mode #{state}", :green
-  end
-
   desc 'start_appium', 'It starts the appium server'
   def start_appium
     system 'appium  --base-path /wd/hub'

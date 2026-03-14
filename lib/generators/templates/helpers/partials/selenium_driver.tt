@@ -17,10 +17,5 @@
     browser = load_browser == 'ie' ? load_browser.upcase : load_browser.capitalize
     options = "Selenium::WebDriver::#{browser}::Options".constantize.new
     browser_arguments(*opts).each { |arg| options.add_argument(arg) }
-    debug_cfg = @config['debug'] || {}
-    if %w[chrome edge msedge].include?(@config['browser'].to_s.downcase) &&
-       (debug_cfg.fetch('enabled', false) || ENV['DEBUG']&.downcase == 'true')
-      options.add_option('goog:loggingPrefs', { browser: 'ALL', performance: 'ALL' })
-    end
     options
   end

@@ -7,7 +7,7 @@ require_relative '../../lib/scaffolding/scaffolding'
 require 'timeout'
 require 'open3'
 
-# End-to-end tests for features (retry, tags, addons, CI, debug, etc.)
+# End-to-end tests for features (retry, tags, addons, CI, etc.)
 # These tests generate complete projects with feature flags and verify they are executable.
 describe 'End-to-End Feature Validation' do
   include ContentHelper
@@ -262,30 +262,6 @@ describe 'End-to-End Feature Validation' do
     it 'workflow includes rspec run step' do
       content = File.read("#{project}/.github/workflows/test_pipeline.yml")
       expect(content).to include('rspec')
-    end
-  end
-
-  # --- Feature: Debug helper ---
-
-  context 'Debug helper generation' do
-    it 'web projects include debug_helper.rb' do
-      expect(File).to exist("#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}/helpers/debug_helper.rb")
-    end
-
-    it 'debug helper has valid Ruby syntax' do
-      content = File.read("#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}/helpers/debug_helper.rb")
-      expect { RubyVM::InstructionSequence.compile(content) }.not_to raise_error
-    end
-
-    it 'debug helper defines DebugHelper module' do
-      content = File.read("#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}/helpers/debug_helper.rb")
-      expect(content).to include('module DebugHelper')
-    end
-
-    it 'config.yml includes debug section' do
-      config = YAML.load_file("#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}/config/config.yml")
-      expect(config).to have_key('debug')
-      expect(config['debug']['enabled']).to be false
     end
   end
 

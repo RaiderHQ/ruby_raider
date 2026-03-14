@@ -13,7 +13,6 @@ module Utilities
   def self?.platform=: (String platform) -> void
   def self?.browser_options=: (Array[String] opts) -> void
   def self?.delete_browser_options: () -> void
-  def self?.debug=: (bool enabled) -> void
   def self?.batch_update: (**untyped settings) -> void
   def self?.run: (?String? opts) -> void
   def self?.parallel_run: (?String? opts, ?untyped? _settings) -> void

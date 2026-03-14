@@ -51,60 +51,24 @@ describe 'Config file content' do
     end
   end
 
-  shared_examples 'config with debug section' do |project_name|
-    subject(:config_content) { read_generated(project_name, 'config/config.yml') }
-
-    let(:config) { YAML.safe_load(config_content, permitted_classes: [Symbol]) }
-
-    it 'has debug section' do
-      expect(config).to have_key('debug')
-    end
-
-    it 'has debug enabled key defaulting to false' do
-      expect(config['debug']['enabled']).to be false
-    end
-
-    it 'has debug console_logs key' do
-      expect(config['debug']['console_logs']).to be true
-    end
-
-    it 'has debug action_logging key' do
-      expect(config['debug']['action_logging']).to be true
-    end
-
-    it 'has debug network_logging key' do
-      expect(config['debug']['network_logging']).to be true
-    end
-
-    it 'has debug log_dir key' do
-      expect(config['debug']['log_dir']).to eq('debug_logs')
-    end
-  end
-
   # --- Web config per automation ---
 
   context 'with rspec and selenium' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'valid web config', name
     include_examples 'selenium config with timeout', name
-
-    include_examples 'config with debug section', name
   end
 
   context 'with rspec and watir' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'valid web config', name
     include_examples 'config without driver_options', name
-
-    include_examples 'config with debug section', name
   end
 
   context 'with cucumber and selenium' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'valid web config', name
     include_examples 'selenium config with timeout', name
-
-    include_examples 'config with debug section', name
   end
 
   # --- Mobile config ---

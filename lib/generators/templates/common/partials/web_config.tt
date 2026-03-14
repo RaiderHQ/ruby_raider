@@ -14,10 +14,3 @@ browser_arguments:
   firefox:
     - acceptInsecureCerts
     - no-sandbox
-
-debug:
-  enabled: false        # also toggled by DEBUG=true env var
-  console_logs: true    # capture browser console logs on failure
-  action_logging: true  # log driver actions with timestamps
-  network_logging: true # capture HTTP requests on failure (Chrome/Edge only)
-  log_dir: 'debug_logs'

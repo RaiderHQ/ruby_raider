@@ -9,7 +9,6 @@ class UtilityCommands < Thor
   def timeout: (String seconds) -> void
   def viewport: (String dimensions) -> void
   def platform: (String platform) -> void
-  def debug: (String toggle) -> void
   def start_appium: () -> void
   def desktop: () -> void
 end
