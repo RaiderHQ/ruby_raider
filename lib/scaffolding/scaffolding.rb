@@ -13,20 +13,8 @@ class Scaffolding < Thor::Group
 
   attr_writer :uses
 
-  OVERRIDE_DIR = '.ruby_raider/templates'
-
   def self.source_root
     "#{File.dirname(__FILE__)}/templates"
-  end
-
-  # Check for user template override before using default
-  def template(source, *args, &block)
-    override = File.join(OVERRIDE_DIR, File.basename(source))
-    if File.exist?(override)
-      super(File.expand_path(override), *args, &block)
-    else
-      super
-    end
   end
 
   # --- Generation methods ---
@@ -58,12 +46,6 @@ class Scaffolding < Thor::Group
   def generate_config
     template('../../generators/templates/common/config.tt',
              default_path('config/config.yml', '.yml'))
-  end
-
-  def generate_spec_from_page(source_file)
-    require_relative 'page_introspector'
-    @introspected = PageIntrospector.new(source_file)
-    template('spec_from_page.tt', "spec/#{normalized_name}_spec.rb")
   end
 
   # --- Template helpers (available in .tt files) ---
@@ -115,8 +97,6 @@ class Scaffolding < Thor::Group
   def uses_list
     Array(@uses).reject(&:empty?)
   end
-
-  attr_reader :introspected
 
   def default_path(standard_path, file_type)
     path ? "#{path}/#{normalized_name}#{file_type}" : standard_path

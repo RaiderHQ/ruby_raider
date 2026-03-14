@@ -2,8 +2,6 @@
 class Scaffolding < Thor::Group
   include Thor::Actions
 
-  OVERRIDE_DIR: String
-
   attr_writer uses: Array[String]
 
   def self.source_root: () -> String
@@ -16,7 +14,6 @@ class Scaffolding < Thor::Group
   def generate_steps: () -> void
   def generate_component: () -> void
   def generate_config: () -> void
-  def generate_spec_from_page: (String source_file) -> void
 
   # Template helpers
   def class_name: () -> String?
@@ -31,6 +28,5 @@ class Scaffolding < Thor::Group
   def selenium?: () -> bool
   def watir?: () -> bool
   def uses_list: () -> Array[String]
-  def introspected: () -> PageIntrospector?
   def default_path: (String standard_path, String file_type) -> String
 end

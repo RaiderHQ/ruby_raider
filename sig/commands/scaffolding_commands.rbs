@@ -13,10 +13,4 @@ class ScaffoldingCommands < Thor
   def load_config_path: (String type) -> String?
   def generate_scaffolding: (String name, String type, String? path, ?uses: Array[String]?) -> void
   def generate_default_scaffold: (String name) -> void
-  def generate_selected_components: (String name, Array[String] components) -> void
-  def generate_crud: (String name) -> void
-  def generate_spec_from_page: (String name, String source_file) -> void
-  def generate_model_data: (String name) -> void
-  def model_template: (String name) -> String
-  def interactive_scaffold: () -> void
 end

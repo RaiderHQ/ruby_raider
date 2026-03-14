@@ -31,14 +31,10 @@ class ScaffoldingCommands < Thor
   desc 'spec [SPEC_NAME]', 'Creates a new spec'
   option :path, type: :string, required: false,
                 desc: 'The path where your spec will be created', aliases: '-p'
-  option :from, type: :string, required: false,
-                desc: 'Generate spec stubs from an existing page object file', aliases: '-f'
   option :uses, type: :array, required: false,
                 desc: 'Dependent pages to require', aliases: '-u'
 
   def spec(name)
-    return generate_spec_from_page(name, options[:from]) if options[:from]
-
     generate_scaffolding(name, 'spec', options[:path], uses: options[:uses])
   end
 
@@ -67,25 +63,11 @@ class ScaffoldingCommands < Thor
   end
 
   desc 'scaffold [NAMES...]', 'Generates pages, specs/features, and helpers for one or more names'
-  option :with, type: :array, required: false,
-                desc: 'Components to generate (page,spec,feature,steps,helper,component,model)', aliases: '-w'
-  option :crud, type: :boolean, required: false,
-                desc: 'Generate CRUD pages (list, create, detail, edit) + tests + model'
   option :uses, type: :array, required: false,
                 desc: 'Dependent pages to require', aliases: '-u'
 
   def scaffold(*names)
-    return interactive_scaffold if names.empty?
-
-    names.each do |name|
-      if options[:crud]
-        generate_crud(name)
-      elsif options[:with]
-        generate_selected_components(name, options[:with])
-      else
-        generate_default_scaffold(name)
-      end
-    end
+    names.each { |name| generate_default_scaffold(name) }
   end
 
   no_commands do
@@ -130,75 +112,6 @@ class ScaffoldingCommands < Thor
         generate_scaffolding(name, 'steps', load_config_path('steps'), uses:)
       end
       generate_scaffolding(name, 'page', load_config_path('page'), uses:)
-    end
-
-    def generate_selected_components(name, components)
-      validate_project!
-      uses = options[:uses]
-      components.each do |comp|
-        comp = comp.downcase.strip
-        case comp
-        when 'model'
-          generate_model_data(name)
-        else
-          generate_scaffolding(name, comp, load_config_path(comp), uses:)
-        end
-      end
-    end
-
-    def generate_crud(name)
-      require_relative '../scaffolding/crud_generator'
-      validate_project!
-      crud = CrudGenerator.new(name, Scaffolding, method(:load_config_path))
-      generated = crud.generate
-      say "Generated CRUD scaffold for: #{generated.join(', ')}"
-    end
-
-    def generate_spec_from_page(name, source_file)
-      Scaffolding.new([name]).generate_spec_from_page(source_file)
-    end
-
-    def generate_model_data(name)
-      normalized = NameNormalizer.normalize(name)
-      path = "models/data/#{normalized}.yml"
-      return if File.exist?(path)
-
-      FileUtils.mkdir_p(File.dirname(path))
-      File.write(path, model_template(normalized))
-    end
-
-    def model_template(name)
-      <<~YAML
-        # Data model for #{name}
-        default:
-          name: 'Test #{name.capitalize}'
-          email: 'test@example.com'
-
-        valid:
-          name: 'Valid #{name.capitalize}'
-          email: 'valid@example.com'
-
-        invalid:
-          name: ''
-          email: 'invalid'
-      YAML
-    end
-
-    def interactive_scaffold
-      require_relative '../scaffolding/scaffold_menu'
-      validate_project!
-      result = ScaffoldMenu.new.run
-      return unless result
-
-      result[:names].each do |name|
-        result[:components].each do |comp|
-          if comp == :model
-            generate_model_data(name)
-          else
-            generate_scaffolding(name, comp.to_s, load_config_path(comp.to_s), uses: result[:uses])
-          end
-        end
-      end
     end
   end
 end
