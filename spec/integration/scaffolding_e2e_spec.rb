@@ -497,43 +497,6 @@ describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
           end
         end
 
-        # ── Relationships ──────────────────────
-
-        describe 'relationships' do
-          before do
-            File.write('page_objects/pages/login.rb', "class LoginPage < Page; end\n")
-          end
-
-          after do
-            FileUtils.rm_f('page_objects/pages/dashboard.rb')
-            FileUtils.rm_f('spec/dashboard_page_spec.rb')
-            FileUtils.rm_f('features/dashboard.feature')
-            FileUtils.rm_f('features/step_definitions/dashboard_steps.rb')
-            FileUtils.rm_f('page_objects/pages/login.rb')
-            FileUtils.rm_rf('features') unless framework == 'cucumber'
-            FileUtils.rm_rf('spec') unless framework == 'rspec'
-          end
-
-          it 'adds require_relative for dependent page' do
-            scaffold.new.invoke(:page, nil, %w[dashboard --uses login])
-            content = File.read('page_objects/pages/dashboard.rb')
-            expect(content).to include("require_relative 'login'")
-          end
-
-          if style == :spec
-            it 'adds dependency to spec let declarations' do
-              scaffold.new.invoke(:spec, nil, %w[dashboard --uses login])
-              content = File.read('spec/dashboard_page_spec.rb')
-              expect(content).to include('LoginPage')
-
-              case automation
-              when 'selenium' then expect(content).to include('LoginPage.new(driver)')
-              when 'watir'    then expect(content).to include('LoginPage.new(browser)')
-              end
-            end
-          end
-        end
-
       end
     end
   end

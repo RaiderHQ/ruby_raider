@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
 require_relative '../../page_objects/pages/<%= normalized_name %>'
-<%- uses_list.each do |dep| -%>
-require_relative '../../page_objects/pages/<%= dep %>'
-<%- end -%>
 
 Given('I am on the <%= normalized_name.tr("_", " ") %> page') do
 <%- if selenium? -%>

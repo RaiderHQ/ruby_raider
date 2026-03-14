@@ -11,8 +11,6 @@ class Scaffolding < Thor::Group
   argument :name, optional: true
   argument :path, optional: true
 
-  attr_writer :uses
-
   def self.source_root
     "#{File.dirname(__FILE__)}/templates"
   end
@@ -92,10 +90,6 @@ class Scaffolding < Thor::Group
 
   def watir?
     automation_type == 'watir'
-  end
-
-  def uses_list
-    Array(@uses).reject(&:empty?)
   end
 
   def default_path(standard_path, file_type)

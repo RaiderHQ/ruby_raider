@@ -93,26 +93,6 @@ RSpec.describe 'Scaffolding features' do
     end
   end
 
-  # --- Feature 9: Relationships ---
-
-  describe 'relationships (--uses)' do
-    before do
-      File.write('page_objects/pages/login.rb', "class LoginPage < Page; end\n")
-    end
-
-    it 'adds require_relative for dependent pages' do
-      scaffold.new.invoke(:page, nil, %w[dashboard --uses login])
-      content = File.read('page_objects/pages/dashboard.rb')
-      expect(content).to include("require_relative 'login'")
-    end
-
-    it 'adds uses to spec as let declarations' do
-      scaffold.new.invoke(:spec, nil, %w[dashboard --uses login])
-      content = File.read('spec/dashboard_page_spec.rb')
-      expect(content).to include('LoginPage')
-    end
-  end
-
   # --- Feature 1: Batch scaffold ---
 
   describe 'batch scaffolding' do

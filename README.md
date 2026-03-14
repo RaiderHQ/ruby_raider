@@ -119,7 +119,6 @@ raider g scaffold [NAME(S)]     # Create page + test + steps
 
 Options:
 
-* `--uses [PAGES]` — Specify page dependencies
 * `--path [PATH]` — Custom output path
 
 ### Utility Commands

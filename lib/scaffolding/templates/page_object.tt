@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
 require_relative '../abstract/page'
-<%- uses_list.each do |dep| -%>
-require_relative '<%= dep %>'
-<%- end -%>
 <% if nested? -%>
 <% module_parts.each_with_index do |mod, i| -%>
 <%= '  ' * i %>module <%= mod %>

@@ -13,11 +13,9 @@ class ScaffoldingCommands < Thor
   desc 'page [PAGE_NAME]', 'Creates a new page object'
   option :path, type: :string, required: false,
                 desc: 'The path where your page will be created', aliases: '-p'
-  option :uses, type: :array, required: false,
-                desc: 'Dependent pages to require', aliases: '-u'
 
   def page(name)
-    generate_scaffolding(name, 'page', options[:path], uses: options[:uses])
+    generate_scaffolding(name, 'page', options[:path])
   end
 
   desc 'feature [NAME]', 'Creates a new feature'
@@ -31,11 +29,9 @@ class ScaffoldingCommands < Thor
   desc 'spec [SPEC_NAME]', 'Creates a new spec'
   option :path, type: :string, required: false,
                 desc: 'The path where your spec will be created', aliases: '-p'
-  option :uses, type: :array, required: false,
-                desc: 'Dependent pages to require', aliases: '-u'
 
   def spec(name)
-    generate_scaffolding(name, 'spec', options[:path], uses: options[:uses])
+    generate_scaffolding(name, 'spec', options[:path])
   end
 
   desc 'helper [HELPER_NAME]', 'Creates a new helper'
@@ -63,8 +59,6 @@ class ScaffoldingCommands < Thor
   end
 
   desc 'scaffold [NAMES...]', 'Generates pages, specs/features, and helpers for one or more names'
-  option :uses, type: :array, required: false,
-                desc: 'Dependent pages to require', aliases: '-u'
 
   def scaffold(*names)
     names.each { |name| generate_default_scaffold(name) }
@@ -95,23 +89,21 @@ class ScaffoldingCommands < Thor
       end
     end
 
-    def generate_scaffolding(name, type, path, uses: nil)
+    def generate_scaffolding(name, type, path)
       path ||= load_config_path(type)
       scaffolding = Scaffolding.new([name, path])
-      scaffolding.uses = Array(uses) if uses
       scaffolding.send("generate_#{type}")
     end
 
     def generate_default_scaffold(name)
       validate_project!
-      uses = options[:uses]
       if Pathname.new('spec').exist? && !Pathname.new('features').exist?
-        generate_scaffolding(name, 'spec', load_config_path('spec'), uses:)
+        generate_scaffolding(name, 'spec', load_config_path('spec'))
       else
         generate_scaffolding(name, 'feature', load_config_path('feature'))
-        generate_scaffolding(name, 'steps', load_config_path('steps'), uses:)
+        generate_scaffolding(name, 'steps', load_config_path('steps'))
       end
-      generate_scaffolding(name, 'page', load_config_path('page'), uses:)
+      generate_scaffolding(name, 'page', load_config_path('page'))
     end
   end
 end

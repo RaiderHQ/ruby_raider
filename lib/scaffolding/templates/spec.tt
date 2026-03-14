@@ -1,18 +1,12 @@
 # frozen_string_literal: true
 
 require_relative '../page_objects/pages/<%= normalized_name %>'
-<%- uses_list.each do |dep| -%>
-require_relative '../page_objects/pages/<%= dep %>'
-<%- end -%>
 
 describe '<%= page_class_name %>' do
 <%- if selenium? -%>
   let(:page) { <%= page_class_name %>.new(driver) }
 <%- elsif watir? -%>
   let(:page) { <%= page_class_name %>.new(browser) }
-<%- end -%>
-<%- uses_list.each do |dep| -%>
-  let(:<%= dep %>) { <%= NameNormalizer.to_page_class(dep) %>.new<%= selenium? ? '(driver)' : '(browser)' %> }
 <%- end -%>
 <%- if project_config['url'] -%>
 

@@ -2,8 +2,6 @@
 class Scaffolding < Thor::Group
   include Thor::Actions
 
-  attr_writer uses: Array[String]
-
   def self.source_root: () -> String
 
   # Generation methods
@@ -27,6 +25,5 @@ class Scaffolding < Thor::Group
   def project_config: () -> Hash[String, untyped]
   def selenium?: () -> bool
   def watir?: () -> bool
-  def uses_list: () -> Array[String]
   def default_path: (String standard_path, String file_type) -> String
 end

@@ -11,6 +11,6 @@ class ScaffoldingCommands < Thor
   private
 
   def load_config_path: (String type) -> String?
-  def generate_scaffolding: (String name, String type, String? path, ?uses: Array[String]?) -> void
+  def generate_scaffolding: (String name, String type, String? path) -> void
   def generate_default_scaffold: (String name) -> void
 end
