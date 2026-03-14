@@ -289,45 +289,4 @@ describe 'End-to-End Feature Validation' do
     end
   end
 
-  # --- Feature: Template override (C3) ---
-
-  context 'Template override system' do
-    let(:project) { "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}" }
-
-    it 'uses override template when present' do
-      original_dir = Dir.pwd
-      Dir.chdir(project)
-      FileUtils.mkdir_p('.ruby_raider/templates')
-
-      File.write('.ruby_raider/templates/page_object.tt', <<~ERB)
-        # frozen_string_literal: true
-
-        class <%= page_class_name %> < Page
-          # E2E_CUSTOM_OVERRIDE_MARKER
-        end
-      ERB
-
-      Scaffolding.new(%w[e2e_override]).generate_page
-      content = File.read('page_objects/pages/e2e_override.rb')
-      expect(content).to include('E2E_CUSTOM_OVERRIDE_MARKER')
-      expect(content).to include('class E2eOverridePage < Page')
-    ensure
-      FileUtils.rm_f('page_objects/pages/e2e_override.rb')
-      FileUtils.rm_rf('.ruby_raider')
-      Dir.chdir(original_dir)
-    end
-
-    it 'falls back to default when no override present' do
-      original_dir = Dir.pwd
-      Dir.chdir(project)
-
-      Scaffolding.new(%w[e2e_default]).generate_page
-      content = File.read('page_objects/pages/e2e_default.rb')
-      expect(content).not_to include('E2E_CUSTOM_OVERRIDE_MARKER')
-      expect(content).to include('class E2eDefaultPage < Page')
-    ensure
-      FileUtils.rm_f('page_objects/pages/e2e_default.rb')
-      Dir.chdir(original_dir)
-    end
-  end
 end

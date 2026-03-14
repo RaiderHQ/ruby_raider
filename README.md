@@ -119,10 +119,8 @@ raider g scaffold [NAME(S)]     # Create page + test + steps
 
 Options:
 
-* `--from [FILE]` — Generate spec from an existing page object
 * `--uses [PAGES]` — Specify page dependencies
 * `--path [PATH]` — Custom output path
-* `--crud` — Generate full CRUD scaffold (list, create, detail, edit + tests)
 
 ### Utility Commands
 

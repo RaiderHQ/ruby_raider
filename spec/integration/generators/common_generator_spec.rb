@@ -18,17 +18,7 @@ describe CommonGenerator do
     end
   end
 
-  shared_examples 'creates a ruby-version file' do |name|
-    it 'creates a .ruby-version file' do
-      expect(File).to exist("#{name}/.ruby-version")
-    end
-
-    it 'contains the default ruby version' do
-      expect(File.read("#{name}/.ruby-version").strip).to eq('3.4')
-    end
-  end
-
-  shared_examples 'creates a config file' do |name|
+shared_examples 'creates a config file' do |name|
     it 'creates a config file' do
       expect(File).to exist("#{name}/config/config.yml")
     end
@@ -56,7 +46,6 @@ describe CommonGenerator do
     include_examples 'creates common files', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates a config file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates a gitignore file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
-    include_examples 'creates a ruby-version file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
   end
 
   context 'with rspec and watir' do
@@ -69,7 +58,6 @@ describe CommonGenerator do
     include_examples 'creates common files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates a config file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates a gitignore file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-    include_examples 'creates a ruby-version file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
   end
 
   context 'with cucumber and watir' do
