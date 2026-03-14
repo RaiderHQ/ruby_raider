@@ -1,5 +1,0 @@
-<% if selenium_based? %>
-  DebugHelper.capture_failure_diagnostics(driver, example_name, exception: @_exception)
-<% elsif watir? %>
-  DebugHelper.capture_failure_diagnostics(browser, example_name, exception: @_exception)
-<% end %>

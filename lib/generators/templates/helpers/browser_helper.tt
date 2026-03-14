@@ -23,11 +23,6 @@ module BrowserHelper
     args += ['--headless'] if (ENV['HEADLESS'] || config['headless']) && !args.include?('--headless')
     capitalized = browser_name == 'ie' ? browser_name.upcase : browser_name.capitalize
     browser_options = "Selenium::WebDriver::#{capitalized}::Options".constantize.new(args:)
-    debug_cfg = config['debug'] || {}
-    if %w[chrome edge msedge].include?(browser_name.downcase) &&
-       (debug_cfg.fetch('enabled', false) || ENV['DEBUG']&.downcase == 'true')
-      browser_options.add_option('goog:loggingPrefs', { browser: 'ALL', performance: 'ALL' })
-    end
     Watir::Browser.new(browser_name.to_sym, options: browser_options)
   end
 end

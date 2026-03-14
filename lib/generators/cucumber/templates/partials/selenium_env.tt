@@ -7,7 +7,6 @@ require 'rspec'
 require 'tmpdir'
 require 'yaml'
 require_relative '../../helpers/allure_helper'
-require_relative '../../helpers/debug_helper'
 
 Before do
   viewport = YAML.load_file('config/config.yml')['viewport']
@@ -16,16 +15,9 @@ Before do
   else
     driver.manage.window.maximize
   end
-  DebugHelper.enable_network_logging(driver)
-  @debug_action_logger = DebugHelper.action_logger_for(self.class.to_s)
 end
 
 After do |scenario|
-  if scenario.failed?
-    DebugHelper.capture_failure_diagnostics(driver, scenario.name, exception: scenario.exception)
-    DebugHelper.capture_network_logs(DebugHelper.resolve_selenium_driver(driver), DebugHelper.sanitize(scenario.name))
-  end
-  @debug_action_logger&.close
   Dir.mktmpdir do |temp_folder|
     screenshot = driver.save_screenshot("#{temp_folder}/#{scenario.name}.png")
     AllureHelper.add_screenshot(scenario.name, screenshot)

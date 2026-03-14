@@ -133,7 +133,6 @@ raider u raid                   # Run all tests
 raider u timeout [SECONDS]      # Set test timeout
 raider u viewport [DIMENSIONS]  # Set viewport size (e.g., 1920x1080)
 raider u platform [PLATFORM]    # Set platform for cross-platform tests
-raider u debug [on/off]         # Toggle debug mode
 raider u start_appium           # Start Appium server
 raider u desktop                # Download Raider Desktop
 ```

@@ -7,7 +7,6 @@ require 'rspec'
 require 'rspec/retry'
 require 'tmpdir'
 require_relative 'allure_helper'
-require_relative 'debug_helper'
 <%- if watir? -%>
 require_relative 'browser_helper'
 <%- else -%>
@@ -48,17 +47,13 @@ module SpecHelper
         browser.window.maximize
       end
     <%- end -%>
-      <%= partial('debug_start', strip: true) %>
-      @debug_action_logger = DebugHelper.action_logger_for(self.class.description)
     end
 
     config.after(:each) do |example|
       example_name = example.description
       if example.exception
         @_exception = example.exception
-        <%= partial('debug_diagnostics', strip: true) %>
       end
-      @debug_action_logger&.close
       Dir.mktmpdir do |temp_folder|
         <%= partial('screenshot', strip: true) %>
         AllureHelper.add_screenshot(example_name, screenshot)
