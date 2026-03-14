@@ -155,44 +155,6 @@ describe 'Helper file content' do
     end
   end
 
-  # --- Debug helper ---
-
-  shared_examples 'valid debug helper' do |project_name|
-    subject(:helper) { read_generated(project_name, 'helpers/debug_helper.rb') }
-
-    it 'has frozen_string_literal' do
-      expect(helper).to have_frozen_string_literal
-    end
-
-    it 'has valid Ruby syntax' do
-      expect(helper).to have_valid_ruby_syntax
-    end
-
-    it 'defines DebugHelper module' do
-      expect(helper).to match(/module DebugHelper/)
-    end
-
-    it 'defines enabled? method' do
-      expect(helper).to include('def enabled?')
-    end
-
-    it 'defines capture_failure_diagnostics method' do
-      expect(helper).to include('def capture_failure_diagnostics')
-    end
-
-    it 'defines ActionLogger class' do
-      expect(helper).to include('class ActionLogger')
-    end
-
-    it 'defines NullActionLogger class' do
-      expect(helper).to include('class NullActionLogger')
-    end
-
-    it 'reads config from YAML' do
-      expect(helper).to include('YAML.load_file')
-    end
-  end
-
   # --- RSpec + automation contexts ---
 
   context 'with rspec and selenium' do
@@ -202,8 +164,6 @@ describe 'Helper file content' do
     it_behaves_like 'valid spec helper', name
     it_behaves_like 'selenium spec helper', name
     it_behaves_like 'valid allure helper', name
-
-    it_behaves_like 'valid debug helper', name
   end
 
   context 'with rspec and watir' do
@@ -212,8 +172,6 @@ describe 'Helper file content' do
     it_behaves_like 'valid spec helper', name
     it_behaves_like 'watir spec helper', name
     it_behaves_like 'valid allure helper', name
-
-    it_behaves_like 'valid debug helper', name
   end
 
   # --- Cucumber + automation contexts (no spec_helper/test_helper) ---
@@ -223,16 +181,12 @@ describe 'Helper file content' do
     it_behaves_like 'valid driver helper', name
     it_behaves_like 'selenium driver helper', name
     it_behaves_like 'valid allure helper', name
-
-    it_behaves_like 'valid debug helper', name
   end
 
   context 'with cucumber and watir' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
     it_behaves_like 'valid browser helper', name
     it_behaves_like 'valid allure helper', name
-
-    it_behaves_like 'valid debug helper', name
   end
 
   # --- Mobile contexts (with AppiumRecorder) ---

@@ -3,7 +3,6 @@
 require 'tmpdir'
 require 'yaml'
 require_relative '../../helpers/allure_helper'
-require_relative '../../helpers/debug_helper'
 
 Before do
   viewport = YAML.load_file('config/config.yml')['viewport']
@@ -12,16 +11,9 @@ Before do
   else
     browser.window.maximize
   end
-  DebugHelper.enable_network_logging(browser)
-  @debug_action_logger = DebugHelper.action_logger_for(self.class.to_s)
 end
 
 After do |scenario|
-  if scenario.failed?
-    DebugHelper.capture_failure_diagnostics(browser, scenario.name, exception: scenario.exception)
-    DebugHelper.capture_network_logs(DebugHelper.resolve_selenium_driver(browser), DebugHelper.sanitize(scenario.name))
-  end
-  @debug_action_logger&.close
   Dir.mktmpdir do |temp_folder|
     screenshot = browser.screenshot.save("#{temp_folder}/#{scenario.name}.png")
     AllureHelper.add_screenshot(scenario.name, screenshot)

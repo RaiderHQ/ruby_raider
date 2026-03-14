@@ -11,7 +11,6 @@ require_relative 'allure_helper'
 <%- unless skip_video? -%>
 require_relative 'video_helper'
 <%- end -%>
-require_relative 'debug_helper'
 <%- if watir? -%>
 require_relative 'browser_helper'
 <%- elsif capybara? -%>
@@ -64,16 +63,10 @@ module TestHelper
     <%= partial('video_start', strip: true) %>
     @video_recorder&.start(self.class.name)
     <%- end -%>
-    <%= partial('debug_start', strip: true) %>
-    @debug_action_logger = DebugHelper.action_logger_for(self.class.name)
   end
 
   def teardown
     example_name = name
-    unless passed?
-      <%= partial('debug_diagnostics', strip: true) %>
-    end
-    @debug_action_logger&.close
     <%- unless skip_video? -%>
     video_file = @video_recorder&.stop
     <%- if allure_reporter? -%>
