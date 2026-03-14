@@ -30,8 +30,6 @@ class MenuGenerator
       automation: options[:automation],
       framework: options[:framework],
       accessibility: options[:accessibility],
-      visual: options[:visual],
-      performance: options[:performance],
       name: @name
     }
     generate_framework(structure)
@@ -77,44 +75,18 @@ class MenuGenerator
     end
   end
 
-  FrameworkOptions = Struct.new(:automation, :framework, :accessibility, :visual, :performance)
+  FrameworkOptions = Struct.new(:automation, :framework, :accessibility)
 
   def create_framework_options(params)
-    FrameworkOptions.new(params[:automation], params[:framework],
-                         params[:accessibility], params[:visual], params[:performance])
+    FrameworkOptions.new(params[:automation], params[:framework], params[:accessibility])
   end
 
   def select_accessibility(framework, automation_type)
     return create_framework(framework, automation_type) if mobile_automation?(automation_type)
 
     prompt.select('Add accessibility testing (axe)?') do |menu|
-      menu.choice :Yes, -> { select_visual(framework, automation_type, accessibility: true) }
-      menu.choice :No, -> { select_visual(framework, automation_type) }
-      menu.choice :Quit, -> { exit }
-    end
-  end
-
-  def select_visual(framework, automation_type, accessibility: false)
-    prompt.select('Add visual regression testing?') do |menu|
-      menu.choice :Yes, lambda {
-        select_performance(framework, automation_type, accessibility:, visual: true)
-      }
-      menu.choice :No, lambda {
-        select_performance(framework, automation_type, accessibility:)
-      }
-      menu.choice :Quit, -> { exit }
-    end
-  end
-
-  def select_performance(framework, automation_type, accessibility: false, visual: false)
-    prompt.select('Add Lighthouse performance auditing?') do |menu|
-      menu.choice :Yes, lambda {
-        create_framework(framework, automation_type, accessibility:, visual:,
-                         performance: true)
-      }
-      menu.choice :No, lambda {
-        create_framework(framework, automation_type, accessibility:, visual:)
-      }
+      menu.choice :Yes, -> { create_framework(framework, automation_type, accessibility: true) }
+      menu.choice :No, -> { create_framework(framework, automation_type) }
       menu.choice :Quit, -> { exit }
     end
   end
@@ -123,20 +95,15 @@ class MenuGenerator
     %w[ios android cross_platform].include?(automation_type)
   end
 
-  def create_framework(framework, automation_type, accessibility: false,
-                       visual: false, performance: false)
+  def create_framework(framework, automation_type, accessibility: false)
     options = create_framework_options(automation: automation_type,
                                        framework: framework.downcase,
-                                       accessibility:,
-                                       visual:,
-                                       performance:)
+                                       accessibility:)
 
     puts 'Chosen Options:'
     puts "  Automation Type: #{options[:automation]}"
     puts "  Framework: #{options[:framework]}"
     puts '  Accessibility: enabled' if options[:accessibility]
-    puts '  Visual Testing: enabled' if options[:visual]
-    puts '  Performance Auditing: enabled' if options[:performance]
 
     set_up_framework(options)
     prompt.say("You have chosen to use #{framework} with #{automation_type}")

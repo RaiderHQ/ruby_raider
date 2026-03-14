@@ -2,7 +2,5 @@
 class RspecGenerator < Generator
   def generate_login_spec: () -> void
   def generate_pdp_spec: () -> void
-  def generate_visual_spec: () -> void
   def generate_accessibility_spec: () -> void
-  def generate_performance_spec: () -> void
 end

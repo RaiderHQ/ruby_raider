@@ -11,6 +11,4 @@ class HelpersGenerator < Generator
   def generate_driver_helper: () -> void
   def generate_appium_helper: () -> void
   def generate_debug_helper: () -> void
-  def generate_visual_helper: () -> void
-  def generate_performance_helper: () -> void
 end

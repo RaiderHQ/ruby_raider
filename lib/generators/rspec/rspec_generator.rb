@@ -15,21 +15,10 @@ class RspecGenerator < Generator
     template('spec.tt', "#{name}/spec/pdp_page_spec.rb")
   end
 
-  def generate_visual_spec
-    return unless visual_addon? && web?
-
-    template('visual_spec.tt', "#{name}/spec/visual_spec.rb")
-  end
-
   def generate_accessibility_spec
     return unless axe_addon? && web?
 
     template('accessibility_spec.tt', "#{name}/spec/accessibility_spec.rb")
   end
 
-  def generate_performance_spec
-    return unless lighthouse_addon? && web?
-
-    template('performance_spec.tt', "#{name}/spec/performance_spec.rb")
-  end
 end

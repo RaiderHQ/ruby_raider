@@ -45,8 +45,6 @@ module InvokeGenerators
   def collect_flags(structure)
     flags = []
     flags << 'axe_addon' if structure[:accessibility] && !mobile_automation?(structure[:automation])
-    flags << 'visual_addon' if structure[:visual] && !mobile_automation?(structure[:automation])
-    flags << 'lighthouse_addon' if structure[:performance] && !mobile_automation?(structure[:automation])
     flags
   end
 

@@ -22,8 +22,6 @@ class Generator < Thor::Group
 
   # Add-on predicates
   def axe_addon?: () -> bool
-  def visual_addon?: () -> bool
-  def lighthouse_addon?: () -> bool
 
   private
 

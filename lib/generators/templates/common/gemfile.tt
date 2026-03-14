@@ -15,9 +15,6 @@ gem 'allure-ruby-commons', '2.28.0'
 gem 'axe-core-rspec'
 gem 'axe-core-selenium'
 <%- end -%>
-<%- if visual_addon? -%>
-gem 'chunky_png'
-<%- end -%>
 gem 'parallel_split_test'
 gem 'parallel_tests'
 gem 'rake'
