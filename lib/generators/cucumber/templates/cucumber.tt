@@ -1,8 +1,1 @@
-<%- if allure_reporter? -%>
 default: --format AllureCucumber::CucumberFormatter --out allure-results --publish-quiet --retry 0
-<%- else -%>
-default: --publish-quiet --retry 0
-<%- end -%>
-<%- if json_reporter? -%>
-json: --format json --out results/results.json --publish-quiet
-<%- end -%>

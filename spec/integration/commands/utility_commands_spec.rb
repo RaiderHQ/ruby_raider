@@ -40,13 +40,13 @@ describe UtilityCommands do
     it 'updates the browser' do
       utility.new.invoke(:browser, nil, %w[:firefox])
       config = YAML.load_file('config/config.yml')
-      expect(config['browser']).to eql ':firefox'
+      expect(config['browser']).to eql 'firefox'
     end
 
     it 'updates the browser arguments for the current browser' do
       utility.new.invoke(:browser, nil, %w[:firefox --opts headless start-maximized start-fullscreen])
       config = YAML.load_file('config/config.yml')
-      expect(config['browser_arguments'][':firefox']).to eql %w[headless start-maximized start-fullscreen]
+      expect(config['browser_arguments']['firefox']).to eql %w[headless start-maximized start-fullscreen]
     end
   end
 
@@ -94,20 +94,20 @@ describe UtilityCommands do
     it 'updates the browser arguments for the current browser' do
       utility.new.invoke(:browser, nil, %w[:firefox --opts headless])
       config = YAML.load_file('config/config.yml')
-      expect(config['browser_arguments'][':firefox']).to eql %w[headless]
+      expect(config['browser_arguments']['firefox']).to eql %w[headless]
     end
 
     it 'deletes the browser arguments when passed with the delete parameter' do
       utility.new.invoke(:browser, nil, %w[:firefox --opts headless --delete])
       config = YAML.load_file('config/config.yml')
-      expect(config.dig('browser_arguments', ':firefox')).to be_nil
+      expect(config.dig('browser_arguments', 'firefox')).to be_nil
     end
 
     it 'deletes the browser arguments' do
       utility.new.invoke(:browser, nil, %w[:firefox --opts headless])
       utility.new.invoke(:browser, nil, %w[--delete])
       config = YAML.load_file('config/config.yml')
-      expect(config.dig('browser_arguments', ':firefox')).to be_nil
+      expect(config.dig('browser_arguments', 'firefox')).to be_nil
     end
   end
 end

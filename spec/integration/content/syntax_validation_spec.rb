@@ -2,8 +2,8 @@
 
 require_relative 'content_helper'
 
-SYNTAX_WEB_AUTOMATIONS = %w[selenium watir capybara].freeze
-SYNTAX_ALL_FRAMEWORKS = %w[cucumber rspec minitest].freeze
+SYNTAX_WEB_AUTOMATIONS = %w[selenium watir].freeze
+SYNTAX_ALL_FRAMEWORKS = %w[cucumber rspec].freeze
 
 describe 'Ruby syntax validation' do
   SYNTAX_ALL_FRAMEWORKS.each do |framework|

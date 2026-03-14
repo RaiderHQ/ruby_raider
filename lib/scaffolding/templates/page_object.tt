@@ -16,10 +16,6 @@ require_relative '<%= dep %>'
 <%- end -%>
 
 <%= '  ' * module_parts.size %>  # Actions
-<%- if capybara? -%>
-
-<%= '  ' * module_parts.size %>  # Example: fill_in 'field_id', with: value
-<%- else -%>
 
 <%= '  ' * module_parts.size %>  private
 
@@ -28,7 +24,6 @@ require_relative '<%= dep %>'
 <%= '  ' * module_parts.size %>  # Example: driver.find_element(id: 'element_id')
 <%- elsif watir? -%>
 <%= '  ' * module_parts.size %>  # Example: browser.text_field(id: 'element_id')
-<%- end -%>
 <%- end -%>
 <%= '  ' * module_parts.size %>end
 <% module_parts.each_with_index do |_mod, i| -%>
@@ -43,10 +38,6 @@ class <%= page_class_name %> < Page
 <%- end -%>
 
   # Actions
-<%- if capybara? -%>
-
-  # Example: fill_in 'field_id', with: value
-<%- else -%>
 
   private
 
@@ -55,7 +46,6 @@ class <%= page_class_name %> < Page
   # Example: driver.find_element(id: 'element_id')
 <%- elsif watir? -%>
   # Example: browser.text_field(id: 'element_id')
-<%- end -%>
 <%- end -%>
 end
 <% end -%>

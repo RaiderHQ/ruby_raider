@@ -7,7 +7,7 @@ require_relative '../../lib/scaffolding/scaffolding'
 require 'timeout'
 require 'open3'
 
-# End-to-end tests for features C1-C8 (skip flags, reporter selection, retry, tags, etc.)
+# End-to-end tests for features (retry, tags, addons, CI, debug, etc.)
 # These tests generate complete projects with feature flags and verify they are executable.
 describe 'End-to-End Feature Validation' do
   include ContentHelper
@@ -104,104 +104,6 @@ describe 'End-to-End Feature Validation' do
     end
   end
 
-  # --- Feature: Skip flags (C1) ---
-
-  context 'Skip flags' do
-    before(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      InvokeGenerators.generate_framework(
-        automation: 'selenium', framework: 'rspec', name: 'e2e_skip_allure',
-        skip_allure: true
-      )
-      InvokeGenerators.generate_framework(
-        automation: 'selenium', framework: 'rspec', name: 'e2e_skip_video',
-        skip_video: true
-      )
-      InvokeGenerators.generate_framework(
-        automation: 'selenium', framework: 'rspec', name: 'e2e_skip_all',
-        skip_allure: true, skip_video: true
-      )
-    end
-
-    after(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      %w[e2e_skip_allure e2e_skip_video e2e_skip_all].each { |n| FileUtils.rm_rf(n) }
-    end
-
-    describe 'project with --skip-allure' do
-      include_examples 'project with valid file structure', 'e2e_skip_allure'
-      include_examples 'executable rspec project with features', 'e2e_skip_allure'
-    end
-
-    describe 'project with --skip-video' do
-      include_examples 'project with valid file structure', 'e2e_skip_video'
-      include_examples 'executable rspec project with features', 'e2e_skip_video'
-    end
-
-    describe 'project with all skip flags' do
-      include_examples 'project with valid file structure', 'e2e_skip_all'
-      include_examples 'executable rspec project with features', 'e2e_skip_all'
-    end
-  end
-
-  # --- Feature: Reporter selection (C7/C8) ---
-
-  context 'Reporter selection' do
-    before(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      InvokeGenerators.generate_framework(
-        automation: 'selenium', framework: 'rspec', name: 'e2e_reporter_junit',
-        reporter: 'junit'
-      )
-      InvokeGenerators.generate_framework(
-        automation: 'selenium', framework: 'rspec', name: 'e2e_reporter_none',
-        reporter: 'none'
-      )
-      InvokeGenerators.generate_framework(
-        automation: 'selenium', framework: 'rspec', name: 'e2e_reporter_both',
-        reporter: 'both'
-      )
-    end
-
-    after(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      %w[e2e_reporter_junit e2e_reporter_none e2e_reporter_both].each { |n| FileUtils.rm_rf(n) }
-    end
-
-    describe 'project with reporter: junit' do
-      include_examples 'project with valid file structure', 'e2e_reporter_junit'
-      include_examples 'executable rspec project with features', 'e2e_reporter_junit'
-
-      it 'includes rspec_junit_formatter in Gemfile' do
-        gemfile = File.read('e2e_reporter_junit/Gemfile')
-        expect(gemfile).to include('rspec_junit_formatter')
-      end
-
-      it 'does not include allure gems in Gemfile' do
-        gemfile = File.read('e2e_reporter_junit/Gemfile')
-        expect(gemfile).not_to include('allure-rspec')
-      end
-    end
-
-    describe 'project with reporter: none' do
-      include_examples 'project with valid file structure', 'e2e_reporter_none'
-      include_examples 'executable rspec project with features', 'e2e_reporter_none'
-
-      it 'does not include reporter gems' do
-        gemfile = File.read('e2e_reporter_none/Gemfile')
-        expect(gemfile).not_to include('allure-rspec')
-        expect(gemfile).not_to include('rspec_junit_formatter')
-      end
-    end
-
-    describe 'project with reporter: both' do
-      include_examples 'project with valid file structure', 'e2e_reporter_both'
-      include_examples 'executable rspec project with features', 'e2e_reporter_both'
-
-      it 'includes both allure and junit gems in Gemfile' do
-        gemfile = File.read('e2e_reporter_both/Gemfile')
-        expect(gemfile).to include('allure-rspec')
-        expect(gemfile).to include('rspec_junit_formatter')
-      end
-    end
-  end
-
   # --- Feature: Retry config (C4) ---
 
   context 'Retry configuration' do
@@ -283,27 +185,6 @@ describe 'End-to-End Feature Validation' do
     end
   end
 
-  # --- Feature: Destroy command (C2) ---
-
-  context 'Destroy command' do
-    let(:project) { "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}" }
-
-    it 'creates and destroys scaffolded files' do
-      original_dir = Dir.pwd
-      Dir.chdir(project)
-
-      ScaffoldingCommands.new.invoke(:scaffold, nil, %w[e2e_checkout])
-      expect(File).to exist('page_objects/pages/e2e_checkout.rb')
-      expect(File).to exist('spec/e2e_checkout_page_spec.rb')
-
-      ScaffoldingCommands.new.invoke(:destroy, nil, %w[e2e_checkout])
-      expect(File).not_to exist('page_objects/pages/e2e_checkout.rb')
-      expect(File).not_to exist('spec/e2e_checkout_page_spec.rb')
-    ensure
-      Dir.chdir(original_dir)
-    end
-  end
-
   # --- Feature: Accessibility addon (axe) ---
 
   context 'Accessibility addon' do
@@ -316,14 +197,10 @@ describe 'End-to-End Feature Validation' do
         automation: 'selenium', framework: 'cucumber', name: 'e2e_axe_cucumber',
         accessibility: true
       )
-      InvokeGenerators.generate_framework(
-        automation: 'selenium', framework: 'minitest', name: 'e2e_axe_minitest',
-        accessibility: true
-      )
     end
 
     after(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      %w[e2e_axe_rspec e2e_axe_cucumber e2e_axe_minitest].each { |n| FileUtils.rm_rf(n) }
+      %w[e2e_axe_rspec e2e_axe_cucumber].each { |n| FileUtils.rm_rf(n) }
     end
 
     describe 'axe + RSpec' do
@@ -366,216 +243,25 @@ describe 'End-to-End Feature Validation' do
       end
     end
 
-    describe 'axe + Minitest' do
-      it 'creates test_accessibility.rb' do
-        expect(File).to exist('e2e_axe_minitest/test/test_accessibility.rb')
-      end
-
-      it 'includes axe gems in Gemfile' do
-        gemfile = File.read('e2e_axe_minitest/Gemfile')
-        expect(gemfile).to include('axe')
-      end
-
-      it 'accessibility test has valid Ruby syntax' do
-        content = File.read('e2e_axe_minitest/test/test_accessibility.rb')
-        expect { RubyVM::InstructionSequence.compile(content) }.not_to raise_error
-      end
-    end
   end
 
-  # --- Feature: Visual regression addon ---
+  # --- Feature: GitHub Actions CI ---
 
-  context 'Visual regression addon' do
-    before(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      InvokeGenerators.generate_framework(
-        automation: 'selenium', framework: 'rspec', name: 'e2e_visual_rspec',
-        visual: true
-      )
-      InvokeGenerators.generate_framework(
-        automation: 'selenium', framework: 'cucumber', name: 'e2e_visual_cucumber',
-        visual: true
-      )
-      InvokeGenerators.generate_framework(
-        automation: 'selenium', framework: 'minitest', name: 'e2e_visual_minitest',
-        visual: true
-      )
+  context 'GitHub Actions CI' do
+    let(:project) { "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}" }
+
+    it 'creates GitHub Actions workflow' do
+      expect(File).to exist("#{project}/.github/workflows/test_pipeline.yml")
     end
 
-    after(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      %w[e2e_visual_rspec e2e_visual_cucumber e2e_visual_minitest].each { |n| FileUtils.rm_rf(n) }
+    it 'workflow is valid YAML' do
+      content = File.read("#{project}/.github/workflows/test_pipeline.yml")
+      expect { YAML.safe_load(content) }.not_to raise_error
     end
 
-    describe 'visual + RSpec' do
-      include_examples 'project with valid file structure', 'e2e_visual_rspec'
-
-      it 'creates visual_helper.rb' do
-        expect(File).to exist('e2e_visual_rspec/helpers/visual_helper.rb')
-      end
-
-      it 'creates visual_spec.rb' do
-        expect(File).to exist('e2e_visual_rspec/spec/visual_spec.rb')
-      end
-
-      it 'includes chunky_png in Gemfile' do
-        gemfile = File.read('e2e_visual_rspec/Gemfile')
-        expect(gemfile).to include("gem 'chunky_png'")
-      end
-
-      it 'visual helper has valid Ruby syntax' do
-        content = File.read('e2e_visual_rspec/helpers/visual_helper.rb')
-        expect { RubyVM::InstructionSequence.compile(content) }.not_to raise_error
-      end
-    end
-
-    describe 'visual + Cucumber' do
-      it 'creates visual.feature' do
-        expect(File).to exist('e2e_visual_cucumber/features/visual.feature')
-      end
-
-      it 'creates visual_steps.rb' do
-        expect(File).to exist('e2e_visual_cucumber/features/step_definitions/visual_steps.rb')
-      end
-
-      it 'all Ruby files have valid syntax' do
-        ruby_files('e2e_visual_cucumber').each do |file|
-          content = File.read(file)
-          expect(content).to have_valid_ruby_syntax, "#{file} has invalid syntax"
-        end
-      end
-    end
-
-    describe 'visual + Minitest' do
-      it 'creates test_visual.rb' do
-        expect(File).to exist('e2e_visual_minitest/test/test_visual.rb')
-      end
-
-      it 'visual test has valid Ruby syntax' do
-        content = File.read('e2e_visual_minitest/test/test_visual.rb')
-        expect { RubyVM::InstructionSequence.compile(content) }.not_to raise_error
-      end
-    end
-  end
-
-  # --- Feature: Lighthouse performance addon ---
-
-  context 'Lighthouse performance addon' do
-    before(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      InvokeGenerators.generate_framework(
-        automation: 'selenium', framework: 'rspec', name: 'e2e_lighthouse_rspec',
-        performance: true
-      )
-      InvokeGenerators.generate_framework(
-        automation: 'selenium', framework: 'cucumber', name: 'e2e_lighthouse_cucumber',
-        performance: true
-      )
-      InvokeGenerators.generate_framework(
-        automation: 'selenium', framework: 'minitest', name: 'e2e_lighthouse_minitest',
-        performance: true
-      )
-    end
-
-    after(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      %w[e2e_lighthouse_rspec e2e_lighthouse_cucumber e2e_lighthouse_minitest].each { |n| FileUtils.rm_rf(n) }
-    end
-
-    describe 'lighthouse + RSpec' do
-      include_examples 'project with valid file structure', 'e2e_lighthouse_rspec'
-
-      it 'creates performance_helper.rb' do
-        expect(File).to exist('e2e_lighthouse_rspec/helpers/performance_helper.rb')
-      end
-
-      it 'creates performance_spec.rb' do
-        expect(File).to exist('e2e_lighthouse_rspec/spec/performance_spec.rb')
-      end
-
-      it 'performance helper has valid Ruby syntax' do
-        content = File.read('e2e_lighthouse_rspec/helpers/performance_helper.rb')
-        expect { RubyVM::InstructionSequence.compile(content) }.not_to raise_error
-      end
-    end
-
-    describe 'lighthouse + Cucumber' do
-      it 'creates performance.feature' do
-        expect(File).to exist('e2e_lighthouse_cucumber/features/performance.feature')
-      end
-
-      it 'creates performance_steps.rb' do
-        expect(File).to exist('e2e_lighthouse_cucumber/features/step_definitions/performance_steps.rb')
-      end
-
-      it 'all Ruby files have valid syntax' do
-        ruby_files('e2e_lighthouse_cucumber').each do |file|
-          content = File.read(file)
-          expect(content).to have_valid_ruby_syntax, "#{file} has invalid syntax"
-        end
-      end
-    end
-
-    describe 'lighthouse + Minitest' do
-      it 'creates test_performance.rb' do
-        expect(File).to exist('e2e_lighthouse_minitest/test/test_performance.rb')
-      end
-
-      it 'performance test has valid Ruby syntax' do
-        content = File.read('e2e_lighthouse_minitest/test/test_performance.rb')
-        expect { RubyVM::InstructionSequence.compile(content) }.not_to raise_error
-      end
-    end
-  end
-
-  # --- Feature: CI/CD platform generation ---
-
-  context 'CI/CD platform generation' do
-    before(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      InvokeGenerators.generate_framework(
-        automation: 'selenium', framework: 'rspec', name: 'e2e_ci_github',
-        ci_platform: 'github'
-      )
-      InvokeGenerators.generate_framework(
-        automation: 'selenium', framework: 'rspec', name: 'e2e_ci_gitlab',
-        ci_platform: 'gitlab'
-      )
-    end
-
-    after(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      %w[e2e_ci_github e2e_ci_gitlab].each { |n| FileUtils.rm_rf(n) }
-    end
-
-    describe 'GitHub Actions' do
-      include_examples 'project with valid file structure', 'e2e_ci_github'
-
-      it 'creates GitHub Actions workflow' do
-        expect(File).to exist('e2e_ci_github/.github/workflows/test_pipeline.yml')
-      end
-
-      it 'workflow is valid YAML' do
-        content = File.read('e2e_ci_github/.github/workflows/test_pipeline.yml')
-        expect { YAML.safe_load(content) }.not_to raise_error
-      end
-
-      it 'workflow includes rspec run step' do
-        content = File.read('e2e_ci_github/.github/workflows/test_pipeline.yml')
-        expect(content).to include('rspec')
-      end
-    end
-
-    describe 'GitLab CI' do
-      include_examples 'project with valid file structure', 'e2e_ci_gitlab'
-
-      it 'creates GitLab CI config' do
-        expect(File).to exist('e2e_ci_gitlab/gitlab-ci.yml')
-      end
-
-      it 'config is valid YAML' do
-        content = File.read('e2e_ci_gitlab/gitlab-ci.yml')
-        expect { YAML.safe_load(content) }.not_to raise_error
-      end
-
-      it 'config includes stages' do
-        content = File.read('e2e_ci_gitlab/gitlab-ci.yml')
-        expect(content).to include('stages:')
-      end
+    it 'workflow includes rspec run step' do
+      content = File.read("#{project}/.github/workflows/test_pipeline.yml")
+      expect(content).to include('rspec')
     end
   end
 
@@ -603,88 +289,4 @@ describe 'End-to-End Feature Validation' do
     end
   end
 
-  # --- Feature: Combined addons ---
-
-  context 'Multiple addons combined' do
-    before(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      InvokeGenerators.generate_framework(
-        automation: 'selenium', framework: 'rspec', name: 'e2e_all_addons',
-        accessibility: true, visual: true, performance: true
-      )
-    end
-
-    after(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      FileUtils.rm_rf('e2e_all_addons')
-    end
-
-    it 'creates all addon files' do
-      expect(File).to exist('e2e_all_addons/spec/accessibility_spec.rb')
-      expect(File).to exist('e2e_all_addons/helpers/visual_helper.rb')
-      expect(File).to exist('e2e_all_addons/spec/visual_spec.rb')
-      expect(File).to exist('e2e_all_addons/helpers/performance_helper.rb')
-      expect(File).to exist('e2e_all_addons/spec/performance_spec.rb')
-    end
-
-    it 'Gemfile includes all addon gems' do
-      gemfile = File.read('e2e_all_addons/Gemfile')
-      expect(gemfile).to include('axe')
-      expect(gemfile).to include("gem 'chunky_png'")
-    end
-
-    it 'all Ruby files have valid syntax' do
-      ruby_files('e2e_all_addons').each do |file|
-        content = File.read(file)
-        expect(content).to have_valid_ruby_syntax, "#{file} has invalid syntax"
-      end
-    end
-
-    it 'all Ruby files (except abstract) have frozen_string_literal' do
-      ruby_files('e2e_all_addons').each do |file|
-        content = File.read(file)
-        expect(content).to have_frozen_string_literal, "#{file} missing frozen_string_literal"
-      end
-    end
-  end
-
-  # --- Feature: Template override (C3) ---
-
-  context 'Template override system' do
-    let(:project) { "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}" }
-
-    it 'uses override template when present' do
-      original_dir = Dir.pwd
-      Dir.chdir(project)
-      FileUtils.mkdir_p('.ruby_raider/templates')
-
-      File.write('.ruby_raider/templates/page_object.tt', <<~ERB)
-        # frozen_string_literal: true
-
-        class <%= page_class_name %> < Page
-          # E2E_CUSTOM_OVERRIDE_MARKER
-        end
-      ERB
-
-      Scaffolding.new(%w[e2e_override]).generate_page
-      content = File.read('page_objects/pages/e2e_override.rb')
-      expect(content).to include('E2E_CUSTOM_OVERRIDE_MARKER')
-      expect(content).to include('class E2eOverridePage < Page')
-    ensure
-      FileUtils.rm_f('page_objects/pages/e2e_override.rb')
-      FileUtils.rm_rf('.ruby_raider')
-      Dir.chdir(original_dir)
-    end
-
-    it 'falls back to default when no override present' do
-      original_dir = Dir.pwd
-      Dir.chdir(project)
-
-      Scaffolding.new(%w[e2e_default]).generate_page
-      content = File.read('page_objects/pages/e2e_default.rb')
-      expect(content).not_to include('E2E_CUSTOM_OVERRIDE_MARKER')
-      expect(content).to include('class E2eDefaultPage < Page')
-    ensure
-      FileUtils.rm_f('page_objects/pages/e2e_default.rb')
-      Dir.chdir(original_dir)
-    end
-  end
 end

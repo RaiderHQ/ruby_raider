@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: <%= ruby_version %>.0
+          ruby-version: 3.4.0
           bundler-cache: true
 
       - name: Download iOS app
@@ -47,8 +47,6 @@ jobs:
       - name: Run tests
 <%- if cucumber? -%>
         run: bundle exec cucumber features/ --format pretty
-<%- elsif minitest? -%>
-        run: bundle exec ruby -Itest test/test_pdp_page.rb
 <%- else -%>
         run: bundle exec rspec spec/ --format documentation
 <%- end -%>
@@ -63,7 +61,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: <%= ruby_version %>.0
+          ruby-version: 3.4.0
           bundler-cache: true
 
       - name: Download Android app
@@ -98,8 +96,6 @@ jobs:
           script: |
 <%- if cucumber? -%>
             bundle exec cucumber features/ --format pretty
-<%- elsif minitest? -%>
-            bundle exec ruby -Itest test/test_pdp_page.rb
 <%- else -%>
             bundle exec rspec spec/ --format documentation
 <%- end -%>

@@ -73,22 +73,6 @@ describe 'Common file content' do
     end
   end
 
-  shared_examples 'minitest rakefile with default task' do |project_name|
-    subject(:rakefile) { read_generated(project_name, 'Rakefile') }
-
-    it 'requires rake/testtask' do
-      expect(rakefile).to include("require 'rake/testtask'")
-    end
-
-    it 'defines test task' do
-      expect(rakefile).to include('Rake::TestTask.new(:test)')
-    end
-
-    it 'sets default task to test' do
-      expect(rakefile).to include('task default: :test')
-    end
-  end
-
   # --- .rspec file ---
 
   shared_examples 'has rspec dotfile' do |project_name|
@@ -215,16 +199,6 @@ describe 'Common file content' do
     it_behaves_like 'gemfile with rspec-retry', name
   end
 
-  context 'with rspec and capybara' do
-    name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CAPYBARA}"
-    it_behaves_like 'valid rakefile', name
-    it_behaves_like 'rspec rakefile with tag tasks', name
-    it_behaves_like 'has rspec dotfile', name
-    it_behaves_like 'rspec gitignore', name
-    it_behaves_like 'spec helper with retry config', name
-    it_behaves_like 'gemfile with rspec-retry', name
-  end
-
   # --- Cucumber contexts ---
 
   context 'with cucumber and selenium' do
@@ -247,42 +221,4 @@ describe 'Common file content' do
     it_behaves_like 'cucumber config with retry', name
   end
 
-  context 'with cucumber and capybara' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CAPYBARA}"
-    it_behaves_like 'valid rakefile', name
-    it_behaves_like 'cucumber rakefile with tag tasks', name
-    it_behaves_like 'no rspec dotfile', name
-    it_behaves_like 'non-rspec gitignore', name
-    it_behaves_like 'gemfile without rspec-retry', name
-    it_behaves_like 'cucumber config with retry', name
-  end
-
-  # --- Minitest contexts ---
-
-  context 'with minitest and selenium' do
-    name = "#{FrameworkIndex::MINITEST}_#{AutomationIndex::SELENIUM}"
-    it_behaves_like 'valid rakefile', name
-    it_behaves_like 'minitest rakefile with default task', name
-    it_behaves_like 'no rspec dotfile', name
-    it_behaves_like 'non-rspec gitignore', name
-    it_behaves_like 'gemfile without rspec-retry', name
-  end
-
-  context 'with minitest and watir' do
-    name = "#{FrameworkIndex::MINITEST}_#{AutomationIndex::WATIR}"
-    it_behaves_like 'valid rakefile', name
-    it_behaves_like 'minitest rakefile with default task', name
-    it_behaves_like 'no rspec dotfile', name
-    it_behaves_like 'non-rspec gitignore', name
-    it_behaves_like 'gemfile without rspec-retry', name
-  end
-
-  context 'with minitest and capybara' do
-    name = "#{FrameworkIndex::MINITEST}_#{AutomationIndex::CAPYBARA}"
-    it_behaves_like 'valid rakefile', name
-    it_behaves_like 'minitest rakefile with default task', name
-    it_behaves_like 'no rspec dotfile', name
-    it_behaves_like 'non-rspec gitignore', name
-    it_behaves_like 'gemfile without rspec-retry', name
-  end
 end

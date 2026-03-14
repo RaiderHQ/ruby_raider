@@ -3,10 +3,7 @@
 require_relative '../abstract/component'
 
 class <%= class_name %> < Component
-<%- if capybara? -%>
-
-  # Example: find('.selector').text
-<%- elsif selenium? -%>
+<%- if selenium? -%>
 
   def content
     component.text

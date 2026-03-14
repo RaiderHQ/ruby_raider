@@ -2,12 +2,9 @@
 class Scaffolding < Thor::Group
   include Thor::Actions
 
-  OVERRIDE_DIR: String
-
   attr_writer uses: Array[String]
 
   def self.source_root: () -> String
-  def self.planned_path: (String name, String type, ?String? custom_path) -> String?
 
   # Generation methods
   def generate_page: () -> void
@@ -17,18 +14,6 @@ class Scaffolding < Thor::Group
   def generate_steps: () -> void
   def generate_component: () -> void
   def generate_config: () -> void
-  def generate_spec_from_page: (String source_file, ?ai: bool) -> void
-  def generate_page_from_url: (Hash[Symbol, untyped] analysis) -> void
-  def generate_spec_from_url: (Hash[Symbol, untyped] analysis) -> void
-
-  # Deletion methods
-  def delete_page: () -> void
-  def delete_feature: () -> void
-  def delete_spec: () -> void
-  def delete_helper: () -> void
-  def delete_steps: () -> void
-  def delete_component: () -> void
-  def delete_config: () -> void
 
   # Template helpers
   def class_name: () -> String?
@@ -41,15 +26,7 @@ class Scaffolding < Thor::Group
   def framework_type: () -> String
   def project_config: () -> Hash[String, untyped]
   def selenium?: () -> bool
-  def capybara?: () -> bool
   def watir?: () -> bool
   def uses_list: () -> Array[String]
-  def introspected: () -> PageIntrospector?
-  def url_data: () -> Hash[Symbol, untyped]?
-  def ai_scenarios: () -> Hash[Symbol, untyped]
   def default_path: (String standard_path, String file_type) -> String
-
-  private
-
-  def enrich_with_ai_scenarios: () -> void
 end

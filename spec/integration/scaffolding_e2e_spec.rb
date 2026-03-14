@@ -25,16 +25,13 @@ end
 # files with the right content across all automation × framework combinations.
 describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
 
-  WEB_AUTOMATIONS = %w[selenium capybara watir].freeze
-  TEST_FRAMEWORKS = %w[rspec cucumber minitest].freeze
+  WEB_AUTOMATIONS = %w[selenium watir].freeze
+  TEST_FRAMEWORKS = %w[rspec cucumber].freeze
 
-  # The scaffolding system's generate_default_scaffold checks for spec/ or features/.
-  # Minitest projects have test/ only — so the scaffold falls through to feature+steps.
   def self.scaffold_style(framework)
     case framework
     when 'rspec'    then :spec
     when 'cucumber' then :feature
-    when 'minitest' then :feature # no spec/ dir → falls to else clause
     end
   end
 
@@ -53,19 +50,16 @@ describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
     when 'rspec'    then FileUtils.mkdir_p("#{dir}/spec")
     when 'cucumber' then FileUtils.mkdir_p("#{dir}/features/step_definitions")
                          FileUtils.mkdir_p("#{dir}/features/support")
-    when 'minitest' then FileUtils.mkdir_p("#{dir}/test")
     end
 
     gems = []
     case automation
     when 'selenium'  then gems << "gem 'selenium-webdriver'"
-    when 'capybara'  then gems << "gem 'capybara'"
     when 'watir'     then gems << "gem 'watir'"
     end
     case framework
     when 'rspec'    then gems << "gem 'rspec'"
     when 'cucumber' then gems << "gem 'cucumber'"
-    when 'minitest' then gems << "gem 'minitest'"
     end
     File.write("#{dir}/Gemfile", gems.join("\n") + "\n")
     File.write("#{dir}/config/config.yml", "browser: chrome\nurl: http://localhost:3000\n")
@@ -113,24 +107,6 @@ describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
 
     it 'does not have capybara fill_in' do
       expect(page_content).not_to include('fill_in')
-    end
-
-    it 'does not have watir browser.text_field' do
-      expect(page_content).not_to include('browser.text_field')
-    end
-  end
-
-  shared_examples 'capybara scaffolded page' do
-    it 'has fill_in example' do
-      expect(page_content).to include('fill_in')
-    end
-
-    it 'has no private section' do
-      expect(page_content).not_to include('private')
-    end
-
-    it 'does not have selenium find_element' do
-      expect(page_content).not_to include('driver.find_element')
     end
 
     it 'does not have watir browser.text_field' do
@@ -197,18 +173,6 @@ describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
 
     it 'does not use capybara visit' do
       expect(spec_content).not_to match(/^\s+visit '/)
-    end
-  end
-
-  shared_examples 'capybara scaffolded spec' do
-    it 'instantiates page without arguments' do
-      expect(spec_content).to include('CheckoutPage.new')
-      expect(spec_content).not_to include('CheckoutPage.new(driver)')
-      expect(spec_content).not_to include('CheckoutPage.new(browser)')
-    end
-
-    it 'uses visit for navigation' do
-      expect(spec_content).to include("visit 'checkout'")
     end
   end
 
@@ -280,16 +244,6 @@ describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
     end
   end
 
-  shared_examples 'capybara scaffolded steps' do
-    it 'uses visit for Given step' do
-      expect(steps_content).to include("visit 'checkout'")
-    end
-
-    it 'does not instantiate with driver' do
-      expect(steps_content).not_to include('.new(driver)')
-    end
-  end
-
   shared_examples 'watir scaffolded steps' do
     it 'instantiates page with browser' do
       expect(steps_content).to include('CheckoutPage.new(browser)')
@@ -351,20 +305,6 @@ describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
 
     it 'has content method' do
       expect(component_content).to include('def content')
-    end
-  end
-
-  shared_examples 'capybara scaffolded component' do
-    it 'has find(.selector) example' do
-      expect(component_content).to include("find('.selector')")
-    end
-
-    it 'has no private section' do
-      expect(component_content).not_to include('private')
-    end
-
-    it 'does not have driver.find_element' do
-      expect(component_content).not_to include('driver.find_element')
     end
   end
 
@@ -503,136 +443,6 @@ describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
           include_examples 'valid scaffolded helper'
         end
 
-        # ── CRUD scaffold ──────────────────────
-        # CrudGenerator checks Dir.exist?('features'), Dir.exist?('test') separately.
-
-        describe 'CRUD scaffold' do
-          before do
-            scaffold.new.invoke(:scaffold, nil, %w[product --crud])
-          end
-
-          after do
-            %w[product_list product_create product_detail product_edit].each do |page|
-              FileUtils.rm_f("page_objects/pages/#{page}.rb")
-              FileUtils.rm_f("spec/#{page}_page_spec.rb")
-              FileUtils.rm_f("features/#{page}.feature")
-              FileUtils.rm_f("features/step_definitions/#{page}_steps.rb")
-            end
-            FileUtils.rm_rf('features') unless framework == 'cucumber'
-            FileUtils.rm_rf('spec') unless framework == 'rspec'
-            FileUtils.rm_f('models/data/product.yml')
-          end
-
-          it 'creates pages for all CRUD actions' do
-            %w[product_list product_create product_detail product_edit].each do |page|
-              expect(Pathname.new("page_objects/pages/#{page}.rb")).to be_file
-            end
-          end
-
-          it 'creates model data file' do
-            expect(Pathname.new('models/data/product.yml')).to be_file
-          end
-
-          it 'model data has expected sections' do
-            content = File.read('models/data/product.yml')
-            expect(content).to include('default:')
-            expect(content).to include('valid:')
-            expect(content).to include('invalid:')
-          end
-
-          if framework == 'cucumber'
-            it 'creates feature files for all CRUD actions' do
-              %w[product_list product_create product_detail product_edit].each do |page|
-                expect(Pathname.new("features/#{page}.feature")).to be_file
-              end
-            end
-
-            it 'creates step files for all CRUD actions' do
-              %w[product_list product_create product_detail product_edit].each do |page|
-                expect(Pathname.new("features/step_definitions/#{page}_steps.rb")).to be_file
-              end
-            end
-          elsif framework == 'rspec'
-            it 'creates spec files for all CRUD actions' do
-              %w[product_list product_create product_detail product_edit].each do |page|
-                expect(Pathname.new("spec/#{page}_page_spec.rb")).to be_file
-              end
-            end
-          else # minitest — CrudGenerator checks test/ and generates specs
-            it 'creates spec files for all CRUD actions' do
-              %w[product_list product_create product_detail product_edit].each do |page|
-                expect(Pathname.new("spec/#{page}_page_spec.rb")).to be_file
-              end
-            end
-          end
-
-          it 'all CRUD pages have valid Ruby syntax' do
-            %w[product_list product_create product_detail product_edit].each do |page|
-              content = File.read("page_objects/pages/#{page}.rb")
-              expect(content).to have_valid_ruby_syntax
-            end
-          end
-
-          it 'all CRUD pages have frozen_string_literal' do
-            %w[product_list product_create product_detail product_edit].each do |page|
-              content = File.read("page_objects/pages/#{page}.rb")
-              expect(content).to have_frozen_string_literal
-            end
-          end
-        end
-
-        # ── Selective --with ───────────────────
-
-        describe 'selective scaffold' do
-          after do
-            %w[settings payment order].each do |name|
-              FileUtils.rm_f("page_objects/pages/#{name}.rb")
-              FileUtils.rm_f("spec/#{name}_page_spec.rb")
-              FileUtils.rm_f("helpers/#{name}_helper.rb")
-              FileUtils.rm_f("models/data/#{name}.yml")
-            end
-            FileUtils.rm_rf('features') unless framework == 'cucumber'
-            FileUtils.rm_rf('spec') unless framework == 'rspec'
-          end
-
-          it 'generates only page when --with page' do
-            scaffold.new.invoke(:scaffold, nil, %w[settings --with page])
-            expect(Pathname.new('page_objects/pages/settings.rb')).to be_file
-            expect(Pathname.new('spec/settings_page_spec.rb')).not_to be_file
-            expect(Pathname.new('features/settings.feature')).not_to be_file
-          end
-
-          it 'generates page and helper with --with page helper' do
-            scaffold.new.invoke(:scaffold, nil, %w[payment --with page helper])
-            expect(Pathname.new('page_objects/pages/payment.rb')).to be_file
-            expect(Pathname.new('helpers/payment_helper.rb')).to be_file
-          end
-
-          it 'generates model data with --with model' do
-            scaffold.new.invoke(:scaffold, nil, %w[order --with model])
-            expect(Pathname.new('models/data/order.yml')).to be_file
-          end
-        end
-
-        # ── Destroy ────────────────────────────
-
-        describe 'destroy' do
-          it 'removes scaffolded files' do
-            scaffold.new.invoke(:scaffold, nil, %w[temp_item])
-            expect(Pathname.new('page_objects/pages/temp_item.rb')).to be_file
-
-            scaffold.new.invoke(:destroy, nil, %w[temp_item])
-            expect(Pathname.new('page_objects/pages/temp_item.rb')).not_to be_file
-
-            if style == :spec
-              expect(Pathname.new('spec/temp_item_page_spec.rb')).not_to be_file
-            else
-              expect(Pathname.new('features/temp_item.feature')).not_to be_file
-              expect(Pathname.new('features/step_definitions/temp_item_steps.rb')).not_to be_file
-            end
-          end
-        end
-
         # ── Batch scaffold ─────────────────────
 
         describe 'batch scaffold' do
@@ -719,56 +529,11 @@ describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
               case automation
               when 'selenium' then expect(content).to include('LoginPage.new(driver)')
               when 'watir'    then expect(content).to include('LoginPage.new(browser)')
-              when 'capybara' then expect(content).to include('LoginPage.new')
               end
             end
           end
         end
 
-        # ── Template overrides ─────────────────
-
-        describe 'template overrides' do
-          after do
-            FileUtils.rm_rf('.ruby_raider')
-            FileUtils.rm_f('page_objects/pages/custom_override.rb')
-            FileUtils.rm_f('page_objects/pages/default_fallback.rb')
-          end
-
-          it 'uses override template when present' do
-            FileUtils.mkdir_p('.ruby_raider/templates')
-            File.write('.ruby_raider/templates/page_object.tt', <<~ERB)
-              # frozen_string_literal: true
-
-              class <%= page_class_name %> < Page
-                # E2E_CUSTOM_MARKER
-              end
-            ERB
-
-            scaffold.new.invoke(:page, nil, %w[custom_override])
-            content = File.read('page_objects/pages/custom_override.rb')
-            expect(content).to include('E2E_CUSTOM_MARKER')
-            expect(content).to include('class CustomOverridePage < Page')
-          end
-
-          it 'falls back to default template without override' do
-            scaffold.new.invoke(:page, nil, %w[default_fallback])
-            content = File.read('page_objects/pages/default_fallback.rb')
-            expect(content).not_to include('E2E_CUSTOM_MARKER')
-            expect(content).to include('class DefaultFallbackPage < Page')
-          end
-        end
-
-        # ── Dry run ────────────────────────────
-
-        describe 'dry run' do
-          it 'does not create files with --dry-run' do
-            expect do
-              scaffold.new.invoke(:page, nil, %w[phantom --dry-run])
-            end.to output(/phantom/).to_stdout
-
-            expect(Pathname.new('page_objects/pages/phantom.rb')).not_to be_file
-          end
-        end
       end
     end
   end

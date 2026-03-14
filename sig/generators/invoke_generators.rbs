@@ -3,8 +3,7 @@ module InvokeGenerators
   def self?.generate_framework: (?Hash[Symbol, untyped] structure) -> void
   def self?.add_generator: (Array[String] generators, *String gens) -> void
   def self?.invoke_generator: (?Hash[Symbol, untyped] structure) -> void
-  def self?.collect_skip_flags: (Hash[Symbol, untyped] structure) -> Array[String]
-  def self?.reporter_flags: (String? reporter) -> Array[String]
+  def self?.collect_flags: (Hash[Symbol, untyped] structure) -> Array[String]
   def self?.mobile_automation?: (String automation) -> bool
   def self?.to_bool: (String? string) -> bool?
 end

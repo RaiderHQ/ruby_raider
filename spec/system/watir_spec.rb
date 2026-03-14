@@ -3,7 +3,7 @@
 require_relative '../../lib/ruby_raider'
 require_relative 'support/system_test_helper'
 
-FRAMEWORKS = %w[cucumber rspec minitest].freeze unless defined?(FRAMEWORKS)
+FRAMEWORKS = %w[cucumber rspec].freeze unless defined?(FRAMEWORKS)
 
 describe 'Watir based frameworks' do
   include SystemTestHelper
@@ -36,7 +36,4 @@ describe 'Watir based frameworks' do
     include_examples 'runs tests successfully', 'cucumber'
   end
 
-  context 'with minitest' do
-    include_examples 'runs tests successfully', 'minitest'
-  end
 end

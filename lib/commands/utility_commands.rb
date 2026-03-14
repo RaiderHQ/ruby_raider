@@ -123,47 +123,4 @@ class UtilityCommands < Thor
     say 'Raider Desktop downloaded successfully!', :green
   end
 
-  desc 'llm [PROVIDER]', 'Configures the LLM provider (openai, anthropic, ollama)'
-  option :key, type: :string, required: false, desc: 'API key for the provider', aliases: '-k'
-  option :model, type: :string, required: false, desc: 'Model name to use', aliases: '-m'
-  option :url, type: :string, required: false, desc: 'API URL (for ollama)', aliases: '-u'
-  option :status, type: :boolean, required: false, desc: 'Show current LLM configuration', aliases: '-s'
-
-  def llm(provider = nil)
-    if options[:status] || provider.nil?
-      show_llm_status
-      return
-    end
-    configure_llm(provider)
-  end
-
-  no_commands do
-    def configure_llm(provider)
-      unless %w[openai anthropic ollama].include?(provider)
-        say "Unknown provider '#{provider}'. Choose: openai, anthropic, ollama", :red
-        return
-      end
-
-      Utilities.llm_provider = provider
-      Utilities.llm_api_key = options[:key] if options[:key]
-      Utilities.llm_model = options[:model] if options[:model]
-      Utilities.llm_url = options[:url] if options[:url]
-      say "LLM configured: #{provider}", :green
-    end
-
-    def show_llm_status
-      require_relative '../llm/client'
-      status = Llm::Client.status
-      if status[:configured]
-        say "Provider: #{status[:provider]}"
-        say "Model: #{status[:model] || 'default'}"
-        say "Available: #{status[:available] ? 'yes' : 'no'}"
-      else
-        say 'No LLM configured. Use: raider u llm <provider>', :yellow
-        say '  Providers: openai, anthropic, ollama'
-        say '  Example:   raider u llm ollama'
-        say '  Example:   raider u llm openai -k sk-...'
-      end
-    end
-  end
 end

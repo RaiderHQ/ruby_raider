@@ -5,14 +5,10 @@ class HelpersGenerator < Generator
   private
 
   def generate_allure_helper: () -> void
-  def generate_video_helper: () -> void
+
   def generate_browser_helper: () -> void
   def generate_spec_helper: () -> void
   def generate_driver_helper: () -> void
-  def generate_capybara_helper: () -> void
   def generate_appium_helper: () -> void
-  def generate_test_helper: () -> void
   def generate_debug_helper: () -> void
-  def generate_visual_helper: () -> void
-  def generate_performance_helper: () -> void
 end

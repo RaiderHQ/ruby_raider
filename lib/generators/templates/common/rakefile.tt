@@ -28,13 +28,4 @@ Cucumber::Rake::Task.new(:regression) do |t|
 end
 
 task default: :features
-<%- elsif minitest? -%>
-
-require 'rake/testtask'
-
-Rake::TestTask.new(:test) do |t|
-  t.test_files = FileList['test/**/test_*.rb']
-end
-
-task default: :test
 <%- end -%>

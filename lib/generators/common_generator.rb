@@ -17,10 +17,6 @@ class CommonGenerator < Generator
     template('common/rakefile.tt', "#{name}/Rakefile")
   end
 
-  def generate_ruby_version_file
-    template('common/ruby_version.tt', "#{name}/.ruby-version")
-  end
-
   def generate_gemfile
     template('common/gemfile.tt', "#{name}/Gemfile")
   end
@@ -44,8 +40,6 @@ class CommonGenerator < Generator
   end
 
   def create_allure_folder
-    return unless allure_reporter?
-
     empty_directory "#{name}/allure-results"
   end
 end

@@ -15,24 +15,13 @@ class Generator < Thor::Group
   def ios?: () -> bool
   def android?: () -> bool
   def rspec?: () -> bool
-  def minitest?: () -> bool
   def selenium?: () -> bool
-  def capybara?: () -> bool
   def watir?: () -> bool
   def web?: () -> bool
   def selenium_based?: () -> bool
 
   # Add-on predicates
   def axe_addon?: () -> bool
-  def visual_addon?: () -> bool
-  def lighthouse_addon?: () -> bool
-
-  # Skip/reporter predicates
-  def skip_allure?: () -> bool
-  def skip_video?: () -> bool
-  def allure_reporter?: () -> bool
-  def junit_reporter?: () -> bool
-  def json_reporter?: () -> bool
 
   private
 

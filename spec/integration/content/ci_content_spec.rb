@@ -4,10 +4,8 @@ require 'yaml'
 require_relative 'content_helper'
 
 describe 'CI pipeline content' do
-  # --- GitHub Actions ---
-
   shared_examples 'valid github pipeline' do |project_name|
-    subject(:pipeline) { read_generated("#{project_name}_github", '.github/workflows/test_pipeline.yml') }
+    subject(:pipeline) { read_generated(project_name, '.github/workflows/test_pipeline.yml') }
 
     it 'is valid YAML' do
       expect { YAML.safe_load(pipeline) }.not_to raise_error
@@ -31,7 +29,7 @@ describe 'CI pipeline content' do
   end
 
   shared_examples 'github rspec pipeline' do |project_name|
-    subject(:pipeline) { read_generated("#{project_name}_github", '.github/workflows/test_pipeline.yml') }
+    subject(:pipeline) { read_generated(project_name, '.github/workflows/test_pipeline.yml') }
 
     it 'runs rspec' do
       expect(pipeline).to include('rspec')
@@ -39,81 +37,28 @@ describe 'CI pipeline content' do
   end
 
   shared_examples 'github cucumber pipeline' do |project_name|
-    subject(:pipeline) { read_generated("#{project_name}_github", '.github/workflows/test_pipeline.yml') }
+    subject(:pipeline) { read_generated(project_name, '.github/workflows/test_pipeline.yml') }
 
     it 'runs cucumber' do
       expect(pipeline).to include('cucumber')
     end
   end
 
-  shared_examples 'github minitest pipeline' do |project_name|
-    subject(:pipeline) { read_generated("#{project_name}_github", '.github/workflows/test_pipeline.yml') }
-
-    it 'runs minitest' do
-      expect(pipeline).to match(/minitest|ruby.*test/)
-    end
-  end
-
-  context 'with rspec and selenium on github' do
+  context 'with rspec and selenium' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'valid github pipeline', name
     include_examples 'github rspec pipeline', name
   end
 
-  context 'with cucumber and selenium on github' do
+  context 'with cucumber and selenium' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'valid github pipeline', name
     include_examples 'github cucumber pipeline', name
   end
 
-  context 'with minitest and selenium on github' do
-    name = "#{FrameworkIndex::MINITEST}_#{AutomationIndex::SELENIUM}"
-    include_examples 'valid github pipeline', name
-    include_examples 'github minitest pipeline', name
-  end
-
-  context 'with rspec and capybara on github' do
-    name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CAPYBARA}"
-    include_examples 'valid github pipeline', name
-    include_examples 'github rspec pipeline', name
-  end
-
-  context 'with rspec and watir on github' do
+  context 'with rspec and watir' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'valid github pipeline', name
     include_examples 'github rspec pipeline', name
-  end
-
-  # --- GitLab CI ---
-
-  shared_examples 'valid gitlab pipeline' do |project_name|
-    subject(:pipeline) { read_generated("#{project_name}_gitlab", 'gitlab-ci.yml') }
-
-    it 'is valid YAML' do
-      expect { YAML.safe_load(pipeline) }.not_to raise_error
-    end
-
-    it 'has stages' do
-      expect(pipeline).to include('stages:')
-    end
-
-    it 'has script section' do
-      expect(pipeline).to include('script:')
-    end
-  end
-
-  context 'with rspec and selenium on gitlab' do
-    name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
-    include_examples 'valid gitlab pipeline', name
-  end
-
-  context 'with cucumber and selenium on gitlab' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-    include_examples 'valid gitlab pipeline', name
-  end
-
-  context 'with minitest and selenium on gitlab' do
-    name = "#{FrameworkIndex::MINITEST}_#{AutomationIndex::SELENIUM}"
-    include_examples 'valid gitlab pipeline', name
   end
 end

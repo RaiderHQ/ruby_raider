@@ -10,18 +10,14 @@ describe '<%= page_class_name %>' do
   let(:page) { <%= page_class_name %>.new(driver) }
 <%- elsif watir? -%>
   let(:page) { <%= page_class_name %>.new(browser) }
-<%- elsif capybara? -%>
-  let(:page) { <%= page_class_name %>.new }
 <%- end -%>
 <%- uses_list.each do |dep| -%>
-  let(:<%= dep %>) { <%= NameNormalizer.to_page_class(dep) %>.new<%= selenium? ? '(driver)' : watir? ? '(browser)' : '' %> }
+  let(:<%= dep %>) { <%= NameNormalizer.to_page_class(dep) %>.new<%= selenium? ? '(driver)' : '(browser)' %> }
 <%- end -%>
 <%- if project_config['url'] -%>
 
   before do
-<%- if capybara? -%>
-    visit '<%= normalized_name %>'
-<%- elsif selenium? -%>
+<%- if selenium? -%>
     driver.navigate.to "\#{project_config['url']}/<%= normalized_name %>"
 <%- elsif watir? -%>
     browser.goto "\#{project_config['url']}/<%= normalized_name %>"

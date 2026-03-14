@@ -20,7 +20,6 @@ RSpec.describe MenuGenerator do
       menu_generator.generate_choice_menu
 
       expect(menu).to have_received(:choice).with(:Selenium, anything)
-      expect(menu).to have_received(:choice).with(:Capybara, anything)
       expect(menu).to have_received(:choice).with(:Appium, anything)
       expect(menu).to have_received(:choice).with(:Watir, anything)
       expect(menu).to have_received(:choice).with(:Quit, anything)
@@ -38,7 +37,6 @@ RSpec.describe MenuGenerator do
 
         expect(menu).to have_received(:choice).with(:Cucumber, anything)
         expect(menu).to have_received(:choice).with(:Rspec, anything)
-        expect(menu).to have_received(:choice).with(:Minitest, anything)
         expect(menu).to have_received(:choice).with(:Quit, anything)
       end
     end
@@ -61,7 +59,7 @@ RSpec.describe MenuGenerator do
 
   describe '#set_up_framework' do
     let(:options) do
-      { automation: 'selenium', framework: 'rspec', ci_platform: 'github', accessibility: true }
+      { automation: 'selenium', framework: 'rspec', accessibility: true }
     end
 
     before do
@@ -78,7 +76,6 @@ RSpec.describe MenuGenerator do
         hash_including(
           automation: 'selenium',
           framework: 'rspec',
-          ci_platform: 'github',
           accessibility: true,
           name: 'test_project'
         )
@@ -95,7 +92,7 @@ RSpec.describe MenuGenerator do
     end
   end
 
-  describe 'full flow: selenium + rspec + no CI' do
+  describe 'full flow: selenium + rspec' do
     it 'calls set_up_framework with correct options' do
       allow(menu_generator).to receive(:generate_framework)
       allow(menu_generator).to receive(:system)
@@ -110,41 +107,19 @@ RSpec.describe MenuGenerator do
     end
   end
 
-  describe 'full flow: capybara + minitest + github' do
+  describe 'full flow: watir + cucumber' do
     it 'calls set_up_framework with correct options' do
       allow(menu_generator).to receive(:generate_framework)
       allow(menu_generator).to receive(:system)
       allow(prompt).to receive(:say)
       allow(prompt).to receive(:yes?).and_return(false)
 
-      menu_generator.send(:create_framework, 'Minitest', 'capybara', ci_platform: 'github')
-
-      expect(menu_generator).to have_received(:generate_framework).with(
-        hash_including(
-          automation: 'capybara',
-          framework: 'minitest',
-          ci_platform: 'github',
-          accessibility: false,
-          name: 'test_project'
-        )
-      )
-    end
-  end
-
-  describe 'full flow: watir + cucumber + gitlab' do
-    it 'calls set_up_framework with correct options' do
-      allow(menu_generator).to receive(:generate_framework)
-      allow(menu_generator).to receive(:system)
-      allow(prompt).to receive(:say)
-      allow(prompt).to receive(:yes?).and_return(false)
-
-      menu_generator.send(:create_framework, 'Cucumber', 'watir', ci_platform: 'gitlab')
+      menu_generator.send(:create_framework, 'Cucumber', 'watir')
 
       expect(menu_generator).to have_received(:generate_framework).with(
         hash_including(
           automation: 'watir',
           framework: 'cucumber',
-          ci_platform: 'gitlab',
           accessibility: false,
           name: 'test_project'
         )
@@ -164,84 +139,6 @@ RSpec.describe MenuGenerator do
       expect(menu_generator).to have_received(:generate_framework).with(
         hash_including(automation: 'selenium', framework: 'rspec', accessibility: true)
       )
-    end
-  end
-
-  describe 'full flow: selenium + rspec + visual' do
-    it 'passes visual flag through' do
-      allow(menu_generator).to receive(:generate_framework)
-      allow(menu_generator).to receive(:system)
-      allow(prompt).to receive(:say)
-      allow(prompt).to receive(:yes?).and_return(false)
-
-      menu_generator.send(:create_framework, 'Rspec', 'selenium', visual: true)
-
-      expect(menu_generator).to have_received(:generate_framework).with(
-        hash_including(automation: 'selenium', framework: 'rspec', visual: true)
-      )
-    end
-  end
-
-  describe 'full flow: selenium + rspec + performance' do
-    it 'passes performance flag through' do
-      allow(menu_generator).to receive(:generate_framework)
-      allow(menu_generator).to receive(:system)
-      allow(prompt).to receive(:say)
-      allow(prompt).to receive(:yes?).and_return(false)
-
-      menu_generator.send(:create_framework, 'Rspec', 'selenium', performance: true)
-
-      expect(menu_generator).to have_received(:generate_framework).with(
-        hash_including(automation: 'selenium', framework: 'rspec', performance: true)
-      )
-    end
-  end
-
-  describe 'ruby version selection menu' do
-    it 'presents ruby version choices' do # rubocop:disable RSpec/MultipleExpectations
-      menu = double('menu') # rubocop:disable RSpec/VerifiedDoubles
-      allow(menu).to receive(:choice)
-      allow(prompt).to receive(:select).with('Select Ruby version for your project').and_yield(menu)
-
-      menu_generator.send(:select_ruby_version, 'Rspec', 'selenium')
-
-      expect(menu).to have_received(:choice).with(:'3.4 (latest)', anything)
-      expect(menu).to have_received(:choice).with(:'3.3', anything)
-      expect(menu).to have_received(:choice).with(:'3.2', anything)
-      expect(menu).to have_received(:choice).with(:'3.1', anything)
-      expect(menu).to have_received(:choice).with(:Quit, anything)
-    end
-  end
-
-  describe 'ruby_version propagation' do
-    it 'passes ruby_version through to generate_framework' do
-      allow(menu_generator).to receive(:generate_framework)
-      allow(menu_generator).to receive(:system)
-      allow(prompt).to receive(:say)
-      allow(prompt).to receive(:yes?).and_return(false)
-
-      menu_generator.send(:create_framework, 'Rspec', 'selenium', ruby_version: '3.3')
-
-      expect(menu_generator).to have_received(:generate_framework).with(
-        hash_including(ruby_version: '3.3')
-      )
-    end
-  end
-
-  describe 'reporter selection menu' do
-    it 'includes JSON and All reporter choices' do # rubocop:disable RSpec/MultipleExpectations
-      menu = double('menu') # rubocop:disable RSpec/VerifiedDoubles
-      allow(menu).to receive(:choice)
-      allow(prompt).to receive(:select).with('Select your test reporter').and_yield(menu)
-
-      menu_generator.send(:select_reporter, 'Rspec', 'selenium')
-
-      expect(menu).to have_received(:choice).with(:JSON, anything)
-      expect(menu).to have_received(:choice).with(:All, anything)
-      expect(menu).to have_received(:choice).with(:Allure, anything)
-      expect(menu).to have_received(:choice).with(:JUnit, anything)
-      expect(menu).to have_received(:choice).with(:Both, anything)
-      expect(menu).to have_received(:choice).with(:None, anything)
     end
   end
 

@@ -1,10 +1,8 @@
 require_relative 'infrastructure/github_generator'
-require_relative 'infrastructure/gitlab_generator'
 require_relative 'automation/automation_generator'
 require_relative 'common_generator'
 require_relative 'cucumber/cucumber_generator'
 require_relative 'helper_generator'
-require_relative 'minitest/minitest_generator'
 require_relative 'rspec/rspec_generator'
 
 module InvokeGenerators
@@ -14,14 +12,13 @@ module InvokeGenerators
     generators = %w[Automation Common Helpers]
     framework = structure[:framework]
     add_generator(generators, framework.capitalize)
-    add_generator(generators, structure[:ci_platform].capitalize) if !structure[:skip_ci] && (structure[:ci_platform])
-    extra_args = collect_skip_flags(structure)
+    add_generator(generators, 'Github')
+    extra_args = collect_flags(structure)
     generators.each do |generator|
       invoke_generator({
                          automation: structure[:automation],
                          framework:,
                          generator:,
-                         ci_platform: structure[:ci_platform],
                          name: structure[:name],
                          extra_args:
                        })
@@ -36,7 +33,7 @@ module InvokeGenerators
   GENERATOR_CLASSES = Hash.new { |h, k| h[k] = Object.const_get("#{k}Generator") }
 
   def invoke_generator(structure = {})
-    args = [structure[:automation], structure[:framework], structure[:name], structure[:ci_platform]]
+    args = [structure[:automation], structure[:framework], structure[:name]]
     args.concat(structure[:extra_args] || [])
     generator_class = GENERATOR_CLASSES[structure[:generator]]
     generator = generator_class.new(args)
@@ -45,28 +42,10 @@ module InvokeGenerators
     generator.invoke_all
   end
 
-  def collect_skip_flags(structure)
+  def collect_flags(structure)
     flags = []
-    flags << 'skip_allure' if structure[:skip_allure]
-    flags << 'skip_video' if structure[:skip_video]
     flags << 'axe_addon' if structure[:accessibility] && !mobile_automation?(structure[:automation])
-    flags << 'visual_addon' if structure[:visual] && !mobile_automation?(structure[:automation])
-    flags << 'lighthouse_addon' if structure[:performance] && !mobile_automation?(structure[:automation])
-    flags << "ruby_version:#{structure[:ruby_version]}" if structure[:ruby_version]
-    flags.concat(reporter_flags(structure[:reporter]))
     flags
-  end
-
-  def reporter_flags(reporter)
-    case reporter
-    when 'allure' then ['reporter_allure']
-    when 'junit' then ['reporter_junit']
-    when 'json' then ['reporter_json']
-    when 'both' then %w[reporter_allure reporter_junit]
-    when 'all' then %w[reporter_allure reporter_junit reporter_json]
-    when 'none' then ['reporter_none']
-    else []
-    end
   end
 
   def mobile_automation?(automation)
