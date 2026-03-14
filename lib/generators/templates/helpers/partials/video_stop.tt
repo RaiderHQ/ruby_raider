@@ -1,0 +1,4 @@
+  video_file = @video_recorder&.stop
+<% if allure_reporter? %>
+  AllureHelper.add_video(example_name, video_file)
+<% end %>
