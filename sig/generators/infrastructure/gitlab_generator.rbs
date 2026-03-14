@@ -1,0 +1,4 @@
+# Type definitions for GitlabGenerator
+class GitlabGenerator < Generator
+  def generate_gitlab_file: () -> void
+end

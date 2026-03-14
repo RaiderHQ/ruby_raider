@@ -1,0 +1,58 @@
+# frozen_string_literal: true
+
+require 'chunky_png'
+require 'fileutils'
+
+module VisualHelper
+  BASELINE_DIR = 'visual_baselines'
+  DIFF_DIR = 'visual_diffs'
+
+  def compare_screenshot(name, screenshot_path, threshold: 0.01)
+    FileUtils.mkdir_p(BASELINE_DIR)
+    FileUtils.mkdir_p(DIFF_DIR)
+
+    baseline_path = File.join(BASELINE_DIR, "#{name}.png")
+
+    unless File.exist?(baseline_path)
+      FileUtils.cp(screenshot_path, baseline_path)
+      return { status: :baseline_created, path: baseline_path }
+    end
+
+    baseline = ChunkyPNG::Image.from_file(baseline_path)
+    current = ChunkyPNG::Image.from_file(screenshot_path)
+
+    diff_pixels = 0
+    total_pixels = baseline.width * baseline.height
+
+    diff_image = ChunkyPNG::Image.new(baseline.width, baseline.height)
+
+    baseline.height.times do |y|
+      baseline.width.times do |x|
+        if pixel_match?(baseline[x, y], current[x, y])
+          diff_image[x, y] = ChunkyPNG::Color.rgba(0, 0, 0, 50)
+        else
+          diff_pixels += 1
+          diff_image[x, y] = ChunkyPNG::Color.rgb(255, 0, 0)
+        end
+      end
+    end
+
+    diff_percentage = diff_pixels.to_f / total_pixels
+
+    if diff_percentage > threshold
+      diff_path = File.join(DIFF_DIR, "#{name}_diff.png")
+      diff_image.save(diff_path)
+      { status: :mismatch, diff: diff_percentage, diff_path: }
+    else
+      { status: :match, diff: diff_percentage }
+    end
+  end
+
+  private
+
+  def pixel_match?(pixel1, pixel2)
+    r1, g1, b1 = ChunkyPNG::Color.r(pixel1), ChunkyPNG::Color.g(pixel1), ChunkyPNG::Color.b(pixel1)
+    r2, g2, b2 = ChunkyPNG::Color.r(pixel2), ChunkyPNG::Color.g(pixel2), ChunkyPNG::Color.b(pixel2)
+    (r1 - r2).abs <= 5 && (g1 - g2).abs <= 5 && (b1 - b2).abs <= 5
+  end
+end

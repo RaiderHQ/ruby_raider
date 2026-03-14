@@ -1,0 +1,5 @@
+Feature: Visual Regression
+
+Scenario: Login page matches baseline
+    Given I'm on the login page
+    Then the page should match the visual baseline "login_page"

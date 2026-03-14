@@ -1,0 +1,94 @@
+# frozen_string_literal: true
+
+<%- if axe_addon? %>
+require 'axe-minitest'
+<%- end -%>
+require 'minitest/autorun'
+require 'tmpdir'
+<%- if allure_reporter? -%>
+require_relative 'allure_helper'
+<%- end -%>
+<%- unless skip_video? -%>
+require_relative 'video_helper'
+<%- end -%>
+require_relative 'debug_helper'
+<%- if watir? -%>
+require_relative 'browser_helper'
+<%- elsif capybara? -%>
+require_relative 'capybara_helper'
+<%- else -%>
+require_relative 'driver_helper'
+<%- end -%>
+
+<%- if allure_reporter? -%>
+AllureHelper.configure
+<%- end -%>
+<%- if capybara? -%>
+CapybaraHelper.configure
+<%- end -%>
+<%- if json_reporter? -%>
+require 'minitest/reporters'
+Minitest::Reporters.use! [Minitest::Reporters::JsonReporter.new('results/results.json')]
+<%- end -%>
+
+module TestHelper
+  <% if watir? %>include BrowserHelper<% elsif capybara? %>include Capybara::DSL<% else %>include DriverHelper<% end %>
+
+  def setup
+    super
+<%- if mobile? -%>
+    driver.start_driver
+<%- elsif capybara? -%>
+    viewport = YAML.load_file('config/config.yml')['viewport']
+    if viewport
+      Capybara.current_session.driver.browser.manage.window.resize_to(viewport['width'], viewport['height'])
+    else
+      Capybara.current_session.driver.browser.manage.window.maximize
+    end
+<%- elsif watir? -%>
+    viewport = YAML.load_file('config/config.yml')['viewport']
+    if viewport
+      browser.window.resize_to(viewport['width'], viewport['height'])
+    else
+      browser.window.maximize
+    end
+<%- else -%>
+    viewport = YAML.load_file('config/config.yml')['viewport']
+    if viewport
+      driver.manage.window.resize_to(viewport['width'], viewport['height'])
+    else
+      driver.manage.window.maximize
+    end
+<%- end -%>
+    <%- unless skip_video? -%>
+    <%= partial('video_start', strip: true) %>
+    @video_recorder&.start(self.class.name)
+    <%- end -%>
+    <%= partial('debug_start', strip: true) %>
+    @debug_action_logger = DebugHelper.action_logger_for(self.class.name)
+  end
+
+  def teardown
+    example_name = name
+    unless passed?
+      <%= partial('debug_diagnostics', strip: true) %>
+    end
+    @debug_action_logger&.close
+    <%- unless skip_video? -%>
+    video_file = @video_recorder&.stop
+    <%- if allure_reporter? -%>
+    AllureHelper.add_video(example_name, video_file)
+    <%- end -%>
+    <%- end -%>
+    Dir.mktmpdir do |temp_folder|
+      <%= partial('screenshot', strip: true) %>
+      <%- if allure_reporter? -%>
+      AllureHelper.add_screenshot(example_name, screenshot)
+      <%- end -%>
+    end
+    <%= partial('quit_driver', strip: true) %>
+    super
+  end
+end
+
+Minitest::Test.include(TestHelper)

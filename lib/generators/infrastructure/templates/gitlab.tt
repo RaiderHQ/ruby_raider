@@ -1,0 +1,46 @@
+stages:
+  - setup
+  - test
+  - report
+
+variables:
+  RUBY_VERSION: "<%= ruby_version %>.0"
+  HEADLESS: "true"
+
+setup_ruby:
+  stage: setup
+  image: ruby:${RUBY_VERSION}
+  script:
+    - bundle install --jobs $(nproc) --retry 3
+  cache:
+    paths:
+      - vendor/bundle
+
+run_tests:
+  stage: test
+  image: ruby:${RUBY_VERSION}
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq chromium chromium-driver
+    - mkdir -p allure-results
+  script:
+    - <%- if framework == 'cucumber' -%>bundle exec cucumber features --format pretty<%- elsif minitest? -%>bundle exec ruby -Itest test/test_login_page.rb<%- else -%>bundle exec rspec spec --format documentation<%- end %>
+  artifacts:
+    paths:
+      - allure-results/
+    when: always
+
+pages:
+  stage: report
+  image: alpine/git
+  dependencies:
+    - run_tests
+  script:
+    - apk add --no-cache curl unzip
+    - curl -o allure.zip -L https://github.com/allure-framework/allure2/releases/latest/download/allure-commandline.zip
+    - unzip allure.zip -d /tmp/
+    - /tmp/allure-*/bin/allure generate allure-results --clean -o public
+  artifacts:
+    paths:
+      - public
+  only:
+    - main
