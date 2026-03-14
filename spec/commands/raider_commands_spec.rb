@@ -45,10 +45,6 @@ RSpec.describe RubyRaider::Raider do
       expect(described_class.map['v']).to eq('version')
     end
 
-    it 'maps a to adopt' do
-      expect(described_class.map['a']).to eq('adopt')
-    end
-
     it 'maps g to generate' do
       expect(described_class.map['g']).to eq('generate')
     end
@@ -56,18 +52,10 @@ RSpec.describe RubyRaider::Raider do
     it 'maps u to utility' do
       expect(described_class.map['u']).to eq('utility')
     end
-
-    it 'maps pm to plugin_manager' do
-      expect(described_class.map['pm']).to eq('plugin_manager')
-    end
   end
 
   describe 'registered subcommands' do
     let(:subcommands) { described_class.subcommands }
-
-    it 'includes adopt' do
-      expect(subcommands).to include('adopt')
-    end
 
     it 'includes generate' do
       expect(subcommands).to include('generate')
@@ -75,55 +63,6 @@ RSpec.describe RubyRaider::Raider do
 
     it 'includes utility' do
       expect(subcommands).to include('utility')
-    end
-
-    it 'includes plugin_manager' do
-      expect(subcommands).to include('plugin_manager')
-    end
-  end
-end
-
-RSpec.describe AdoptCommands do
-  let(:source_dir) { 'tmp_cmd_adopt_source' }
-  let(:output_dir) { 'tmp_cmd_adopt_output' }
-
-  before do
-    FileUtils.mkdir_p(source_dir)
-    File.write("#{source_dir}/Gemfile", "gem 'rspec'\ngem 'selenium-webdriver'\n")
-    FileUtils.mkdir_p("#{source_dir}/spec")
-  end
-
-  after do
-    FileUtils.rm_rf(source_dir)
-    FileUtils.rm_rf(output_dir)
-  end
-
-  describe 'project command with parameters' do
-    it 'calls AdoptMenu.adopt with parsed params' do
-      result = { plan: double(warnings: [], output_path: output_dir), results: { pages: 0, tests: 0, features: 0, steps: 0, errors: [] } } # rubocop:disable RSpec/VerifiedDoubles
-      allow(Adopter::AdoptMenu).to receive(:adopt).and_return(result)
-
-      expect do
-        described_class.new.invoke(:project, nil, [source_dir, '-p',
-                                                   "output_path:#{output_dir}",
-                                                   'target_automation:selenium',
-                                                   'target_framework:rspec'])
-      end.to output(/Adoption complete/).to_stdout
-
-      expect(Adopter::AdoptMenu).to have_received(:adopt).with(
-        hash_including(source_path: source_dir, target_automation: 'selenium', target_framework: 'rspec')
-      )
-    end
-  end
-
-  describe 'project command without parameters' do
-    it 'calls AdoptMenu#run' do
-      menu = instance_double(Adopter::AdoptMenu, run: nil)
-      allow(Adopter::AdoptMenu).to receive(:new).and_return(menu)
-
-      described_class.new.invoke(:project, nil, [source_dir])
-
-      expect(menu).to have_received(:run)
     end
   end
 end

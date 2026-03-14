@@ -7,7 +7,7 @@ module Utilities
 
   class << self
     def browser=(browser)
-      set('browser', browser)
+      set('browser', browser.to_s.delete_prefix(':'))
     end
 
     def page_path=(path)
@@ -44,15 +44,17 @@ module Utilities
     end
 
     def browser_options=(opts)
-      browser_name = config['browser'] || 'chrome'
-      config['browser_arguments'] ||= {}
-      config['browser_arguments'][browser_name] = Array(opts).flatten
+      reload_config
+      browser_name = @config['browser'] || 'chrome'
+      @config['browser_arguments'] ||= {}
+      @config['browser_arguments'][browser_name] = Array(opts).flatten
       overwrite_yaml
     end
 
     def delete_browser_options
-      browser_name = config['browser'] || 'chrome'
-      config['browser_arguments']&.delete(browser_name)
+      reload_config
+      browser_name = @config['browser'] || 'chrome'
+      @config['browser_arguments']&.delete(browser_name)
       overwrite_yaml
     end
 
@@ -60,32 +62,18 @@ module Utilities
       set('headless', enabled)
     end
 
-    def llm_provider=(provider)
-      set('llm_provider', provider)
-    end
-
-    def llm_api_key=(key)
-      set('llm_api_key', key)
-    end
-
-    def llm_model=(model)
-      set('llm_model', model)
-    end
-
-    def llm_url=(url)
-      set('llm_url', url)
-    end
-
     def debug=(enabled)
-      config['debug'] ||= {}
-      config['debug']['enabled'] = enabled
+      reload_config
+      @config['debug'] ||= {}
+      @config['debug']['enabled'] = enabled
       overwrite_yaml
     end
 
     # Set multiple config keys in a single YAML write.
     # Usage: Utilities.batch_update(browser: 'chrome', timeout: 30)
     def batch_update(**settings)
-      settings.each { |key, value| config[key.to_s] = value }
+      reload_config
+      settings.each { |key, value| @config[key.to_s] = value }
       overwrite_yaml
     end
 
@@ -101,18 +89,24 @@ module Utilities
 
     private
 
-    # Single-key setter: updates in-memory config and writes once
+    # Single-key setter: reloads from disk, updates, and writes back
     def set(key, value)
-      config[key] = value
+      reload_config
+      @config[key] = value
       overwrite_yaml
     end
 
     def overwrite_yaml
-      File.open(@path, 'w') { |file| YAML.dump(config, file) }
+      File.open(@path, 'w') { |file| YAML.dump(@config, file) }
+    end
+
+    # Always reload from disk so external changes (e.g. desktop app) are picked up
+    def reload_config
+      @config = File.exist?(@path) ? YAML.load_file(@path) : {}
     end
 
     def config
-      @config ||= File.exist?(@path) ? YAML.load_file(@path) : nil
+      @config || reload_config
     end
   end
 end

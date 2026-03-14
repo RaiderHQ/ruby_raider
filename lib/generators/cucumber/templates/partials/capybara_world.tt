@@ -1,6 +1,0 @@
-require 'capybara/dsl'
-require_relative '../../helpers/capybara_helper'
-require_relative '../../models/user_factory'
-
-CapybaraHelper.configure
-World(Capybara::DSL)

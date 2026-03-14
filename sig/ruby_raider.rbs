@@ -1,15 +1,13 @@
 # Type definitions for main RubyRaider entry point
 module RubyRaider
   class Raider < Thor
-    def self.plugin_commands?: () -> bool
     def current_version: () -> String
 
     def new: (String project_name) -> void
     def version: () -> void
-    def adopt: () -> void
 
     private
 
-    def merge_skip_flags: (Hash[Symbol, untyped] params) -> void
+    def merge_flags: (Hash[Symbol, untyped] params) -> void
   end
 end

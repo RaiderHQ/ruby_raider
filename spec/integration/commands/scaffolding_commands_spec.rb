@@ -34,16 +34,6 @@ describe ScaffoldingCommands do
       expect(Pathname.new("page_objects/pages/#{name}.rb")).to be_file
     end
 
-    it 'deletes a spec' do
-      scaffold.new.invoke(:spec, nil, %w[login --delete])
-      expect(Pathname.new('spec/login_spec.rb')).not_to be_file
-    end
-
-    it 'deletes a helper' do
-      scaffold.new.invoke(:helper, nil, %w[driver --delete])
-      expect(Pathname.new('helpers/driver_helper.rb')).not_to be_file
-    end
-
     it 'creates a page' do
       scaffold.new.invoke(:page, nil, %W[#{name}])
       expect(Pathname.new("page_objects/pages/#{name}.rb")).to be_file
@@ -92,16 +82,6 @@ describe ScaffoldingCommands do
     it 'creates a steps definition' do
       scaffold.new.invoke(:steps, nil, %W[#{name}])
       expect(Pathname.new("features/step_definitions/#{name}_steps.rb")).to be_file
-    end
-
-    it 'deletes a page' do
-      scaffold.new.invoke(:page, nil, %w[login --delete])
-      expect(Pathname.new('page_objects/pages/login_page.rb')).not_to be_file
-    end
-
-    it 'deletes a feature' do
-      scaffold.new.invoke(:feature, nil, %w[login --delete])
-      expect(Pathname.new('features/login.feature')).not_to be_file
     end
 
     it 'creates a feature' do

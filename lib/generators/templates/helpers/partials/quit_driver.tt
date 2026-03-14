@@ -1,6 +1,4 @@
-<% if capybara? %>
-  Capybara.reset_sessions!
-<% elsif selenium_based? %>
+<% if selenium_based? %>
   driver.quit
 <% elsif watir? %>
   browser.quit

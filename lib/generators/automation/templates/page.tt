@@ -14,13 +14,7 @@ class Page
     self.class.to_s.sub('Page', ' Page')
   end
 
-  <%- if capybara? -%>
-  # Components
-
-  def header
-    Header.new(find('.welcome-msg'))
-  end
-  <%- elsif selenium_based? -%>
+  <%- if selenium_based? -%>
   # Components
 
   def header

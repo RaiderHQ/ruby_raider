@@ -1,6 +1,4 @@
-<% if capybara? %>
-  DebugHelper.enable_network_logging(Capybara.current_session.driver)
-<% elsif selenium_based? %>
+<% if selenium_based? %>
   DebugHelper.enable_network_logging(driver)
 <% elsif watir? %>
   DebugHelper.enable_network_logging(browser)

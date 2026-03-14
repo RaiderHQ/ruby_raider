@@ -4,7 +4,6 @@ require 'yaml'
 
 module ScaffoldProjectDetector
   AUTOMATION_GEMS = {
-    'capybara' => 'capybara',
     'watir' => 'watir',
     'selenium-webdriver' => 'selenium',
     'appium_lib' => 'appium',
@@ -15,8 +14,7 @@ module ScaffoldProjectDetector
 
   FRAMEWORK_GEMS = {
     'rspec' => 'rspec',
-    'cucumber' => 'cucumber',
-    'minitest' => 'minitest'
+    'cucumber' => 'cucumber'
   }.freeze
 
   CONFIG_PATH = 'config/config.yml'
@@ -31,8 +29,7 @@ module ScaffoldProjectDetector
       automation: detect_automation(gemfile),
       framework: detect_framework(gemfile),
       has_spec: Dir.exist?('spec'),
-      has_features: Dir.exist?('features'),
-      has_test: Dir.exist?('test')
+      has_features: Dir.exist?('features')
     }
   end
 
@@ -58,10 +55,6 @@ module ScaffoldProjectDetector
 
   def selenium?
     detect_automation == 'selenium'
-  end
-
-  def capybara?
-    detect_automation == 'capybara'
   end
 
   def watir?

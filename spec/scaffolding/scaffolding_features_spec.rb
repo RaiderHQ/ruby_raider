@@ -50,24 +50,6 @@ RSpec.describe 'Scaffolding features' do
     end
   end
 
-  # --- Feature 6: Dry run ---
-
-  describe 'dry run' do
-    it 'does not create files with --dry-run' do
-      expect do
-        scaffold.new.invoke(:page, nil, %w[checkout --dry-run])
-      end.to output(/checkout/).to_stdout
-
-      expect(Pathname.new('page_objects/pages/checkout.rb')).not_to be_file
-    end
-
-    it 'shows planned file path' do
-      expect do
-        scaffold.new.invoke(:spec, nil, %w[checkout --dry-run])
-      end.to output(/checkout/).to_stdout
-    end
-  end
-
   # --- Feature 8: Component scaffolding ---
 
   describe 'component scaffolding' do
@@ -86,12 +68,6 @@ RSpec.describe 'Scaffolding features' do
       scaffold.new.invoke(:component, nil, %w[sidebar])
       content = File.read('page_objects/components/sidebar.rb')
       expect(content).to include('# frozen_string_literal: true')
-    end
-
-    it 'deletes a component' do
-      scaffold.new.invoke(:component, nil, %w[sidebar])
-      scaffold.new.invoke(:component, nil, %w[sidebar --delete])
-      expect(Pathname.new('page_objects/components/sidebar.rb')).not_to be_file
     end
   end
 
@@ -198,39 +174,6 @@ RSpec.describe 'Scaffolding features' do
       expect(content).to include('default:')
       expect(content).to include('valid:')
       expect(content).to include('invalid:')
-    end
-  end
-
-  # --- Feature: Destroy command ---
-
-  describe 'destroy command' do
-    it 'removes page and spec files' do
-      scaffold.new.invoke(:scaffold, nil, %w[login])
-      expect(Pathname.new('page_objects/pages/login.rb')).to be_file
-      expect(Pathname.new('spec/login_page_spec.rb')).to be_file
-
-      scaffold.new.invoke(:destroy, nil, %w[login])
-      expect(Pathname.new('page_objects/pages/login.rb')).not_to be_file
-      expect(Pathname.new('spec/login_page_spec.rb')).not_to be_file
-    end
-
-    it 'removes only specified components with --with' do # rubocop:disable RSpec/MultipleExpectations
-      scaffold.new.invoke(:scaffold, nil, %w[checkout --with page spec helper])
-      expect(Pathname.new('page_objects/pages/checkout.rb')).to be_file
-      expect(Pathname.new('spec/checkout_page_spec.rb')).to be_file
-      expect(Pathname.new('helpers/checkout_helper.rb')).to be_file
-
-      scaffold.new.invoke(:destroy, nil, %w[checkout --with page helper])
-      expect(Pathname.new('page_objects/pages/checkout.rb')).not_to be_file
-      expect(Pathname.new('helpers/checkout_helper.rb')).not_to be_file
-      expect(Pathname.new('spec/checkout_page_spec.rb')).to be_file
-    end
-
-    it 'destroys multiple names at once' do
-      scaffold.new.invoke(:scaffold, nil, %w[login dashboard])
-      scaffold.new.invoke(:destroy, nil, %w[login dashboard])
-      expect(Pathname.new('page_objects/pages/login.rb')).not_to be_file
-      expect(Pathname.new('page_objects/pages/dashboard.rb')).not_to be_file
     end
   end
 

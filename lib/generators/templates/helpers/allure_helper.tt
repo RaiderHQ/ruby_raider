@@ -22,16 +22,6 @@ module AllureHelper
        )
      end
 
-    def add_video(name, file)
-      return unless file && File.exist?(file)
-
-      Allure.add_attachment(
-        name: "Recording: #{name}",
-        source: File.new(file),
-        type: 'video/mp4',
-        test_case: true
-      )
-    end
   <%- if rspec? -%>
 
     def formatter

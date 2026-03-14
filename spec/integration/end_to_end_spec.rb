@@ -85,21 +85,6 @@ describe 'End-to-End Project Generation and Execution' do
     result
   end
 
-  # Helper to run Minitest tests
-  def run_minitest(project_name)
-    puts "\nRunning Minitest tests in #{project_name}..."
-    result = run_in_project(project_name, 'bundle exec ruby -Itest test/test_login_page.rb', timeout: 120)
-
-    puts result[:stdout] if result[:stdout].length.positive?
-
-    unless result[:success]
-      puts 'Minitest tests failed:'
-      puts result[:stderr] if result[:stderr].length.positive?
-    end
-
-    result
-  end
-
   # Shared example for RSpec-based projects
   shared_examples 'executable rspec project' do |project_name|
     let(:project) { project_name }
@@ -140,26 +125,6 @@ describe 'End-to-End Project Generation and Execution' do
     end
   end
 
-  # Shared example for Minitest-based projects
-  shared_examples 'executable minitest project' do |project_name|
-    let(:project) { project_name }
-
-    it 'installs dependencies successfully' do
-      expect(bundle_install(project)).to be true
-    end
-
-    it 'runs generated Minitest tests successfully', :slow do
-      skip 'Bundle install failed' unless bundle_install(project)
-
-      result = run_minitest(project)
-
-      expect(result[:success]).to be(true),
-                                  "Minitest tests failed with exit code #{result[:exit_code]}.\n" \
-                                  "STDOUT: #{result[:stdout]}\n" \
-                                  "STDERR: #{result[:stderr]}"
-    end
-  end
-
   # Test Web Frameworks (these can run without external services)
   context 'Web Automation Frameworks' do
     describe 'Selenium + RSpec' do
@@ -170,10 +135,6 @@ describe 'End-to-End Project Generation and Execution' do
       include_examples 'executable rspec project', 'rspec_watir'
     end
 
-    describe 'Capybara + RSpec' do
-      include_examples 'executable rspec project', 'rspec_capybara'
-    end
-
     describe 'Selenium + Cucumber' do
       include_examples 'executable cucumber project', 'cucumber_selenium'
     end
@@ -182,21 +143,6 @@ describe 'End-to-End Project Generation and Execution' do
       include_examples 'executable cucumber project', 'cucumber_watir'
     end
 
-    describe 'Capybara + Cucumber' do
-      include_examples 'executable cucumber project', 'cucumber_capybara'
-    end
-
-    describe 'Selenium + Minitest' do
-      include_examples 'executable minitest project', 'minitest_selenium'
-    end
-
-    describe 'Watir + Minitest' do
-      include_examples 'executable minitest project', 'minitest_watir'
-    end
-
-    describe 'Capybara + Minitest' do
-      include_examples 'executable minitest project', 'minitest_capybara'
-    end
   end
 
   # Mobile and Visual frameworks require external services, so we only verify structure
@@ -275,48 +221,6 @@ describe 'End-to-End Project Generation and Execution' do
 
       it 'has valid Ruby syntax in generated files' do
         result = run_in_project('cucumber_cross_platform', 'ruby -c features/support/env.rb')
-        expect(result[:success]).to be true
-      end
-    end
-  end
-
-  context 'Minitest Mobile Frameworks (structure validation only)' do
-    describe 'Android + Minitest' do
-      it 'generates valid project structure' do
-        expect(File).to exist('minitest_android/helpers/test_helper.rb')
-        expect(File).to exist('minitest_android/Gemfile')
-        expect(File).to exist('minitest_android/test')
-      end
-
-      it 'has valid Ruby syntax in generated files' do
-        result = run_in_project('minitest_android', 'ruby -c helpers/test_helper.rb')
-        expect(result[:success]).to be true
-      end
-    end
-
-    describe 'iOS + Minitest' do
-      it 'generates valid project structure' do
-        expect(File).to exist('minitest_ios/helpers/test_helper.rb')
-        expect(File).to exist('minitest_ios/Gemfile')
-        expect(File).to exist('minitest_ios/test')
-      end
-
-      it 'has valid Ruby syntax in generated files' do
-        result = run_in_project('minitest_ios', 'ruby -c helpers/test_helper.rb')
-        expect(result[:success]).to be true
-      end
-    end
-
-    describe 'Cross-Platform + Minitest' do
-      it 'generates valid project structure' do
-        expect(File).to exist('minitest_cross_platform/helpers/test_helper.rb')
-        expect(File).to exist('minitest_cross_platform/helpers/appium_helper.rb')
-        expect(File).to exist('minitest_cross_platform/Gemfile')
-        expect(File).to exist('minitest_cross_platform/test')
-      end
-
-      it 'has valid Ruby syntax in generated files' do
-        result = run_in_project('minitest_cross_platform', 'ruby -c helpers/test_helper.rb')
         expect(result[:success]).to be true
       end
     end

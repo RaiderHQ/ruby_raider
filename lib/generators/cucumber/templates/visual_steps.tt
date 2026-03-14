@@ -6,12 +6,12 @@ require_relative '../../page_objects/pages/login'
 include VisualHelper
 
 Given("I'm on the login page") do
-  @login_page = <% if capybara? %>Login.new<% elsif watir? %>Login.new(browser)<% else %>Login.new(driver)<% end %>
-  @login_page.<% if capybara? %>visit_page<% else %>visit<% end %>
+  @login_page = <% if watir? %>Login.new(browser)<% else %>Login.new(driver)<% end %>
+  @login_page.visit
 end
 
 Then('the page should match the visual baseline {string}') do |baseline_name|
-  screenshot_path = <% if capybara? %>page.save_screenshot("tmp/visual_#{baseline_name}.png")<% elsif watir? %>browser.screenshot.save("tmp/visual_#{baseline_name}.png")<% else %>driver.save_screenshot("tmp/visual_#{baseline_name}.png")<% end %>
+  screenshot_path = <% if watir? %>browser.screenshot.save("tmp/visual_#{baseline_name}.png")<% else %>driver.save_screenshot("tmp/visual_#{baseline_name}.png")<% end %>
   result = compare_screenshot(baseline_name, screenshot_path)
 
   expect(result[:status]).not_to eq(:mismatch),

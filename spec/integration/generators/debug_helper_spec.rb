@@ -25,32 +25,12 @@ describe 'Debug helper generation' do
     include_examples 'creates debug helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
   end
 
-  context 'with rspec and capybara' do
-    include_examples 'creates debug helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CAPYBARA}"
-  end
-
   context 'with cucumber and selenium' do
     include_examples 'creates debug helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
   end
 
   context 'with cucumber and watir' do
     include_examples 'creates debug helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
-  end
-
-  context 'with cucumber and capybara' do
-    include_examples 'creates debug helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CAPYBARA}"
-  end
-
-  context 'with minitest and selenium' do
-    include_examples 'creates debug helper', "#{FrameworkIndex::MINITEST}_#{AutomationIndex::SELENIUM}"
-  end
-
-  context 'with minitest and watir' do
-    include_examples 'creates debug helper', "#{FrameworkIndex::MINITEST}_#{AutomationIndex::WATIR}"
-  end
-
-  context 'with minitest and capybara' do
-    include_examples 'creates debug helper', "#{FrameworkIndex::MINITEST}_#{AutomationIndex::CAPYBARA}"
   end
 
   # Mobile frameworks should NOT get debug_helper

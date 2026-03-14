@@ -1,17 +1,12 @@
 require 'tmpdir'
 require_relative '../../helpers/allure_helper'
-require_relative '../../helpers/video_helper'
 
 Before do
   AllureHelper.configure
   driver.start_driver
-  @video_recorder = VideoHelper.recorder_for(driver)
-  @video_recorder&.start(self.class.to_s)
 end
 
 After do |scenario|
-  video_file = @video_recorder&.stop
-  AllureHelper.add_video(scenario.name, video_file)
   Dir.mktmpdir do |temp_folder|
     screenshot = driver.screenshot("#{temp_folder}/#{scenario.name}.png")
     AllureHelper.add_screenshot(scenario.name, screenshot)

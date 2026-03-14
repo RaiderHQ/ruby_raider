@@ -15,10 +15,6 @@ browser_arguments:
     - acceptInsecureCerts
     - no-sandbox
 
-video:
-  enabled: false
-  strategy: auto # auto, cdp, or screen
-
 debug:
   enabled: false        # also toggled by DEBUG=true env var
   console_logs: true    # capture browser console logs on failure

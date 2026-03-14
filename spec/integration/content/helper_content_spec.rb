@@ -79,44 +79,6 @@ describe 'Helper file content' do
     end
   end
 
-  # --- Capybara helper ---
-
-  shared_examples 'valid capybara helper' do |project_name|
-    subject(:helper) { read_generated(project_name, 'helpers/capybara_helper.rb') }
-
-    it 'has frozen_string_literal' do
-      expect(helper).to have_frozen_string_literal
-    end
-
-    it 'has valid Ruby syntax' do
-      expect(helper).to have_valid_ruby_syntax
-    end
-
-    it 'defines CapybaraHelper module' do
-      expect(helper).to match(/module CapybaraHelper/)
-    end
-
-    it 'requires capybara' do
-      expect(helper).to include("require 'capybara'")
-    end
-
-    it 'configures Capybara' do
-      expect(helper).to include('Capybara.configure')
-    end
-
-    it 'registers Selenium driver' do
-      expect(helper).to include('Capybara.register_driver')
-    end
-
-    it 'reads from config.yml' do
-      expect(helper).to include("YAML.load_file('config/config.yml')")
-    end
-
-    it 'does not require watir' do
-      expect(helper).not_to include("require 'watir'")
-    end
-  end
-
   # --- Spec helper ---
 
   shared_examples 'valid spec helper' do |project_name|
@@ -176,142 +138,6 @@ describe 'Helper file content' do
 
     it 'maximizes window via browser' do
       expect(helper).to include('browser.window.maximize')
-    end
-  end
-
-  shared_examples 'capybara spec helper' do |project_name|
-    subject(:helper) { read_generated(project_name, 'helpers/spec_helper.rb') }
-
-    it 'includes Capybara::DSL' do
-      expect(helper).to include('include(Capybara::DSL)')
-    end
-
-    it 'requires capybara_helper' do
-      expect(helper).to include("require_relative 'capybara_helper'")
-    end
-
-    it 'calls CapybaraHelper.configure' do
-      expect(helper).to include('CapybaraHelper.configure')
-    end
-  end
-
-  # --- Test helper (Minitest) ---
-
-  shared_examples 'valid test helper' do |project_name|
-    subject(:helper) { read_generated(project_name, 'helpers/test_helper.rb') }
-
-    it 'has frozen_string_literal' do
-      expect(helper).to have_frozen_string_literal
-    end
-
-    it 'has valid Ruby syntax' do
-      expect(helper).to have_valid_ruby_syntax
-    end
-
-    it 'requires minitest/autorun' do
-      expect(helper).to include("require 'minitest/autorun'")
-    end
-
-    it 'defines TestHelper module' do
-      expect(helper).to match(/module TestHelper/)
-    end
-
-    it 'includes TestHelper into Minitest::Test' do
-      expect(helper).to include('Minitest::Test.include(TestHelper)')
-    end
-  end
-
-  shared_examples 'selenium test helper' do |project_name|
-    subject(:helper) { read_generated(project_name, 'helpers/test_helper.rb') }
-
-    it 'includes DriverHelper' do
-      expect(helper).to include('include DriverHelper')
-    end
-
-    it 'requires driver_helper' do
-      expect(helper).to include("require_relative 'driver_helper'")
-    end
-  end
-
-  shared_examples 'watir test helper' do |project_name|
-    subject(:helper) { read_generated(project_name, 'helpers/test_helper.rb') }
-
-    it 'includes BrowserHelper' do
-      expect(helper).to include('include BrowserHelper')
-    end
-
-    it 'requires browser_helper' do
-      expect(helper).to include("require_relative 'browser_helper'")
-    end
-  end
-
-  shared_examples 'capybara test helper' do |project_name|
-    subject(:helper) { read_generated(project_name, 'helpers/test_helper.rb') }
-
-    it 'includes Capybara::DSL' do
-      expect(helper).to include('include Capybara::DSL')
-    end
-
-    it 'requires capybara_helper' do
-      expect(helper).to include("require_relative 'capybara_helper'")
-    end
-
-    it 'calls CapybaraHelper.configure' do
-      expect(helper).to include('CapybaraHelper.configure')
-    end
-  end
-
-  # --- Video helper ---
-
-  shared_examples 'valid video helper' do |project_name|
-    subject(:helper) { read_generated(project_name, 'helpers/video_helper.rb') }
-
-    it 'has frozen_string_literal' do
-      expect(helper).to have_frozen_string_literal
-    end
-
-    it 'has valid Ruby syntax' do
-      expect(helper).to have_valid_ruby_syntax
-    end
-
-    it 'defines VideoHelper module' do
-      expect(helper).to match(/module VideoHelper/)
-    end
-
-    it 'defines recorder_for method' do
-      expect(helper).to include('def recorder_for')
-    end
-
-    it 'defines CdpRecorder class' do
-      expect(helper).to include('class CdpRecorder')
-    end
-
-    it 'defines ScreenCaptureRecorder class' do
-      expect(helper).to include('class ScreenCaptureRecorder')
-    end
-
-    it 'defines NullRecorder class' do
-      expect(helper).to include('class NullRecorder')
-    end
-
-    it 'reads config from YAML' do
-      expect(helper).to include('YAML.load_file')
-    end
-  end
-
-  shared_examples 'mobile video helper' do |project_name|
-    subject(:helper) { read_generated(project_name, 'helpers/video_helper.rb') }
-
-    it 'defines AppiumRecorder class' do
-      expect(helper).to include('class AppiumRecorder')
-    end
-  end
-
-  shared_examples 'web-only video helper' do |project_name|
-    subject(:helper) { read_generated(project_name, 'helpers/video_helper.rb') }
-
-    it 'does not include AppiumRecorder' do
-      expect(helper).not_to include('class AppiumRecorder')
     end
   end
 
@@ -376,8 +202,7 @@ describe 'Helper file content' do
     it_behaves_like 'valid spec helper', name
     it_behaves_like 'selenium spec helper', name
     it_behaves_like 'valid allure helper', name
-    it_behaves_like 'valid video helper', name
-    it_behaves_like 'web-only video helper', name
+
     it_behaves_like 'valid debug helper', name
   end
 
@@ -387,55 +212,7 @@ describe 'Helper file content' do
     it_behaves_like 'valid spec helper', name
     it_behaves_like 'watir spec helper', name
     it_behaves_like 'valid allure helper', name
-    it_behaves_like 'valid video helper', name
-    it_behaves_like 'web-only video helper', name
-    it_behaves_like 'valid debug helper', name
-  end
 
-  context 'with rspec and capybara' do
-    name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CAPYBARA}"
-    it_behaves_like 'valid capybara helper', name
-    it_behaves_like 'valid spec helper', name
-    it_behaves_like 'capybara spec helper', name
-    it_behaves_like 'valid allure helper', name
-    it_behaves_like 'valid video helper', name
-    it_behaves_like 'web-only video helper', name
-    it_behaves_like 'valid debug helper', name
-  end
-
-  # --- Minitest + automation contexts ---
-
-  context 'with minitest and selenium' do
-    name = "#{FrameworkIndex::MINITEST}_#{AutomationIndex::SELENIUM}"
-    it_behaves_like 'valid driver helper', name
-    it_behaves_like 'selenium driver helper', name
-    it_behaves_like 'valid test helper', name
-    it_behaves_like 'selenium test helper', name
-    it_behaves_like 'valid allure helper', name
-    it_behaves_like 'valid video helper', name
-    it_behaves_like 'web-only video helper', name
-    it_behaves_like 'valid debug helper', name
-  end
-
-  context 'with minitest and watir' do
-    name = "#{FrameworkIndex::MINITEST}_#{AutomationIndex::WATIR}"
-    it_behaves_like 'valid browser helper', name
-    it_behaves_like 'valid test helper', name
-    it_behaves_like 'watir test helper', name
-    it_behaves_like 'valid allure helper', name
-    it_behaves_like 'valid video helper', name
-    it_behaves_like 'web-only video helper', name
-    it_behaves_like 'valid debug helper', name
-  end
-
-  context 'with minitest and capybara' do
-    name = "#{FrameworkIndex::MINITEST}_#{AutomationIndex::CAPYBARA}"
-    it_behaves_like 'valid capybara helper', name
-    it_behaves_like 'valid test helper', name
-    it_behaves_like 'capybara test helper', name
-    it_behaves_like 'valid allure helper', name
-    it_behaves_like 'valid video helper', name
-    it_behaves_like 'web-only video helper', name
     it_behaves_like 'valid debug helper', name
   end
 
@@ -446,8 +223,7 @@ describe 'Helper file content' do
     it_behaves_like 'valid driver helper', name
     it_behaves_like 'selenium driver helper', name
     it_behaves_like 'valid allure helper', name
-    it_behaves_like 'valid video helper', name
-    it_behaves_like 'web-only video helper', name
+
     it_behaves_like 'valid debug helper', name
   end
 
@@ -455,17 +231,7 @@ describe 'Helper file content' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
     it_behaves_like 'valid browser helper', name
     it_behaves_like 'valid allure helper', name
-    it_behaves_like 'valid video helper', name
-    it_behaves_like 'web-only video helper', name
-    it_behaves_like 'valid debug helper', name
-  end
 
-  context 'with cucumber and capybara' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CAPYBARA}"
-    it_behaves_like 'valid capybara helper', name
-    it_behaves_like 'valid allure helper', name
-    it_behaves_like 'valid video helper', name
-    it_behaves_like 'web-only video helper', name
     it_behaves_like 'valid debug helper', name
   end
 
@@ -473,13 +239,11 @@ describe 'Helper file content' do
 
   context 'with cucumber and appium android' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
-    it_behaves_like 'valid video helper', name
-    it_behaves_like 'mobile video helper', name
+
   end
 
   context 'with rspec and appium ios' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
-    it_behaves_like 'valid video helper', name
-    it_behaves_like 'mobile video helper', name
+
   end
 end

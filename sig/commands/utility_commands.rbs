@@ -12,10 +12,4 @@ class UtilityCommands < Thor
   def debug: (String toggle) -> void
   def start_appium: () -> void
   def desktop: () -> void
-  def llm: (?String? provider) -> void
-
-  private
-
-  def configure_llm: (String provider) -> void
-  def show_llm_status: () -> void
 end

@@ -11,8 +11,8 @@ describe 'Lighthouse addon generation' do
   # rubocop:disable RSpec/BeforeAfterAll, RSpec/InstanceVariable
   before(:all) do
     @lighthouse_projects = []
-    %w[rspec cucumber minitest].each do |framework|
-      %w[selenium watir capybara].each do |automation|
+    %w[rspec cucumber].each do |framework|
+      %w[selenium watir].each do |automation|
         name = "lighthouse_#{framework}_#{automation}"
         @lighthouse_projects << { name:, framework:, automation: }
         InvokeGenerators.generate_framework(
@@ -65,37 +65,8 @@ describe 'Lighthouse addon generation' do
     end
   end
 
-  context 'with minitest and selenium' do
-    let(:name) { 'lighthouse_minitest_selenium' }
-
-    it 'creates performance_helper.rb' do
-      expect(File).to exist("#{name}/helpers/performance_helper.rb")
-    end
-
-    it 'creates test_performance.rb' do
-      expect(File).to exist("#{name}/test/test_performance.rb")
-    end
-
-    it 'performance test has valid Ruby syntax' do
-      content = File.read("#{name}/test/test_performance.rb")
-      expect { RubyVM::InstructionSequence.compile(content) }.not_to raise_error
-    end
-  end
-
   context 'with rspec and watir' do
     let(:name) { 'lighthouse_rspec_watir' }
-
-    it 'creates performance_helper.rb' do
-      expect(File).to exist("#{name}/helpers/performance_helper.rb")
-    end
-
-    it 'creates performance_spec.rb' do
-      expect(File).to exist("#{name}/spec/performance_spec.rb")
-    end
-  end
-
-  context 'with rspec and capybara' do
-    let(:name) { 'lighthouse_rspec_capybara' }
 
     it 'creates performance_helper.rb' do
       expect(File).to exist("#{name}/helpers/performance_helper.rb")

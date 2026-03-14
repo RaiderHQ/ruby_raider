@@ -10,8 +10,6 @@ Given('I am on the <%= normalized_name.tr("_", " ") %> page') do
   @page = <%= page_class_name %>.new(driver)
 <%- elsif watir? -%>
   @page = <%= page_class_name %>.new(browser)
-<%- elsif capybara? -%>
-  visit '<%= normalized_name %>'
 <%- end -%>
 end
 

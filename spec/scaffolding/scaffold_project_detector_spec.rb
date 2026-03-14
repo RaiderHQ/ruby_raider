@@ -34,42 +34,20 @@ RSpec.describe ScaffoldProjectDetector do
       expect(described_class.selenium?).to be true
     end
 
-    it 'reports not capybara?' do
-      expect(described_class.capybara?).to be false
-    end
-  end
-
-  context 'with capybara project' do
-    before do
-      File.write('Gemfile', "gem 'capybara'\ngem 'cucumber'\n")
-      FileUtils.mkdir_p('features')
-    end
-
-    it 'detects capybara automation' do
-      expect(described_class.detect_automation).to eq('capybara')
-    end
-
-    it 'detects cucumber framework' do
-      expect(described_class.detect_framework).to eq('cucumber')
-    end
-
-    it 'reports capybara?' do
-      expect(described_class.capybara?).to be true
-    end
   end
 
   context 'with watir project' do
     before do
-      File.write('Gemfile', "gem 'watir'\ngem 'minitest'\n")
-      FileUtils.mkdir_p('test')
+      File.write('Gemfile', "gem 'watir'\ngem 'rspec'\n")
+      FileUtils.mkdir_p('spec')
     end
 
     it 'detects watir automation' do
       expect(described_class.detect_automation).to eq('watir')
     end
 
-    it 'detects minitest framework' do
-      expect(described_class.detect_framework).to eq('minitest')
+    it 'detects rspec framework' do
+      expect(described_class.detect_framework).to eq('rspec')
     end
 
     it 'reports watir?' do

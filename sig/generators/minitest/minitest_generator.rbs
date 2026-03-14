@@ -1,8 +1,0 @@
-# Type definitions for MinitestGenerator
-class MinitestGenerator < Generator
-  def generate_login_test: () -> void
-  def generate_pdp_test: () -> void
-  def generate_visual_test: () -> void
-  def generate_accessibility_test: () -> void
-  def generate_performance_test: () -> void
-end
