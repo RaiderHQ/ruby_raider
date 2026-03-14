@@ -11,8 +11,8 @@ describe 'Visual addon generation' do
   # rubocop:disable RSpec/BeforeAfterAll, RSpec/InstanceVariable
   before(:all) do
     @visual_projects = []
-    %w[rspec cucumber minitest].each do |framework|
-      %w[selenium watir capybara].each do |automation|
+    %w[rspec cucumber].each do |framework|
+      %w[selenium watir].each do |automation|
         name = "visual_#{framework}_#{automation}"
         @visual_projects << { name:, framework:, automation: }
         InvokeGenerators.generate_framework(
@@ -75,42 +75,8 @@ describe 'Visual addon generation' do
     end
   end
 
-  context 'with minitest and selenium' do
-    let(:name) { 'visual_minitest_selenium' }
-
-    it 'creates visual_helper.rb' do
-      expect(File).to exist("#{name}/helpers/visual_helper.rb")
-    end
-
-    it 'creates test_visual.rb' do
-      expect(File).to exist("#{name}/test/test_visual.rb")
-    end
-
-    it 'includes chunky_png in Gemfile' do
-      gemfile = File.read("#{name}/Gemfile")
-      expect(gemfile).to include("gem 'chunky_png'")
-    end
-
-    it 'visual test has valid Ruby syntax' do
-      content = File.read("#{name}/test/test_visual.rb")
-      expect { RubyVM::InstructionSequence.compile(content) }.not_to raise_error
-    end
-  end
-
   context 'with rspec and watir' do
     let(:name) { 'visual_rspec_watir' }
-
-    it 'creates visual_helper.rb' do
-      expect(File).to exist("#{name}/helpers/visual_helper.rb")
-    end
-
-    it 'creates visual_spec.rb' do
-      expect(File).to exist("#{name}/spec/visual_spec.rb")
-    end
-  end
-
-  context 'with rspec and capybara' do
-    let(:name) { 'visual_rspec_capybara' }
 
     it 'creates visual_helper.rb' do
       expect(File).to exist("#{name}/helpers/visual_helper.rb")

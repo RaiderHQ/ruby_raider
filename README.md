@@ -33,11 +33,10 @@ Ruby Raider is a CLI gem and API backend for scaffolding and generating UI test 
 
 ### Web Testing
 
-| Test Framework | Selenium | Watir | Capybara |
-|----------------|----------|-------|----------|
-| RSpec          | ✅       | ✅    | ✅       |
-| Cucumber       | ✅       | ✅    | ✅       |
-| Minitest       | ✅       | ✅    | ✅       |
+| Test Framework | Selenium | Watir |
+|----------------|----------|-------|
+| RSpec          | ✅       | ✅    |
+| Cucumber       | ✅       | ✅    |
 
 ### Mobile Testing (Appium)
 
@@ -45,7 +44,6 @@ Ruby Raider is a CLI gem and API backend for scaffolding and generating UI test 
 |----------------|-----|---------|----------------|
 | RSpec          | ✅  | ✅      | ✅             |
 | Cucumber       | ✅  | ✅      | ✅             |
-| Minitest       | ✅  | ✅      | ✅             |
 
 ### Optional Add-ons (Web Only)
 
@@ -55,13 +53,7 @@ Ruby Raider is a CLI gem and API backend for scaffolding and generating UI test 
 | Visual Regression | `--visual` | Adds chunky_png + visual comparison helpers |
 | Performance | `--performance` | Adds Lighthouse auditing (requires `npm install -g lighthouse`) |
 
-### CI/CD Platforms
-
-Projects can be generated with built-in CI/CD pipelines for **GitHub Actions** or **GitLab CI/CD**.
-
-### Test Reporters
-
-Choose a reporter with `--reporter`: `allure`, `junit`, `json`, `both`, `all`, or `none`.
+All generated projects include a **GitHub Actions** CI pipeline out of the box.
 
 ***The web tests run against the [Raider Test Store](https://raider-test-site.onrender.com/).***
 
@@ -99,12 +91,6 @@ Add optional features:
 raider new my_project -p framework:rspec automation:selenium --accessibility --visual --performance
 ```
 
-Skip flags for leaner projects:
-
-```bash
-raider new my_project -p framework:cucumber automation:watir --skip_ci --skip_video --reporter none
-```
-
 ## Commands
 
 ###### Anything between square brackets ([...]) is where your input goes
@@ -113,15 +99,13 @@ raider new my_project -p framework:cucumber automation:watir --skip_ci --skip_vi
 
 ```
 raider new [PROJECT_NAME]       # Create a new framework project
-raider adopt                    # Import an existing test project
 raider generate                 # Access scaffolding commands
 raider utility                  # Access utility commands
-raider plugin_manager           # Manage plugins
 raider version                  # Show current version
 raider help [COMMAND]           # Describe available commands
 ```
 
-Shortcuts: `n` (new), `a` (adopt), `g` (generate), `u` (utility), `pm` (plugin_manager), `v` (version)
+Shortcuts: `n` (new), `g` (generate), `u` (utility), `v` (version)
 
 ### Scaffolding Commands
 
@@ -133,15 +117,11 @@ raider g steps [NAME]           # Create step definitions
 raider g helper [NAME]          # Create a helper class
 raider g component [NAME]       # Create a component class
 raider g scaffold [NAME(S)]     # Create page + test + steps
-raider g destroy [NAME(S)]      # Delete scaffolded files
-raider g from_url [URL]         # Generate page & spec from a live URL
 ```
 
 Options:
 
 * `--from [FILE]` — Generate spec from an existing page object
-* `--ai` — Use LLM for intelligent test scenario generation
-* `--dry_run` — Preview files without creating them
 * `--uses [PAGES]` — Specify page dependencies
 * `--path [PATH]` — Custom output path
 * `--crud` — Generate full CRUD scaffold (list, create, detail, edit + tests)
@@ -160,37 +140,7 @@ raider u platform [PLATFORM]    # Set platform for cross-platform tests
 raider u debug [on/off]         # Toggle debug mode
 raider u start_appium           # Start Appium server
 raider u desktop                # Download Raider Desktop
-raider u llm [PROVIDER]         # Configure LLM provider (openai, anthropic, ollama)
 ```
-
-### Plugin Commands
-
-```
-raider pm add [NAME]            # Add a plugin to your project
-raider pm delete [NAME]         # Remove a plugin
-raider pm list                  # List available plugins
-raider pm local                 # List installed plugins
-```
-
-### Adopt Command
-
-Import an existing test project into Ruby Raider conventions:
-
-```bash
-raider adopt project [SOURCE_PATH]
-```
-
-## LLM Integration
-
-Ruby Raider supports optional LLM-powered features for intelligent test generation. Configure a provider:
-
-```bash
-raider u llm openai      # Configure OpenAI
-raider u llm anthropic   # Configure Anthropic
-raider u llm ollama      # Configure Ollama (local, no API key needed)
-```
-
-Then use the `--ai` flag with scaffolding commands for smarter code generation.
 
 ## Development
 

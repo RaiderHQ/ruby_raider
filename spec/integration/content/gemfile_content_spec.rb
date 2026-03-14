@@ -67,22 +67,6 @@ describe 'Gemfile content' do
     end
   end
 
-  shared_examples 'contains minitest gems' do |project_name|
-    subject(:gemfile) { read_generated(project_name, 'Gemfile') }
-
-    it 'includes minitest' do
-      expect(gemfile).to include("gem 'minitest'")
-    end
-
-    it 'includes minitest-reporters' do
-      expect(gemfile).to include("gem 'minitest-reporters'")
-    end
-
-    it 'includes rubocop-minitest' do
-      expect(gemfile).to include("gem 'rubocop-minitest'")
-    end
-  end
-
   shared_examples 'contains selenium gems' do |project_name|
     subject(:gemfile) { read_generated(project_name, 'Gemfile') }
 
@@ -104,22 +88,6 @@ describe 'Gemfile content' do
 
     it 'does not include selenium-webdriver' do
       expect(gemfile).not_to include("gem 'selenium-webdriver'")
-    end
-  end
-
-  shared_examples 'contains capybara gems' do |project_name|
-    subject(:gemfile) { read_generated(project_name, 'Gemfile') }
-
-    it 'includes capybara' do
-      expect(gemfile).to include("gem 'capybara'")
-    end
-
-    it 'includes selenium-webdriver as capybara driver' do
-      expect(gemfile).to include("gem 'selenium-webdriver'")
-    end
-
-    it 'does not include watir' do
-      expect(gemfile).not_to include("gem 'watir'")
     end
   end
 
@@ -151,14 +119,6 @@ describe 'Gemfile content' do
     include_examples 'contains debug gems', name
   end
 
-  context 'with rspec and capybara' do
-    name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CAPYBARA}"
-    include_examples 'contains common gems', name
-    include_examples 'contains rspec gems', name
-    include_examples 'contains capybara gems', name
-    include_examples 'contains debug gems', name
-  end
-
   context 'with cucumber and selenium' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'contains common gems', name
@@ -175,35 +135,4 @@ describe 'Gemfile content' do
     include_examples 'contains debug gems', name
   end
 
-  context 'with cucumber and capybara' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CAPYBARA}"
-    include_examples 'contains common gems', name
-    include_examples 'contains cucumber gems', name
-    include_examples 'contains capybara gems', name
-    include_examples 'contains debug gems', name
-  end
-
-  context 'with minitest and selenium' do
-    name = "#{FrameworkIndex::MINITEST}_#{AutomationIndex::SELENIUM}"
-    include_examples 'contains common gems', name
-    include_examples 'contains minitest gems', name
-    include_examples 'contains selenium gems', name
-    include_examples 'contains debug gems', name
-  end
-
-  context 'with minitest and watir' do
-    name = "#{FrameworkIndex::MINITEST}_#{AutomationIndex::WATIR}"
-    include_examples 'contains common gems', name
-    include_examples 'contains minitest gems', name
-    include_examples 'contains watir gems', name
-    include_examples 'contains debug gems', name
-  end
-
-  context 'with minitest and capybara' do
-    name = "#{FrameworkIndex::MINITEST}_#{AutomationIndex::CAPYBARA}"
-    include_examples 'contains common gems', name
-    include_examples 'contains minitest gems', name
-    include_examples 'contains capybara gems', name
-    include_examples 'contains debug gems', name
-  end
 end

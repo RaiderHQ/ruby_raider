@@ -16,14 +16,12 @@ class MenuGenerator
   def offer_desktop_download: () -> void
   def select_test_framework: (String automation) -> void
   def create_framework_options: (Hash[Symbol, untyped] params) -> untyped
-  def select_reporter: (String framework, String automation_type, ?String? ci_platform) -> void
-  def select_accessibility: (String framework, String automation_type, ?String? ci_platform, ?String? reporter) -> void
-  def select_visual: (String framework, String automation_type, ?String? ci_platform, ?String? reporter, ?bool accessibility) -> void
-  def select_performance: (String framework, String automation_type, ?String? ci_platform, ?String? reporter, ?bool accessibility, ?bool visual) -> void
+  def select_accessibility: (String framework, String automation_type) -> void
+  def select_visual: (String framework, String automation_type, ?accessibility: bool) -> void
+  def select_performance: (String framework, String automation_type, ?accessibility: bool, ?visual: bool) -> void
   def mobile_automation?: (String automation_type) -> bool
-  def create_framework: (String framework, String automation_type, ?String? ci_platform, ?String? reporter, ?bool accessibility, ?bool visual, ?bool performance) -> void
+  def create_framework: (String framework, String automation_type, ?accessibility: bool, ?visual: bool, ?performance: bool) -> void
   def yes_no_menu_choices: () -> Hash[Symbol, Proc]
   def select_automation_framework: (untyped menu) -> void
   def automation_options: (untyped menu) -> void
-  def select_ci_platform: (String framework, String automation) -> void
 end

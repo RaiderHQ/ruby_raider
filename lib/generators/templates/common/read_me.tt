@@ -31,11 +31,8 @@ Ruby Raider is a generator and scaffolding gem to make UI test automation easier
 | RSpec and Selenium    | RSpec and Appium for iOS           |
 | Cucumber and Watir    | Cucumber and Appium for Android    |
 | RSpec and Watir       | RSpec and Appium for Android       |
-| Cucumber and Capybara | Cucumber and Appium Cross-platform |
-| RSpec and Capybara    | RSpec and Appium Cross-platform    |
-| Minitest and Selenium | Minitest and Appium for iOS        |
-| Minitest and Watir    | Minitest and Appium for Android    |
-| Minitest and Capybara | Minitest and Appium Cross-platform |
+|                       | Cucumber and Appium Cross-platform |
+|                       | RSpec and Appium Cross-platform    |
 
 **Optional add-ons for web projects:**
 - **Accessibility testing (axe)**: `--accessibility` flag
@@ -70,13 +67,12 @@ raider new [name_of_project] -p framework:[framework] automation:[automation_typ
 ```
 raider generate         # Scaffolding commands
 raider utility          # Utility commands
-raider plugin_manager   # Plugin management
 raider new [NAME]       # Create new project
 raider version          # Show version
 raider help [COMMAND]   # Describe commands
 ```
 
-Shortcuts: `g` (generate), `n` (new), `u` (utility), `v` (version), `pm` (plugin_manager)
+Shortcuts: `g` (generate), `n` (new), `u` (utility), `v` (version)
 
 ### Scaffolding
 

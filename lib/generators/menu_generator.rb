@@ -29,12 +29,9 @@ class MenuGenerator
     structure = {
       automation: options[:automation],
       framework: options[:framework],
-      ci_platform: options[:ci_platform],
-      reporter: options[:reporter],
       accessibility: options[:accessibility],
       visual: options[:visual],
       performance: options[:performance],
-      ruby_version: options[:ruby_version],
       name: @name
     }
     generate_framework(structure)
@@ -74,87 +71,49 @@ class MenuGenerator
 
   def select_test_framework(automation)
     prompt.select('Please select your test framework') do |menu|
-      menu.choice :Cucumber, -> { select_ci_platform('Cucumber', automation) }
-      menu.choice :Rspec, -> { select_ci_platform('Rspec', automation) }
-      menu.choice :Minitest, -> { select_ci_platform('Minitest', automation) }
+      menu.choice :Cucumber, -> { select_accessibility('Cucumber', automation) }
+      menu.choice :Rspec, -> { select_accessibility('Rspec', automation) }
       menu.choice :Quit, -> { exit }
     end
   end
 
-  FrameworkOptions = Struct.new(:automation, :framework, :ci_platform, :reporter, :accessibility, :visual, :performance,
-                                :ruby_version)
+  FrameworkOptions = Struct.new(:automation, :framework, :accessibility, :visual, :performance)
 
   def create_framework_options(params)
-    FrameworkOptions.new(params[:automation], params[:framework], params[:ci_platform], params[:reporter],
-                         params[:accessibility], params[:visual], params[:performance], params[:ruby_version])
+    FrameworkOptions.new(params[:automation], params[:framework],
+                         params[:accessibility], params[:visual], params[:performance])
   end
 
-  def select_reporter(framework, automation_type, ci_platform = nil)
-    prompt.select('Select your test reporter') do |menu|
-      menu.choice :Allure, -> { select_accessibility(framework, automation_type, ci_platform, 'allure') }
-      menu.choice :JUnit, -> { select_accessibility(framework, automation_type, ci_platform, 'junit') }
-      menu.choice :JSON, -> { select_accessibility(framework, automation_type, ci_platform, 'json') }
-      menu.choice :Both, -> { select_accessibility(framework, automation_type, ci_platform, 'both') }
-      menu.choice :All, -> { select_accessibility(framework, automation_type, ci_platform, 'all') }
-      menu.choice :None, -> { select_accessibility(framework, automation_type, ci_platform, 'none') }
-      menu.choice :Quit, -> { exit }
-    end
-  end
-
-  def select_accessibility(framework, automation_type, ci_platform = nil, reporter = nil)
-    return create_framework(framework, automation_type, ci_platform:, reporter:) if mobile_automation?(automation_type)
+  def select_accessibility(framework, automation_type)
+    return create_framework(framework, automation_type) if mobile_automation?(automation_type)
 
     prompt.select('Add accessibility testing (axe)?') do |menu|
-      menu.choice :Yes, -> { select_visual(framework, automation_type, ci_platform, reporter, accessibility: true) }
-      menu.choice :No, -> { select_visual(framework, automation_type, ci_platform, reporter) }
+      menu.choice :Yes, -> { select_visual(framework, automation_type, accessibility: true) }
+      menu.choice :No, -> { select_visual(framework, automation_type) }
       menu.choice :Quit, -> { exit }
     end
   end
 
-  def select_visual(framework, automation_type, ci_platform = nil, reporter = nil, accessibility: false)
+  def select_visual(framework, automation_type, accessibility: false)
     prompt.select('Add visual regression testing?') do |menu|
       menu.choice :Yes, lambda {
-        select_performance(framework, automation_type, ci_platform, reporter, accessibility:, visual: true)
+        select_performance(framework, automation_type, accessibility:, visual: true)
       }
       menu.choice :No, lambda {
-        select_performance(framework, automation_type, ci_platform, reporter, accessibility:)
+        select_performance(framework, automation_type, accessibility:)
       }
       menu.choice :Quit, -> { exit }
     end
   end
 
-  def select_performance(framework, automation_type, ci_platform = nil, reporter = nil, accessibility: false,
-                         visual: false)
+  def select_performance(framework, automation_type, accessibility: false, visual: false)
     prompt.select('Add Lighthouse performance auditing?') do |menu|
       menu.choice :Yes, lambda {
-        select_ruby_version(framework, automation_type, ci_platform:, reporter:, accessibility:, visual:,
-                            performance: true)
+        create_framework(framework, automation_type, accessibility:, visual:,
+                         performance: true)
       }
       menu.choice :No, lambda {
-        select_ruby_version(framework, automation_type, ci_platform:, reporter:, accessibility:, visual:)
-      }
-      menu.choice :Quit, -> { exit }
-    end
-  end
-
-  def select_ruby_version(framework, automation_type, ci_platform: nil, reporter: nil, accessibility: false,
-                          visual: false, performance: false)
-    prompt.select('Select Ruby version for your project') do |menu|
-      menu.choice :'3.4 (latest)', lambda {
-        create_framework(framework, automation_type, ci_platform:, reporter:, accessibility:, visual:, performance:,
-                         ruby_version: '3.4')
-      }
-      menu.choice :'3.3', lambda {
-        create_framework(framework, automation_type, ci_platform:, reporter:, accessibility:, visual:, performance:,
-                         ruby_version: '3.3')
-      }
-      menu.choice :'3.2', lambda {
-        create_framework(framework, automation_type, ci_platform:, reporter:, accessibility:, visual:, performance:,
-                         ruby_version: '3.2')
-      }
-      menu.choice :'3.1', lambda {
-        create_framework(framework, automation_type, ci_platform:, reporter:, accessibility:, visual:, performance:,
-                         ruby_version: '3.1')
+        create_framework(framework, automation_type, accessibility:, visual:)
       }
       menu.choice :Quit, -> { exit }
     end
@@ -164,26 +123,20 @@ class MenuGenerator
     %w[ios android cross_platform].include?(automation_type)
   end
 
-  def create_framework(framework, automation_type, ci_platform: nil, reporter: nil, accessibility: false,
-                       visual: false, performance: false, ruby_version: nil)
+  def create_framework(framework, automation_type, accessibility: false,
+                       visual: false, performance: false)
     options = create_framework_options(automation: automation_type,
                                        framework: framework.downcase,
-                                       ci_platform:,
-                                       reporter:,
                                        accessibility:,
                                        visual:,
-                                       performance:,
-                                       ruby_version:)
+                                       performance:)
 
     puts 'Chosen Options:'
     puts "  Automation Type: #{options[:automation]}"
     puts "  Framework: #{options[:framework]}"
-    puts "  CI Platform: #{options[:ci_platform]}" if options[:ci_platform]
-    puts "  Reporter: #{options[:reporter]}" if options[:reporter]
     puts '  Accessibility: enabled' if options[:accessibility]
     puts '  Visual Testing: enabled' if options[:visual]
     puts '  Performance Auditing: enabled' if options[:performance]
-    puts "  Ruby Version: #{options[:ruby_version]}" if options[:ruby_version]
 
     set_up_framework(options)
     prompt.say("You have chosen to use #{framework} with #{automation_type}")
@@ -204,17 +157,7 @@ class MenuGenerator
 
   def automation_options(menu)
     menu.choice :Selenium, -> { choose_test_framework('selenium') }
-    menu.choice :Capybara, -> { choose_test_framework('capybara') }
     menu.choice :Appium, -> { choose_test_framework('appium') }
     menu.choice :Watir, -> { choose_test_framework('watir') }
-  end
-
-  def select_ci_platform(framework, automation)
-    prompt.select('Would you like to configure CI?') do |menu|
-      menu.choice :'Github Actions', -> { select_reporter(framework, automation, 'github') }
-      menu.choice :'Gitlab CI/CD', -> { select_reporter(framework, automation, 'gitlab') }
-      menu.choice :No, -> { select_reporter(framework, automation) }
-      menu.choice :Quit, -> { exit }
-    end
   end
 end

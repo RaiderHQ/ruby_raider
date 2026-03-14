@@ -79,32 +79,6 @@ describe 'Page object content' do
     end
   end
 
-  shared_examples 'capybara login page' do |project_name|
-    subject(:login) { read_generated(project_name, 'page_objects/pages/login.rb') }
-
-    it 'uses fill_in for input' do
-      expect(login).to include('fill_in')
-    end
-
-    it 'uses click_button' do
-      expect(login).to include('click_button')
-    end
-
-    it 'has no private element methods' do
-      expect(login).not_to include('private')
-      expect(login).not_to match(/def username_field/)
-    end
-
-    it 'does not include Selenium methods' do
-      expect(login).not_to include('find_element')
-      expect(login).not_to include('send_keys')
-    end
-
-    it 'does not include Watir methods' do
-      expect(login).not_to include('browser.text_field')
-    end
-  end
-
   # --- Abstract page ---
 
   shared_examples 'valid abstract page' do |project_name|
@@ -159,30 +133,6 @@ describe 'Page object content' do
     end
   end
 
-  shared_examples 'capybara abstract page' do |project_name|
-    subject(:page) { read_generated(project_name, 'page_objects/abstract/page.rb') }
-
-    it 'includes Capybara::DSL' do
-      expect(page).to include('include Capybara::DSL')
-    end
-
-    it 'uses visit_page method' do
-      expect(page).to match(/def visit_page/)
-    end
-
-    it 'uses Capybara.visit' do
-      expect(page).to include('Capybara.visit')
-    end
-
-    it 'does not have attr_reader :driver' do
-      expect(page).not_to include('attr_reader :driver')
-    end
-
-    it 'does not have initialize with driver' do
-      expect(page).not_to match(/def initialize\(driver\)/)
-    end
-  end
-
   # --- Contexts ---
 
   context 'with rspec and selenium' do
@@ -201,14 +151,6 @@ describe 'Page object content' do
     include_examples 'watir abstract page', name
   end
 
-  context 'with rspec and capybara' do
-    name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CAPYBARA}"
-    include_examples 'valid login page', name
-    include_examples 'capybara login page', name
-    include_examples 'valid abstract page', name
-    include_examples 'capybara abstract page', name
-  end
-
   context 'with cucumber and selenium' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'valid login page', name
@@ -225,35 +167,4 @@ describe 'Page object content' do
     include_examples 'watir abstract page', name
   end
 
-  context 'with cucumber and capybara' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CAPYBARA}"
-    include_examples 'valid login page', name
-    include_examples 'capybara login page', name
-    include_examples 'valid abstract page', name
-    include_examples 'capybara abstract page', name
-  end
-
-  context 'with minitest and selenium' do
-    name = "#{FrameworkIndex::MINITEST}_#{AutomationIndex::SELENIUM}"
-    include_examples 'valid login page', name
-    include_examples 'selenium login page', name
-    include_examples 'valid abstract page', name
-    include_examples 'selenium abstract page', name
-  end
-
-  context 'with minitest and watir' do
-    name = "#{FrameworkIndex::MINITEST}_#{AutomationIndex::WATIR}"
-    include_examples 'valid login page', name
-    include_examples 'watir login page', name
-    include_examples 'valid abstract page', name
-    include_examples 'watir abstract page', name
-  end
-
-  context 'with minitest and capybara' do
-    name = "#{FrameworkIndex::MINITEST}_#{AutomationIndex::CAPYBARA}"
-    include_examples 'valid login page', name
-    include_examples 'capybara login page', name
-    include_examples 'valid abstract page', name
-    include_examples 'capybara abstract page', name
-  end
 end

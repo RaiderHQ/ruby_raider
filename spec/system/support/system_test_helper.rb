@@ -6,7 +6,6 @@ module SystemTestHelper
   def test_command_for(framework)
     case framework
     when 'cucumber' then 'bundle exec cucumber features --format pretty'
-    when 'minitest' then 'bundle exec ruby -Itest test/test_login_page.rb'
     else 'bundle exec rspec spec --format documentation'
     end
   end

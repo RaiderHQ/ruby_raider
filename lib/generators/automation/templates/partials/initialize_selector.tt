@@ -1,6 +1,4 @@
-<% if capybara? %>
-  include Capybara::DSL
-<% elsif watir? %>
+<% if watir? %>
   attr_reader :browser
 
   def initialize(browser)

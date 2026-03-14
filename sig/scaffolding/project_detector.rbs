@@ -8,7 +8,6 @@ module ScaffoldProjectDetector
   def self?.detect_framework: (?String? gemfile) -> String
   def self?.read_gemfile: () -> String
   def self?.selenium?: () -> bool
-  def self?.capybara?: () -> bool
   def self?.watir?: () -> bool
   def self?.config: () -> Hash[String, untyped]
 end

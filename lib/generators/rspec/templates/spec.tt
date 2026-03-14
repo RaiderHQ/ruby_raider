@@ -1,4 +1,4 @@
-<%- if selenium_based? || watir? || capybara? -%>
+<%- if selenium_based? || watir? -%>
 # frozen_string_literal: true
 
 require_relative '../helpers/spec_helper'
@@ -10,16 +10,15 @@ require_relative '../page_objects/pages/login'
 # require 'debug'    # Ruby's built-in debugger (binding.break)
 # require 'pry'      # Pry debugger (binding.pry)
 
-<%- if selenium_based? || watir? || capybara? -%>
 describe 'Login' do
   subject(:header) { account_page.header.customer_name }
 
   let(:user) { ModelFactory.for('users')['registered user'] }
-  let(:login_page) { <% if capybara? -%>Login.new<% elsif watir? -%>Login.new(browser)<% else -%>Login.new(driver)<% end -%> }
-  let(:account_page) { <% if capybara? -%>Account.new<% elsif watir? -%>Account.new(browser)<% else -%>Account.new(driver)<% end -%> }
+  let(:login_page) { <% if watir? -%>Login.new(browser)<% else -%>Login.new(driver)<% end -%> }
+  let(:account_page) { <% if watir? -%>Account.new(browser)<% else -%>Account.new(driver)<% end -%> }
 
   before do
-    login_page.<% if capybara? -%>visit_page<% else -%>visit<% end %>
+    login_page.visit
     login_page.login(user['username'], password)
   end
 
@@ -28,7 +27,7 @@ describe 'Login' do
 
     it 'can successfully log in' do
       # binding.break  # Uncomment to pause here and inspect state
-      account_page.<% if capybara? -%>visit_page<% else -%>visit<% end %>
+      account_page.visit
       expect(header).to eq "Welcome back #{user['name']}"
     end
   end
@@ -37,12 +36,11 @@ describe 'Login' do
     let(:password) { 'wrongPassword' }
 
     it 'cannot log in' do
-      login_page.<% if capybara? -%>visit_page<% else -%>visit<% end %>
+      login_page.visit
       expect(header).to eq 'Login or register'
     end
   end
 end
-<%- end -%>
 <%- else -%>
 <% if cross_platform? -%>
 require_relative '../helpers/appium_helper'

@@ -11,8 +11,8 @@ describe 'Axe accessibility addon generation' do
   # rubocop:disable RSpec/BeforeAfterAll, RSpec/InstanceVariable
   before(:all) do
     @axe_projects = []
-    %w[rspec cucumber minitest].each do |framework|
-      %w[selenium watir capybara].each do |automation|
+    %w[rspec cucumber].each do |framework|
+      %w[selenium watir].each do |automation|
         name = "axe_#{framework}_#{automation}"
         @axe_projects << name
         InvokeGenerators.generate_framework(
@@ -62,34 +62,8 @@ describe 'Axe accessibility addon generation' do
     end
   end
 
-  context 'with minitest and selenium' do
-    let(:name) { 'axe_minitest_selenium' }
-
-    it 'creates test_accessibility.rb' do
-      expect(File).to exist("#{name}/test/test_accessibility.rb")
-    end
-
-    it 'includes axe gems in Gemfile' do
-      gemfile = File.read("#{name}/Gemfile")
-      expect(gemfile).to include('axe')
-    end
-
-    it 'accessibility test has valid Ruby syntax' do
-      content = File.read("#{name}/test/test_accessibility.rb")
-      expect { RubyVM::InstructionSequence.compile(content) }.not_to raise_error
-    end
-  end
-
   context 'with rspec and watir' do
     let(:name) { 'axe_rspec_watir' }
-
-    it 'creates accessibility_spec.rb' do
-      expect(File).to exist("#{name}/spec/accessibility_spec.rb")
-    end
-  end
-
-  context 'with rspec and capybara' do
-    let(:name) { 'axe_rspec_capybara' }
 
     it 'creates accessibility_spec.rb' do
       expect(File).to exist("#{name}/spec/accessibility_spec.rb")
@@ -101,30 +75,6 @@ describe 'Axe accessibility addon generation' do
 
     it 'creates accessibility.feature' do
       expect(File).to exist("#{name}/features/accessibility.feature")
-    end
-  end
-
-  context 'with cucumber and capybara' do
-    let(:name) { 'axe_cucumber_capybara' }
-
-    it 'creates accessibility.feature' do
-      expect(File).to exist("#{name}/features/accessibility.feature")
-    end
-  end
-
-  context 'with minitest and watir' do
-    let(:name) { 'axe_minitest_watir' }
-
-    it 'creates test_accessibility.rb' do
-      expect(File).to exist("#{name}/test/test_accessibility.rb")
-    end
-  end
-
-  context 'with minitest and capybara' do
-    let(:name) { 'axe_minitest_capybara' }
-
-    it 'creates test_accessibility.rb' do
-      expect(File).to exist("#{name}/test/test_accessibility.rb")
     end
   end
 

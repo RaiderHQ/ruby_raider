@@ -1,5 +1,1 @@
 platform: :ios
-
-video:
-  enabled: false
-  strategy: auto # auto, appium, or screen

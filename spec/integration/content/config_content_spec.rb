@@ -51,24 +51,6 @@ describe 'Config file content' do
     end
   end
 
-  shared_examples 'config with video section' do |project_name|
-    subject(:config_content) { read_generated(project_name, 'config/config.yml') }
-
-    let(:config) { YAML.safe_load(config_content, permitted_classes: [Symbol]) }
-
-    it 'has video section' do
-      expect(config).to have_key('video')
-    end
-
-    it 'has video enabled key defaulting to false' do
-      expect(config['video']['enabled']).to be false
-    end
-
-    it 'has video strategy key' do
-      expect(config['video']['strategy']).to eq('auto')
-    end
-  end
-
   shared_examples 'config with debug section' do |project_name|
     subject(:config_content) { read_generated(project_name, 'config/config.yml') }
 
@@ -105,7 +87,7 @@ describe 'Config file content' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'valid web config', name
     include_examples 'selenium config with timeout', name
-    include_examples 'config with video section', name
+
     include_examples 'config with debug section', name
   end
 
@@ -113,15 +95,7 @@ describe 'Config file content' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'valid web config', name
     include_examples 'config without driver_options', name
-    include_examples 'config with video section', name
-    include_examples 'config with debug section', name
-  end
 
-  context 'with rspec and capybara' do
-    name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CAPYBARA}"
-    include_examples 'valid web config', name
-    include_examples 'config without driver_options', name
-    include_examples 'config with video section', name
     include_examples 'config with debug section', name
   end
 
@@ -129,31 +103,7 @@ describe 'Config file content' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'valid web config', name
     include_examples 'selenium config with timeout', name
-    include_examples 'config with video section', name
-    include_examples 'config with debug section', name
-  end
 
-  context 'with minitest and selenium' do
-    name = "#{FrameworkIndex::MINITEST}_#{AutomationIndex::SELENIUM}"
-    include_examples 'valid web config', name
-    include_examples 'selenium config with timeout', name
-    include_examples 'config with video section', name
-    include_examples 'config with debug section', name
-  end
-
-  context 'with minitest and watir' do
-    name = "#{FrameworkIndex::MINITEST}_#{AutomationIndex::WATIR}"
-    include_examples 'valid web config', name
-    include_examples 'config without driver_options', name
-    include_examples 'config with video section', name
-    include_examples 'config with debug section', name
-  end
-
-  context 'with minitest and capybara' do
-    name = "#{FrameworkIndex::MINITEST}_#{AutomationIndex::CAPYBARA}"
-    include_examples 'valid web config', name
-    include_examples 'config without driver_options', name
-    include_examples 'config with video section', name
     include_examples 'config with debug section', name
   end
 

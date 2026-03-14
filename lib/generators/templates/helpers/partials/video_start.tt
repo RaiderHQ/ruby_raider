@@ -1,9 +1,0 @@
-<% if capybara? %>
-  @video_recorder = VideoHelper.recorder_for(Capybara.current_session.driver)
-<% elsif selenium_based? %>
-  @video_recorder = VideoHelper.recorder_for(driver)
-<% elsif watir? %>
-  @video_recorder = VideoHelper.recorder_for(browser)
-<% else %>
-  @video_recorder = VideoHelper.recorder_for(driver)
-<% end %>

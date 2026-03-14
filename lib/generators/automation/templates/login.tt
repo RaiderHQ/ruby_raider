@@ -9,13 +9,7 @@ class Login < Page
 
   # Actions
 
-<%- if capybara? -%>
-  def login(username, password)
-    fill_in 'loginFrm_loginname', with: username
-    fill_in 'loginFrm_password', with: password
-    click_button 'Login'
-  end
-<%- elsif selenium_based? -%>
+<%- if selenium_based? -%>
   def login(username, password)
     username_field.send_keys username
     password_field.send_keys password
@@ -29,7 +23,6 @@ class Login < Page
     login_button.click
   end
 <%- end -%>
-<%- unless capybara? -%>
 
   private
 
@@ -58,5 +51,4 @@ class Login < Page
     browser.button(xpath: "//button[@title='Login']")
 <%- end -%>
   end
-<%- end -%>
 end

@@ -6,16 +6,9 @@ require 'axe-rspec'
 require 'rspec'
 require 'rspec/retry'
 require 'tmpdir'
-<%- if allure_reporter? -%>
 require_relative 'allure_helper'
-<%- end -%>
-<%- unless skip_video? -%>
-require_relative 'video_helper'
-<%- end -%>
 require_relative 'debug_helper'
-<%- if capybara? -%>
-require_relative 'capybara_helper'
-<%- elsif watir? -%>
+<%- if watir? -%>
 require_relative 'browser_helper'
 <%- else -%>
 require_relative 'driver_helper'
@@ -23,27 +16,14 @@ require_relative 'driver_helper'
 
 module SpecHelper
 
-  <%- if allure_reporter? -%>
   AllureHelper.configure
-  <%- end -%>
   RSpec.configure do |config|
     config.example_status_persistence_file_path = 'spec/examples.txt'
     config.verbose_retry = true
     config.display_try_failure_messages = true
     config.default_retry_count = ENV.fetch('RETRY_COUNT', 0).to_i
-    <%- if allure_reporter? -%>
     config.formatter = AllureHelper.formatter
-    <%- end -%>
-    <%- if junit_reporter? -%>
-    config.add_formatter('RspecJunitFormatter', 'results/junit.xml')
-    <%- end -%>
-    <%- if json_reporter? -%>
-    config.add_formatter('json', 'results/results.json')
-    <%- end -%>
-    <%- if capybara? -%>
-    config.include(Capybara::DSL)
-    CapybaraHelper.configure
-    <%- elsif watir? -%>
+    <%- if watir? -%>
     config.include(BrowserHelper)
     <%- else -%>
     config.include(DriverHelper)
@@ -51,14 +31,6 @@ module SpecHelper
     <%- if mobile? -%>
     config.before(:each) do
       driver.start_driver
-    <%- elsif capybara? -%>
-    config.before(:each) do
-      viewport = YAML.load_file('config/config.yml')['viewport']
-      if viewport
-        Capybara.current_session.driver.browser.manage.window.resize_to(viewport['width'], viewport['height'])
-      else
-        Capybara.current_session.driver.browser.manage.window.maximize
-      end
     <%- elsif selenium_based? -%>
     config.before(:each) do
       viewport = YAML.load_file('config/config.yml')['viewport']
@@ -76,10 +48,6 @@ module SpecHelper
         browser.window.maximize
       end
     <%- end -%>
-      <%- unless skip_video? -%>
-      <%= partial('video_start', strip: true) %>
-      @video_recorder&.start(self.class.description)
-      <%- end -%>
       <%= partial('debug_start', strip: true) %>
       @debug_action_logger = DebugHelper.action_logger_for(self.class.description)
     end
@@ -91,14 +59,9 @@ module SpecHelper
         <%= partial('debug_diagnostics', strip: true) %>
       end
       @debug_action_logger&.close
-      <%- unless skip_video? -%>
-      <%= partial('video_stop', strip: true) %>
-      <%- end -%>
       Dir.mktmpdir do |temp_folder|
         <%= partial('screenshot', strip: true) %>
-        <%- if allure_reporter? -%>
         AllureHelper.add_screenshot(example_name, screenshot)
-        <%- end -%>
       end
       <%= partial('quit_driver', strip: true) %>
     end

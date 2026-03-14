@@ -31,13 +31,6 @@ RSpec.describe 'Headless config support in driver templates' do
     end
   end
 
-  describe 'capybara helper template' do
-    it 'checks config headless key' do
-      content = File.read(File.expand_path('../../lib/generators/templates/helpers/capybara_helper.tt', __dir__))
-      expect(content).to include("config['headless']")
-    end
-  end
-
   describe 'browser helper template (watir)' do
     it 'checks config headless key' do
       content = File.read(File.expand_path('../../lib/generators/templates/helpers/browser_helper.tt', __dir__))

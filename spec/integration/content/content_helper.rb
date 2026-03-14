@@ -7,8 +7,8 @@ module ContentHelper
     File.read(File.join(project, relative_path))
   end
 
-  def project(framework, automation, ci_platform = nil)
-    ci_platform ? "#{framework}_#{automation}_#{ci_platform}" : "#{framework}_#{automation}"
+  def project(framework, automation)
+    "#{framework}_#{automation}"
   end
 end
 

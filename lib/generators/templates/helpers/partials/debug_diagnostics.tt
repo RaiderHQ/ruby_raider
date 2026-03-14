@@ -1,6 +1,4 @@
-<% if capybara? %>
-  DebugHelper.capture_failure_diagnostics(Capybara.current_session.driver, example_name, exception: @_exception)
-<% elsif selenium_based? %>
+<% if selenium_based? %>
   DebugHelper.capture_failure_diagnostics(driver, example_name, exception: @_exception)
 <% elsif watir? %>
   DebugHelper.capture_failure_diagnostics(browser, example_name, exception: @_exception)
