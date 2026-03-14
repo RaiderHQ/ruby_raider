@@ -37,7 +37,3 @@ gem 'selenium-webdriver'
 <%- if watir? -%>
 gem 'watir'
 <%- end -%>
-<%- if web? -%>
-gem 'debug', '>= 1.0'
-gem 'pry'
-<%- end -%>

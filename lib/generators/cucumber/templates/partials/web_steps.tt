@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-# Uncomment for interactive debugging:
-# require 'debug'    # Ruby's built-in debugger (binding.break)
-# require 'pry'      # Pry debugger (binding.pry)
-
 require_relative '../../page_objects/pages/account'
 require_relative '../../page_objects/pages/login'
 
@@ -14,7 +10,6 @@ Given("I'm a {user} on the login page") do |user|
 end
 
 When('I login with my credentials') do
-  # binding.break  # Uncomment to pause here and inspect state
   @login_page.login(@user['username'], @user['password'])
 end
 

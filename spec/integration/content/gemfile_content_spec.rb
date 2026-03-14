@@ -91,24 +91,11 @@ describe 'Gemfile content' do
     end
   end
 
-  shared_examples 'contains debug gems' do |project_name|
-    subject(:gemfile) { read_generated(project_name, 'Gemfile') }
-
-    it 'includes debug gem' do
-      expect(gemfile).to include("gem 'debug'")
-    end
-
-    it 'includes pry gem' do
-      expect(gemfile).to include("gem 'pry'")
-    end
-  end
-
   context 'with rspec and selenium' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'contains common gems', name
     include_examples 'contains rspec gems', name
     include_examples 'contains selenium gems', name
-    include_examples 'contains debug gems', name
   end
 
   context 'with rspec and watir' do
@@ -116,7 +103,6 @@ describe 'Gemfile content' do
     include_examples 'contains common gems', name
     include_examples 'contains rspec gems', name
     include_examples 'contains watir gems', name
-    include_examples 'contains debug gems', name
   end
 
   context 'with cucumber and selenium' do
@@ -124,7 +110,6 @@ describe 'Gemfile content' do
     include_examples 'contains common gems', name
     include_examples 'contains cucumber gems', name
     include_examples 'contains selenium gems', name
-    include_examples 'contains debug gems', name
   end
 
   context 'with cucumber and watir' do
@@ -132,7 +117,6 @@ describe 'Gemfile content' do
     include_examples 'contains common gems', name
     include_examples 'contains cucumber gems', name
     include_examples 'contains watir gems', name
-    include_examples 'contains debug gems', name
   end
 
 end

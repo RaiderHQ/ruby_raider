@@ -6,10 +6,6 @@ require_relative '../models/model_factory'
 require_relative '../page_objects/pages/account'
 require_relative '../page_objects/pages/login'
 
-# Uncomment for interactive debugging:
-# require 'debug'    # Ruby's built-in debugger (binding.break)
-# require 'pry'      # Pry debugger (binding.pry)
-
 describe 'Login' do
   subject(:header) { account_page.header.customer_name }
 
@@ -26,7 +22,6 @@ describe 'Login' do
     let(:password) { user['password'] }
 
     it 'can successfully log in' do
-      # binding.break  # Uncomment to pause here and inspect state
       account_page.visit
       expect(header).to eq "Welcome back #{user['name']}"
     end
