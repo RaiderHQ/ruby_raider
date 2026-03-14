@@ -51,17 +51,28 @@ Ruby Raider is a CLI gem and API backend for scaffolding and generating UI test 
 |--------|------|-------------|
 | Accessibility | `--accessibility` | Adds axe gem + example accessibility tests |
 
-All generated projects include a **GitHub Actions** CI pipeline out of the box.
+This works on all platforms (Mac OS, Linux and Windows).
 
-***The web tests run against the [Raider Test Store](https://raider-test-site.onrender.com/).***
+## What's Included
 
-***To run Appium tests, download the example [app](https://github.com/RaiderHQ/raider_test_app) and start the server:***
+Every generated project comes with:
+
+- **Page Object Model** — Base page and component classes with example pages
+- **Test examples** — Working login tests against the [Raider Test Store](https://raider-test-site.onrender.com/)
+- **Allure reporting** — Pre-configured with screenshot capture on failure
+- **GitHub Actions CI** — Ready-to-use test pipeline
+- **Rake tasks** — Default, smoke, and regression tasks with tag-based filtering
+- **Retry support** — RSpec retry with configurable retry count via `RETRY_COUNT` env var
+- **Re-run failed tests** — Persistence file for tracking example status
+- **Parallel execution** — parallel_tests and parallel_split_test gems included
+- **Configurable browser** — Chrome/Firefox with customizable arguments, viewport, timeout, and headless mode
+- **Linting** — RuboCop and Reek configs included
+
+For Appium projects, download the example [app](https://github.com/RaiderHQ/raider_test_app) and start the server:
 
 ```bash
 raider u start_appium
 ```
-
-This works on all platforms (Mac OS, Linux and Windows).
 
 ## Getting Started
 
@@ -83,7 +94,7 @@ Or skip the menu with parameters:
 raider new [project_name] -p framework:rspec automation:selenium
 ```
 
-Add optional features:
+Add accessibility testing:
 
 ```bash
 raider new my_project -p framework:rspec automation:selenium --accessibility
@@ -127,8 +138,9 @@ Options:
 raider u path [PATH]            # Set default paths for scaffolding
 raider u url [URL]              # Set default project URL
 raider u browser [BROWSER]      # Set default browser
-raider u browser_options [OPTS] # Set browser options
-raider u raid                   # Run all tests
+raider u browser_options [OPTS] # Set browser arguments (e.g., no-sandbox, headless)
+raider u headless [on/off]      # Toggle headless mode
+raider u raid                   # Run all tests (-p for parallel)
 raider u timeout [SECONDS]      # Set test timeout
 raider u viewport [DIMENSIONS]  # Set viewport size (e.g., 1920x1080)
 raider u platform [PLATFORM]    # Set platform for cross-platform tests
