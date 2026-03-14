@@ -45,13 +45,11 @@ Ruby Raider is a CLI gem and API backend for scaffolding and generating UI test 
 | RSpec          | ✅  | ✅      | ✅             |
 | Cucumber       | ✅  | ✅      | ✅             |
 
-### Optional Add-ons (Web Only)
+### Optional Add-on (Web Only)
 
 | Add-on | Flag | Description |
 |--------|------|-------------|
 | Accessibility | `--accessibility` | Adds axe gem + example accessibility tests |
-| Visual Regression | `--visual` | Adds chunky_png + visual comparison helpers |
-| Performance | `--performance` | Adds Lighthouse auditing (requires `npm install -g lighthouse`) |
 
 All generated projects include a **GitHub Actions** CI pipeline out of the box.
 
@@ -88,7 +86,7 @@ raider new [project_name] -p framework:rspec automation:selenium
 Add optional features:
 
 ```bash
-raider new my_project -p framework:rspec automation:selenium --accessibility --visual --performance
+raider new my_project -p framework:rspec automation:selenium --accessibility
 ```
 
 ## Commands

@@ -17,11 +17,6 @@ module RubyRaider
            type: :hash, required: false, desc: 'Parameters to avoid using the menu', aliases: 'p'
     option :accessibility,
            type: :boolean, required: false, desc: 'Add axe accessibility testing'
-    option :visual,
-           type: :boolean, required: false, desc: 'Add visual regression testing'
-    option :performance,
-           type: :boolean, required: false, desc: 'Add Lighthouse performance auditing'
-
     def new(project_name)
       require_relative 'utilities/logo'
       RubyRaider::Logo.display
@@ -57,8 +52,6 @@ module RubyRaider
     no_tasks do
       def merge_flags(params)
         params[:accessibility] = true if options[:accessibility]
-        params[:visual] = true if options[:visual]
-        params[:performance] = true if options[:performance]
       end
     end
   end

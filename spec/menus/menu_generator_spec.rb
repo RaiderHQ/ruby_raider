@@ -142,36 +142,6 @@ RSpec.describe MenuGenerator do
     end
   end
 
-  describe 'full flow: selenium + rspec + visual' do
-    it 'passes visual flag through' do
-      allow(menu_generator).to receive(:generate_framework)
-      allow(menu_generator).to receive(:system)
-      allow(prompt).to receive(:say)
-      allow(prompt).to receive(:yes?).and_return(false)
-
-      menu_generator.send(:create_framework, 'Rspec', 'selenium', visual: true)
-
-      expect(menu_generator).to have_received(:generate_framework).with(
-        hash_including(automation: 'selenium', framework: 'rspec', visual: true)
-      )
-    end
-  end
-
-  describe 'full flow: selenium + rspec + performance' do
-    it 'passes performance flag through' do
-      allow(menu_generator).to receive(:generate_framework)
-      allow(menu_generator).to receive(:system)
-      allow(prompt).to receive(:say)
-      allow(prompt).to receive(:yes?).and_return(false)
-
-      menu_generator.send(:create_framework, 'Rspec', 'selenium', performance: true)
-
-      expect(menu_generator).to have_received(:generate_framework).with(
-        hash_including(automation: 'selenium', framework: 'rspec', performance: true)
-      )
-    end
-  end
-
   describe 'project name propagation' do
     it 'uses the project name from initialization' do
       generator = described_class.new('my_custom_project')

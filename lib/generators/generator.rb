@@ -55,10 +55,6 @@ class Generator < Thor::Group
     args.include?('selenium')
   end
 
-  def visual_addon?
-    args.include?('visual_addon')
-  end
-
   def watir?
     args.include?('watir')
   end
@@ -69,10 +65,6 @@ class Generator < Thor::Group
 
   def axe_addon?
     args.include?('axe_addon')
-  end
-
-  def lighthouse_addon?
-    args.include?('lighthouse_addon')
   end
 
   def selenium_based?

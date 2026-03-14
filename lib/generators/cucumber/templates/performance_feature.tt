@@ -1,5 +1,0 @@
-Feature: Performance Audit
-
-Scenario: Page meets performance threshold
-    Given I audit the home page performance
-    Then the performance score should be above the threshold

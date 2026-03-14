@@ -17,10 +17,8 @@ class MenuGenerator
   def select_test_framework: (String automation) -> void
   def create_framework_options: (Hash[Symbol, untyped] params) -> untyped
   def select_accessibility: (String framework, String automation_type) -> void
-  def select_visual: (String framework, String automation_type, ?accessibility: bool) -> void
-  def select_performance: (String framework, String automation_type, ?accessibility: bool, ?visual: bool) -> void
   def mobile_automation?: (String automation_type) -> bool
-  def create_framework: (String framework, String automation_type, ?accessibility: bool, ?visual: bool, ?performance: bool) -> void
+  def create_framework: (String framework, String automation_type, ?accessibility: bool) -> void
   def yes_no_menu_choices: () -> Hash[Symbol, Proc]
   def select_automation_framework: (untyped menu) -> void
   def automation_options: (untyped menu) -> void

@@ -9,8 +9,6 @@ class HelpersGenerator < Generator
     generate_appium_helper
     generate_allure_helper
     generate_debug_helper
-    generate_visual_helper
-    generate_performance_helper
     generate_spec_helper
   end
 
@@ -50,15 +48,4 @@ class HelpersGenerator < Generator
     template('helpers/debug_helper.tt', "#{name}/helpers/debug_helper.rb")
   end
 
-  def generate_visual_helper
-    return unless visual_addon? && web?
-
-    template('helpers/visual_helper.tt', "#{name}/helpers/visual_helper.rb")
-  end
-
-  def generate_performance_helper
-    return unless lighthouse_addon? && web?
-
-    template('helpers/performance_helper.tt', "#{name}/helpers/performance_helper.rb")
-  end
 end

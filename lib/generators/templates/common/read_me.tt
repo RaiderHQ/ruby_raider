@@ -34,10 +34,8 @@ Ruby Raider is a generator and scaffolding gem to make UI test automation easier
 |                       | Cucumber and Appium Cross-platform |
 |                       | RSpec and Appium Cross-platform    |
 
-**Optional add-ons for web projects:**
+**Optional add-on for web projects:**
 - **Accessibility testing (axe)**: `--accessibility` flag
-- **Visual regression testing (chunky_png)**: `--visual` flag
-- **Performance auditing (Lighthouse)**: `--performance` flag
 
 ***The web tests run against the [Raider Test Store](https://raider-test-site.onrender.com/).***
 
