@@ -1,15 +1,19 @@
+# frozen_string_literal: true
+
+require 'raider_reporter/cucumber'
 require 'tmpdir'
-require_relative '../../helpers/allure_helper'
 
 Before do
-  AllureHelper.configure
   driver.start_driver
 end
 
 After do |scenario|
-  Dir.mktmpdir do |temp_folder|
-    screenshot = driver.screenshot("#{temp_folder}/#{scenario.name}.png")
-    AllureHelper.add_screenshot(scenario.name, screenshot)
+  if scenario.failed?
+    Dir.mktmpdir do |temp_folder|
+      screenshot_path = "#{temp_folder}/#{scenario.name}.png"
+      driver.screenshot(screenshot_path)
+      RaiderReporter.attach('screenshot', screenshot_path, type: :png)
+    end
   end
   driver.quit_driver
 end

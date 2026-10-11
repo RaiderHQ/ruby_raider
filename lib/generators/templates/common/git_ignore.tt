@@ -1,5 +1,7 @@
-allure-results
 <%- if rspec? -%>
+allure-results
+<%- end -%>
 raider-results
+<%- if rspec? -%>
 spec/examples.txt
 <%- end -%>
