@@ -104,6 +104,15 @@ describe 'End-to-End Project Generation and Execution' do
       expect(bundle_install(project)).to be true
     end
 
+    it 'resolves raider_reporter 0.3 from RubyGems and ships the raider-reporter executable', :aggregate_failures do
+      skip 'Bundle install failed' unless bundle_install(project)
+
+      expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.3\.\d+\)$/)
+      result = run_in_project(project, 'bundle exec raider-reporter --help', timeout: 60)
+      expect(result[:exit_code]).to eq(0), "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
+      expect(result[:stdout] + result[:stderr]).to include('raider-reporter comment')
+    end
+
     it 'runs generated RSpec tests successfully', :slow do
       skip 'Bundle install failed' unless bundle_install(project)
 

@@ -127,7 +127,7 @@ describe 'Gemfile content' do
         let(:gemfile) { read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'Gemfile') }
 
         it 'includes raider_reporter' do
-          expect(gemfile).to include("gem 'raider_reporter', '~> 0.2'")
+          expect(gemfile).to include("gem 'raider_reporter', '~> 0.3'")
         end
 
         it 'keeps allure gems' do
