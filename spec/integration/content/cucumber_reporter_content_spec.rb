@@ -13,6 +13,8 @@ describe 'Cucumber raider_reporter wiring' do
       let(:project_name) { "#{FrameworkIndex::CUCUMBER}_#{automation}" }
       let(:env) { read_generated(project_name, 'features/support/env.rb') }
       let(:screenshot_call) { screenshot_calls.fetch(automation, 'driver.screenshot(screenshot_path)') }
+      let(:hook) { env[/^\s*After do.*\z/m] }
+      let(:quit_call) { automation == 'watir' ? 'browser.quit' : 'driver.quit' }
 
       it 'activates the reporter by requiring raider_reporter/cucumber' do
         expect(env).to include("require 'raider_reporter/cucumber'")
@@ -21,9 +23,6 @@ describe 'Cucumber raider_reporter wiring' do
       it 'does not reference the allure helper' do
         expect(env).not_to match(/AllureHelper|allure_helper/)
       end
-
-      let(:hook) { env[/^\s*After do.*\z/m] }
-      let(:quit_call) { automation == 'watir' ? 'browser.quit' : 'driver.quit' }
 
       it 'takes the screenshot only for failed scenarios, inside the guard block' do
         guarded = /if scenario\.failed\?\n\s+Dir\.mktmpdir do \|temp_folder\|\n(?<body>.*?)\n\s+end\n\s+end\n\s+ensure/m
