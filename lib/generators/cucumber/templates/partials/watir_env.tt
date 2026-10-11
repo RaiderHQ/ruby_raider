@@ -14,12 +14,15 @@ Before do
 end
 
 After do |scenario|
-  if scenario.failed?
-    Dir.mktmpdir do |temp_folder|
-      screenshot_path = "#{temp_folder}/#{scenario.name}.png"
-      browser.screenshot.save(screenshot_path)
-      RaiderReporter.attach('screenshot', screenshot_path, type: :png)
+  begin
+    if scenario.failed?
+      Dir.mktmpdir do |temp_folder|
+        screenshot_path = File.join(temp_folder, 'screenshot.png')
+        browser.screenshot.save(screenshot_path)
+        RaiderReporter.attach('screenshot', screenshot_path, type: :png)
+      end
     end
+  ensure
+    browser.quit
   end
-  browser.quit
 end

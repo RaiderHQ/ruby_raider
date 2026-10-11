@@ -22,15 +22,29 @@ describe 'Cucumber raider_reporter wiring' do
         expect(env).not_to match(/AllureHelper|allure_helper/)
       end
 
-      it 'takes the screenshot only for failed scenarios' do
-        expect(env).to match(/if scenario\.failed\?.*#{Regexp.escape(screenshot_call)}/m)
+      let(:hook) { env[/^\s*After do.*\z/m] }
+      let(:quit_call) { automation == 'watir' ? 'browser.quit' : 'driver.quit' }
+
+      it 'takes the screenshot only for failed scenarios, inside the guard block' do
+        guarded = /if scenario\.failed\?\n\s+Dir\.mktmpdir do \|temp_folder\|\n(?<body>.*?)\n\s+end\n\s+end\n\s+ensure/m
+        expect(hook.match(guarded)[:body]).to include(screenshot_call)
+      end
+
+      it 'uses a fixed file name in the tmpdir, never the scenario name' do
+        expect(env).to include("screenshot_path = File.join(temp_folder, 'screenshot.png')")
+        expect(hook).not_to include('scenario.name')
+      end
+
+      it 'quits the driver in an ensure that follows the begin' do
+        quit = %w[android ios cross_platform].include?(automation) ? 'driver.quit_driver' : quit_call
+        expect(hook).to match(/^\s*After do \|scenario\|\n\s+begin\n.*\n\s+ensure\n\s+#{Regexp.escape(quit)}\n\s+end\nend/m)
       end
 
       it 'attaches the screenshot path before quitting the driver' do
         attach = "RaiderReporter.attach('screenshot', screenshot_path, type: :png)"
         expect(env).to include(attach)
         expect(env.index(screenshot_call)).to be < env.index(attach)
-        expect(env.index(attach)).to be < env.index(/driver\.quit|browser\.quit/)
+        expect(env.index(attach)).to be < env.index(/driver\.quit|browser\.quit/, env.index(attach))
       end
 
       it 'does not generate the allure helper' do
