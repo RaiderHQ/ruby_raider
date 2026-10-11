@@ -3,6 +3,7 @@
 require_relative 'spec_helper'
 require 'timeout'
 require 'open3'
+require 'json'
 
 # End-to-end integration tests that verify generated projects actually work
 # These tests:
@@ -41,9 +42,19 @@ describe 'End-to-End Project Generation and Execution' do
     result
   end
 
+  # The generated Gemfile pins ruby_raider to this gem's major.minor, which may not be
+  # published yet (a release candidate branch). Resolve it from this checkout instead;
+  # the pin itself is covered by the Gemfile content specs.
+  def use_local_ruby_raider(project_name)
+    gemfile = File.join(project_name, 'Gemfile')
+    root = File.expand_path('../..', __dir__)
+    File.write(gemfile, File.read(gemfile).sub(/^gem 'ruby_raider'.*$/, "gem 'ruby_raider', path: '#{root}'"))
+  end
+
   # Helper to install dependencies
   def bundle_install(project_name)
     puts "\n📦 Installing dependencies for #{project_name}..."
+    use_local_ruby_raider(project_name)
     result = run_in_project(project_name, 'bundle install --quiet', timeout: 180)
 
     unless result[:success]
@@ -103,6 +114,25 @@ describe 'End-to-End Project Generation and Execution' do
                                   "STDOUT: #{result[:stdout]}\n" \
                                   "STDERR: #{result[:stderr]}"
     end
+
+    it 'writes raider-results/run.json listing every example without changing the exit status', :aggregate_failures, :slow do
+      skip 'Bundle install failed' unless bundle_install(project)
+
+      FileUtils.rm_rf(File.join(project, 'raider-results'))
+      result = run_rspec(project)
+      summary = result[:stdout].match(/(\d+) examples?, (\d+) failures?/)
+      expect(summary).not_to be_nil, "No RSpec summary line.\nSTDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
+      examples = summary[1].to_i
+      failures = summary[2].to_i
+
+      run_file = File.join(project, 'raider-results', 'run.json')
+      expect(File).to exist(run_file)
+      run = JSON.parse(File.read(run_file))
+      expect(run['schema_version']).to eq(1)
+      expect(run['results'].size).to eq(examples)
+      expect(run['results'].count { |r| r['status'] == 'failed' }).to eq(failures)
+      expect(result[:exit_code]).to eq(failures.zero? ? 0 : 1)
+    end
   end
 
   # Shared example for Cucumber-based projects
@@ -142,7 +172,6 @@ describe 'End-to-End Project Generation and Execution' do
     describe 'Watir + Cucumber' do
       include_examples 'executable cucumber project', 'cucumber_watir'
     end
-
   end
 
   # Mobile and Visual frameworks require external services, so we only verify structure

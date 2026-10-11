@@ -116,6 +116,14 @@ describe 'Helper file content' do
       expect(helper).to include("require 'raider_reporter/rspec'")
     end
 
+    it 'requires digest, which allure-ruby-commons uses without requiring' do
+      expect(helper).to include("require 'digest'")
+    end
+
+    it 'adds the raider formatter in spec_helper so a command-line --format cannot drop it' do
+      expect(helper).to include('config.add_formatter(RaiderReporter::RSpec::Formatter)')
+    end
+
     it 'does not replace the formatter' do
       expect(helper).not_to match(/config\.formatter\s*=/)
     end

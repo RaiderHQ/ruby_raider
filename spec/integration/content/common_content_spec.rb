@@ -90,12 +90,8 @@ describe 'Common file content' do
       expect(rspec_file).to include('--format documentation')
     end
 
-    it 'adds the raider formatter' do
-      expect(rspec_file).to include('--format RaiderReporter::RSpec::Formatter')
-    end
-
-    it 'requires spec_helper before the formatters' do
-      expect(rspec_file.index('--require helpers/spec_helper')).to be < rspec_file.index('--format')
+    it 'leaves the raider formatter to spec_helper, since a command-line --format replaces .rspec formatters' do
+      expect(rspec_file).not_to include('RaiderReporter')
     end
   end
 
@@ -236,5 +232,4 @@ describe 'Common file content' do
     it_behaves_like 'gemfile without rspec-retry', name
     it_behaves_like 'cucumber config with retry', name
   end
-
 end

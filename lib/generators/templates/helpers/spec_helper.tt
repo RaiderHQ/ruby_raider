@@ -5,6 +5,7 @@ require 'axe-rspec'
 <%- end -%>
 require 'rspec'
 require 'rspec/retry'
+require 'digest'
 require 'raider_reporter/rspec'
 require 'tmpdir'
 require_relative 'allure_helper'
@@ -23,6 +24,7 @@ module SpecHelper
     config.display_try_failure_messages = true
     config.default_retry_count = ENV.fetch('RETRY_COUNT', 0).to_i
     config.add_formatter(AllureHelper.formatter)
+    config.add_formatter(RaiderReporter::RSpec::Formatter)
     <%- if watir? -%>
     config.include(BrowserHelper)
     <%- else -%>
