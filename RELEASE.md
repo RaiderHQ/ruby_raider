@@ -2,6 +2,13 @@
 
 ## Release Notes
 
+### 3.4.0
+
+- Generated RSpec projects with GitHub CI now include a `raider-comment` job that comments Raider test results on pull requests via `raider-reporter comment`. It runs after every test job, only on pull requests, and needs the `RAIDER_TOKEN` secret and `RAIDER_ENDPOINT` variable. Cucumber projects are unchanged.
+- The job needs `contents: read`, `pull-requests: write` and `statuses: write` permissions; it reports a `raider/tests` status, and pull requests from forks are skipped.
+- Generated Gemfiles now require `raider_reporter` `~> 0.3`.
+- Ruby Raider now requires Ruby 3.2.0 or newer.
+
 ### 3.3.0
 
 - Generated RSpec projects now include `raider_reporter`: results are written to `raider-results/` and uploaded when `RAIDER_TOKEN` and `RAIDER_ENDPOINT` are set. Allure is still produced. Cucumber projects are unchanged.
