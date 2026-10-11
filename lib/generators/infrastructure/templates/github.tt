@@ -1,6 +1,9 @@
 name: <%- if framework == 'cucumber' -%>Cucumber Tests<%- else -%>Rspec Tests<%- end -%>
 
 on:
+  push:
+    branches: [ main, master ]
+  pull_request:
   workflow_dispatch:
     inputs:
       browser:
@@ -37,6 +40,21 @@ jobs:
         run: <%- if framework == 'cucumber' -%>bundle exec cucumber features --format pretty<%- else -%>bundle exec rspec spec --format documentation<%- end %>
         env:
           HEADLESS: true
+<%- unless framework == 'cucumber' -%>
+          RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
+          RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
+<%- end -%>
+
+<%- unless framework == 'cucumber' -%>
+      - name: Upload Raider results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: raider-results
+          path: raider-results/
+          if-no-files-found: ignore
+
+<%- end -%>
 
       - name: Get Allure history
         uses: actions/checkout@v2

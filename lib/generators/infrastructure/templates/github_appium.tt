@@ -2,9 +2,9 @@ name: Appium Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
 <%- if ios? || cross_platform? -%>
@@ -52,6 +52,20 @@ jobs:
 <%- end -%>
         env:
           APP_PATH: ${{ github.workspace }}/apps/RaiderTestApp.app
+<%- unless cucumber? -%>
+          RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
+          RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
+<%- end -%>
+<%- unless cucumber? -%>
+
+      - name: Upload Raider results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: raider-results-ios
+          path: raider-results/
+          if-no-files-found: ignore
+<%- end -%>
 <%- end -%>
 
 <%- if android? || cross_platform? -%>
@@ -101,4 +115,18 @@ jobs:
 <%- end -%>
         env:
           APP_PATH: ${{ github.workspace }}/apps/app-release.apk
+<%- unless cucumber? -%>
+          RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
+          RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
+<%- end -%>
+<%- unless cucumber? -%>
+
+      - name: Upload Raider results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: raider-results-android
+          path: raider-results/
+          if-no-files-found: ignore
+<%- end -%>
 <%- end -%>
