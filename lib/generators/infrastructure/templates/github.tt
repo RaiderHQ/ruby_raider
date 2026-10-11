@@ -33,19 +33,18 @@ jobs:
         with:
           chrome-version: stable
 
+<%- unless framework == 'cucumber' -%>
       - name: Create allure-results folder
         run: mkdir -p allure-results
 
+<%- end -%>
       - name: Run tests
         run: <%- if framework == 'cucumber' -%>bundle exec cucumber features --format pretty<%- else -%>bundle exec rspec spec --format documentation<%- end %>
         env:
           HEADLESS: true
-<%- unless framework == 'cucumber' -%>
           RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
           RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
-<%- end -%>
 
-<%- unless framework == 'cucumber' -%>
       - name: Upload Raider results
         uses: actions/upload-artifact@v4
         if: always()
@@ -54,8 +53,7 @@ jobs:
           path: raider-results/
           if-no-files-found: ignore
 
-<%- end -%>
-
+<%- unless framework == 'cucumber' -%>
       - name: Get Allure history
         uses: actions/checkout@v2
         if: always()
@@ -82,7 +80,7 @@ jobs:
           PUBLISH_BRANCH: gh-pages
           PUBLISH_DIR: allure-history
 
-<%- unless framework == 'cucumber' -%>
+<%- end -%>
   raider-comment:
     needs: [build]
     if: always() && github.event_name == 'pull_request'
@@ -101,4 +99,3 @@ jobs:
           RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
           RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-<%- end -%>

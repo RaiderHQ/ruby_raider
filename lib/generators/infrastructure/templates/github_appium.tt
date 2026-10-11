@@ -52,7 +52,6 @@ jobs:
 <%- end -%>
         env:
           APP_PATH: ${{ github.workspace }}/apps/RaiderTestApp.app
-<%- unless cucumber? -%>
           RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
           RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
 
@@ -63,7 +62,6 @@ jobs:
           name: raider-results-ios
           path: raider-results/
           if-no-files-found: ignore
-<%- end -%>
 <%- end -%>
 
 <%- if android? || cross_platform? -%>
@@ -113,7 +111,6 @@ jobs:
 <%- end -%>
         env:
           APP_PATH: ${{ github.workspace }}/apps/app-release.apk
-<%- unless cucumber? -%>
           RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
           RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
 
@@ -125,9 +122,7 @@ jobs:
           path: raider-results/
           if-no-files-found: ignore
 <%- end -%>
-<%- end -%>
 
-<%- unless cucumber? -%>
   raider-comment:
     needs: [<%= [('ios-tests' if ios? || cross_platform?), ('android-tests' if android? || cross_platform?)].compact.join(', ') %>]
     if: always() && github.event_name == 'pull_request'
@@ -146,4 +141,3 @@ jobs:
           RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
           RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-<%- end -%>

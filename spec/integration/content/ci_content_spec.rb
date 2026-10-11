@@ -62,13 +62,13 @@ describe 'CI pipeline content' do
     end
   end
 
-  shared_examples 'github raider wiring' do |project_name, file|
+  shared_examples 'github raider wiring' do |project_name, file, runner = 'rspec'|
     subject(:pipeline) { read_generated(project_name, ".github/workflows/#{file}") }
 
     let(:steps) { YAML.safe_load(pipeline)['jobs'].values.flat_map { |job| job['steps'] } }
 
     let(:test_steps) do
-      steps.select { |step| step['run'].to_s.include?('rspec') || step['with'].to_h['script'].to_s.include?('rspec') }
+      steps.select { |step| step['run'].to_s.include?(runner) || step['with'].to_h['script'].to_s.include?(runner) }
     end
 
     it 'passes Raider settings to every test step' do
@@ -128,29 +128,19 @@ describe 'CI pipeline content' do
     end
   end
 
-  shared_examples 'github without raider-comment job' do |project_name, file|
-    subject(:pipeline) { read_generated(project_name, ".github/workflows/#{file}") }
-
-    it 'has no raider-comment job' do
-      expect(pipeline).not_to include('raider-comment')
-      expect(pipeline).not_to include('raider-reporter')
-    end
-  end
-
-  shared_examples 'github without raider wiring' do |project_name, file|
-    subject(:pipeline) { read_generated(project_name, ".github/workflows/#{file}") }
-
-    it 'has no Raider settings or artifact' do
-      expect(pipeline).not_to include('RAIDER_')
-      expect(pipeline).not_to include('raider-results')
-    end
-  end
-
   shared_examples 'github allure steps' do |project_name|
     subject(:pipeline) { read_generated(project_name, '.github/workflows/test_pipeline.yml') }
 
     it 'keeps the Allure steps' do
       expect(pipeline).to include('simple-elf/allure-report-action', 'peaceiris/actions-gh-pages')
+    end
+  end
+
+  shared_examples 'github without allure steps' do |project_name|
+    subject(:pipeline) { read_generated(project_name, '.github/workflows/test_pipeline.yml') }
+
+    it 'has no Allure report or gh-pages steps' do
+      expect(pipeline).not_to match(/allure|gh-pages/i)
     end
   end
 
@@ -169,9 +159,9 @@ describe 'CI pipeline content' do
     include_examples 'valid github pipeline', name
     include_examples 'github cucumber pipeline', name
     include_examples 'github triggers', name, 'test_pipeline.yml'
-    include_examples 'github without raider wiring', name, 'test_pipeline.yml'
-    include_examples 'github without raider-comment job', name, 'test_pipeline.yml'
-    include_examples 'github allure steps', name
+    include_examples 'github raider wiring', name, 'test_pipeline.yml', 'cucumber'
+    include_examples 'github raider-comment job', name, 'test_pipeline.yml', %w[build]
+    include_examples 'github without allure steps', name
   end
 
   context 'with rspec and watir' do
@@ -182,6 +172,16 @@ describe 'CI pipeline content' do
     include_examples 'github raider wiring', name, 'test_pipeline.yml'
     include_examples 'github raider-comment job', name, 'test_pipeline.yml', %w[build]
     include_examples 'github allure steps', name
+  end
+
+  context 'with cucumber and watir' do
+    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
+    include_examples 'valid github pipeline', name
+    include_examples 'github cucumber pipeline', name
+    include_examples 'github triggers', name, 'test_pipeline.yml'
+    include_examples 'github raider wiring', name, 'test_pipeline.yml', 'cucumber'
+    include_examples 'github raider-comment job', name, 'test_pipeline.yml', %w[build]
+    include_examples 'github without allure steps', name
   end
 
   appium_jobs = { 'android' => %w[android-tests], 'ios' => %w[ios-tests],
@@ -198,8 +198,8 @@ describe 'CI pipeline content' do
     context "with cucumber and #{automation}" do
       name = "#{FrameworkIndex::CUCUMBER}_#{automation}"
       include_examples 'github triggers', name, 'appium_pipeline.yml'
-      include_examples 'github without raider wiring', name, 'appium_pipeline.yml'
-      include_examples 'github without raider-comment job', name, 'appium_pipeline.yml'
+      include_examples 'github raider wiring', name, 'appium_pipeline.yml', 'cucumber'
+      include_examples 'github raider-comment job', name, 'appium_pipeline.yml', test_jobs
     end
   end
 end

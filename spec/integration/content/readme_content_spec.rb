@@ -22,9 +22,19 @@ describe 'Generated Readme content' do
     end
 
     context "with cucumber and #{automation}" do
-      it 'has no Reporting section' do
-        readme = read_generated("#{FrameworkIndex::CUCUMBER}_#{automation}", 'Readme.md')
-        expect(readme).not_to include('RAIDER_TOKEN')
+      subject(:readme) { read_generated("#{FrameworkIndex::CUCUMBER}_#{automation}", 'Readme.md') }
+
+      it 'has a Reporting section' do
+        expect(readme).to include('## Reporting')
+      end
+
+      it 'documents local results, upload settings, plugin mode and the raider_reporter README' do
+        expect(readme).to include('raider-results/', 'RAIDER_TOKEN', 'RAIDER_ENDPOINT', 'features/support/env.rb',
+                                  'https://github.com/RaiderHQ/raider_reporter')
+      end
+
+      it 'does not mention Allure' do
+        expect(readme).not_to match(/allure/i)
       end
     end
   end

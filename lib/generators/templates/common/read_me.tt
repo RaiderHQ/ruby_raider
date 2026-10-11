@@ -82,11 +82,15 @@ raider g steps [NAME]     # Create step definitions
 raider g scaffold [NAME]  # Create page + test + steps
 ```
 
-<%- if rspec? -%>
 ## Reporting
 
+<%- if rspec? -%>
 Every run writes machine-readable results to `raider-results/` (including `run.json`), next to the usual Allure results.
 Allure reports are still produced.
+<%- else -%>
+Every run writes machine-readable results to `raider-results/` (including `run.json`). The reporter runs in plugin mode:
+`features/support/env.rb` requires `raider_reporter/cucumber`, so no extra Cucumber formatter flag is needed.
+<%- end -%>
 
 To upload runs to Raider, set these environment variables before running the suite:
 
@@ -95,10 +99,14 @@ export RAIDER_TOKEN=your-token
 export RAIDER_ENDPOINT=https://your-raider-endpoint
 ```
 
+<%- if rspec? -%>
 Without `RAIDER_TOKEN`, nothing is uploaded and the suite output is unchanged. Failure screenshots are attached to both
 Allure and Raider. See the [raider_reporter README](https://github.com/RaiderHQ/raider_reporter) for details.
-
+<%- else -%>
+Without `RAIDER_TOKEN`, nothing is uploaded and the suite output is unchanged. Failure screenshots are attached to
+Raider. See the [raider_reporter README](https://github.com/RaiderHQ/raider_reporter) for details.
 <%- end -%>
+
 ### Sponsors
 
 This project is tested with BrowserStack.

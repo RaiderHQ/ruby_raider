@@ -53,8 +53,6 @@ describe 'Cucumber raider_reporter wiring' do
 
       it 'does not mention Allure in any generated file' do
         files = Dir.glob("#{project_name}/**/*", File::FNM_DOTMATCH).select { |f| File.file?(f) }
-        # .github/ workflows are reworked in R2.
-        files.reject! { |f| f.start_with?("#{project_name}/.github/") }
         expect(files.select { |f| File.read(f).match?(/allure/i) }).to be_empty
       end
 

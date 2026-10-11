@@ -2,6 +2,14 @@
 
 ## Release Notes
 
+### 3.5.0
+
+- Generated Cucumber projects now report through `raider_reporter` `~> 0.4` instead of Allure: results are written to `raider-results/` and uploaded when `RAIDER_TOKEN` and `RAIDER_ENDPOINT` are set. The reporter is activated by `require 'raider_reporter/cucumber'` in `features/support/env.rb`.
+- Cucumber projects no longer include `allure-cucumber` or `helpers/allure_helper.rb`; failure screenshots are attached to Raider only, and `.gitignore` lists `raider-results` instead of `allure-results`.
+- Generated Cucumber GitHub CI now passes the Raider settings to the test run, uploads `raider-results/` as an artifact and includes the `raider-comment` job, matching RSpec projects. The Allure report and gh-pages steps are removed for Cucumber. RSpec pipelines are unchanged.
+- The generated Readme has a "Reporting" section for Cucumber projects too.
+- Generated Gemfiles now require `raider_reporter` `~> 0.4`.
+
 ### 3.4.0
 
 - Generated RSpec projects with GitHub CI now include a `raider-comment` job that comments Raider test results on pull requests via `raider-reporter comment`. It runs after every test job, only on pull requests, and needs the `RAIDER_TOKEN` secret and `RAIDER_ENDPOINT` variable. Cucumber projects are unchanged.
