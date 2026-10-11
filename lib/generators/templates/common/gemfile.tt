@@ -20,7 +20,7 @@ gem 'parallel_tests'
 gem 'rake'
 gem 'reek'
 <%- if rspec? -%>
-gem 'raider_reporter', '~> 0.2'
+gem 'raider_reporter', '~> 0.3'
 gem 'rspec-retry'
 <%- end -%>
 gem '<%= framework %>'

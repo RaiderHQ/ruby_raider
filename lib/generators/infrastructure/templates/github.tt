@@ -81,3 +81,24 @@ jobs:
           PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_BRANCH: gh-pages
           PUBLISH_DIR: allure-history
+
+<%- unless framework == 'cucumber' -%>
+  raider-comment:
+    needs: [build]
+    if: always() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with: { ruby-version: 3.4.0, bundler-cache: true }
+      - name: Comment Raider results on the pull request
+        run: bundle exec raider-reporter comment
+        env:
+          RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
+          RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+<%- end -%>
