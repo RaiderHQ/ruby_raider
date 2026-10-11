@@ -5,6 +5,8 @@ require 'axe-rspec'
 <%- end -%>
 require 'rspec'
 require 'rspec/retry'
+require 'digest'
+require 'raider_reporter/rspec'
 require 'tmpdir'
 require_relative 'allure_helper'
 <%- if watir? -%>
@@ -21,7 +23,8 @@ module SpecHelper
     config.verbose_retry = true
     config.display_try_failure_messages = true
     config.default_retry_count = ENV.fetch('RETRY_COUNT', 0).to_i
-    config.formatter = AllureHelper.formatter
+    config.add_formatter(AllureHelper.formatter)
+    config.add_formatter(RaiderReporter::RSpec::Formatter)
     <%- if watir? -%>
     config.include(BrowserHelper)
     <%- else -%>
@@ -53,10 +56,12 @@ module SpecHelper
       example_name = example.description
       if example.exception
         @_exception = example.exception
-      end
-      Dir.mktmpdir do |temp_folder|
-        <%= partial('screenshot', strip: true) %>
-        AllureHelper.add_screenshot(example_name, screenshot)
+        Dir.mktmpdir do |temp_folder|
+          screenshot_path = "#{temp_folder}/#{example_name}.png"
+          <%= partial('screenshot', strip: true) %>
+          AllureHelper.add_screenshot(example_name, screenshot)
+          RaiderReporter.attach('screenshot', screenshot_path, type: :png)
+        end
       end
       <%= partial('quit_driver', strip: true) %>
     end

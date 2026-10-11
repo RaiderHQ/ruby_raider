@@ -1,4 +1,5 @@
 allure-results
 <%- if rspec? -%>
+raider-results
 spec/examples.txt
 <%- end -%>

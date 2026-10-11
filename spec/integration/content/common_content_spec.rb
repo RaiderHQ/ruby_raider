@@ -89,6 +89,10 @@ describe 'Common file content' do
     it 'uses documentation format' do
       expect(rspec_file).to include('--format documentation')
     end
+
+    it 'leaves the raider formatter to spec_helper, since a command-line --format replaces .rspec formatters' do
+      expect(rspec_file).not_to include('RaiderReporter')
+    end
   end
 
   shared_examples 'no rspec dotfile' do |project_name|
@@ -109,6 +113,10 @@ describe 'Common file content' do
     it 'includes spec/examples.txt' do
       expect(gitignore).to include('spec/examples.txt')
     end
+
+    it 'includes raider-results' do
+      expect(gitignore).to include('raider-results')
+    end
   end
 
   shared_examples 'non-rspec gitignore' do |project_name|
@@ -120,6 +128,10 @@ describe 'Common file content' do
 
     it 'does not include spec/examples.txt' do
       expect(gitignore).not_to include('spec/examples.txt')
+    end
+
+    it 'does not include raider-results' do
+      expect(gitignore).not_to include('raider-results')
     end
   end
 
@@ -220,5 +232,4 @@ describe 'Common file content' do
     it_behaves_like 'gemfile without rspec-retry', name
     it_behaves_like 'cucumber config with retry', name
   end
-
 end

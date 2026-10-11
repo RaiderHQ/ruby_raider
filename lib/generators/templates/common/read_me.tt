@@ -82,6 +82,23 @@ raider g steps [NAME]     # Create step definitions
 raider g scaffold [NAME]  # Create page + test + steps
 ```
 
+<%- if rspec? -%>
+## Reporting
+
+Every run writes machine-readable results to `raider-results/` (including `run.json`), next to the usual Allure results.
+Allure reports are still produced.
+
+To upload runs to Raider, set these environment variables before running the suite:
+
+```bash
+export RAIDER_TOKEN=your-token
+export RAIDER_ENDPOINT=https://your-raider-endpoint
+```
+
+Without `RAIDER_TOKEN`, nothing is uploaded and the suite output is unchanged. Failure screenshots are attached to both
+Allure and Raider. See the [raider_reporter README](https://github.com/RaiderHQ/raider_reporter) for details.
+
+<%- end -%>
 ### Sponsors
 
 This project is tested with BrowserStack.

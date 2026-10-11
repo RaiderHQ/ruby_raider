@@ -74,6 +74,7 @@ module TestHelper
     <%- end -%>
     <%- end -%>
     Dir.mktmpdir do |temp_folder|
+      screenshot_path = "#{temp_folder}/#{example_name}.png"
       <%= partial('screenshot', strip: true) %>
       <%- if allure_reporter? -%>
       AllureHelper.add_screenshot(example_name, screenshot)

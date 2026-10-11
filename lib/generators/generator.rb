@@ -71,6 +71,11 @@ class Generator < Thor::Group
     args.include?('selenium')
   end
 
+  def ruby_raider_version_requirement
+    major, minor = File.read(File.expand_path('../version', __dir__)).strip.split('.')
+    "~> #{major}.#{minor}"
+  end
+
   private
 
   def _initializer

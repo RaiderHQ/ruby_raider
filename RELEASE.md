@@ -1,5 +1,16 @@
 # Release Process Documentation
 
+## Release Notes
+
+### 3.3.0
+
+- Generated RSpec projects now include `raider_reporter`: results are written to `raider-results/` and uploaded when `RAIDER_TOKEN` and `RAIDER_ENDPOINT` are set. Allure is still produced. Cucumber projects are unchanged.
+- Screenshots (Allure too) are now taken only when an example fails, and are attached to both Allure and Raider.
+- Generated GitHub CI now runs on push (main, master), pull requests and manual dispatch, passes the Raider settings to RSpec runs and uploads `raider-results/` as an artifact.
+- Fixed the generated Gemfile `ruby_raider` pin so it follows the gem's own major.minor version.
+
+---
+
 ## Overview
 
 Ruby Raider uses a **fully automated release process**. You only need to run a single command, and everything else happens automatically via GitHub Actions.
