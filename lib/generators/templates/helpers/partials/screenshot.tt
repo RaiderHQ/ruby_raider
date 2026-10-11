@@ -1,7 +1,7 @@
 <% if selenium_based? %>
-  screenshot = driver.save_screenshot("#{temp_folder}/#{example_name}.png")
+  screenshot = driver.save_screenshot(screenshot_path)
 <% elsif watir? %>
-  screenshot = browser.screenshot.save("#{temp_folder}/#{example_name}.png")
+  screenshot = browser.screenshot.save(screenshot_path)
 <% else %>
-  screenshot = driver.screenshot("#{temp_folder}/#{example_name}.png")
+  screenshot = driver.screenshot(screenshot_path)
 <% end %>

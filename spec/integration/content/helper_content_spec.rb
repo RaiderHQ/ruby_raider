@@ -109,6 +109,32 @@ describe 'Helper file content' do
     end
   end
 
+  shared_examples 'raider reporter spec helper' do |project_name|
+    subject(:helper) { read_generated(project_name, 'helpers/spec_helper.rb') }
+
+    it 'requires raider_reporter/rspec' do
+      expect(helper).to include("require 'raider_reporter/rspec'")
+    end
+
+    it 'does not replace the formatter' do
+      expect(helper).not_to match(/config\.formatter\s*=/)
+    end
+
+    it 'adds the allure formatter' do
+      expect(helper).to include('config.add_formatter(AllureHelper.formatter)')
+    end
+
+    it 'screenshots only on failure' do
+      expect(helper.scan('AllureHelper.add_screenshot').size).to eq(1)
+      expect(helper).to match(/if example\.exception\n(?:(?!\bend\b).*\n)*?.*AllureHelper\.add_screenshot/)
+      expect(helper).not_to match(/^ {6}Dir\.mktmpdir/)
+    end
+
+    it 'attaches the screenshot to raider by path' do
+      expect(helper).to include("RaiderReporter.attach('screenshot', screenshot_path, type: :png)")
+    end
+  end
+
   shared_examples 'selenium spec helper' do |project_name|
     subject(:helper) { read_generated(project_name, 'helpers/spec_helper.rb') }
 
@@ -199,5 +225,34 @@ describe 'Helper file content' do
   context 'with rspec and appium ios' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
 
+  end
+
+  # --- Raider reporter wiring (every rspec automation) ---
+
+  SCREENSHOT_CALLS = {
+    'selenium' => 'driver.save_screenshot(screenshot_path)',
+    'watir' => 'browser.screenshot.save(screenshot_path)',
+    'android' => 'driver.screenshot(screenshot_path)',
+    'ios' => 'driver.screenshot(screenshot_path)',
+    'cross_platform' => 'driver.screenshot(screenshot_path)'
+  }.freeze
+
+  AUTOMATION_TYPES.each do |automation|
+    context "with rspec and #{automation} raider reporter wiring" do
+      name = "#{FrameworkIndex::RSPEC}_#{automation}"
+      it_behaves_like 'raider reporter spec helper', name
+
+      it 'takes the screenshot with the automation call into a path' do
+        expect(read_generated(name, 'helpers/spec_helper.rb')).to include(SCREENSHOT_CALLS.fetch(automation))
+      end
+    end
+
+    context "with cucumber and #{automation}" do
+      it 'has no raider reporter wiring' do
+        project = "#{FrameworkIndex::CUCUMBER}_#{automation}"
+        files = Dir.glob("#{project}/**/*", File::FNM_DOTMATCH).select { |f| File.file?(f) }
+        expect(files.select { |f| File.read(f).match?(/raider_reporter|RaiderReporter/) }).to be_empty
+      end
+    end
   end
 end

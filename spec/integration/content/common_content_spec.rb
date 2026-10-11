@@ -89,6 +89,14 @@ describe 'Common file content' do
     it 'uses documentation format' do
       expect(rspec_file).to include('--format documentation')
     end
+
+    it 'adds the raider formatter' do
+      expect(rspec_file).to include('--format RaiderReporter::RSpec::Formatter')
+    end
+
+    it 'requires spec_helper before the formatters' do
+      expect(rspec_file.index('--require helpers/spec_helper')).to be < rspec_file.index('--format')
+    end
   end
 
   shared_examples 'no rspec dotfile' do |project_name|
@@ -109,6 +117,10 @@ describe 'Common file content' do
     it 'includes spec/examples.txt' do
       expect(gitignore).to include('spec/examples.txt')
     end
+
+    it 'includes raider-results' do
+      expect(gitignore).to include('raider-results')
+    end
   end
 
   shared_examples 'non-rspec gitignore' do |project_name|
@@ -120,6 +132,10 @@ describe 'Common file content' do
 
     it 'does not include spec/examples.txt' do
       expect(gitignore).not_to include('spec/examples.txt')
+    end
+
+    it 'does not include raider-results' do
+      expect(gitignore).not_to include('raider-results')
     end
   end
 

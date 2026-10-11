@@ -1,3 +1,4 @@
 -I .
 --require helpers/spec_helper
 --format documentation
+--format RaiderReporter::RSpec::Formatter
