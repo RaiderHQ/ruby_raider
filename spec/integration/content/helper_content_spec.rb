@@ -109,7 +109,7 @@ describe 'Helper file content' do
     end
   end
 
-  shared_examples 'raider reporter spec helper' do |project_name|
+  shared_examples 'raider reporter spec helper' do |project_name, screenshot_call|
     subject(:helper) { read_generated(project_name, 'helpers/spec_helper.rb') }
 
     it 'requires raider_reporter/rspec' do
@@ -125,9 +125,16 @@ describe 'Helper file content' do
     end
 
     it 'screenshots only on failure' do
-      expect(helper.scan('AllureHelper.add_screenshot').size).to eq(1)
-      expect(helper).to match(/if example\.exception\n(?:(?!\bend\b).*\n)*?.*AllureHelper\.add_screenshot/)
-      expect(helper).not_to match(/^ {6}Dir\.mktmpdir/)
+      lines = helper.lines
+      start = lines.index { |line| line.include?('if example.exception') }
+      expect(start).not_to be_nil
+      indent = lines[start][/\A */].size
+      body = lines[(start + 1)..].take_while { |line| line.strip.empty? || line[/\A */].size > indent }
+      guarded = body.join
+
+      expect(guarded).to include('AllureHelper.add_screenshot', 'RaiderReporter.attach', screenshot_call)
+      expect(lines.select { |line| line.include?('AllureHelper.add_screenshot') }.size).to eq(1)
+      expect(lines.select { |line| line.include?(screenshot_call) }.size).to eq(1)
     end
 
     it 'attaches the screenshot to raider by path' do
@@ -229,22 +236,14 @@ describe 'Helper file content' do
 
   # --- Raider reporter wiring (every rspec automation) ---
 
-  SCREENSHOT_CALLS = {
-    'selenium' => 'driver.save_screenshot(screenshot_path)',
-    'watir' => 'browser.screenshot.save(screenshot_path)',
-    'android' => 'driver.screenshot(screenshot_path)',
-    'ios' => 'driver.screenshot(screenshot_path)',
-    'cross_platform' => 'driver.screenshot(screenshot_path)'
-  }.freeze
-
   AUTOMATION_TYPES.each do |automation|
     context "with rspec and #{automation} raider reporter wiring" do
       name = "#{FrameworkIndex::RSPEC}_#{automation}"
-      it_behaves_like 'raider reporter spec helper', name
-
-      it 'takes the screenshot with the automation call into a path' do
-        expect(read_generated(name, 'helpers/spec_helper.rb')).to include(SCREENSHOT_CALLS.fetch(automation))
-      end
+      screenshot_call = {
+        'selenium' => 'driver.save_screenshot(screenshot_path)',
+        'watir' => 'browser.screenshot.save(screenshot_path)'
+      }.fetch(automation, 'driver.screenshot(screenshot_path)')
+      it_behaves_like 'raider reporter spec helper', name, screenshot_call
     end
 
     context "with cucumber and #{automation}" do

@@ -67,15 +67,25 @@ describe 'CI pipeline content' do
 
     let(:steps) { YAML.safe_load(pipeline)['jobs'].values.flat_map { |job| job['steps'] } }
 
-    it 'passes Raider settings to the test step' do
-      expect(pipeline).to include('RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}')
-      expect(pipeline).to include('RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}')
+    let(:test_steps) do
+      steps.select { |step| step['run'].to_s.include?('rspec') || step['with'].to_h['script'].to_s.include?('rspec') }
     end
 
-    it 'uploads raider-results as an artifact even on failure' do
-      upload = steps.find { |step| step['uses'] == 'actions/upload-artifact@v4' }
-      expect(upload['with']['path']).to eq('raider-results/')
-      expect(upload['if']).to eq('always()')
+    it 'passes Raider settings to every test step' do
+      expect(test_steps).not_to be_empty
+      test_steps.each do |step|
+        expect(step['env']).to include('RAIDER_TOKEN' => '${{ secrets.RAIDER_TOKEN }}',
+                                       'RAIDER_ENDPOINT' => '${{ vars.RAIDER_ENDPOINT }}')
+      end
+    end
+
+    it 'uploads raider-results as an artifact even on failure in every job' do
+      uploads = steps.select { |step| step['uses'] == 'actions/upload-artifact@v4' }
+      expect(uploads.size).to eq(YAML.safe_load(pipeline)['jobs'].size)
+      uploads.each do |upload|
+        expect(upload['with']['path']).to eq('raider-results/')
+        expect(upload['if']).to eq('always()')
+      end
     end
   end
 

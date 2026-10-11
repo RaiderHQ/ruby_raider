@@ -55,8 +55,6 @@ jobs:
 <%- unless cucumber? -%>
           RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
           RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
-<%- end -%>
-<%- unless cucumber? -%>
 
       - name: Upload Raider results
         uses: actions/upload-artifact@v4
@@ -118,8 +116,6 @@ jobs:
 <%- unless cucumber? -%>
           RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
           RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
-<%- end -%>
-<%- unless cucumber? -%>
 
       - name: Upload Raider results
         uses: actions/upload-artifact@v4
