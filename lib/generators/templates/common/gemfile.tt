@@ -20,6 +20,7 @@ gem 'parallel_tests'
 gem 'rake'
 gem 'reek'
 <%- if rspec? -%>
+gem 'raider_reporter', '~> 0.2'
 gem 'rspec-retry'
 <%- end -%>
 gem '<%= framework %>'
@@ -30,7 +31,7 @@ gem 'rubocop'
 <%- if rspec? -%>
 gem 'rubocop-rspec'
 <%- end -%>
-gem 'ruby_raider', '~> 1.1.0'
+gem 'ruby_raider', '<%= ruby_raider_version_requirement %>'
 <%- if selenium_based? %>
 gem 'selenium-webdriver'
 <%- end -%>

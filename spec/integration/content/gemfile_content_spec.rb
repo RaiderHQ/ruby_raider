@@ -119,4 +119,42 @@ describe 'Gemfile content' do
     include_examples 'contains watir gems', name
   end
 
+  describe 'raider_reporter and ruby_raider pin' do
+    major_minor = File.read('lib/version').strip.split('.').first(2).join('.')
+
+    AUTOMATION_TYPES.each do |automation|
+      context "with rspec and #{automation}" do
+        let(:gemfile) { read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'Gemfile') }
+
+        it 'includes raider_reporter' do
+          expect(gemfile).to include("gem 'raider_reporter', '~> 0.2'")
+        end
+
+        it 'keeps allure gems' do
+          expect(gemfile).to include("gem 'allure-rspec', '2.28.0'", "gem 'allure-ruby-commons', '2.28.0'")
+        end
+
+        it 'pins ruby_raider to the generator major.minor' do
+          expect(gemfile).to include("gem 'ruby_raider', '~> #{major_minor}'")
+        end
+      end
+
+      context "with cucumber and #{automation}" do
+        let(:gemfile) { read_generated("#{FrameworkIndex::CUCUMBER}_#{automation}", 'Gemfile') }
+
+        it 'does not include raider_reporter' do
+          expect(gemfile).not_to include('raider_reporter')
+        end
+
+        it 'keeps allure-cucumber' do
+          expect(gemfile).to include("gem 'allure-cucumber', '2.28.0'")
+        end
+
+        it 'pins ruby_raider to the generator major.minor' do
+          expect(gemfile).to include("gem 'ruby_raider', '~> #{major_minor}'")
+        end
+      end
+    end
+  end
+
 end
