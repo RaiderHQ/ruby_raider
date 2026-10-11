@@ -15,6 +15,7 @@ module SystemTestHelper
 
     Bundler.with_unbundled_env do
       Dir.chdir(project) do
+        use_checkout_ruby_raider
         result = run_command('bundle install --quiet')
         return result unless result[:success]
 
@@ -24,6 +25,13 @@ module SystemTestHelper
   end
 
   private
+
+  # The generated Gemfile pins ruby_raider to this gem's major.minor, which may not be
+  # published yet. Resolve it from this checkout; the pin itself is covered by content specs.
+  def use_checkout_ruby_raider(root = File.expand_path('../../..', __dir__))
+    gemfile = File.read('Gemfile')
+    File.write('Gemfile', gemfile.sub(/^gem 'ruby_raider'.*$/, "gem 'ruby_raider', path: '#{root}'"))
+  end
 
   def run_command(command, env: {})
     stdout, stderr, status = Open3.capture3(env, command)
