@@ -1,0 +1,4 @@
+# Type definitions for AzureGenerator
+class AzureGenerator < Generator
+  def generate_azure_pipeline: () -> void
+end

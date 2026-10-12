@@ -157,4 +157,53 @@ RSpec.describe MenuGenerator do
       )
     end
   end
+
+  describe 'CI provider question' do
+    let(:menu) { double('menu') } # rubocop:disable RSpec/VerifiedDoubles
+
+    before do
+      allow(menu).to receive(:choice)
+      allow(menu_generator).to receive(:generate_framework)
+      allow(menu_generator).to receive(:system)
+      allow(prompt).to receive(:say)
+      allow(prompt).to receive(:yes?).and_return(false)
+    end
+
+    it 'is asked after accessibility for web automations' do
+      allow(prompt).to receive(:select).with('Which CI provider?').and_yield(menu)
+
+      menu_generator.send(:select_ci, 'Rspec', 'selenium', accessibility: false)
+
+      expect(menu).to have_received(:choice).with('GitHub Actions', anything)
+      expect(menu).to have_received(:choice).with('Azure Pipelines', anything)
+      expect(menu).to have_received(:choice).with(:Quit, anything)
+    end
+
+    it 'follows the accessibility answer' do
+      allow(prompt).to receive(:select).with('Add accessibility testing (axe)?').and_yield(menu)
+      allow(menu).to receive(:choice).with(:No, anything) { |_, action| action.call }
+      allow(menu_generator).to receive(:select_ci)
+
+      menu_generator.send(:select_accessibility, 'Rspec', 'selenium')
+
+      expect(menu_generator).to have_received(:select_ci).with('Rspec', 'selenium', accessibility: false)
+    end
+
+    it 'is skipped for mobile' do
+      allow(prompt).to receive(:select)
+
+      menu_generator.send(:select_accessibility, 'Rspec', 'ios')
+
+      expect(prompt).not_to have_received(:select)
+      expect(menu_generator).to have_received(:generate_framework).with(hash_including(automation: 'ios'))
+    end
+
+    it 'passes ci azure through to generate_framework' do
+      menu_generator.send(:create_framework, 'Rspec', 'selenium', ci_provider: 'azure')
+
+      expect(menu_generator).to have_received(:generate_framework).with(
+        hash_including(automation: 'selenium', ci: 'azure')
+      )
+    end
+  end
 end

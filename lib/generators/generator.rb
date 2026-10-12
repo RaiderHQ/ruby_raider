@@ -51,6 +51,14 @@ class Generator < Thor::Group
     args.include?('rspec')
   end
 
+  def azure?
+    args.include?('azure')
+  end
+
+  def github_ci?
+    !azure?
+  end
+
   def selenium?
     args.include?('selenium')
   end
