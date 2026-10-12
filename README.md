@@ -50,6 +50,7 @@ Ruby Raider is a CLI gem and API backend for scaffolding and generating UI test 
 | Add-on | Flag | Description |
 |--------|------|-------------|
 | Accessibility | `--accessibility` | Adds axe gem + example accessibility tests |
+| CI provider | `-p ci:azure` | Generates `azure-pipelines.yml` instead of the GitHub Actions workflow (default `ci:github`) |
 
 This works on all platforms (Mac OS, Linux and Windows).
 
@@ -100,6 +101,15 @@ Add accessibility testing:
 ```bash
 raider new my_project -p framework:rspec automation:selenium --accessibility
 ```
+
+Generate an Azure Pipelines file instead of GitHub Actions (web projects only):
+
+```bash
+raider new my_project -p framework:rspec automation:selenium ci:azure
+```
+
+Azure Pipelines for mobile (Appium) projects is not available yet: with `ci:azure` no pipeline file is generated and a notice is printed.
+Azure Repos ignores `pr:` triggers, so add the pipeline as a Build validation branch policy to get pull request builds.
 
 ## Commands
 

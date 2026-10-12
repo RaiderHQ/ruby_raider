@@ -17,7 +17,7 @@ gem 'parallel_split_test'
 gem 'parallel_tests'
 gem 'rake'
 gem 'reek'
-gem 'raider_reporter', '~> 0.4'
+gem 'raider_reporter', '~> 0.5'
 <%- if rspec? -%>
 gem 'rspec-retry'
 <%- end -%>

@@ -1,4 +1,5 @@
 require_relative 'infrastructure/github_generator'
+require_relative 'infrastructure/azure_generator'
 require_relative 'automation/automation_generator'
 require_relative 'common_generator'
 require_relative 'cucumber/cucumber_generator'
@@ -6,13 +7,16 @@ require_relative 'helper_generator'
 require_relative 'rspec/rspec_generator'
 
 module InvokeGenerators
+  class InvalidParameters < ArgumentError; end
+
   module_function
 
   def generate_framework(structure = {})
+    validate_ci(structure[:ci])
     generators = %w[Automation Common Helpers]
     framework = structure[:framework]
     add_generator(generators, framework.capitalize)
-    add_generator(generators, 'Github')
+    add_generator(generators, 'Github', 'Azure')
     extra_args = collect_flags(structure)
     generators.each do |generator|
       invoke_generator({
@@ -23,6 +27,19 @@ module InvokeGenerators
                          extra_args:
                        })
     end
+    print_mobile_azure_notice(structure)
+  end
+
+  def validate_ci(provider)
+    return if [nil, '', 'github', 'azure'].include?(provider&.to_s)
+
+    raise InvalidParameters, 'ci must be github or azure'
+  end
+
+  def print_mobile_azure_notice(structure)
+    return unless structure[:ci].to_s == 'azure' && mobile_automation?(structure[:automation])
+
+    puts 'Azure Pipelines template for mobile projects is not available yet; see the README.'
   end
 
   def add_generator(generators, *gens)
@@ -45,6 +62,7 @@ module InvokeGenerators
   def collect_flags(structure)
     flags = []
     flags << 'axe_addon' if structure[:accessibility] && !mobile_automation?(structure[:automation])
+    flags << 'azure' if structure[:ci].to_s == 'azure'
     flags
   end
 

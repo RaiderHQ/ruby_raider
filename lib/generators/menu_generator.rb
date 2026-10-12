@@ -30,6 +30,7 @@ class MenuGenerator
       automation: options[:automation],
       framework: options[:framework],
       accessibility: options[:accessibility],
+      ci: options[:ci],
       name: @name
     }
     generate_framework(structure)
@@ -75,18 +76,26 @@ class MenuGenerator
     end
   end
 
-  FrameworkOptions = Struct.new(:automation, :framework, :accessibility)
+  FrameworkOptions = Struct.new(:automation, :framework, :accessibility, :ci)
 
   def create_framework_options(params)
-    FrameworkOptions.new(params[:automation], params[:framework], params[:accessibility])
+    FrameworkOptions.new(params[:automation], params[:framework], params[:accessibility], params[:ci])
   end
 
   def select_accessibility(framework, automation_type)
     return create_framework(framework, automation_type) if mobile_automation?(automation_type)
 
     prompt.select('Add accessibility testing (axe)?') do |menu|
-      menu.choice :Yes, -> { create_framework(framework, automation_type, accessibility: true) }
-      menu.choice :No, -> { create_framework(framework, automation_type) }
+      menu.choice :Yes, -> { select_ci(framework, automation_type, accessibility: true) }
+      menu.choice :No, -> { select_ci(framework, automation_type, accessibility: false) }
+      menu.choice :Quit, -> { exit }
+    end
+  end
+
+  def select_ci(framework, automation_type, accessibility:)
+    prompt.select('Which CI provider?') do |menu|
+      menu.choice 'GitHub Actions', -> { create_framework(framework, automation_type, accessibility:) }
+      menu.choice 'Azure Pipelines', -> { create_framework(framework, automation_type, accessibility:, ci_provider: 'azure') }
       menu.choice :Quit, -> { exit }
     end
   end
@@ -95,15 +104,16 @@ class MenuGenerator
     %w[ios android cross_platform].include?(automation_type)
   end
 
-  def create_framework(framework, automation_type, accessibility: false)
+  def create_framework(framework, automation_type, accessibility: false, ci_provider: nil)
     options = create_framework_options(automation: automation_type,
                                        framework: framework.downcase,
-                                       accessibility:)
+                                       accessibility:, ci: ci_provider)
 
     puts 'Chosen Options:'
     puts "  Automation Type: #{options[:automation]}"
     puts "  Framework: #{options[:framework]}"
     puts '  Accessibility: enabled' if options[:accessibility]
+    puts '  CI: Azure Pipelines' if options[:ci] == 'azure'
 
     set_up_framework(options)
     prompt.say("You have chosen to use #{framework} with #{automation_type}")

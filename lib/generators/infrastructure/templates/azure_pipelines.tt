@@ -1,0 +1,44 @@
+trigger:
+  branches:
+    include: [main, master]
+# Azure Repos ignores pr: — add this pipeline as a Build validation branch policy so pull request builds (and the Raider comment) run.
+pr:
+  branches:
+    include: ['*']
+
+# Self-hosted agent? Replace vmImage with: pool: { name: Default }
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  HEADLESS: 'true'
+  # Add RAIDER_TOKEN (secret) and RAIDER_ENDPOINT as pipeline variables.
+
+jobs:
+  - job: tests
+    steps:
+      - task: UseRubyVersion@0
+        inputs: { versionSpec: '3.4' }
+      - script: bundle install
+        displayName: Install gems
+      - script: <%- if cucumber? -%>bundle exec cucumber features/ --format pretty<%- else -%>bundle exec rspec spec/ --format documentation<%- end %>
+        displayName: Run tests
+        env:
+          RAIDER_TOKEN: $(RAIDER_TOKEN)
+          RAIDER_ENDPOINT: $(RAIDER_ENDPOINT)
+      - task: PublishPipelineArtifact@1
+        condition: always()
+        inputs: { targetPath: raider-results, artifact: raider-results-$(System.JobPositionInPhase)-$(System.JobAttempt) }
+  - job: raider_comment
+    dependsOn: tests
+    condition: and(always(), eq(variables['Build.Reason'], 'PullRequest'))
+    steps:
+      - task: UseRubyVersion@0
+        inputs: { versionSpec: '3.4' }
+      - script: bundle install
+      - script: bundle exec raider-reporter comment
+        displayName: Comment Raider results on the pull request
+        env:
+          RAIDER_TOKEN: $(RAIDER_TOKEN)
+          RAIDER_ENDPOINT: $(RAIDER_ENDPOINT)
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken)

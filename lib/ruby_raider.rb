@@ -25,7 +25,7 @@ module RubyRaider
         params[:name] = project_name
         parsed_hash = params.transform_keys(&:to_sym)
         merge_flags(parsed_hash)
-        return InvokeGenerators.generate_framework(parsed_hash)
+        return generate_from_parameters(parsed_hash)
       end
 
       MenuGenerator.new(project_name).generate_choice_menu
@@ -50,6 +50,13 @@ module RubyRaider
     map 'u' => 'utility'
 
     no_tasks do
+      def generate_from_parameters(params)
+        InvokeGenerators.generate_framework(params)
+      rescue InvokeGenerators::InvalidParameters => e
+        puts "Invalid parameters: #{e.message}"
+        exit 1
+      end
+
       def merge_flags(params)
         params[:accessibility] = true if options[:accessibility]
       end
