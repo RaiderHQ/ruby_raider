@@ -7,6 +7,8 @@ require_relative 'helper_generator'
 require_relative 'rspec/rspec_generator'
 
 module InvokeGenerators
+  class InvalidParameters < ArgumentError; end
+
   module_function
 
   def generate_framework(structure = {})
@@ -31,7 +33,7 @@ module InvokeGenerators
   def validate_ci(provider)
     return if [nil, '', 'github', 'azure'].include?(provider&.to_s)
 
-    raise ArgumentError, 'ci must be github or azure'
+    raise InvalidParameters, 'ci must be github or azure'
   end
 
   def print_mobile_azure_notice(structure)

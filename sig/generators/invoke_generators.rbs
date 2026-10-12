@@ -1,5 +1,8 @@
 # Type definitions for InvokeGenerators module
 module InvokeGenerators
+  class InvalidParameters < ArgumentError
+  end
+
   def self?.generate_framework: (?Hash[Symbol, untyped] structure) -> void
   def self?.validate_ci: (untyped provider) -> void
   def self?.print_mobile_azure_notice: (Hash[Symbol, untyped] structure) -> void

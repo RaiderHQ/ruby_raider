@@ -28,7 +28,7 @@ jobs:
           RAIDER_ENDPOINT: $(RAIDER_ENDPOINT)
       - task: PublishPipelineArtifact@1
         condition: always()
-        inputs: { targetPath: raider-results, artifact: raider-results }
+        inputs: { targetPath: raider-results, artifact: raider-results-$(System.JobPositionInPhase)-$(System.JobAttempt) }
   - job: raider_comment
     dependsOn: tests
     condition: and(always(), eq(variables['Build.Reason'], 'PullRequest'))

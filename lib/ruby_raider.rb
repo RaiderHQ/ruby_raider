@@ -52,7 +52,7 @@ module RubyRaider
     no_tasks do
       def generate_from_parameters(params)
         InvokeGenerators.generate_framework(params)
-      rescue ArgumentError => e
+      rescue InvokeGenerators::InvalidParameters => e
         puts "Invalid parameters: #{e.message}"
         exit 1
       end

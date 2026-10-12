@@ -41,7 +41,10 @@ describe 'Azure Pipelines content' do
         expect(steps.map { |s| s['script'] }).to include('bundle install', run_command)
         publish = steps.find { |s| s['task'] == 'PublishPipelineArtifact@1' }
         expect(publish['condition']).to eq('always()')
-        expect(publish['inputs']).to eq('targetPath' => 'raider-results', 'artifact' => 'raider-results')
+        expect(publish['inputs']).to eq(
+          'targetPath' => 'raider-results',
+          'artifact' => 'raider-results-$(System.JobPositionInPhase)-$(System.JobAttempt)'
+        )
       end
 
       it 'passes exactly the Raider settings to the test step' do
@@ -83,6 +86,20 @@ describe 'Azure Pipelines content' do
                                   'same stage')
         expect(readme).not_to match(/GitHub Actions/i)
       end
+    end
+  end
+
+  context 'with a mobile project and ci azure' do
+    let(:readme) { read_generated('azurec_mobile', 'README.md') }
+
+    before(:all) do # rubocop:disable RSpec/BeforeAfterAll
+      InvokeGenerators.generate_framework(automation: 'ios', framework: 'rspec', name: 'azurec_mobile', ci: 'azure')
+    end
+
+    it 'says the template is not available and does not mention azure-pipelines.yml' do
+      expect(readme).to include('## CI', 'Azure Pipelines template for mobile projects is not available yet. ' \
+                                         'Use GitHub Actions (`ci:github`)')
+      expect(readme).not_to include('azure-pipelines.yml', '## Azure Pipelines')
     end
   end
 
