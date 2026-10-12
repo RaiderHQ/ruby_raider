@@ -51,8 +51,9 @@ class Generator < Thor::Group
     args.include?('rspec')
   end
 
+  # Only the options after automation, framework and name, so a project named "azure" is not Azure CI
   def azure?
-    args.include?('azure')
+    args.drop(3).include?('azure')
   end
 
   def github_ci?

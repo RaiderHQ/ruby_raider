@@ -289,7 +289,7 @@ describe 'End-to-End Project Generation and Execution' do
   end
 
   def azure_env_prefix
-    "HEADLESS=true #{AZURE_PUSH_ENV.map { |k, v| "#{k}='#{v}'" }.join(' ')}"
+    "GITHUB_ACTIONS= HEADLESS=true #{AZURE_PUSH_ENV.map { |k, v| "#{k}='#{v}'" }.join(' ')}"
   end
 
   def expect_azure_ci_block(project)

@@ -121,6 +121,7 @@ Azure Pipelines template for mobile projects is not available yet. Use GitHub Ac
 - Contribute to pull requests: grant the pipeline's build service identity (`<Project> Build Service (<Organization>)`) the "Contribute to pull requests" permission on the repository, so `raider-reporter comment` can post the comment and status.
 - Azure Repos ignores `pr:` triggers. Add this pipeline as a Build validation branch policy so pull request builds (and the Raider comment) run.
 - Keep the `raider_comment` job in the same stage as the `tests` job.
+- Pull request comments work for Azure Repos only; a GitHub-hosted repo built by Azure Pipelines gets results uploaded but no PR comment.
 - Self-hosted agent? Replace `vmImage: ubuntu-latest` with `pool: { name: Default }`.
 
 <%- end -%>

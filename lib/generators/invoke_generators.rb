@@ -17,7 +17,6 @@ module InvokeGenerators
     framework = structure[:framework]
     add_generator(generators, framework.capitalize)
     add_generator(generators, 'Github', 'Azure')
-    print_mobile_azure_notice(structure)
     extra_args = collect_flags(structure)
     generators.each do |generator|
       invoke_generator({
@@ -28,6 +27,7 @@ module InvokeGenerators
                          extra_args:
                        })
     end
+    print_mobile_azure_notice(structure)
   end
 
   def validate_ci(provider)

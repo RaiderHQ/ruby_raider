@@ -81,4 +81,20 @@ describe AzureGenerator do
       expect(File).not_to exist('azure_cli_bad')
     end
   end
+
+  context 'with a project named azure' do
+    after { FileUtils.rm_rf(%w[azure azure_named_ci]) }
+
+    it 'generates the GitHub workflow with the default ci' do
+      InvokeGenerators.generate_framework(automation: 'selenium', framework: 'rspec', name: 'azure')
+      expect(File).to exist('azure/.github/workflows')
+      expect(File).not_to exist('azure/azure-pipelines.yml')
+    end
+
+    it 'generates the Azure pipeline with ci azure' do
+      InvokeGenerators.generate_framework(automation: 'selenium', framework: 'rspec', name: 'azure', ci: 'azure')
+      expect(File).to exist('azure/azure-pipelines.yml')
+      expect(File).not_to exist('azure/.github')
+    end
+  end
 end
