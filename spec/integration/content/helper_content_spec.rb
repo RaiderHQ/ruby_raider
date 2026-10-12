@@ -221,13 +221,11 @@ describe 'Helper file content' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     it_behaves_like 'valid driver helper', name
     it_behaves_like 'selenium driver helper', name
-    it_behaves_like 'valid allure helper', name
   end
 
   context 'with cucumber and watir' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
     it_behaves_like 'valid browser helper', name
-    it_behaves_like 'valid allure helper', name
   end
 
   # --- Mobile contexts (with AppiumRecorder) ---
@@ -255,10 +253,8 @@ describe 'Helper file content' do
     end
 
     context "with cucumber and #{automation}" do
-      it 'has no raider reporter wiring' do
-        project = "#{FrameworkIndex::CUCUMBER}_#{automation}"
-        files = Dir.glob("#{project}/**/*", File::FNM_DOTMATCH).select { |f| File.file?(f) }
-        expect(files.select { |f| File.read(f).match?(/raider_reporter|RaiderReporter/) }).to be_empty
+      it 'does not generate the allure helper' do
+        expect(File).not_to exist("#{FrameworkIndex::CUCUMBER}_#{automation}/helpers/allure_helper.rb")
       end
     end
   end

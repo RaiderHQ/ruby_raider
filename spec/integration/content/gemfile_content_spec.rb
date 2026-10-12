@@ -58,8 +58,8 @@ describe 'Gemfile content' do
       expect(gemfile).to include("gem 'cucumber'")
     end
 
-    it 'includes allure-cucumber' do
-      expect(gemfile).to include("gem 'allure-cucumber'")
+    it 'does not include allure-cucumber' do
+      expect(gemfile).not_to include('allure')
     end
 
     it 'includes rspec as cucumber dependency' do
@@ -127,7 +127,7 @@ describe 'Gemfile content' do
         let(:gemfile) { read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'Gemfile') }
 
         it 'includes raider_reporter' do
-          expect(gemfile).to include("gem 'raider_reporter', '~> 0.3'")
+          expect(gemfile).to include("gem 'raider_reporter', '~> 0.4'")
         end
 
         it 'keeps allure gems' do
@@ -142,12 +142,12 @@ describe 'Gemfile content' do
       context "with cucumber and #{automation}" do
         let(:gemfile) { read_generated("#{FrameworkIndex::CUCUMBER}_#{automation}", 'Gemfile') }
 
-        it 'does not include raider_reporter' do
-          expect(gemfile).not_to include('raider_reporter')
+        it 'includes raider_reporter' do
+          expect(gemfile).to include("gem 'raider_reporter', '~> 0.4'")
         end
 
-        it 'keeps allure-cucumber' do
-          expect(gemfile).to include("gem 'allure-cucumber', '2.28.0'")
+        it 'drops allure-cucumber' do
+          expect(gemfile).not_to include('allure')
         end
 
         it 'pins ruby_raider to the generator major.minor' do

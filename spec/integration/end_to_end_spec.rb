@@ -84,7 +84,7 @@ describe 'End-to-End Project Generation and Execution' do
   # Helper to run Cucumber tests
   def run_cucumber(project_name)
     puts "\n🥒 Running Cucumber tests in #{project_name}..."
-    result = run_in_project(project_name, 'bundle exec cucumber features/ --format pretty', timeout: 120)
+    result = run_in_project(project_name, 'HEADLESS=true bundle exec cucumber features/ --format pretty', timeout: 120)
 
     puts result[:stdout] if result[:stdout].length.positive?
 
@@ -104,10 +104,10 @@ describe 'End-to-End Project Generation and Execution' do
       expect(bundle_install(project)).to be true
     end
 
-    it 'resolves raider_reporter 0.3 from RubyGems and ships the raider-reporter executable', :aggregate_failures do
+    it 'resolves raider_reporter 0.4 from RubyGems and ships the raider-reporter executable', :aggregate_failures do
       skip 'Bundle install failed' unless bundle_install(project)
 
-      expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.3\.\d+\)$/)
+      expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.4\.\d+\)$/)
       result = run_in_project(project, 'bundle exec raider-reporter --help', timeout: 60)
       expect(result[:exit_code]).to eq(0), "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
       expect(result[:stdout] + result[:stderr]).to include('raider-reporter comment')
@@ -162,6 +162,85 @@ describe 'End-to-End Project Generation and Execution' do
                                   "STDOUT: #{result[:stdout]}\n" \
                                   "STDERR: #{result[:stderr]}"
     end
+
+    it 'resolves raider_reporter 0.4 from RubyGems and requires its Cucumber plugin', :aggregate_failures do
+      skip 'Bundle install failed' unless bundle_install(project)
+
+      lockfile = File.read(File.join(project, 'Gemfile.lock'))
+      expect(lockfile).to match(/^    raider_reporter \(0\.4\.\d+\)$/)
+      expect(File.read(File.join(project, 'features/support/env.rb'))).to include("require 'raider_reporter/cucumber'")
+    end
+
+    it 'prints pretty output and keeps the exit status of a failing Cucumber run', :aggregate_failures, :slow do
+      skip 'Bundle install failed' unless bundle_install(project)
+
+      result = run_cucumber_with_failure(project)
+
+      expect(result[:stdout]).to include('Feature: Reporter failure')
+      expect(result[:stdout]).to include('Scenario: A deliberately failing scenario')
+      expect(result[:stdout]).to match(/\d+ scenarios? \(\d+ failed/)
+      expect(result[:exit_code]).to eq(1)
+    end
+
+    it 'writes raider-results/run.json listing every scenario with a failing scenario screenshot',
+       :aggregate_failures, :slow do
+      skip 'Bundle install failed' unless bundle_install(project)
+
+      result = run_cucumber_with_failure(project)
+      summary = result[:stdout].match(/(\d+) scenarios? \((?:(\d+) failed)?/)
+      expect(summary).not_to be_nil, "No Cucumber summary line.\nSTDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
+
+      run = JSON.parse(File.read(File.join(project, 'raider-results', 'run.json')))
+      expect(run['schema_version']).to eq(1)
+      expect(run['results'].size).to eq(summary[1].to_i)
+      expect(run['results'].count { |r| r['status'] == 'failed' }).to eq(summary[2].to_i)
+
+      failing = run['results'].find { |r| r['full_name'] == 'Reporter failure: A deliberately failing scenario' }
+      expect(failing).not_to be_nil, "Scenario missing from run.json: #{run['results'].map { |r| r['full_name'] }}"
+      expect(failing['status']).to eq('failed')
+      expect(failing['file_path']).to eq('features/reporter_failure.feature')
+      expect(failing['failure']['message']).to start_with(
+        'Then the reporter records this failure (features/reporter_failure.feature:5)'
+      )
+      screenshot = failing['attachments'].find { |a| a['name'] == 'screenshot' }
+      expect(screenshot).not_to be_nil, "No screenshot attachment: #{failing['attachments']}"
+      expect(screenshot['content_type']).to eq('image/png')
+    end
+  end
+
+  # Runs the project's features plus a deliberately failing scenario, then removes that scenario again
+  def run_cucumber_with_failure(project)
+    add_failing_cucumber_scenario(project)
+    FileUtils.rm_rf(File.join(project, 'raider-results'))
+    run_cucumber(project)
+  ensure
+    remove_failing_cucumber_scenario(project)
+  end
+
+  # Adds a scenario that always fails at its last step, after the browser has been started
+  def add_failing_cucumber_scenario(project)
+    File.write(File.join(project, 'features/reporter_failure.feature'), <<~FEATURE)
+      Feature: Reporter failure
+
+      Scenario: A deliberately failing scenario
+          Given the reporter has a started scenario
+          Then the reporter records this failure
+    FEATURE
+    File.write(File.join(project, 'features/step_definitions/reporter_failure_steps.rb'), <<~STEPS)
+      # frozen_string_literal: true
+
+      Given('the reporter has a started scenario') {}
+
+      Then('the reporter records this failure') do
+        raise 'deliberate failure for raider_reporter'
+      end
+    STEPS
+  end
+
+  # Keeps the deliberate failure from leaking into the other examples that share the project
+  def remove_failing_cucumber_scenario(project)
+    FileUtils.rm_f(File.join(project, 'features/reporter_failure.feature'))
+    FileUtils.rm_f(File.join(project, 'features/step_definitions/reporter_failure_steps.rb'))
   end
 
   # Test Web Frameworks (these can run without external services)

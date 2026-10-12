@@ -5,9 +5,7 @@ gem 'activesupport'
 gem 'appium_lib'
 gem 'appium_console'
 <% end %>
-<%- if cucumber? -%>
-gem 'allure-cucumber', '2.28.0'
-<%- else -%>
+<%- if rspec? -%>
 gem 'allure-rspec', '2.28.0'
 gem 'allure-ruby-commons', '2.28.0'
 <%- end -%>
@@ -19,8 +17,8 @@ gem 'parallel_split_test'
 gem 'parallel_tests'
 gem 'rake'
 gem 'reek'
+gem 'raider_reporter', '~> 0.4'
 <%- if rspec? -%>
-gem 'raider_reporter', '~> 0.3'
 gem 'rspec-retry'
 <%- end -%>
 gem '<%= framework %>'

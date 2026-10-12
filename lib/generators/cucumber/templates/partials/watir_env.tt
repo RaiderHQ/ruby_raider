@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
+require 'raider_reporter/cucumber'
 require 'tmpdir'
 require 'yaml'
-require_relative '../../helpers/allure_helper'
 
 Before do
   viewport = YAML.load_file('config/config.yml')['viewport']
@@ -14,9 +14,13 @@ Before do
 end
 
 After do |scenario|
-  Dir.mktmpdir do |temp_folder|
-    screenshot = browser.screenshot.save("#{temp_folder}/#{scenario.name}.png")
-    AllureHelper.add_screenshot(scenario.name, screenshot)
+  if scenario.failed?
+    Dir.mktmpdir do |temp_folder|
+      screenshot_path = File.join(temp_folder, 'screenshot.png')
+      browser.screenshot.save(screenshot_path)
+      RaiderReporter.attach('screenshot', screenshot_path, type: :png)
+    end
   end
+ensure
   browser.quit
 end

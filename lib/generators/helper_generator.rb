@@ -14,6 +14,8 @@ class HelpersGenerator < Generator
   private
 
   def generate_allure_helper
+    return if cucumber?
+
     template('helpers/allure_helper.tt', "#{name}/helpers/allure_helper.rb")
   end
 
