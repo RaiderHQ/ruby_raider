@@ -2,6 +2,16 @@
 
 ## Release Notes
 
+### 3.6.0
+
+- New `ci` parameter: `raider new my_project -p framework:rspec automation:selenium ci:azure` generates an `azure-pipelines.yml` for web projects instead of the GitHub Actions workflow. `ci:github` (the default) is unchanged; any other value fails with `Invalid parameters: ci must be github or azure`.
+- The pipeline runs the suite on `ubuntu-latest`, publishes `raider-results/` as a pipeline artifact and includes a `raider_comment` job that comments Raider results on pull requests via `raider-reporter comment`. It needs the `RAIDER_TOKEN` (secret) and `RAIDER_ENDPOINT` pipeline variables and the "Contribute to pull requests" permission for the build service.
+- Azure Repos ignores `pr:` triggers: add the pipeline as a Build validation branch policy so pull request builds and the Raider comment run.
+- The interactive menu asks "Which CI provider?" (GitHub Actions / Azure Pipelines) for web automations.
+- The generated Readme gets an "Azure Pipelines" section when `ci:azure` is used.
+- Mobile projects with `ci:azure` get no pipeline file yet; `raider new` prints a notice.
+- Generated Gemfiles now require `raider_reporter` `~> 0.5`.
+
 ### 3.5.0
 
 - Generated Cucumber projects now report through `raider_reporter` `~> 0.4` instead of Allure: results are written to `raider-results/` and uploaded when `RAIDER_TOKEN` and `RAIDER_ENDPOINT` are set. The reporter is activated by `require 'raider_reporter/cucumber'` in `features/support/env.rb`.
