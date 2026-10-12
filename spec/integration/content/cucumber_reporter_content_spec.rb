@@ -25,7 +25,7 @@ describe 'Cucumber raider_reporter wiring' do
       end
 
       it 'takes the screenshot only for failed scenarios, inside the guard block' do
-        guarded = /if scenario\.failed\?\n\s+Dir\.mktmpdir do \|temp_folder\|\n(?<body>.*?)\n\s+end\n\s+end\n\s+ensure/m
+        guarded = /if scenario\.failed\?\n\s+Dir\.mktmpdir do \|temp_folder\|\n(?<body>.*?)\n\s+end\n\s+end\nensure/m
         expect(hook.match(guarded)[:body]).to include(screenshot_call)
       end
 
@@ -34,9 +34,10 @@ describe 'Cucumber raider_reporter wiring' do
         expect(hook).not_to include('scenario.name')
       end
 
-      it 'quits the driver in an ensure that follows the begin' do
+      it 'quits the driver in an ensure of the After block, without a redundant begin' do
         quit = %w[android ios cross_platform].include?(automation) ? 'driver.quit_driver' : quit_call
-        expect(hook).to match(/^\s*After do \|scenario\|\n\s+begin\n.*\n\s+ensure\n\s+#{Regexp.escape(quit)}\n\s+end\nend/m)
+        expect(hook).to match(/^\s*After do \|scenario\|\n.*\n^ensure\n\s+#{Regexp.escape(quit)}\nend/m)
+        expect(hook).not_to match(/^\s+begin$/)
       end
 
       it 'attaches the screenshot path before quitting the driver' do
