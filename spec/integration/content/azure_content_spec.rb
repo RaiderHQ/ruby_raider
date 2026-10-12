@@ -80,7 +80,7 @@ describe 'Azure Pipelines content' do
       end
 
       it 'documents Azure Pipelines in the README and no GitHub Actions setup' do
-        readme = read_generated(name, 'README.md')
+        readme = read_generated(name, 'Readme.md')
         expect(readme).to include('## Azure Pipelines', 'RAIDER_TOKEN', 'Contribute to pull requests',
                                   'pool: { name: Default }', 'Build validation branch policy',
                                   'same stage')
@@ -90,7 +90,7 @@ describe 'Azure Pipelines content' do
   end
 
   context 'with a mobile project and ci azure' do
-    let(:readme) { read_generated('azurec_mobile', 'README.md') }
+    let(:readme) { read_generated('azurec_mobile', 'Readme.md') }
 
     before(:all) do # rubocop:disable RSpec/BeforeAfterAll
       InvokeGenerators.generate_framework(automation: 'ios', framework: 'rspec', name: 'azurec_mobile', ci: 'azure')
