@@ -5,8 +5,12 @@ require_relative '../spec_helper'
 
 describe HelpersGenerator do
   shared_examples 'creates common helpers' do |name|
-    it 'creates an allure helper file' do
-      expect(File).to exist("#{name}/helpers/allure_helper.rb")
+    it 'creates an allure helper file only for rspec projects' do
+      if name.start_with?(FrameworkIndex::CUCUMBER)
+        expect(File).not_to exist("#{name}/helpers/allure_helper.rb")
+      else
+        expect(File).to exist("#{name}/helpers/allure_helper.rb")
+      end
     end
   end
 
@@ -101,5 +105,4 @@ describe HelpersGenerator do
     include_examples 'creates cucumber helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates cross platform helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
   end
-
 end
