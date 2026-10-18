@@ -5,10 +5,6 @@ gem 'activesupport'
 gem 'appium_lib'
 gem 'appium_console'
 <% end %>
-<%- if rspec? -%>
-gem 'allure-rspec', '2.28.0'
-gem 'allure-ruby-commons', '2.28.0'
-<%- end -%>
 <%- if axe_addon? -%>
 gem 'axe-core-rspec'
 gem 'axe-core-selenium'
@@ -17,7 +13,7 @@ gem 'parallel_split_test'
 gem 'parallel_tests'
 gem 'rake'
 gem 'reek'
-gem 'raider_reporter', '~> 0.5'
+gem 'raider_reporter', '~> 0.7'
 <%- if rspec? -%>
 gem 'rspec-retry'
 <%- end -%>

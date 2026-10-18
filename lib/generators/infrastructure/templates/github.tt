@@ -33,11 +33,6 @@ jobs:
         with:
           chrome-version: stable
 
-<%- unless framework == 'cucumber' -%>
-      - name: Create allure-results folder
-        run: mkdir -p allure-results
-
-<%- end -%>
       - name: Run tests
         run: <%- if framework == 'cucumber' -%>bundle exec cucumber features --format pretty<%- else -%>bundle exec rspec spec --format documentation<%- end %>
         env:
@@ -53,34 +48,6 @@ jobs:
           path: raider-results/
           if-no-files-found: ignore
 
-<%- unless framework == 'cucumber' -%>
-      - name: Get Allure history
-        uses: actions/checkout@v2
-        if: always()
-        continue-on-error: true
-        with:
-          ref: gh-pages
-          path: gh-pages
-
-      - name: Allure Report
-        uses: simple-elf/allure-report-action@master
-        if: always()
-        id: allure-report
-        with:
-          allure_results: allure-results
-          gh_pages: gh-pages
-          allure_report: allure-report
-          allure_history: allure-history
-
-      - name: Deploy report to Github Pages
-        if: always()
-        uses: peaceiris/actions-gh-pages@v2
-        env:
-          PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_BRANCH: gh-pages
-          PUBLISH_DIR: allure-history
-
-<%- end -%>
   raider-comment:
     needs: [build]
     if: always() && github.event_name == 'pull_request'

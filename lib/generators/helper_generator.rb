@@ -7,17 +7,10 @@ class HelpersGenerator < Generator
     generate_browser_helper
     generate_driver_helper
     generate_appium_helper
-    generate_allure_helper
     generate_spec_helper
   end
 
   private
-
-  def generate_allure_helper
-    return if cucumber?
-
-    template('helpers/allure_helper.tt', "#{name}/helpers/allure_helper.rb")
-  end
 
   def generate_browser_helper
     return if selenium_based? || mobile?

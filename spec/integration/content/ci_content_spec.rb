@@ -128,19 +128,15 @@ describe 'CI pipeline content' do
     end
   end
 
-  shared_examples 'github allure steps' do |project_name|
-    subject(:pipeline) { read_generated(project_name, '.github/workflows/test_pipeline.yml') }
-
-    it 'keeps the Allure steps' do
-      expect(pipeline).to include('simple-elf/allure-report-action', 'peaceiris/actions-gh-pages')
-    end
-  end
-
   shared_examples 'github without allure steps' do |project_name|
     subject(:pipeline) { read_generated(project_name, '.github/workflows/test_pipeline.yml') }
 
     it 'has no Allure report or gh-pages steps' do
       expect(pipeline).not_to match(/allure|gh-pages/i)
+    end
+
+    it 'still uploads raider-results' do
+      expect(pipeline).to include('name: raider-results', 'path: raider-results/')
     end
   end
 
@@ -151,7 +147,7 @@ describe 'CI pipeline content' do
     include_examples 'github triggers', name, 'test_pipeline.yml'
     include_examples 'github raider wiring', name, 'test_pipeline.yml'
     include_examples 'github raider-comment job', name, 'test_pipeline.yml', %w[build]
-    include_examples 'github allure steps', name
+    include_examples 'github without allure steps', name
   end
 
   context 'with cucumber and selenium' do
@@ -171,7 +167,7 @@ describe 'CI pipeline content' do
     include_examples 'github triggers', name, 'test_pipeline.yml'
     include_examples 'github raider wiring', name, 'test_pipeline.yml'
     include_examples 'github raider-comment job', name, 'test_pipeline.yml', %w[build]
-    include_examples 'github allure steps', name
+    include_examples 'github without allure steps', name
   end
 
   context 'with cucumber and watir' do

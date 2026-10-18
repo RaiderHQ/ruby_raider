@@ -2,6 +2,13 @@
 
 ## Release Notes
 
+### 3.7.0
+
+- Generated RSpec projects no longer include Allure: the `allure-rspec` and `allure-ruby-commons` gems, `helpers/allure_helper.rb`, the `allure-results` folder and `.gitignore` entry, and the Allure report and gh-pages steps in the GitHub Actions workflow are gone. `raider_reporter` is now the only reporter.
+- Generated Gemfiles now require `raider_reporter` `~> 0.7`, which writes a browsable `raider-results/index.html` next to `run.json`; `bundle exec raider-reporter report` rebuilds it.
+- The generated Readme's Reporting section points to the local HTML report; failure screenshots are attached to the report and to Raider.
+- The unused `test_helper` and `video_stop` templates (Allure-only) are removed.
+
 ### 3.6.0
 
 - New `ci` parameter: `raider new my_project -p framework:rspec automation:selenium ci:azure` generates an `azure-pipelines.yml` for web projects instead of the GitHub Actions workflow. `ci:github` (the default) is unchanged; any other value fails with `Invalid parameters: ci must be github or azure`.

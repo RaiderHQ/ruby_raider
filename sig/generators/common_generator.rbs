@@ -8,5 +8,4 @@ class CommonGenerator < Generator
   def generate_rubocop_file: () -> void
   def generate_gitignore_file: () -> void
   def generate_rspec_file: () -> void
-  def create_allure_folder: () -> void
 end
