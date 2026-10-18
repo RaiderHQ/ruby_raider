@@ -9,6 +9,7 @@ describe 'RSpec projects without Allure' do
 
       it 'does not mention Allure in any generated file' do
         files = Dir.glob("#{project_name}/**/*", File::FNM_DOTMATCH).select { |f| File.file?(f) }
+        files = files.reject { |f| File.binread(f, 512).include?("\x00") }
         expect(files.select { |f| File.read(f).match?(/allure/i) }).to be_empty
       end
 

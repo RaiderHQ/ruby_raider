@@ -130,6 +130,7 @@ describe 'Helper file content' do
 
       expect(guarded).to include('RaiderReporter.attach', screenshot_call)
       expect(helper).not_to include('AllureHelper')
+      expect(helper).not_to match(/screenshot\s*=/)
       expect(lines.select { |line| line.include?(screenshot_call) }.size).to eq(1)
     end
 

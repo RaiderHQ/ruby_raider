@@ -4,7 +4,6 @@ class HelpersGenerator < Generator
 
   private
 
-
   def generate_browser_helper: () -> void
   def generate_spec_helper: () -> void
   def generate_driver_helper: () -> void
