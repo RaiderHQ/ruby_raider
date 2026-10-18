@@ -106,8 +106,8 @@ describe 'Common file content' do
   shared_examples 'rspec gitignore' do |project_name|
     subject(:gitignore) { read_generated(project_name, '.gitignore') }
 
-    it 'includes allure-results' do
-      expect(gitignore).to include('allure-results')
+    it 'does not include allure-results' do
+      expect(gitignore).not_to include('allure-results')
     end
 
     it 'includes spec/examples.txt' do

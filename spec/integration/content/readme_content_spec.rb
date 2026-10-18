@@ -16,8 +16,9 @@ describe 'Generated Readme content' do
                                   'https://github.com/RaiderHQ/raider_reporter')
       end
 
-      it 'says Allure is still produced' do
-        expect(readme).to match(/Allure/)
+      it 'points to the local HTML report' do
+        expect(readme).to include('raider-results/index.html')
+        expect(readme).not_to match(/allure/i)
       end
     end
 

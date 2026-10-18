@@ -1,7 +1,0 @@
-<% if rspec? %>
-AllureRspec
-<% elsif cucumber? %>
-AllureCucumber
-<% else %>
-Allure
-<% end %>

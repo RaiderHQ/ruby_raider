@@ -38,10 +38,4 @@ class CommonGenerator < Generator
 
     template('common/rspec.tt', "#{name}/.rspec")
   end
-
-  def create_allure_folder
-    return if cucumber?
-
-    empty_directory "#{name}/allure-results"
-  end
 end

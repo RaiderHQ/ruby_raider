@@ -60,7 +60,6 @@ Every generated project comes with:
 
 - **Page Object Model** — Base page and component classes with example pages
 - **Test examples** — Working login tests against the [Raider Test Store](https://raider-test-site.onrender.com/)
-- **Allure reporting** (RSpec) — Pre-configured with screenshot capture on failure
 - **Raider reporting** — RSpec and Cucumber projects include [raider_reporter](https://github.com/RaiderHQ/raider_reporter), which writes results to `raider-results/` and uploads runs when `RAIDER_TOKEN` and `RAIDER_ENDPOINT` are set
 - **GitHub Actions CI** — Ready-to-use test pipeline
 - **Rake tasks** — Default, smoke, and regression tasks with tag-based filtering

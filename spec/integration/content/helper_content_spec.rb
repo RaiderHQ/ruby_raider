@@ -103,10 +103,6 @@ describe 'Helper file content' do
     it 'configures RSpec' do
       expect(helper).to include('RSpec.configure')
     end
-
-    it 'requires allure_helper' do
-      expect(helper).to include("require_relative 'allure_helper'")
-    end
   end
 
   shared_examples 'raider reporter spec helper' do |project_name, screenshot_call|
@@ -114,10 +110,6 @@ describe 'Helper file content' do
 
     it 'requires raider_reporter/rspec' do
       expect(helper).to include("require 'raider_reporter/rspec'")
-    end
-
-    it 'requires digest, which allure-ruby-commons uses without requiring' do
-      expect(helper).to include("require 'digest'")
     end
 
     it 'adds the raider formatter in spec_helper so a command-line --format cannot drop it' do
@@ -128,10 +120,6 @@ describe 'Helper file content' do
       expect(helper).not_to match(/config\.formatter\s*=/)
     end
 
-    it 'adds the allure formatter' do
-      expect(helper).to include('config.add_formatter(AllureHelper.formatter)')
-    end
-
     it 'screenshots only on failure' do
       lines = helper.lines
       start = lines.index { |line| line.include?('if example.exception') }
@@ -140,8 +128,9 @@ describe 'Helper file content' do
       body = lines[(start + 1)..].take_while { |line| line.strip.empty? || line[/\A */].size > indent }
       guarded = body.join
 
-      expect(guarded).to include('AllureHelper.add_screenshot', 'RaiderReporter.attach', screenshot_call)
-      expect(lines.select { |line| line.include?('AllureHelper.add_screenshot') }.size).to eq(1)
+      expect(guarded).to include('RaiderReporter.attach', screenshot_call)
+      expect(helper).not_to include('AllureHelper')
+      expect(helper).not_to match(/screenshot\s*=/)
       expect(lines.select { |line| line.include?(screenshot_call) }.size).to eq(1)
     end
 
@@ -182,20 +171,6 @@ describe 'Helper file content' do
     end
   end
 
-  # --- Allure helper ---
-
-  shared_examples 'valid allure helper' do |project_name|
-    subject(:helper) { read_generated(project_name, 'helpers/allure_helper.rb') }
-
-    it 'has valid Ruby syntax' do
-      expect(helper).to have_valid_ruby_syntax
-    end
-
-    it 'defines AllureHelper' do
-      expect(helper).to match(/AllureHelper|module AllureHelper|class AllureHelper/)
-    end
-  end
-
   # --- RSpec + automation contexts ---
 
   context 'with rspec and selenium' do
@@ -204,7 +179,6 @@ describe 'Helper file content' do
     it_behaves_like 'selenium driver helper', name
     it_behaves_like 'valid spec helper', name
     it_behaves_like 'selenium spec helper', name
-    it_behaves_like 'valid allure helper', name
   end
 
   context 'with rspec and watir' do
@@ -212,7 +186,6 @@ describe 'Helper file content' do
     it_behaves_like 'valid browser helper', name
     it_behaves_like 'valid spec helper', name
     it_behaves_like 'watir spec helper', name
-    it_behaves_like 'valid allure helper', name
   end
 
   # --- Cucumber + automation contexts (no spec_helper/test_helper) ---
@@ -226,18 +199,6 @@ describe 'Helper file content' do
   context 'with cucumber and watir' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
     it_behaves_like 'valid browser helper', name
-  end
-
-  # --- Mobile contexts (with AppiumRecorder) ---
-
-  context 'with cucumber and appium android' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
-
-  end
-
-  context 'with rspec and appium ios' do
-    name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
-
   end
 
   # --- Raider reporter wiring (every rspec automation) ---
