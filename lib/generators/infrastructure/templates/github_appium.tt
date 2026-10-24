@@ -46,14 +46,15 @@ jobs:
 
       - name: Run tests
 <%- if cucumber? -%>
-        run: bundle exec cucumber features/ --format pretty
+        run: bundle exec raider-reporter exec -- bundle exec cucumber features/ --format pretty
 <%- else -%>
-        run: bundle exec rspec spec/ --format documentation
+        run: bundle exec raider-reporter exec -- bundle exec rspec spec/ --format documentation
 <%- end -%>
         env:
           APP_PATH: ${{ github.workspace }}/apps/RaiderTestApp.app
           RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
           RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
+          RAIDER_QUARANTINE: "1"
 
       - name: Upload Raider results
         uses: actions/upload-artifact@v4
@@ -105,14 +106,15 @@ jobs:
           profile: pixel_8
           script: |
 <%- if cucumber? -%>
-            bundle exec cucumber features/ --format pretty
+            bundle exec raider-reporter exec -- bundle exec cucumber features/ --format pretty
 <%- else -%>
-            bundle exec rspec spec/ --format documentation
+            bundle exec raider-reporter exec -- bundle exec rspec spec/ --format documentation
 <%- end -%>
         env:
           APP_PATH: ${{ github.workspace }}/apps/app-release.apk
           RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
           RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
+          RAIDER_QUARANTINE: "1"
 
       - name: Upload Raider results
         uses: actions/upload-artifact@v4

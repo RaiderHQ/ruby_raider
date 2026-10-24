@@ -108,6 +108,14 @@ Without `RAIDER_TOKEN`, nothing is uploaded and the suite output is unchanged. F
 report and to Raider. See the [raider_reporter README](https://github.com/RaiderHQ/raider_reporter) for details.
 <%- end -%>
 
+<%- unless azure? && mobile? -%>
+### Quarantine
+
+CI runs the suite through `bundle exec raider-reporter exec -- …` with `RAIDER_QUARANTINE` set. Tests quarantined in
+Raider still run and are still reported (as `quarantined`), and a build whose only failures are quarantined stays green.
+Local runs keep quarantine off. To turn it off in CI, remove `RAIDER_QUARANTINE` from the pipeline.
+
+<%- end -%>
 <%- if azure? && mobile? -%>
 ## CI
 
