@@ -75,7 +75,18 @@ describe 'CI pipeline content' do
       expect(test_steps).not_to be_empty
       test_steps.each do |step|
         expect(step['env']).to include('RAIDER_TOKEN' => '${{ secrets.RAIDER_TOKEN }}',
-                                       'RAIDER_ENDPOINT' => '${{ vars.RAIDER_ENDPOINT }}')
+                                       'RAIDER_ENDPOINT' => '${{ vars.RAIDER_ENDPOINT }}',
+                                       'RAIDER_QUARANTINE' => '1')
+      end
+    end
+
+    it 'runs every test command through raider-reporter exec' do
+      expect(test_steps).not_to be_empty
+      test_steps.each do |step|
+        command = step['run'] || step['with']['script']
+        wrapped = command.scan(/raider-reporter exec -- bundle exec #{runner}\b/).size
+        expect(wrapped).to be_positive
+        expect(command.scan(/bundle exec #{runner}\b/).size).to eq(wrapped)
       end
     end
 

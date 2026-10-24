@@ -21,11 +21,12 @@ jobs:
         inputs: { versionSpec: '3.4' }
       - script: bundle install
         displayName: Install gems
-      - script: <%- if cucumber? -%>bundle exec cucumber features/ --format pretty<%- else -%>bundle exec rspec spec/ --format documentation<%- end %>
+      - script: <%- if cucumber? -%>bundle exec raider-reporter exec -- bundle exec cucumber features/ --format pretty<%- else -%>bundle exec raider-reporter exec -- bundle exec rspec spec/ --format documentation<%- end %>
         displayName: Run tests
         env:
           RAIDER_TOKEN: $(RAIDER_TOKEN)
           RAIDER_ENDPOINT: $(RAIDER_ENDPOINT)
+          RAIDER_QUARANTINE: 1
       - task: PublishPipelineArtifact@1
         condition: always()
         inputs: { targetPath: raider-results, artifact: raider-results-$(System.JobPositionInPhase)-$(System.JobAttempt) }

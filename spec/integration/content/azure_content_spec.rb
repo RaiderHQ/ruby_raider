@@ -27,9 +27,9 @@ describe 'Azure Pipelines content' do
       let(:yml) { YAML.safe_load(raw) }
       let(:run_command) do
         if framework == 'cucumber'
-          'bundle exec cucumber features/ --format pretty'
+          'bundle exec raider-reporter exec -- bundle exec cucumber features/ --format pretty'
         else
-          'bundle exec rspec spec/ --format documentation'
+          'bundle exec raider-reporter exec -- bundle exec rspec spec/ --format documentation'
         end
       end
 
@@ -49,7 +49,8 @@ describe 'Azure Pipelines content' do
 
       it 'passes exactly the Raider settings to the test step' do
         step = yml['jobs'][0]['steps'].find { |s| s['script'] == run_command }
-        expect(step['env']).to eq('RAIDER_TOKEN' => '$(RAIDER_TOKEN)', 'RAIDER_ENDPOINT' => '$(RAIDER_ENDPOINT)')
+        expect(step['env']).to eq('RAIDER_TOKEN' => '$(RAIDER_TOKEN)', 'RAIDER_ENDPOINT' => '$(RAIDER_ENDPOINT)',
+                                  'RAIDER_QUARANTINE' => 1)
         expect(yml['variables']['HEADLESS']).to eq('true')
       end
 

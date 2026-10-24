@@ -34,11 +34,12 @@ jobs:
           chrome-version: stable
 
       - name: Run tests
-        run: <%- if framework == 'cucumber' -%>bundle exec cucumber features --format pretty<%- else -%>bundle exec rspec spec --format documentation<%- end %>
+        run: <%- if framework == 'cucumber' -%>bundle exec raider-reporter exec -- bundle exec cucumber features --format pretty<%- else -%>bundle exec raider-reporter exec -- bundle exec rspec spec --format documentation<%- end %>
         env:
           HEADLESS: true
           RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
           RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
+          RAIDER_QUARANTINE: "1"
 
       - name: Upload Raider results
         uses: actions/upload-artifact@v4

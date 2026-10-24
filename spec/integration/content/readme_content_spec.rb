@@ -16,6 +16,10 @@ describe 'Generated Readme content' do
                                   'https://github.com/RaiderHQ/raider_reporter')
       end
 
+      it 'explains quarantine in CI' do
+        expect(readme).to include('### Quarantine', 'RAIDER_QUARANTINE', 'raider-reporter exec')
+      end
+
       it 'points to the local HTML report' do
         expect(readme).to include('raider-results/index.html')
         expect(readme).not_to match(/allure/i)
@@ -32,6 +36,10 @@ describe 'Generated Readme content' do
       it 'documents local results, upload settings, plugin mode and the raider_reporter README' do
         expect(readme).to include('raider-results/', 'RAIDER_TOKEN', 'RAIDER_ENDPOINT', 'features/support/env.rb',
                                   'https://github.com/RaiderHQ/raider_reporter')
+      end
+
+      it 'explains quarantine in CI' do
+        expect(readme).to include('### Quarantine', 'RAIDER_QUARANTINE', 'raider-reporter exec')
       end
 
       it 'does not mention Allure' do
