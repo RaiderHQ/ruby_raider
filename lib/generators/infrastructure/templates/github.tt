@@ -50,7 +50,7 @@ jobs:
           if-no-files-found: ignore
 
   raider-comment:
-    needs: [build]
+    needs: [build, raider-gate]
     if: always() && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:

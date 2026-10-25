@@ -54,10 +54,10 @@ describe 'Azure Pipelines content' do
         expect(yml['variables']['HEADLESS']).to eq('true')
       end
 
-      it 'has a raider_comment job for pull requests' do
+      it 'has a raider_comment job for pull requests that waits for the gate job but runs even when it is skipped' do
         comment = yml['jobs'][1]
         expect(comment['job']).to eq('raider_comment')
-        expect(comment['dependsOn']).to eq('tests')
+        expect(comment['dependsOn']).to eq(%w[tests raider_gate])
         expect(comment['condition']).to eq("and(always(), eq(variables['Build.Reason'], 'PullRequest'))")
         last = comment['steps'].last
         expect(last['script']).to eq('bundle exec raider-reporter comment')
@@ -100,7 +100,7 @@ describe 'Azure Pipelines content' do
         readme = read_generated(name, 'Readme.md')
         expect(readme).to include('## Azure Pipelines', 'RAIDER_TOKEN', 'Contribute to pull requests',
                                   'pool: { name: Default }', 'Build validation branch policy',
-                                  'same stage', 'raider_gate', 'RAIDER_GATE=1')
+                                  'same stage', 'raider_gate', 'RAIDER_GATE=1', 'RAIDER_SHARD_TOTAL', 'RAIDER_SHARD_INDEX')
         expect(readme).not_to match(/GitHub Actions/i)
       end
     end

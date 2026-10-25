@@ -110,12 +110,13 @@ describe 'CI pipeline content' do
       expect(jobs.keys).to match_array(test_jobs + %w[raider-comment raider-gate])
     end
 
-    it 'needs every test job' do
-      expect(job['needs']).to match_array(test_jobs)
+    it 'needs every test job and the gate job, so the comment carries the final gate line' do
+      expect(job['needs']).to match_array(test_jobs + %w[raider-gate])
     end
 
-    it 'runs always, on pull requests only' do
+    it 'runs always, on pull requests only, so a skipped or failed gate job does not skip it' do
       expect(job['if']).to eq("always() && github.event_name == 'pull_request'")
+      expect(job['if']).to start_with('always()')
       expect(job['runs-on']).to eq('ubuntu-latest')
     end
 
@@ -182,6 +183,31 @@ describe 'CI pipeline content' do
     end
   end
 
+  shared_examples 'github appium shards' do |project_name, runner, shards|
+    subject(:pipeline) { read_generated(project_name, '.github/workflows/appium_pipeline.yml') }
+
+    let(:jobs) { YAML.safe_load(pipeline)['jobs'] }
+
+    def test_step(job, runner)
+      job['steps'].find { |step| step['run'].to_s.include?(runner) || step['with'].to_h['script'].to_s.include?(runner) }
+    end
+
+    if shards
+      it 'gives each platform job its own shard of two, so the gate waits for both' do
+        shards.each do |job_name, index|
+          expect(test_step(jobs[job_name], runner)['env'])
+            .to include('RAIDER_SHARD_INDEX' => index, 'RAIDER_SHARD_TOTAL' => '2')
+        end
+      end
+    else
+      it 'sets no shard env for a single platform' do
+        jobs.except('raider-comment', 'raider-gate').each_value do |job|
+          expect(test_step(job, runner)['env'].keys).not_to include('RAIDER_SHARD_INDEX', 'RAIDER_SHARD_TOTAL')
+        end
+      end
+    end
+  end
+
   context 'with rspec and selenium' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'valid github pipeline', name
@@ -229,9 +255,12 @@ describe 'CI pipeline content' do
   appium_jobs = { 'android' => %w[android-tests], 'ios' => %w[ios-tests],
                   'cross_platform' => %w[ios-tests android-tests] }
 
+  appium_shards = { 'cross_platform' => { 'ios-tests' => '1', 'android-tests' => '2' } }
+
   appium_jobs.each do |automation, test_jobs|
     context "with rspec and #{automation}" do
       name = "#{FrameworkIndex::RSPEC}_#{automation}"
+      include_examples 'github appium shards', name, 'rspec', appium_shards[automation]
       include_examples 'github raider-comment job', name, 'appium_pipeline.yml', test_jobs
       include_examples 'github raider-gate job', name, 'appium_pipeline.yml', test_jobs
       include_examples 'github triggers', name, 'appium_pipeline.yml'
@@ -240,6 +269,7 @@ describe 'CI pipeline content' do
 
     context "with cucumber and #{automation}" do
       name = "#{FrameworkIndex::CUCUMBER}_#{automation}"
+      include_examples 'github appium shards', name, 'cucumber', appium_shards[automation]
       include_examples 'github triggers', name, 'appium_pipeline.yml'
       include_examples 'github raider wiring', name, 'appium_pipeline.yml', 'cucumber'
       include_examples 'github raider-comment job', name, 'appium_pipeline.yml', test_jobs

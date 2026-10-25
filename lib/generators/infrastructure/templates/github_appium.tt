@@ -55,6 +55,10 @@ jobs:
           RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
           RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
           RAIDER_QUARANTINE: "1"
+<%- if cross_platform? -%>
+          RAIDER_SHARD_INDEX: "1"
+          RAIDER_SHARD_TOTAL: "2"
+<%- end -%>
 
       - name: Upload Raider results
         uses: actions/upload-artifact@v4
@@ -115,6 +119,10 @@ jobs:
           RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
           RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
           RAIDER_QUARANTINE: "1"
+<%- if cross_platform? -%>
+          RAIDER_SHARD_INDEX: "2"
+          RAIDER_SHARD_TOTAL: "2"
+<%- end -%>
 
       - name: Upload Raider results
         uses: actions/upload-artifact@v4
@@ -126,7 +134,7 @@ jobs:
 <%- end -%>
 
   raider-comment:
-    needs: [<%= [('ios-tests' if ios? || cross_platform?), ('android-tests' if android? || cross_platform?)].compact.join(', ') %>]
+    needs: [<%= [('ios-tests' if ios? || cross_platform?), ('android-tests' if android? || cross_platform?)].compact.join(', ') %>, raider-gate]
     if: always() && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:

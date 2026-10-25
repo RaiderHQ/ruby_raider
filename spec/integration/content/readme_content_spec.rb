@@ -23,7 +23,8 @@ describe 'Generated Readme content' do
       it 'explains the quality gate' do
         expect(readme).to include('### Quality gate', 'RAIDER_GATE=1', 'Gate page', 'raider/gate',
                                   'raider-reporter gate', 'raider-gate', 'exits 1 when the gate fails',
-                                  '2 when it gets no verdict', 'RAIDER_GATE_TIMEOUT')
+                                  '2 when it gets no verdict', 'RAIDER_GATE_TIMEOUT', 'RAIDER_SHARD_TOTAL',
+                                  'RAIDER_SHARD_INDEX')
       end
 
       it 'points to the local HTML report' do
@@ -51,7 +52,8 @@ describe 'Generated Readme content' do
       it 'explains the quality gate' do
         expect(readme).to include('### Quality gate', 'RAIDER_GATE=1', 'Gate page', 'raider/gate',
                                   'raider-reporter gate', 'raider-gate', 'exits 1 when the gate fails',
-                                  '2 when it gets no verdict', 'RAIDER_GATE_TIMEOUT')
+                                  '2 when it gets no verdict', 'RAIDER_GATE_TIMEOUT', 'RAIDER_SHARD_TOTAL',
+                                  'RAIDER_SHARD_INDEX')
       end
 
       it 'does not mention Allure' do

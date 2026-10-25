@@ -132,6 +132,9 @@ Raider unreachable, token rejected, build not found). `RAIDER_GATE_TIMEOUT` sets
 (default 600). The job stays off by default because a project without `RAIDER_TOKEN`, or a pull request from a fork,
 would exit 2 on every run.
 
+Parallel test jobs that upload to one build must each set `RAIDER_SHARD_TOTAL` (the number of jobs) and
+`RAIDER_SHARD_INDEX` (1 to that number), so the gate waits for all of them instead of judging the first one to finish.
+
 <%- end -%>
 <%- if azure? && mobile? -%>
 ## CI
