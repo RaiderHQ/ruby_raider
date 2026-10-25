@@ -161,3 +161,14 @@ Safe. 0 test failures and 0 capture errors in 60/60 runs (Chrome headless, Chrom
 Listener capture is the only safe mode and is under 15% on Firefox only. Chrome misses by 10 to 17 points on this suite. The suite is tiny (2 examples, about 4 s, mostly browser start-up), and the cost is a roughly fixed 100 ms per `save_screenshot` in Chrome, so the ratio improves as examples get longer. It is also a sparse recording (a frame per command, not 5 fps). Options for the user, per the open item above: (1) raise the limit for Chrome, or measure it on a longer suite; (2) lower the frame count (for example skip `execute_script` and `change_value_of`, or cap frames per second of wall time); (3) make video default-on for Firefox only and opt-in for Chrome. Not chosen here.
 
 Notes for the builder: listener capture must go through `Selenium::WebDriver.for(..., listener:)`, which wraps the bridge in `EventFiringBridge` (present in selenium-webdriver 4.44.0). The spike replaced the generated Firefox `browser_arguments` (`acceptInsecureCerts`, `no-sandbox`, written without dashes, which Firefox does not treat as flags) with none; whether they matter was not tested.
+
+### Spike re-measure (longer suite)
+
+Per the user's ruling (limit, fps and default unchanged), listener capture was re-measured on a longer scratch suite: 16 examples against a local static page (`file://`, no network), each doing navigate, find, type, click, an explicit wait on a JS-delayed element, `execute_script` and asserts. No sleeps. 10 runs per browser, alternating off and listener; median whole-`rspec` wall time. Firefox was not re-run (optional; it already passed at +4.7%).
+
+| Browser | Median off | Median listener | Median slowdown | Frames per example | Added per frame | Errors |
+|---|---|---|---|---|---|---|
+| Chrome headless | 40.3 s | 47.7 s | **18.5%** | 9 | about 52 ms | 0 |
+| Chrome headed | 47.1 s | 56.7 s | **20.3%** | 9 | about 66 ms | 0 |
+
+Result: **BLOCKED.** Both required browsers are over 15%, so `CAPTURE_MODE` is not set. Listener capture stays safe (0 test failures and 0 capture errors in 40 runs), and the longer suite lowered the per-frame cost (about 100 ms on the 2-example suite, 52 to 66 ms here), but the overhead still scales with command count: this suite issues about 9 captured commands per 2.5 s of off-time. Headless off time (40.3 s) came in slightly under the 45 s target; headed met it (47.1 s). The ratio is per-example, so more examples would not change it. Which of the limit, the frame count (for example skip `execute_script` and `change_value_of`) or default-on for Chrome gives way is still the user's call.
