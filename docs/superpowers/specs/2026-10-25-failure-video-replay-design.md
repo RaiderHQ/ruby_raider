@@ -172,3 +172,16 @@ Per the user's ruling (limit, fps and default unchanged), listener capture was r
 | Chrome headed | 47.1 s | 56.7 s | **20.3%** | 9 | about 66 ms | 0 |
 
 Result: **BLOCKED.** Both required browsers are over 15%, so `CAPTURE_MODE` is not set. Listener capture stays safe (0 test failures and 0 capture errors in 40 runs), and the longer suite lowered the per-frame cost (about 100 ms on the 2-example suite, 52 to 66 ms here), but the overhead still scales with command count: this suite issues about 9 captured commands per 2.5 s of off-time. Headless off time (40.3 s) came in slightly under the 45 s target; headed met it (47.1 s). The ratio is per-example, so more examples would not change it. Which of the limit, the frame count (for example skip `execute_script` and `change_value_of`) or default-on for Chrome gives way is still the user's call.
+
+### Spike re-measure (state-changing frames)
+
+Per the user's ruling (fewer frames), listener capture was limited to state-changing commands plus a final frame. Hook set measured: `after_navigate_to`, `after_click`, `after_change_value_of`, and the final frame in `after(:each)`. `after_change_value_of` is what `send_keys` and `clear` dispatch through in Selenium 4.44.0 (`EventFiringBridge#send_keys_to_element`, `#clear_element`). There is no `submit` hook in the bridge. `after_execute_script`, `after_find` and text/attribute reads are not captured. `after_navigate_back` and `after_navigate_forward` exist and were not included (not in the requested set). Same 16-example local suite, 10 alternating runs per browser, median whole-`rspec` wall time.
+
+| Browser | Median off | Median listener | Median slowdown | Frames per example | Added per frame | Errors |
+|---|---|---|---|---|---|---|
+| Chrome headless | 44.4 s | 51.4 s | **15.8%** | 8 | about 55 ms | 0 |
+| Chrome headed | 49.5 s | 55.4 s | **11.8%** | 8 | about 46 ms | 0 |
+
+Result: **BLOCKED.** Headless Chrome is 15.8%, just over the limit, so `CAPTURE_MODE` is not set. Headed Chrome passes. Per-pair slowdown is noisy (headless 4.8% to 24.1%, median of pairs 17.0%; headed 5.8% to 14.4%, median 12.7%), and the off baseline itself moved from 40.3 s to 44.4 s between measurement sets, so the result is borderline rather than clearly failing. Dropping `execute_script` took the headless result from 18.5% to 15.8% and headed from 20.3% to 11.8%.
+
+Frame check on one failing example (navigate, type, click Add, click Next, click Go, wait, failing assert): 6 frames. Each page change shows up (first page with typed text, then the second page). Weakness: frames are taken right after the command returns, so effects that arrive later in the page are missed. The toast shown 800 ms after "Add" appears in no frame, and the "done" text after "Go" appears only in the final frame. The sequence is usable as a replay of navigation and input, but not of asynchronous results between commands.
