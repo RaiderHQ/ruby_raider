@@ -104,10 +104,10 @@ describe 'End-to-End Project Generation and Execution' do
       expect(bundle_install(project)).to be true
     end
 
-    it 'resolves raider_reporter 0.8 from RubyGems and ships the raider-reporter executable', :aggregate_failures do
+    it 'resolves raider_reporter 0.9 from RubyGems and ships the raider-reporter executable', :aggregate_failures do
       skip 'Bundle install failed' unless bundle_install(project)
 
-      expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.8\.\d+\)$/)
+      expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.9\.\d+\)$/)
       result = run_in_project(project, 'bundle exec raider-reporter --help', timeout: 60)
       expect(result[:exit_code]).to eq(0), "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
       expect(result[:stdout] + result[:stderr]).to include('raider-reporter comment')
@@ -163,11 +163,11 @@ describe 'End-to-End Project Generation and Execution' do
                                   "STDERR: #{result[:stderr]}"
     end
 
-    it 'resolves raider_reporter 0.8 from RubyGems and requires its Cucumber plugin', :aggregate_failures do
+    it 'resolves raider_reporter 0.9 from RubyGems and requires its Cucumber plugin', :aggregate_failures do
       skip 'Bundle install failed' unless bundle_install(project)
 
       lockfile = File.read(File.join(project, 'Gemfile.lock'))
-      expect(lockfile).to match(/^    raider_reporter \(0\.8\.\d+\)$/)
+      expect(lockfile).to match(/^    raider_reporter \(0\.9\.\d+\)$/)
       expect(File.read(File.join(project, 'features/support/env.rb'))).to include("require 'raider_reporter/cucumber'")
     end
 
@@ -310,12 +310,12 @@ describe 'End-to-End Project Generation and Execution' do
     describe 'Selenium + RSpec' do
       let(:project) { generate_azure_project('rspec') }
 
-      it 'ships azure-pipelines.yml and resolves raider_reporter 0.8', :aggregate_failures do
+      it 'ships azure-pipelines.yml and resolves raider_reporter 0.9', :aggregate_failures do
         expect(File).to exist(File.join(project, 'azure-pipelines.yml'))
         expect(File).not_to exist(File.join(project, '.github/workflows'))
         skip 'Bundle install failed' unless bundle_install(project)
 
-        expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.8\.\d+\)$/)
+        expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.9\.\d+\)$/)
       end
 
       it 'records provider azure_pipelines and an azure_pipelines: build key in run.json', :aggregate_failures, :slow do
@@ -332,11 +332,11 @@ describe 'End-to-End Project Generation and Execution' do
     describe 'Selenium + Cucumber' do
       let(:project) { generate_azure_project('cucumber') }
 
-      it 'ships azure-pipelines.yml and resolves raider_reporter 0.8', :aggregate_failures do
+      it 'ships azure-pipelines.yml and resolves raider_reporter 0.9', :aggregate_failures do
         expect(File).to exist(File.join(project, 'azure-pipelines.yml'))
         skip 'Bundle install failed' unless bundle_install(project)
 
-        expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.8\.\d+\)$/)
+        expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.9\.\d+\)$/)
       end
 
       it 'records provider azure_pipelines and an azure_pipelines: build key in run.json', :aggregate_failures, :slow do

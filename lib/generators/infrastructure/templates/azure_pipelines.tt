@@ -31,7 +31,7 @@ jobs:
         condition: always()
         inputs: { targetPath: raider-results, artifact: raider-results-$(System.JobPositionInPhase)-$(System.JobAttempt) }
   - job: raider_comment
-    dependsOn: tests
+    dependsOn: [tests, raider_gate]
     condition: and(always(), eq(variables['Build.Reason'], 'PullRequest'))
     steps:
       - task: UseRubyVersion@0
@@ -39,6 +39,19 @@ jobs:
       - script: bundle install
       - script: bundle exec raider-reporter comment
         displayName: Comment Raider results on the pull request
+        env:
+          RAIDER_TOKEN: $(RAIDER_TOKEN)
+          RAIDER_ENDPOINT: $(RAIDER_ENDPOINT)
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+  - job: raider_gate
+    dependsOn: tests
+    condition: and(always(), eq(variables['RAIDER_GATE'], '1'))
+    steps:
+      - task: UseRubyVersion@0
+        inputs: { versionSpec: '3.4' }
+      - script: bundle install
+      - script: bundle exec raider-reporter gate
+        displayName: Wait for the Raider quality gate
         env:
           RAIDER_TOKEN: $(RAIDER_TOKEN)
           RAIDER_ENDPOINT: $(RAIDER_ENDPOINT)

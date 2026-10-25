@@ -116,6 +116,26 @@ Raider still run and are still reported (as `quarantined`), and a build whose on
 Local runs keep quarantine off. To turn it off in CI, remove `RAIDER_QUARANTINE` from the pipeline.
 
 <%- end -%>
+<%- unless azure? && mobile? -%>
+### Quality gate
+
+The `<%= azure? ? 'raider_gate' : 'raider-gate' %>` CI job runs `bundle exec raider-reporter gate` after the tests and
+fails the pipeline when the Raider quality gate fails. It is off until you turn it on:
+
+- set the CI variable `RAIDER_GATE=1` (<%= azure? ? 'a pipeline variable' : 'a repository variable under Settings → Secrets and variables → Actions → Variables' %>);
+- turn on rules under the project's Gate page in Raider: a minimum pass rate, no new failures against the default
+  branch, no new flaky tests;
+- optionally require the `raider/gate` check in branch protection.
+
+`raider-reporter gate` exits 1 when the gate fails, naming the failed rules, and 2 when it gets no verdict (timeout,
+Raider unreachable, token rejected, build not found). `RAIDER_GATE_TIMEOUT` sets how long it waits, in seconds
+(default 600). The job stays off by default because a project without `RAIDER_TOKEN`, or a pull request from a fork,
+would exit 2 on every run.
+
+Parallel test jobs that upload to one build must each set `RAIDER_SHARD_TOTAL` (the number of jobs) and
+`RAIDER_SHARD_INDEX` (1 to that number), so the gate waits for all of them instead of judging the first one to finish.
+
+<%- end -%>
 <%- if azure? && mobile? -%>
 ## CI
 

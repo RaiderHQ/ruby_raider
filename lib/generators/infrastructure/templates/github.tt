@@ -50,7 +50,7 @@ jobs:
           if-no-files-found: ignore
 
   raider-comment:
-    needs: [build]
+    needs: [build, raider-gate]
     if: always() && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
@@ -63,6 +63,24 @@ jobs:
         with: { ruby-version: 3.4.0, bundler-cache: true }
       - name: Comment Raider results on the pull request
         run: bundle exec raider-reporter comment
+        env:
+          RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
+          RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  raider-gate:
+    needs: [build]
+    if: always() && vars.RAIDER_GATE == '1'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with: { ruby-version: 3.4.0, bundler-cache: true }
+      - name: Wait for the Raider quality gate
+        run: bundle exec raider-reporter gate
         env:
           RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
           RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
