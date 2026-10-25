@@ -127,3 +127,37 @@ Revive `lib/generators/templates/helpers/video_helper.tt` (orphaned since 366946
 - Frame naming, temp-dir layout, encoder flags (VP8 bitrate/quality), as long as a 30 s failing test produces a video under the 50 MB cap.
 - Desktop player styling.
 - Spec layout for content/integration tests (follow the existing `spec/integration/content/*_content_spec.rb` pattern).
+
+## Spike result (2026-10-25)
+
+Gate for "Recording in generated projects". **Outcome: BLOCKED. No capture mode meets the 15% limit on every browser, so `CAPTURE_MODE` is not chosen. A decision from the user is needed (see below).**
+
+Setup: project generated with `raider new spike -p framework:rspec automation:selenium` (selenium-webdriver 4.44.0, Ruby 3.2.8, Chrome 155, Firefox 149.0.2 via geckodriver 0.37.1, macOS arm64), sample suite = 2 examples (login page), site warmed up first. Each run alternates capture on / `VIDEO=off` equivalent (`CAPTURE=off`) to cancel drift. 20 runs per browser per mode (above the 5-run minimum), 40 `off` runs per browser. Median wall time of the whole `rspec` process. Headless Chrome and Firefox via `HEADLESS=true`; headed Chrome on the desktop.
+
+### Step 1: background thread (`save_screenshot` every 200 ms) is not safe
+
+Not usable. Every one of the 60 runs (20 per browser) broke at least one test, against 0 failures in 120 `off` runs.
+
+| Browser | Runs with test failures | Errors seen (tests and capture thread) |
+|---|---|---|
+| Chrome headless | 20/20 | `NoMethodError`, `RuntimeError`, `IOError`, `Net::HTTPBadResponse`, `NoSuchElementError` ("element id string is malformed") |
+| Chrome headed | 20/20 | the same plus `Net::ReadTimeout` |
+| Firefox headless | 20/20 | `Net::HTTPBadResponse`, `IOError`, `RuntimeError`, `WebDriverError` |
+
+Cause: two threads share one `Net::HTTP` connection inside the Selenium bridge, so responses interleave ("garbled response", "can't modify string; temporarily locked"). It also corrupted the test thread's own commands. The option of a second HTTP client on the same session id (fallback b) was not tried. Thread-mode timings are meaningless (tests died early, so they look faster).
+
+### Step 3: listener capture (frame after `navigate_to`, `click`, `change_value_of`, `execute_script`, plus one final frame)
+
+Safe. 0 test failures and 0 capture errors in 60/60 runs (Chrome headless, Chrome headed, Firefox headless). About 6 frames per example.
+
+| Browser | Median off | Median listener | Median slowdown | Added per frame |
+|---|---|---|---|---|
+| Chrome headless | 4.09 s | 5.39 s | **31.8%** | about 110 ms |
+| Chrome headed | 5.07 s | 6.30 s | **24.4%** | about 100 ms |
+| Firefox headless | 6.97 s | 7.30 s | **4.7%** | about 28 ms |
+
+### Decision needed
+
+Listener capture is the only safe mode and is under 15% on Firefox only. Chrome misses by 10 to 17 points on this suite. The suite is tiny (2 examples, about 4 s, mostly browser start-up), and the cost is a roughly fixed 100 ms per `save_screenshot` in Chrome, so the ratio improves as examples get longer. It is also a sparse recording (a frame per command, not 5 fps). Options for the user, per the open item above: (1) raise the limit for Chrome, or measure it on a longer suite; (2) lower the frame count (for example skip `execute_script` and `change_value_of`, or cap frames per second of wall time); (3) make video default-on for Firefox only and opt-in for Chrome. Not chosen here.
+
+Notes for the builder: listener capture must go through `Selenium::WebDriver.for(..., listener:)`, which wraps the bridge in `EventFiringBridge` (present in selenium-webdriver 4.44.0). The spike replaced the generated Firefox `browser_arguments` (`acceptInsecureCerts`, `no-sandbox`, written without dashes, which Firefox does not treat as flags) with none; whether they matter was not tested.
