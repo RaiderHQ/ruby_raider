@@ -117,6 +117,10 @@ describe 'Common file content' do
     it 'includes raider-results' do
       expect(gitignore).to include('raider-results')
     end
+
+    it 'includes .raider/traces/' do
+      expect(gitignore).to include('.raider/traces/')
+    end
   end
 
   shared_examples 'non-rspec gitignore' do |project_name|
@@ -132,6 +136,10 @@ describe 'Common file content' do
 
     it 'includes raider-results' do
       expect(gitignore).to include('raider-results')
+    end
+
+    it 'includes .raider/traces/' do
+      expect(gitignore).to include('.raider/traces/')
     end
   end
 

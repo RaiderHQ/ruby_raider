@@ -43,6 +43,18 @@ describe 'Config file content' do
     end
   end
 
+  shared_examples 'config with recorder settings' do |project_name|
+    subject(:config_content) { read_generated(project_name, 'config/config.yml') }
+
+    let(:config) { YAML.safe_load(config_content, permitted_classes: [Symbol]) }
+
+    it 'has implicit_wait, explicit_wait and selector_priority' do
+      expect(config['implicit_wait']).to eq(0)
+      expect(config['explicit_wait']).to eq(10)
+      expect(config['selector_priority']).to eq(%w[id data-testid css xpath])
+    end
+  end
+
   shared_examples 'config without driver_options' do |project_name|
     subject(:config_content) { read_generated(project_name, 'config/config.yml') }
 
@@ -56,22 +68,33 @@ describe 'Config file content' do
   context 'with rspec and selenium' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'valid web config', name
+    include_examples 'config with recorder settings', name
     include_examples 'selenium config with timeout', name
   end
 
   context 'with rspec and watir' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'valid web config', name
+    include_examples 'config with recorder settings', name
     include_examples 'config without driver_options', name
   end
 
   context 'with cucumber and selenium' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'valid web config', name
+    include_examples 'config with recorder settings', name
     include_examples 'selenium config with timeout', name
   end
 
   # --- Mobile config ---
+
+  context 'with rspec and appium cross-platform' do
+    subject(:config_content) { read_generated("#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}", 'config/config.yml') }
+
+    it 'does not get recorder settings in config.yml' do
+      expect(config_content).not_to match(/implicit_wait|explicit_wait|selector_priority/)
+    end
+  end
 
   context 'with rspec and appium android' do
     subject(:caps) { read_generated("#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}", 'config/capabilities.yml') }

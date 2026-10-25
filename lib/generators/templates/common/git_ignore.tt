@@ -1,4 +1,5 @@
 raider-results
+.raider/traces/
 <%- if rspec? -%>
 spec/examples.txt
 <%- end -%>
