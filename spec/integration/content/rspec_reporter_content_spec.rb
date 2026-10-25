@@ -18,8 +18,8 @@ describe 'RSpec projects without Allure' do
         expect(File).not_to exist(File.join(project_name, 'allure-results'))
       end
 
-      it 'pins raider_reporter 0.8' do
-        expect(read_generated(project_name, 'Gemfile')).to include("gem 'raider_reporter', '~> 0.8'")
+      it 'pins raider_reporter 0.9' do
+        expect(read_generated(project_name, 'Gemfile')).to include("gem 'raider_reporter', '~> 0.9'")
       end
     end
   end

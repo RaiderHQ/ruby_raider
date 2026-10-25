@@ -64,6 +64,22 @@ describe 'Azure Pipelines content' do
         expect(last['env']).to include('SYSTEM_ACCESSTOKEN' => '$(System.AccessToken)')
       end
 
+      it 'has a raider_gate job that runs only when RAIDER_GATE is 1' do
+        gate = yml['jobs'][2]
+        expect(yml['jobs'].size).to eq(3)
+        expect(gate['job']).to eq('raider_gate')
+        expect(gate['dependsOn']).to eq('tests')
+        expect(gate['condition']).to eq("and(always(), eq(variables['RAIDER_GATE'], '1'))")
+      end
+
+      it 'sets up Ruby in the raider_gate job and runs the gate with the token env' do
+        gate = yml['jobs'][2]
+        expect(gate['steps'].first).to eq('task' => 'UseRubyVersion@0', 'inputs' => { 'versionSpec' => '3.4' })
+        expect(gate['steps'].filter_map { |s| s['script'] }).to eq(['bundle install', 'bundle exec raider-reporter gate'])
+        expect(gate['steps'].last['env']).to eq('RAIDER_TOKEN' => '$(RAIDER_TOKEN)', 'RAIDER_ENDPOINT' => '$(RAIDER_ENDPOINT)',
+                                                'SYSTEM_ACCESSTOKEN' => '$(System.AccessToken)')
+      end
+
       it 'has triggers, pool and the self-hosted hint' do
         expect(yml['trigger']['branches']['include']).to include('main', 'master')
         expect(yml['pr']['branches']['include']).to include('*')
@@ -84,7 +100,7 @@ describe 'Azure Pipelines content' do
         readme = read_generated(name, 'Readme.md')
         expect(readme).to include('## Azure Pipelines', 'RAIDER_TOKEN', 'Contribute to pull requests',
                                   'pool: { name: Default }', 'Build validation branch policy',
-                                  'same stage')
+                                  'same stage', 'raider_gate', 'RAIDER_GATE=1')
         expect(readme).not_to match(/GitHub Actions/i)
       end
     end

@@ -43,3 +43,16 @@ jobs:
           RAIDER_TOKEN: $(RAIDER_TOKEN)
           RAIDER_ENDPOINT: $(RAIDER_ENDPOINT)
           SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+  - job: raider_gate
+    dependsOn: tests
+    condition: and(always(), eq(variables['RAIDER_GATE'], '1'))
+    steps:
+      - task: UseRubyVersion@0
+        inputs: { versionSpec: '3.4' }
+      - script: bundle install
+      - script: bundle exec raider-reporter gate
+        displayName: Wait for the Raider quality gate
+        env:
+          RAIDER_TOKEN: $(RAIDER_TOKEN)
+          RAIDER_ENDPOINT: $(RAIDER_ENDPOINT)
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken)

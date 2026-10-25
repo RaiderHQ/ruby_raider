@@ -143,3 +143,21 @@ jobs:
           RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
           RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  raider-gate:
+    needs: [<%= [('ios-tests' if ios? || cross_platform?), ('android-tests' if android? || cross_platform?)].compact.join(', ') %>]
+    if: always() && vars.RAIDER_GATE == '1'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with: { ruby-version: 3.4.0, bundler-cache: true }
+      - name: Wait for the Raider quality gate
+        run: bundle exec raider-reporter gate
+        env:
+          RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
+          RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

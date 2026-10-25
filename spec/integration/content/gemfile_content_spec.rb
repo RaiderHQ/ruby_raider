@@ -127,7 +127,7 @@ describe 'Gemfile content' do
         let(:gemfile) { read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'Gemfile') }
 
         it 'includes raider_reporter' do
-          expect(gemfile).to include("gem 'raider_reporter', '~> 0.8'")
+          expect(gemfile).to include("gem 'raider_reporter', '~> 0.9'")
         end
 
         it 'has no allure gems' do
@@ -143,7 +143,7 @@ describe 'Gemfile content' do
         let(:gemfile) { read_generated("#{FrameworkIndex::CUCUMBER}_#{automation}", 'Gemfile') }
 
         it 'includes raider_reporter' do
-          expect(gemfile).to include("gem 'raider_reporter', '~> 0.8'")
+          expect(gemfile).to include("gem 'raider_reporter', '~> 0.9'")
         end
 
         it 'drops allure-cucumber' do
