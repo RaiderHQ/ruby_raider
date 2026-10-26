@@ -43,6 +43,27 @@ module VideoHelper
     def config
       @config ||= DEFAULTS.merge(video_config)
     end
+<%- if mobile? -%>
+
+    # Seconds of device recording per test; video.time_limit in config.yml overrides.
+    def time_limit
+      configured = config['time_limit'].to_i
+      return configured if configured.positive?
+
+      limits = AppiumRecorder::TIME_LIMITS
+      limits.fetch(platform, limits['android'])
+    end
+
+    def platform
+<%- if cross_platform? -%>
+      YAML.load_file('config/config.yml')['platform'].to_s.delete_prefix(':')
+    rescue StandardError
+      ''
+<%- else -%>
+      '<%= android? ? 'android' : 'ios' %>'
+<%- end -%>
+    end
+<%- end -%>
 
     def enabled?
       config['enabled'] != false && ENV['VIDEO'] != 'off' && !@disabled
@@ -344,9 +365,11 @@ module VideoHelper
   end
 <%- else -%>
 
-  # Appium's native screen recording; the mp4 is written as-is.
+  # Appium's native screen recording; the mp4 is written as-is. It needs ffmpeg on
+  # the Appium server host for iOS, and for Android recordings over 180 s.
   class AppiumRecorder
-    TIME_LIMIT = 1800
+    # Android keeps Appium's 180 s default so it works without ffmpeg on the Appium host.
+    TIME_LIMITS = { 'ios' => 1800, 'android' => 180 }.freeze
 
     attr_reader :dir
 
@@ -358,8 +381,7 @@ module VideoHelper
 
     def start
       @dir = Dir.mktmpdir('raider-video')
-      # Appium's default limit is 180 s, which would cut long tests short.
-      @driver.start_recording_screen(time_limit: TIME_LIMIT)
+      @driver.start_recording_screen(time_limit: VideoHelper.time_limit)
       @recording = true
       nil
     rescue StandardError => e

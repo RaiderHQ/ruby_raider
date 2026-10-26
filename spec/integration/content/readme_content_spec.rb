@@ -25,10 +25,21 @@ describe 'Generated Readme content' do
         if web
           expect(section).to include('video.webm', 'raider u video off', 'raider u video on', 'video:')
         elsif %w[android ios].include?(automation)
-          expect(section).to include('video.mp4', 'no `config/config.yml`')
-          expect(section).not_to include('raider u video off')
+          expect(section).to include('video.mp4', 'raider u video off', 'creates `config/config.yml`')
+          expect(section).not_to include('no `config/config.yml`')
         else
           expect(section).to include('video.mp4', 'raider u video off')
+        end
+      end
+
+      it 'says where mobile recording needs ffmpeg and how long it records' do
+        limits = { 'ios' => ['1800 s'], 'android' => ['180 s'], 'cross_platform' => ['1800 s', '180 s'] }
+        if web
+          expect(section).not_to include('Appium server host')
+        else
+          expect(section).to include('`ffmpeg` on the Appium server host', 'iOS', 'longer than 180 s',
+                                     'time_limit', *limits.fetch(automation))
+          expect(section).not_to include('do not use ffmpeg')
         end
       end
 

@@ -557,6 +557,47 @@ describe 'Generated VideoHelper' do
       expect(VideoHelper).not_to respond_to(:listener)
     end
 
+    it 'asks iOS for a 1800 s recording' do
+      VideoHelper.recorder_for(appium).start
+
+      expect(appium).to have_received(:start_recording_screen).with(time_limit: 1800)
+    end
+
+    context 'when the project is android' do
+      let(:automation) { 'android' }
+
+      it "keeps Appium's 180 s limit, which needs no ffmpeg on the Appium host" do
+        VideoHelper.recorder_for(appium).start
+
+        expect(appium).to have_received(:start_recording_screen).with(time_limit: 180)
+      end
+    end
+
+    context 'when an android project sets video.time_limit in config.yml' do
+      let(:automation) { 'android' }
+      let(:video_config) { { 'enabled' => true, 'time_limit' => 600 } }
+
+      it 'uses it' do
+        VideoHelper.recorder_for(appium).start
+
+        expect(appium).to have_received(:start_recording_screen).with(time_limit: 600)
+      end
+    end
+
+    context 'when the project is cross-platform' do
+      let(:automation) { 'cross_platform' }
+
+      it 'picks the limit from the platform in config.yml' do
+        File.write('config/config.yml', { 'platform' => :android }.to_yaml)
+        VideoHelper.recorder_for(appium).start
+        File.write('config/config.yml', "platform: :ios\n")
+        VideoHelper.recorder_for(appium).start
+
+        expect(appium).to have_received(:start_recording_screen).with(time_limit: 180).ordered
+        expect(appium).to have_received(:start_recording_screen).with(time_limit: 1800).ordered
+      end
+    end
+
     it 'defines final_attempt? too' do
       example = double('example', exception: StandardError.new('boom'), metadata: { retry: 3, retry_attempts: 2 })
 

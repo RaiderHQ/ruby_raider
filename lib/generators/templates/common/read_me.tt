@@ -119,8 +119,9 @@ The video is a `video.webm` built from page screenshots with ffmpeg.
 <%- end -%>
 
 <%- if single_platform? -%>
-- Turn video off for a run with `VIDEO=off bundle exec <%= rspec? ? 'rspec' : 'cucumber' %>`. This project has no
-  `config/config.yml`, so `VIDEO=off` is the only switch.
+- Turn video off for one run with `VIDEO=off bundle exec <%= rspec? ? 'rspec' : 'cucumber' %>`, or for the project with
+  `raider u video off`, which creates `config/config.yml` with a `video:` section (`raider u video on` turns it back
+  on).
 <%- else -%>
 - Video is on by default: `video:` in `config/config.yml` (`enabled: true`, `fps: 5`, `max_width: 1280`).
 - Turn it off for one run with `VIDEO=off bundle exec <%= rspec? ? 'rspec' : 'cucumber' %>`, or for the project with
@@ -144,9 +145,21 @@ The video is a `video.webm` built from page screenshots with ffmpeg.
   so changes the page makes on its own between actions show up in the next frame. There is one recorded driver per
   process.
 <%- else -%>
-- Mobile videos do not use ffmpeg. `raider u video install` and `raider u video status` manage the ffmpeg that web
-  projects use; it is cached in `~/.cache/raider` (override with `RAIDER_FFMPEG_PATH` or `RAIDER_CACHE_DIR`).
-  The RaiderHQ `ffmpeg-7.1` release it comes from is not published yet.
+- Appium's screen recording needs `ffmpeg` on the Appium server host's `PATH` (this machine only when Appium runs
+  here): always for iOS (XCUITest), and for Android when a recording is longer than 180 s. Without it, recording
+  fails with one `[video]` line and the tests run as usual.
+<%- if cross_platform? -%>
+- Each test records for at most 1800 s on iOS and 180 s on Android, so Android needs no ffmpeg on the Appium host.
+<%- elsif ios? -%>
+- Each test records for at most 1800 s.
+<%- else -%>
+- Each test records for at most 180 s, so the Appium host needs no ffmpeg; longer tests keep only their first 180 s.
+<%- end -%>
+  Set `time_limit` (seconds) under `video:` in `config/config.yml`<%= single_platform? ? ' (create it if it is missing)' : '' %> to change it; on Android, more
+  than 180 s needs ffmpeg on the Appium host.
+- `raider u video install` and `raider u video status` manage the ffmpeg that web projects use, cached in
+  `~/.cache/raider` (override with `RAIDER_FFMPEG_PATH` or `RAIDER_CACHE_DIR`); they do not install ffmpeg on the
+  Appium host. The RaiderHQ `ffmpeg-7.1` release it comes from is not published yet.
 - If recording fails, the suite still runs and its exit code is unchanged; you get one `[video]` line on stderr and
   no video.
 <%- end -%>

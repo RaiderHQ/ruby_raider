@@ -273,8 +273,8 @@ describe 'Helper file content' do
       expect(helper).not_to include('AbstractEventListener')
     end
 
-    it 'does not need ffmpeg' do
-      expect(helper).not_to include('ffmpeg')
+    it 'does not provision ffmpeg on this machine (Appium records on its own host)' do
+      expect(helper).not_to include('ruby_raider/ffmpeg', 'Ffmpeg.ensure!', 'ffmpeg_path')
     end
   end
 
