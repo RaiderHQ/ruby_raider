@@ -201,3 +201,14 @@ Task 7's `FrameRecorder` must use exactly this capture set:
 It must not capture after `execute_script`, finds, or reads.
 
 Known limit: async page changes between commands only show in the next frame or the final frame.
+
+### Release slowdown check (2026-10-26, 3.10.0)
+
+Measured on the shipped code, not the spike recorder: a project generated with `raider new` (rspec + selenium) using this branch's `video_helper.rb`, `driver_helper.rb` and `spec_helper.rb` (listener capture after `navigate_to`, `click` and `change_value_of`, with the alert probe before each frame), ruby_raider and raider_reporter 0.10.0 from local checkouts, selenium-webdriver 4.51.0, Ruby 3.4.1, headless Chrome (`HEADLESS=true`), macOS arm64. Runs alternate video on and `VIDEO=off`. The time is the wall time of the whole `rspec` process, and every example passed, so nothing was encoded: the cost is frame capture only. `RAIDER_FFMPEG_PATH` pointed at a local ffmpeg 8.0.1 with libvpx.
+
+| Suite | Runs per mode | Median off | Median on | Median slowdown | Per-pair spread | Errors |
+|---|---|---|---|---|---|---|
+| Generated sample (`login_page_spec.rb`, 2 examples, remote site) | 5 | 3.51 s | 4.90 s | **39.7%** | 22.0–41.4% | 0 failures, 0 `[video]` lines |
+| 16-example local suite (`long_suite_spec.rb` from the spike) | 10 | 36.44 s | 41.87 s | **14.9%** | 13.8–15.9% | 0 failures, 0 `[video]` lines |
+
+Result: **within budget.** The 16-example suite is the binding number (same basis as the accepted +15.8%), and +14.9% sits under the 18% stop line. The spread is much tighter than in the spike (13.8–15.9% against 4.8–24.1%). The 2-example sample shows the fixed cost of a few frames against a 3.5 s run, mostly browser start-up, as Task 1 found; it is reported, not gated.
