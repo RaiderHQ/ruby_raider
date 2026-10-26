@@ -1,0 +1,16 @@
+module RubyRaider
+  module Ffmpeg
+    type asset = { url: String, sha256: String? }
+    type manifest = { version: String, assets: Hash[String, asset] }
+
+    MAX_REDIRECTS: Integer
+    MANIFEST: manifest
+    DEFAULT_WARN: ^(String) -> void
+
+    def self.platform: (?host_os: String, ?host_cpu: String) -> String?
+    def self.cache_dir: (?env: Hash[String, String]) -> String
+    def self.resolve: (?env: Hash[String, String], ?manifest: manifest) -> String?
+    def self.ensure!: (?env: Hash[String, String], ?manifest: manifest, ?fetch: ^(String, String) -> untyped, ?warn: ^(String) -> void) -> String?
+    def self.http_get: (String url, String destination, ?Integer limit) -> void
+  end
+end
