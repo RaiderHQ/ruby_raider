@@ -57,11 +57,28 @@ RSpec.describe Utilities do
     end
   end
 
+  describe '.browser=' do
+    it 'defaults browser_arguments to [] for a browser without an entry' do
+      %w[safari edge].each do |name|
+        described_class.browser = name
+        config = YAML.load_file(config_path)
+        expect(config['browser']).to eq(name)
+        expect(config['browser_arguments'][name]).to eq([])
+      end
+    end
+
+    it 'keeps existing browser_arguments when switching' do
+      described_class.browser = 'firefox'
+      config = YAML.load_file(config_path)
+      expect(config['browser_arguments']['firefox']).to eq(%w[acceptInsecureCerts])
+    end
+  end
+
   describe '.delete_browser_options' do
-    it 'removes browser_arguments for the current browser' do
+    it 'clears browser_arguments for the current browser to an empty list, not nil' do
       described_class.delete_browser_options
       config = YAML.load_file(config_path)
-      expect(config['browser_arguments']['chrome']).to be_nil
+      expect(config['browser_arguments']['chrome']).to eq([])
     end
 
     it 'preserves other browser arguments' do

@@ -108,5 +108,15 @@ RSpec.describe RubyRaider::Raider do
         expect(File.exist?(File.join(dir, 'x'))).to be(false)
       end
     end
+
+    it 'rejects automation:appium and points to the mobile platforms' do
+      Dir.mktmpdir do |dir|
+        out, err, status = run_raider('new', 'x', '-p', 'framework:rspec', 'automation:appium', chdir: dir)
+
+        expect(status.exitstatus).not_to eq(0)
+        expect(out + err).to include('automation', 'ios', 'android', 'cross_platform')
+        expect(File.exist?(File.join(dir, 'x'))).to be(false)
+      end
+    end
   end
 end

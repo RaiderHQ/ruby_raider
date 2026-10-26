@@ -7,7 +7,12 @@ module Utilities
 
   class << self
     def browser=(browser)
-      set('browser', browser.to_s.delete_prefix(':'))
+      reload_config
+      name = browser.to_s.delete_prefix(':')
+      @config['browser'] = name
+      @config['browser_arguments'] ||= {}
+      @config['browser_arguments'][name] ||= []
+      overwrite_yaml
     end
 
     def page_path=(path)
@@ -54,7 +59,8 @@ module Utilities
     def delete_browser_options
       reload_config
       browser_name = @config['browser'] || 'chrome'
-      @config['browser_arguments']&.delete(browser_name)
+      @config['browser_arguments'] ||= {}
+      @config['browser_arguments'][browser_name] = []
       overwrite_yaml
     end
 

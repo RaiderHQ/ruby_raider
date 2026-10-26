@@ -9,7 +9,7 @@ require_relative 'rspec/rspec_generator'
 
 module InvokeGenerators
   FRAMEWORKS = %w[rspec cucumber].freeze
-  AUTOMATIONS = %w[selenium watir appium ios android cross_platform].freeze
+  AUTOMATIONS = %w[selenium watir ios android cross_platform].freeze
 
   module_function
 
