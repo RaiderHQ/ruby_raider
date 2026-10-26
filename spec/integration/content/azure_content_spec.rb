@@ -130,6 +130,7 @@ describe 'Azure Pipelines content' do
                                   'pool: { name: Default }', 'Build validation branch policy',
                                   'same stage', 'raider_gate', 'RAIDER_GATE=1', 'RAIDER_SHARD_TOTAL', 'RAIDER_SHARD_INDEX')
         expect(readme).not_to match(/GitHub Actions/i)
+        expect(readme).to include('`RAIDER_CACHE_DIR` to `$(Pipeline.Workspace)/.cache/raider`')
       end
     end
   end
