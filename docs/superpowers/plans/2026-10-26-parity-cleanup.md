@@ -33,6 +33,7 @@
 - **Shared desktop files:** `src/main/index.ts`, `preload/index.ts`, `foundation/Types/window.ts`, `en.json`, `e2e/helpers/navigation.ts`.
   - Deletions only, except the navigation helper change in Task 5.
   - In `en.json`, never edit keys under `recorder.*` or `overview.*`. Add only new top-level keys.
+- **Gem files the other session's `feat/recorder-settings` branch changes.** Do NOT edit `web_config.tt`, `browser_helper.tt` or `helpers/partials/selenium_driver.tt`.
 - **Keep** Capybara/Minitest *detection* (`projectLayout.ts`) and `test/integration/codegen/testFile.test.ts`.
 - **Keep** the `refreshRecorderSettings` calls in `config/update{BrowserUrl,BrowserType,Headless,Timeout}.ts`.
 - **Ruby versions:**
