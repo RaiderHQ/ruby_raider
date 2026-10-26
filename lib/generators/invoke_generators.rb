@@ -8,14 +8,13 @@ require_relative 'helper_generator'
 require_relative 'rspec/rspec_generator'
 
 module InvokeGenerators
-  class InvalidParameters < ArgumentError; end
-
   FRAMEWORKS = %w[rspec cucumber].freeze
   AUTOMATIONS = %w[selenium watir appium ios android cross_platform].freeze
 
   module_function
 
   def generate_framework(structure = {})
+    structure = normalise_options(structure)
     validate_option(:framework, structure[:framework], FRAMEWORKS)
     validate_option(:automation, structure[:automation], AUTOMATIONS)
     validate_ci(structure[:ci])
@@ -36,6 +35,13 @@ module InvokeGenerators
     print_mobile_azure_notice(structure)
   end
 
+  def normalise_options(structure)
+    structure.merge(
+      framework: structure[:framework].to_s.downcase,
+      automation: structure[:automation].to_s.downcase
+    )
+  end
+
   def validate_option(key, value, allowed)
     return if allowed.include?(value.to_s)
 
@@ -45,7 +51,7 @@ module InvokeGenerators
   def validate_ci(provider)
     return if [nil, '', 'github', 'azure'].include?(provider&.to_s)
 
-    raise InvalidParameters, 'ci must be github or azure'
+    raise Thor::Error, 'ci must be github or azure'
   end
 
   def print_mobile_azure_notice(structure)

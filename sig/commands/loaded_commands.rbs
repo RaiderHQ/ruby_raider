@@ -1,5 +1,0 @@
-# Type definitions for LoadedCommands
-module RubyRaider
-  class LoadedCommands < Thor
-  end
-end
