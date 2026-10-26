@@ -358,7 +358,7 @@ describe 'End-to-End Project Generation and Execution' do
   # has no checksums yet. Skipped when either, or the browser, is missing. Firefox can be pointed at a
   # specific binary with FIREFOX_BINARY.
   context 'Failure video replay', :slow, :video do
-    let(:reporter_path) { ENV.fetch('RAIDER_REPORTER_PATH', '/Users/augustingottlieb/raider_reporter') }
+    let(:reporter_path) { ENV.fetch('RAIDER_REPORTER_PATH', File.expand_path('../../../raider_reporter', __dir__)) }
     let(:ffmpeg_path) { ENV.fetch('RAIDER_FFMPEG_PATH', '') }
     let(:cache_dir) { Dir.mktmpdir('raider-cache') }
 
