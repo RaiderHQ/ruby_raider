@@ -48,6 +48,7 @@ describe 'Generated VideoHelper' do
     path
   end
   let(:env) { { 'RAIDER_FFMPEG_PATH' => fake_ffmpeg } }
+  let(:tmp) { File.join(project, 'tmp').tap { |dir| FileUtils.mkdir_p(dir) } }
   let(:argv) { File.exist?(argv_path) ? File.read(argv_path).lines(chomp: true) : nil }
   let(:argv_path) { File.join(project, 'argv.txt') }
   let(:alerts) { double('target_locator') }
@@ -81,7 +82,8 @@ describe 'Generated VideoHelper' do
   end
 
   before do
-    stub_const('ENV', ENV.to_h.merge(env))
+    # Recorder tmpdirs land inside the project, which the around hook removes.
+    stub_const('ENV', ENV.to_h.merge(env).merge('TMPDIR' => tmp))
     allow(alerts).to receive(:alert).and_raise(Selenium::WebDriver::Error::NoSuchAlertError)
     allow(driver).to receive(:save_screenshot) do |path|
       shots << path
@@ -209,12 +211,13 @@ describe 'Generated VideoHelper' do
     context 'when ffmpeg writes 0 bytes' do
       let(:ffmpeg_mode) { :empty }
 
-      it 'returns nil and warns once' do
+      it 'returns nil, warns once and removes the tmpdir' do
         recorder = VideoHelper.recorder_for(driver)
         recorder.start
 
         expect(recorder.stop(keep: true)).to be_nil
         expect(warnings.size).to eq(1)
+        expect(File).not_to exist(recorder.dir)
       end
     end
 
@@ -229,8 +232,31 @@ describe 'Generated VideoHelper' do
 
         expect(recorder.stop(keep: true)).to be_nil
         expect(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).to be < 5
-        expect(warnings.size).to eq(1)
+        expect(stderr.string).to eq("[video] ffmpeg could not encode the video: ffmpeg timed out after 0.5 seconds; recording disabled for this run\n")
       end
+    end
+
+    it 'still encodes the saved frames, quietly, when only the final frame fails' do
+      recorder = VideoHelper.recorder_for(driver)
+      recorder.start
+      VideoHelper.listener.after_click(:element, driver)
+      allow(driver).to receive(:save_screenshot).and_raise(Selenium::WebDriver::Error::WebDriverError, 'browser crashed')
+
+      expect(recorder.stop(keep: true)).to eq(File.join(recorder.dir, 'video.webm'))
+      expect(File.read(File.join(project, 'list.txt')).scan('frame-000001.png').size).to eq(2)
+      expect(VideoHelper.enabled?).to be(true)
+      expect(warnings).to be_empty
+    end
+
+    it 'returns nil quietly when the final frame fails and no frames were saved' do
+      allow(driver).to receive(:save_screenshot).and_raise(Selenium::WebDriver::Error::WebDriverError, 'browser crashed')
+      recorder = VideoHelper.recorder_for(driver)
+      recorder.start
+
+      expect(recorder.stop(keep: true)).to be_nil
+      expect(File).not_to exist(recorder.dir)
+      expect(argv).to be_nil
+      expect(warnings).to be_empty
     end
 
     it 'returns nil, warns once, and does not raise when save_screenshot raises (driver quit)' do
@@ -252,6 +278,7 @@ describe 'Generated VideoHelper' do
       second.start
 
       expect(first.dir).not_to eq(second.dir)
+      expect(first.dir).to start_with(tmp)
       expect([first.dir, second.dir]).to all(satisfy { |dir| File.directory?(dir) })
     end
 
@@ -400,7 +427,7 @@ describe 'Generated VideoHelper' do
 
       expect(recorder.stop(keep: false)).to be_nil
       expect(appium).to have_received(:stop_recording_screen)
-      expect(Dir.glob(File.join(recorder.dir.to_s, '*.mp4'))).to be_empty
+      expect(File).not_to exist(recorder.dir)
     end
 
     it 'records through the core driver of an appium_lib Appium::Driver' do
@@ -409,7 +436,7 @@ describe 'Generated VideoHelper' do
       recorder.start
 
       expect(recorder.stop(keep: true)).to end_with('video.mp4')
-      expect(appium).to have_received(:start_recording_screen)
+      expect(appium).to have_received(:start_recording_screen).with(time_limit: 1800)
     end
 
     it 'warns once and does not raise when start_recording_screen fails' do
@@ -419,6 +446,7 @@ describe 'Generated VideoHelper' do
       expect { recorder.start }.not_to raise_error
       expect(recorder.stop(keep: true)).to be_nil
       expect(warnings.size).to eq(1)
+      expect(File).not_to exist(recorder.dir)
     end
 
     it 'has no listener' do

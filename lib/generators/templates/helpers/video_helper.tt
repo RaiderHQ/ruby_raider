@@ -97,6 +97,7 @@ module VideoHelper
     end
 
     # A screenshot while an alert is open would dismiss it, so skip that frame.
+    # An alert opened between this check and the screenshot can still be hit.
     def alert_open?(driver)
       driver.switch_to.alert
       true
@@ -170,9 +171,12 @@ module VideoHelper
       Open3.popen2e(*arguments) do |stdin, output, process|
         stdin.close
         reader = Thread.new { output.read }
+        reader.report_on_exception = false
         return [process.value.success?, reader.value] if process.join(ENCODE_TIMEOUT)
 
         Process.kill('KILL', process.pid)
+        process.value
+        reader.join(1)
         [false, "ffmpeg timed out after #{ENCODE_TIMEOUT} seconds"]
       end
     end
@@ -181,6 +185,7 @@ module VideoHelper
 <%- unless mobile? -%>
 
   # Forwards the state-changing Selenium events to the active FrameRecorder.
+  # One recorded driver per process: every frame goes to the active recorder.
   class FrameListener < Selenium::WebDriver::Support::AbstractEventListener
     def after_navigate_to(_url, driver)
       capture(driver)
@@ -222,17 +227,13 @@ module VideoHelper
       nil
     rescue StandardError => e
       VideoHelper.disable!("recording failed to start: #{e.message}")
+      discard
     end
 
     def capture(driver = @driver)
       return nil unless @recording && VideoHelper.enabled?
-      return nil if VideoHelper.alert_open?(driver)
 
-      name = format('frame-%06d.png', @frames.size + 1)
-      time = VideoHelper.monotonic_now
-      driver.save_screenshot(File.join(@dir, name))
-      @frames << [name, time]
-      nil
+      snap(driver)
     rescue StandardError => e
       VideoHelper.disable!("frame capture failed: #{e.message}")
     end
@@ -240,14 +241,15 @@ module VideoHelper
     def stop(keep:)
       return nil unless @recording
 
-      capture if keep
+      final_frame if keep
       finish
       return discard unless keep && VideoHelper.enabled? && @frames.any?
 
-      VideoHelper.encode(@dir, @frames)
+      VideoHelper.encode(@dir, @frames) || discard
     rescue StandardError => e
       finish
       VideoHelper.disable!("recording failed to stop: #{e.message}")
+      discard
     end
 
     def cleanup
@@ -258,6 +260,23 @@ module VideoHelper
     end
 
     private
+
+    def snap(driver)
+      return nil if VideoHelper.alert_open?(driver)
+
+      name = format('frame-%06d.png', @frames.size + 1)
+      time = VideoHelper.monotonic_now
+      driver.save_screenshot(File.join(@dir, name))
+      @frames << [name, time]
+      nil
+    end
+
+    # The browser is often gone after a failure; keep the frames already saved.
+    def final_frame
+      snap(@driver) if VideoHelper.enabled?
+    rescue StandardError
+      nil
+    end
 
     def finish
       @recording = false
@@ -273,6 +292,8 @@ module VideoHelper
 
   # Appium's native screen recording; the mp4 is written as-is.
   class AppiumRecorder
+    TIME_LIMIT = 1800
+
     attr_reader :dir
 
     def initialize(driver)
@@ -283,11 +304,13 @@ module VideoHelper
 
     def start
       @dir = Dir.mktmpdir('raider-video')
-      @driver.start_recording_screen
+      # Appium's default limit is 180 s, which would cut long tests short.
+      @driver.start_recording_screen(time_limit: TIME_LIMIT)
       @recording = true
       nil
     rescue StandardError => e
       VideoHelper.disable!("recording failed to start: #{e.message}")
+      discard
     end
 
     def stop(keep:)
@@ -295,13 +318,14 @@ module VideoHelper
 
       @recording = false
       video = @driver.stop_recording_screen
-      return nil unless keep && VideoHelper.enabled? && video && !video.empty?
+      return discard unless keep && VideoHelper.enabled? && video && !video.empty?
 
       path = File.join(@dir, 'video.mp4')
       File.binwrite(path, video.unpack1('m'))
       path
     rescue StandardError => e
       VideoHelper.disable!("recording failed to stop: #{e.message}")
+      discard
     end
 
     def cleanup
@@ -309,6 +333,13 @@ module VideoHelper
       nil
     rescue StandardError => e
       VideoHelper.disable!("could not remove the video: #{e.message}")
+    end
+
+    private
+
+    def discard
+      cleanup
+      nil
     end
   end
 <%- end -%>
