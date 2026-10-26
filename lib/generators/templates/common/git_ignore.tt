@@ -2,3 +2,6 @@ raider-results
 <%- if rspec? -%>
 spec/examples.txt
 <%- end -%>
+<%- if cucumber? -%>
+rerun.txt
+<%- end -%>

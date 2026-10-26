@@ -27,7 +27,7 @@
 
 ## What is Ruby Raider?
 
-Ruby Raider is a CLI gem and API backend for scaffolding and generating UI test automation frameworks. It supports both interactive command-line usage and programmatic invocation via [Raider Desktop](https://ruby-raider.com).
+Ruby Raider is a CLI gem for scaffolding and generating UI test automation frameworks. It supports interactive command-line usage and flag-driven invocation (for example `raider new my_project -p framework:rspec automation:selenium`), which is how [Raider Desktop](https://ruby-raider.com) drives it.
 
 ## Supported Frameworks
 
@@ -65,7 +65,7 @@ Every generated project comes with:
 - **GitHub Actions CI** — Ready-to-use test pipeline that caches ffmpeg for failure videos
 - **Rake tasks** — Default, smoke, and regression tasks with tag-based filtering
 - **Retry support** — RSpec retry with configurable retry count via `RETRY_COUNT` env var
-- **Re-run failed tests** — Persistence file for tracking example status
+- **Re-run failed tests** — RSpec keeps `spec/examples.txt` for `--only-failures`; Cucumber projects write failed scenarios to `rerun.txt`
 - **Parallel execution** — parallel_tests and parallel_split_test gems included
 - **Configurable browser** — Chrome/Firefox with customizable arguments, viewport, timeout, and headless mode
 - **Linting** — RuboCop and Reek configs included

@@ -51,6 +51,15 @@ describe 'End-to-End Project Generation and Execution' do
     gemfile = File.join(project_name, 'Gemfile')
     root = File.expand_path('../..', __dir__)
     File.write(gemfile, File.read(gemfile).sub(/^gem 'ruby_raider'.*$/, "gem 'ruby_raider', path: '#{root}'"))
+    use_local_raider_reporter(gemfile)
+  end
+
+  # Set RAIDER_REPORTER_PATH to a raider_reporter checkout to resolve a release that is not on RubyGems yet.
+  def use_local_raider_reporter(gemfile)
+    path = ENV.fetch('RAIDER_REPORTER_PATH', nil)
+    return unless path
+
+    File.write(gemfile, File.read(gemfile).sub(/^gem 'raider_reporter'.*$/, "gem 'raider_reporter', path: '#{path}'"))
   end
 
   # Helper to install dependencies
@@ -106,10 +115,10 @@ describe 'End-to-End Project Generation and Execution' do
       expect(bundle_install(project)).to be true
     end
 
-    it 'resolves raider_reporter 0.9 from RubyGems and ships the raider-reporter executable', :aggregate_failures do
+    it 'resolves raider_reporter 0.10 from RubyGems and ships the raider-reporter executable', :aggregate_failures do
       skip 'Bundle install failed' unless bundle_install(project)
 
-      expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.9\.\d+\)$/)
+      expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.10\.\d+\)$/)
       result = run_in_project(project, 'bundle exec raider-reporter --help', timeout: 60)
       expect(result[:exit_code]).to eq(0), "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
       expect(result[:stdout] + result[:stderr]).to include('raider-reporter comment')
@@ -165,11 +174,11 @@ describe 'End-to-End Project Generation and Execution' do
                                   "STDERR: #{result[:stderr]}"
     end
 
-    it 'resolves raider_reporter 0.9 from RubyGems and requires its Cucumber plugin', :aggregate_failures do
+    it 'resolves raider_reporter 0.10 from RubyGems and requires its Cucumber plugin', :aggregate_failures do
       skip 'Bundle install failed' unless bundle_install(project)
 
       lockfile = File.read(File.join(project, 'Gemfile.lock'))
-      expect(lockfile).to match(/^    raider_reporter \(0\.9\.\d+\)$/)
+      expect(lockfile).to match(/^    raider_reporter \(0\.10\.\d+\)$/)
       expect(File.read(File.join(project, 'features/support/env.rb'))).to include("require 'raider_reporter/cucumber'")
     end
 
@@ -182,6 +191,17 @@ describe 'End-to-End Project Generation and Execution' do
       expect(result[:stdout]).to include('Scenario: A deliberately failing scenario')
       expect(result[:stdout]).to match(/\d+ scenarios? \(\d+ failed/)
       expect(result[:exit_code]).to eq(1)
+    end
+
+    it 'writes rerun.txt listing only the failing scenario', :aggregate_failures, :slow do
+      skip 'Bundle install failed' unless bundle_install(project)
+
+      result = run_cucumber_with_failure(project)
+
+      expect(result[:exit_code]).to eq(1)
+      rerun = File.join(project, 'rerun.txt')
+      expect(File).to exist(rerun)
+      expect(File.read(rerun).strip).to eq('features/reporter_failure.feature:3')
     end
 
     it 'writes raider-results/run.json listing every scenario with a failing scenario screenshot',
@@ -213,7 +233,7 @@ describe 'End-to-End Project Generation and Execution' do
   # Runs the project's features plus a deliberately failing scenario, then removes that scenario again
   def run_cucumber_with_failure(project)
     add_failing_cucumber_scenario(project)
-    FileUtils.rm_rf(File.join(project, 'raider-results'))
+    FileUtils.rm_rf([File.join(project, 'raider-results'), File.join(project, 'rerun.txt')])
     run_cucumber(project)
   ensure
     remove_failing_cucumber_scenario(project)
@@ -312,12 +332,12 @@ describe 'End-to-End Project Generation and Execution' do
     describe 'Selenium + RSpec' do
       let(:project) { generate_azure_project('rspec') }
 
-      it 'ships azure-pipelines.yml and resolves raider_reporter 0.9', :aggregate_failures do
+      it 'ships azure-pipelines.yml and resolves raider_reporter 0.10', :aggregate_failures do
         expect(File).to exist(File.join(project, 'azure-pipelines.yml'))
         expect(File).not_to exist(File.join(project, '.github/workflows'))
         skip 'Bundle install failed' unless bundle_install(project)
 
-        expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.9\.\d+\)$/)
+        expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.10\.\d+\)$/)
       end
 
       it 'records provider azure_pipelines and an azure_pipelines: build key in run.json', :aggregate_failures, :slow do
@@ -334,11 +354,11 @@ describe 'End-to-End Project Generation and Execution' do
     describe 'Selenium + Cucumber' do
       let(:project) { generate_azure_project('cucumber') }
 
-      it 'ships azure-pipelines.yml and resolves raider_reporter 0.9', :aggregate_failures do
+      it 'ships azure-pipelines.yml and resolves raider_reporter 0.10', :aggregate_failures do
         expect(File).to exist(File.join(project, 'azure-pipelines.yml'))
         skip 'Bundle install failed' unless bundle_install(project)
 
-        expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.9\.\d+\)$/)
+        expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.10\.\d+\)$/)
       end
 
       it 'records provider azure_pipelines and an azure_pipelines: build key in run.json', :aggregate_failures, :slow do
@@ -384,7 +404,7 @@ describe 'End-to-End Project Generation and Execution' do
       File.directory?("/Applications/#{app}.app") || system("command -v #{command} > /dev/null 2>&1")
     end
 
-    # A separate project, so the default projects keep resolving raider_reporter 0.9 from RubyGems
+    # A separate project, so the default projects keep resolving raider_reporter 0.10 from RubyGems
     def generate_video_project(framework, automation)
       name = "video_#{framework}_#{automation}"
       unless LazyProjectGenerator::GENERATED.include?(name)

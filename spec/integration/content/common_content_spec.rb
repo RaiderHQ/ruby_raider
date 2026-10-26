@@ -133,6 +133,10 @@ describe 'Common file content' do
     it 'includes raider-results' do
       expect(gitignore).to include('raider-results')
     end
+
+    it 'includes rerun.txt' do
+      expect(gitignore).to include('rerun.txt')
+    end
   end
 
   # --- Spec helper retry config (C4) ---
@@ -186,6 +190,10 @@ describe 'Common file content' do
 
     it 'includes --retry flag' do
       expect(cucumber_yml).to include('--retry')
+    end
+
+    it 'writes failed scenarios to rerun.txt for Re-run Failed' do
+      expect(cucumber_yml).to include('--format rerun --out rerun.txt')
     end
   end
 
