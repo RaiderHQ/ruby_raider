@@ -1,3 +1,4 @@
+require 'thor'
 require_relative 'infrastructure/github_generator'
 require_relative 'infrastructure/azure_generator'
 require_relative 'automation/automation_generator'
@@ -9,9 +10,14 @@ require_relative 'rspec/rspec_generator'
 module InvokeGenerators
   class InvalidParameters < ArgumentError; end
 
+  FRAMEWORKS = %w[rspec cucumber].freeze
+  AUTOMATIONS = %w[selenium watir appium ios android cross_platform].freeze
+
   module_function
 
   def generate_framework(structure = {})
+    validate_option(:framework, structure[:framework], FRAMEWORKS)
+    validate_option(:automation, structure[:automation], AUTOMATIONS)
     validate_ci(structure[:ci])
     generators = %w[Automation Common Helpers]
     framework = structure[:framework]
@@ -28,6 +34,12 @@ module InvokeGenerators
                        })
     end
     print_mobile_azure_notice(structure)
+  end
+
+  def validate_option(key, value, allowed)
+    return if allowed.include?(value.to_s)
+
+    raise Thor::Error, "Invalid #{key} #{value.to_s.inspect}. Allowed values: #{allowed.join(', ')}"
   end
 
   def validate_ci(provider)

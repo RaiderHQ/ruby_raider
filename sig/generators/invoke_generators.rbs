@@ -4,6 +4,7 @@ module InvokeGenerators
   end
 
   def self?.generate_framework: (?Hash[Symbol, untyped] structure) -> void
+  def self?.validate_option: (Symbol key, untyped value, Array[String] allowed) -> void
   def self?.validate_ci: (untyped provider) -> void
   def self?.print_mobile_azure_notice: (Hash[Symbol, untyped] structure) -> void
   def self?.add_generator: (Array[String] generators, *String gens) -> void

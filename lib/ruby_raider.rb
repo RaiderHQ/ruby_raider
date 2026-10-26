@@ -8,6 +8,8 @@ autoload :UtilityCommands, File.expand_path('commands/utility_commands', __dir__
 
 module RubyRaider
   class Raider < Thor
+    def self.exit_on_failure? = true
+
     no_tasks do
       def current_version = File.read(File.expand_path('version', __dir__)).strip
     end
