@@ -210,3 +210,24 @@ The other session handed these to us. It owns the Overview tab bar, the default 
 - These are the other session's (recorder area):
   - recorder export, Watir recording, recorded runs outside the project, the wait keys
 - After this plan is done, ask the user again about the next parity item. That is item #2: steps, stdout and retries in run.json.
+
+### Task 9: desktop — fix stale e2e outside the other session's area
+
+Agreed with the other session on 2026-10-26.
+
+**Files:** e2e `app-launch` (the nav-links test), `navigation`, `landing-page`, `new-project-page`, `error-states`, `dashboard-page`, `dashboard-trace`, `full-workflow`.
+- Use `enterMainLayout()` (`e2e/helpers/navigation.ts`) where a test needs the main layout.
+- Make the "Open" locators unambiguous.
+- Update text and selectors to match the current UI. Change the tests, not the UI.
+
+**Rules:**
+- Each fix must match what the app really does now. Never loosen an assertion until it means nothing.
+- If a test covers a feature that no longer exists, delete the test and list it in the report.
+
+**Deferred:** `overview-page`, `file-editor-page`, `scaffold-panel` and `test-execution-features` wait until the other session's branch `feature/recorder-project-files` lands and this branch is rebased. Then fix only the failures this branch caused: the Welcome start screen, the duplicate "Open" match and changed testids.
+
+- [ ] Steps:
+  1. Run the listed specs (after `npx electron-vite build`).
+  2. Fix them.
+  3. Re-run the listed specs until they pass.
+  4. Commit "Update e2e to the current desktop UI".
