@@ -54,10 +54,17 @@ describe 'End-to-End Project Generation and Execution' do
     use_local_raider_reporter(gemfile)
   end
 
-  # Set RAIDER_REPORTER_PATH to a raider_reporter checkout to resolve a release that is not on RubyGems yet.
+  # Where a local raider_reporter checkout lives: RAIDER_REPORTER_PATH, else a sibling of this repo.
+  def raider_reporter_checkout
+    ENV.fetch('RAIDER_REPORTER_PATH', File.expand_path('../../../raider_reporter', __dir__))
+  end
+
+  # Mirrors use_local_ruby_raider: the generated Gemfile requires raider_reporter ~> 0.10, which is not
+  # published to RubyGems yet, so resolve it from a local checkout. Without one the Gemfile is left alone
+  # and bundler uses RubyGems (once 0.10 is released).
   def use_local_raider_reporter(gemfile)
-    path = ENV.fetch('RAIDER_REPORTER_PATH', nil)
-    return unless path
+    path = raider_reporter_checkout
+    return unless File.exist?(File.join(path, 'raider_reporter.gemspec'))
 
     File.write(gemfile, File.read(gemfile).sub(/^gem 'raider_reporter'.*$/, "gem 'raider_reporter', path: '#{path}'"))
   end
@@ -378,7 +385,7 @@ describe 'End-to-End Project Generation and Execution' do
   # has no checksums yet. Skipped when either, or the browser, is missing. Firefox can be pointed at a
   # specific binary with FIREFOX_BINARY.
   context 'Failure video replay', :slow, :video do
-    let(:reporter_path) { ENV.fetch('RAIDER_REPORTER_PATH', File.expand_path('../../../raider_reporter', __dir__)) }
+    let(:reporter_path) { raider_reporter_checkout }
     let(:ffmpeg_path) { ENV.fetch('RAIDER_FFMPEG_PATH', '') }
     let(:cache_dir) { Dir.mktmpdir('raider-cache') }
 
@@ -411,8 +418,6 @@ describe 'End-to-End Project Generation and Execution' do
         generate_framework(framework:, automation:, name:)
         LazyProjectGenerator::GENERATED.add(name)
         use_local_ruby_raider(name)
-        gemfile = File.join(name, 'Gemfile')
-        File.write(gemfile, File.read(gemfile).sub(/^gem 'raider_reporter'.*$/, "gem 'raider_reporter', path: '#{reporter_path}'"))
         expect(run_in_project(name, 'bundle install --quiet', timeout: 300)[:success]).to be(true)
       end
       FileUtils.rm_rf(File.join(name, 'raider-results'))
