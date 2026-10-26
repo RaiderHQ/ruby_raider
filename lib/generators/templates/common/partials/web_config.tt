@@ -1,7 +1,7 @@
 browser: chrome
 url: 'https://raider-test-site.onrender.com/'
 timeout: 10 # seconds — used for implicit waits and max wait time
-implicit_wait: 0 # seconds
+implicit_wait: 10 # seconds — implicit wait for hand-written page objects
 explicit_wait: 10 # seconds — max wait for elements
 selector_priority: [id, data-testid, css, xpath] # recorder selector order
 viewport:

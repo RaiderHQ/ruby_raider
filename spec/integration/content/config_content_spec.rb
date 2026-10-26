@@ -49,7 +49,7 @@ describe 'Config file content' do
     let(:config) { YAML.safe_load(config_content, permitted_classes: [Symbol]) }
 
     it 'has implicit_wait, explicit_wait and selector_priority' do
-      expect(config['implicit_wait']).to eq(0)
+      expect(config['implicit_wait']).to eq(10)
       expect(config['explicit_wait']).to eq(10)
       expect(config['selector_priority']).to eq(%w[id data-testid css xpath])
     end
