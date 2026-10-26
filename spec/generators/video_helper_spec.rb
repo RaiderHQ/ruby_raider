@@ -17,7 +17,7 @@ require 'selenium-webdriver'
 describe 'Generated VideoHelper' do
   let(:template) { File.expand_path('../../lib/generators/templates/helpers/video_helper.tt', __dir__) }
   let(:png) { Base64.decode64('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==') }
-  let(:project) { Dir.mktmpdir('video-helper-project') }
+  let(:project_dir) { Dir.mktmpdir('video-helper-project') }
   let(:video_config) { { 'enabled' => true, 'fps' => 5, 'max_width' => 1280 } }
   let(:config_yml) { { 'browser' => 'chrome', 'video' => video_config } }
   let(:automation) { 'selenium' }
@@ -31,10 +31,10 @@ describe 'Generated VideoHelper' do
     }.fetch(ffmpeg_mode)
   end
   let(:fake_ffmpeg) do
-    path = File.join(project, 'fake-ffmpeg')
+    path = File.join(project_dir, 'fake-ffmpeg')
     File.write(path, <<~SH)
       #!/bin/sh
-      log_dir='#{project}'
+      log_dir='#{project_dir}'
       printf '%s\\n' "$@" > "$log_dir/argv.txt"
       prev=''
       for arg in "$@"; do
@@ -48,9 +48,9 @@ describe 'Generated VideoHelper' do
     path
   end
   let(:env) { { 'RAIDER_FFMPEG_PATH' => fake_ffmpeg } }
-  let(:tmp) { File.join(project, 'tmp').tap { |dir| FileUtils.mkdir_p(dir) } }
+  let(:tmp) { File.join(project_dir, 'tmp').tap { |dir| FileUtils.mkdir_p(dir) } }
   let(:argv) { File.exist?(argv_path) ? File.read(argv_path).lines(chomp: true) : nil }
-  let(:argv_path) { File.join(project, 'argv.txt') }
+  let(:argv_path) { File.join(project_dir, 'argv.txt') }
   let(:alerts) { double('target_locator') }
   let(:driver) { double('driver', switch_to: alerts) }
   let(:shots) { [] }
@@ -60,7 +60,7 @@ describe 'Generated VideoHelper' do
   def render_and_load
     generator = HelpersGenerator.new([automation, 'rspec', 'proj'])
     source = ERB.new(File.read(template), trim_mode: '-').result(generator.instance_eval { binding })
-    path = File.join(project, 'video_helper.rb')
+    path = File.join(project_dir, 'video_helper.rb')
     File.write(path, source)
     load path
   end
@@ -72,13 +72,13 @@ describe 'Generated VideoHelper' do
   around do |example|
     original_stderr = $stderr
     $stderr = stderr
-    FileUtils.mkdir_p(File.join(project, 'config'))
-    File.write(File.join(project, 'config', 'config.yml'), config_yml.to_yaml)
-    Dir.chdir(project) { example.run }
+    FileUtils.mkdir_p(File.join(project_dir, 'config'))
+    File.write(File.join(project_dir, 'config', 'config.yml'), config_yml.to_yaml)
+    Dir.chdir(project_dir) { example.run }
   ensure
     $stderr = original_stderr
     Object.send(:remove_const, :VideoHelper) if defined?(VideoHelper)
-    FileUtils.rm_rf(project)
+    FileUtils.rm_rf(project_dir)
   end
 
   before do
@@ -150,7 +150,7 @@ describe 'Generated VideoHelper' do
       listener.after_change_value_of(:element, driver)
       recorder.stop(keep: true)
 
-      expect(File.read(File.join(project, 'list.txt'))).to eq(<<~LIST)
+      expect(File.read(File.join(project_dir, 'list.txt'))).to eq(<<~LIST)
         file 'frame-000001.png'
         duration 0.200
         file 'frame-000002.png'
@@ -262,7 +262,7 @@ describe 'Generated VideoHelper' do
       allow(driver).to receive(:save_screenshot).and_raise(Selenium::WebDriver::Error::WebDriverError, 'browser crashed')
 
       expect(recorder.stop(keep: true)).to eq(File.join(recorder.dir, 'video.webm'))
-      expect(File.read(File.join(project, 'list.txt')).scan('frame-000001.png').size).to eq(2)
+      expect(File.read(File.join(project_dir, 'list.txt')).scan('frame-000001.png').size).to eq(2)
       expect(VideoHelper.enabled?).to be(true)
       expect(warnings).to be_empty
     end
