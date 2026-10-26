@@ -3,6 +3,7 @@
 require 'tmpdir'
 require 'digest'
 require 'fileutils'
+require 'stringio'
 require 'ruby_raider/ffmpeg'
 
 # rubocop:disable RSpec/FilePath, RSpec/MultipleMemoizedHelpers
@@ -27,6 +28,8 @@ describe RubyRaider::Ffmpeg do
   end
   let(:binary_name) { platform.to_s.start_with?('windows') ? 'ffmpeg.exe' : 'ffmpeg' }
   let(:cached_path) { File.join(cache, 'ffmpeg', '9.9', binary_name) }
+
+  before { described_class.send(:reset_verified_cache!) }
 
   after { FileUtils.rm_rf(cache) }
 
@@ -61,6 +64,8 @@ describe RubyRaider::Ffmpeg do
     expect(described_class::MANIFEST).to be_frozen
     expect(described_class::MANIFEST[:assets]).to be_frozen
     expect(described_class::MANIFEST[:assets].values).to all(be_frozen)
+    expect(described_class::MANIFEST[:assets].values.map { |a| a[:url] }).to all(be_frozen)
+    expect(described_class::MANIFEST[:version]).to be_frozen
   end
 
   it 'prefers RAIDER_FFMPEG_PATH and never downloads then' do
@@ -189,12 +194,50 @@ describe RubyRaider::Ffmpeg do
       result = described_class.ensure!(env: { 'RAIDER_CACHE_DIR' => blocker }, manifest:, fetch:, warn: warner)
       expect(result).to be_nil
       expect(warnings.size).to eq(1)
+      expect(warnings.first).to match(/download failed/)
     end
 
     it 'warns once and returns nil when the home dir cannot be resolved', :aggregate_failures do
       allow(Dir).to receive(:home).and_raise(ArgumentError, 'couldn\'t find HOME')
       expect(described_class.ensure!(env: {}, manifest:, fetch:, warn: warner)).to be_nil
       expect(warnings.size).to eq(1)
+      expect(warnings.first).to include("couldn't find HOME")
+    end
+  end
+
+  it 'resolve never raises either', :aggregate_failures do
+    allow(Dir).to receive(:home).and_raise(ArgumentError, "couldn't find HOME")
+    expect(described_class.resolve(env: {}, manifest:, warn: warner, platform: 'linux-x64')).to be_nil
+    expect(warnings.size).to eq(1)
+    expect(warnings.first).to include("couldn't find HOME")
+  end
+
+  it 'reports the injected platform when no build exists for it' do
+    described_class.ensure!(env:, manifest: { version: '9.9', assets: {} }, fetch:, warn: warner, platform: 'linux-x64')
+    expect(warnings).to eq(['no ffmpeg build for this platform (linux-x64)'])
+  end
+
+  it 'rehashes a same-size replacement even when mtime is preserved' do
+    FileUtils.mkdir_p(File.dirname(cached_path))
+    File.binwrite(cached_path, bytes)
+    File.chmod(0o755, cached_path)
+    described_class.ensure!(env:, manifest:, fetch:, warn: warner)
+    mtime = File.mtime(cached_path)
+    File.delete(cached_path)
+    File.binwrite(cached_path, 'X' * bytes.size)
+    File.chmod(0o755, cached_path)
+    File.utime(mtime, mtime, cached_path)
+    expect(described_class.ensure!(env:, manifest:, fetch:, warn: warner)).to be_nil
+    expect(warnings).to eq(['cached ffmpeg failed checksum; video disabled'])
+  end
+
+  describe 'DEFAULT_WARN' do
+    it 'writes to $stderr even when $VERBOSE is nil' do
+      original = $VERBOSE
+      $VERBOSE = nil
+      expect { described_class::DEFAULT_WARN.call('x') }.to output("[video] x\n").to_stderr
+    ensure
+      $VERBOSE = original
     end
   end
 

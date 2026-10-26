@@ -18,15 +18,18 @@ module RubyRaider
     MANIFEST = {
       version: '7.1',
       assets: {
-        'darwin-arm64' => { url: "#{RELEASE_BASE}darwin-arm64", sha256: nil }.freeze,
-        'darwin-x64' => { url: "#{RELEASE_BASE}darwin-x64", sha256: nil }.freeze,
-        'linux-x64' => { url: "#{RELEASE_BASE}linux-x64", sha256: nil }.freeze,
-        'windows-x64' => { url: "#{RELEASE_BASE}windows-x64.exe", sha256: nil }.freeze
+        'darwin-arm64' => { url: "#{RELEASE_BASE}darwin-arm64".freeze, sha256: nil }.freeze,
+        'darwin-x64' => { url: "#{RELEASE_BASE}darwin-x64".freeze, sha256: nil }.freeze,
+        'linux-x64' => { url: "#{RELEASE_BASE}linux-x64".freeze, sha256: nil }.freeze,
+        'windows-x64' => { url: "#{RELEASE_BASE}windows-x64.exe".freeze, sha256: nil }.freeze
       }.freeze
     }.freeze
 
     PLATFORMS = %w[darwin-arm64 darwin-x64 linux-x64 windows-x64].freeze
-    DEFAULT_WARN = ->(message) { warn("[video] #{message}") }
+    # $stderr.puts, not Kernel#warn: warn is silenced under -W0 / $VERBOSE = nil.
+    # rubocop:disable Style/StderrPuts
+    DEFAULT_WARN = ->(message) { $stderr.puts("[video] #{message}") }
+    # rubocop:enable Style/StderrPuts
 
     @verified = {}
 
@@ -58,17 +61,24 @@ module RubyRaider
       end
 
       # No network: the env override if executable, else the verified cached binary.
-      def resolve(env: ENV, manifest: MANIFEST, warn: DEFAULT_WARN, platform: self.platform)
-        lookup(env, manifest, warn, platform).first
+      # Never raises: any StandardError becomes one warning and nil.
+      def resolve(env: ENV, manifest: MANIFEST, warn: nil, platform: nil)
+        warn ||= DEFAULT_WARN
+        guarded(warn) do
+          lookup(env, manifest, warn, platform || self.platform).first
+        end
       end
 
-      def ensure!(env: ENV, manifest: MANIFEST, fetch: method(:http_get), warn: DEFAULT_WARN, platform: self.platform)
-        path, final = lookup(env, manifest, warn, platform)
-        return path if path || final
+      # Never raises: any StandardError becomes one warning and nil.
+      def ensure!(env: ENV, manifest: MANIFEST, fetch: nil, warn: nil, platform: nil)
+        warn ||= DEFAULT_WARN
+        guarded(warn) do
+          platform ||= self.platform
+          path, final = lookup(env, manifest, warn, platform)
+          next path if path || final
 
-        provision(env, manifest, fetch, warn, platform)
-      rescue StandardError => e
-        warn_nil(warn, "ffmpeg unavailable: #{e.message}")
+          provision(env, manifest, fetch || method(:http_get), warn, platform)
+        end
       end
 
       def http_get(url, destination, limit = MAX_REDIRECTS)
@@ -94,6 +104,16 @@ module RubyRaider
       end
 
       private
+
+      def guarded(warn)
+        yield
+      rescue StandardError => e
+        warn_nil(warn, "ffmpeg unavailable: #{e.message}")
+      end
+
+      def reset_verified_cache!
+        @verified.clear
+      end
 
       def host_os_name(host_os)
         case host_os
@@ -144,12 +164,15 @@ module RubyRaider
 
       def verification_key(path, sha256)
         stat = File.stat(path)
-        [path, stat.mtime.to_f, stat.size, sha256]
+        [path, stat.ino, stat.mtime.to_f, stat.ctime.to_f, stat.size, sha256]
       end
 
       def provision(env, manifest, fetch, warn, platform)
         asset = manifest[:assets][platform.to_s]
-        return warn_nil(warn, "no ffmpeg build for this platform (#{RbConfig::CONFIG['host_os']}/#{RbConfig::CONFIG['host_cpu']})") unless asset
+        unless asset
+          label = platform || "#{RbConfig::CONFIG['host_os']}/#{RbConfig::CONFIG['host_cpu']}"
+          return warn_nil(warn, "no ffmpeg build for this platform (#{label})")
+        end
         return warn_nil(warn, 'ffmpeg build not published yet') unless asset[:sha256]
         return warn_nil(warn, "refusing non-https ffmpeg url: #{asset[:url]}") unless https?(asset[:url])
 
