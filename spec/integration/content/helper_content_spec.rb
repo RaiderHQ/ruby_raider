@@ -171,6 +171,113 @@ describe 'Helper file content' do
     end
   end
 
+  # --- Video helper ---
+
+  shared_examples 'valid video helper' do |project_name|
+    subject(:helper) { read_generated(project_name, 'helpers/video_helper.rb') }
+
+    it 'has frozen_string_literal' do
+      expect(helper).to have_frozen_string_literal
+    end
+
+    it 'has valid Ruby syntax' do
+      expect(helper).to have_valid_ruby_syntax
+    end
+
+    it 'defines VideoHelper with enabled?, recorder_for and disable!' do
+      expect(helper).to match(/module VideoHelper/)
+      expect(helper).to match(/def enabled\?/)
+      expect(helper).to match(/def recorder_for\(/)
+      expect(helper).to match(/def disable!\(/)
+    end
+
+    it 'has no ScreenCaptureRecorder and no CdpRecorder' do
+      expect(helper).not_to include('ScreenCaptureRecorder')
+      expect(helper).not_to include('CdpRecorder')
+    end
+  end
+
+  shared_examples 'web video helper' do |project_name|
+    subject(:helper) { read_generated(project_name, 'helpers/video_helper.rb') }
+
+    it 'defines a FrameRecorder and a Selenium FrameListener' do
+      expect(helper).to include('class FrameRecorder')
+      expect(helper).to include('class FrameListener < Selenium::WebDriver::Support::AbstractEventListener')
+    end
+
+    it 'captures only after navigate, click and change_value_of' do
+      hooks = helper.scan(/def ((?:after|before)_\w+)/).flatten
+      expect(hooks).to contain_exactly('after_navigate_to', 'after_click', 'after_change_value_of')
+    end
+
+    it 'encodes WebM with libvpx' do
+      expect(helper).to include("'libvpx'", 'video.webm')
+    end
+
+    it 'loads ffmpeg lazily from the ruby_raider gem' do
+      expect(helper).to include("require 'ruby_raider/ffmpeg'")
+      expect(helper).not_to match(/^require 'ruby_raider/)
+    end
+
+    it 'has no AppiumRecorder' do
+      expect(helper).not_to include('AppiumRecorder')
+    end
+  end
+
+  shared_examples 'mobile video helper' do |project_name|
+    subject(:helper) { read_generated(project_name, 'helpers/video_helper.rb') }
+
+    it 'defines an AppiumRecorder writing mp4' do
+      expect(helper).to include('class AppiumRecorder', 'start_recording_screen', 'video.mp4')
+    end
+
+    it 'has no FrameRecorder or listener' do
+      expect(helper).not_to include('FrameRecorder')
+      expect(helper).not_to include('AbstractEventListener')
+    end
+
+    it 'does not need ffmpeg' do
+      expect(helper).not_to include('ffmpeg')
+    end
+  end
+
+  shared_examples 'video listener wiring' do |project_name, helper_file|
+    subject(:helper) { read_generated(project_name, "helpers/#{helper_file}") }
+
+    it 'requires video_helper' do
+      expect(helper).to include("require_relative 'video_helper'")
+    end
+
+    it 'passes VideoHelper.listener only when it is not nil' do
+      expect(helper).to include('VideoHelper.listener')
+      expect(helper).to match(/\[:listener\] = listener if listener/)
+    end
+  end
+
+  context 'with rspec and selenium video' do
+    name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
+    it_behaves_like 'valid video helper', name
+    it_behaves_like 'web video helper', name
+    it_behaves_like 'video listener wiring', name, 'driver_helper.rb'
+  end
+
+  context 'with cucumber and watir video' do
+    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
+    it_behaves_like 'valid video helper', name
+    it_behaves_like 'web video helper', name
+    it_behaves_like 'video listener wiring', name, 'browser_helper.rb'
+  end
+
+  context 'with rspec and ios video' do
+    name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
+    it_behaves_like 'valid video helper', name
+    it_behaves_like 'mobile video helper', name
+
+    it 'does not wire a listener into the appium driver helper' do
+      expect(read_generated(name, 'helpers/driver_helper.rb')).not_to include('listener')
+    end
+  end
+
   # --- RSpec + automation contexts ---
 
   context 'with rspec and selenium' do

@@ -51,12 +51,21 @@ describe 'Config file content' do
     end
   end
 
+  shared_examples 'video config' do |project_name|
+    subject(:config) { YAML.safe_load(read_generated(project_name, 'config/config.yml'), permitted_classes: [Symbol]) }
+
+    it 'has video enabled at 5 fps and 1280 px max width' do
+      expect(config['video']).to eq('enabled' => true, 'fps' => 5, 'max_width' => 1280)
+    end
+  end
+
   # --- Web config per automation ---
 
   context 'with rspec and selenium' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'valid web config', name
     include_examples 'selenium config with timeout', name
+    include_examples 'video config', name
   end
 
   context 'with rspec and watir' do
@@ -72,6 +81,11 @@ describe 'Config file content' do
   end
 
   # --- Mobile config ---
+
+  # Single-platform Appium projects have no config.yml; VideoHelper falls back to its defaults.
+  context 'with rspec and cross platform' do
+    include_examples 'video config', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
+  end
 
   context 'with rspec and appium android' do
     subject(:caps) { read_generated("#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}", 'config/capabilities.yml') }
