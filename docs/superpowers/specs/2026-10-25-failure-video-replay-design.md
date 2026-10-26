@@ -130,7 +130,7 @@ Revive `lib/generators/templates/helpers/video_helper.tt` (orphaned since 366946
 
 ## Spike result (2026-10-25)
 
-Gate for "Recording in generated projects". **Outcome: BLOCKED. No capture mode meets the 15% limit on every browser, so `CAPTURE_MODE` is not chosen. A decision from the user is needed (see below).**
+Gate for "Recording in generated projects". **Outcome: resolved 2026-10-26: `CAPTURE_MODE = :listener` with state-changing frames (see "Final decision" at the end of this section).**
 
 Setup: project generated with `raider new spike -p framework:rspec automation:selenium` (selenium-webdriver 4.44.0, Ruby 3.2.8, Chrome 155, Firefox 149.0.2 via geckodriver 0.37.1, macOS arm64), sample suite = 2 examples (login page), site warmed up first. Each run alternates capture on / `VIDEO=off` equivalent (`CAPTURE=off`) to cancel drift. 20 runs per browser per mode (above the 5-run minimum), 40 `off` runs per browser. Median wall time of the whole `rspec` process. Headless Chrome and Firefox via `HEADLESS=true`; headed Chrome on the desktop.
 
@@ -185,3 +185,19 @@ Per the user's ruling (fewer frames), listener capture was limited to state-chan
 Result: **BLOCKED.** Headless Chrome is 15.8%, just over the limit, so `CAPTURE_MODE` is not set. Headed Chrome passes. Per-pair slowdown is noisy (headless 4.8% to 24.1%, median of pairs 17.0%; headed 5.8% to 14.4%, median 12.7%), and the off baseline itself moved from 40.3 s to 44.4 s between measurement sets, so the result is borderline rather than clearly failing. Dropping `execute_script` took the headless result from 18.5% to 15.8% and headed from 20.3% to 11.8%.
 
 Frame check on one failing example (navigate, type, click Add, click Next, click Go, wait, failing assert): 6 frames. Each page change shows up (first page with typed text, then the second page). Weakness: frames are taken right after the command returns, so effects that arrive later in the page are missed. The toast shown 800 ms after "Add" appears in no frame, and the "done" text after "Go" appears only in the final frame. The sequence is usable as a replay of navigation and input, but not of asynchronous results between commands.
+
+### Final decision (2026-10-26)
+
+The user accepted the state-changing-frames result as within measurement noise: headed Chrome +11.8%, headless Chrome +15.8% with a per-pair spread of 4.8–24.1%.
+
+**`CAPTURE_MODE = :listener`**
+
+Task 7's `FrameRecorder` must use exactly this capture set:
+- `after_navigate_to`
+- `after_click`
+- `after_change_value_of`
+- one final frame at stop
+
+It must not capture after `execute_script`, finds, or reads.
+
+Known limit: async page changes between commands only show in the next frame or the final frame.
