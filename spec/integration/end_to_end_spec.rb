@@ -4,6 +4,8 @@ require_relative 'spec_helper'
 require 'timeout'
 require 'open3'
 require 'json'
+require 'erb'
+require 'tmpdir'
 
 # End-to-end integration tests that verify generated projects actually work
 # These tests:
@@ -15,7 +17,7 @@ require 'json'
 # This ensures the template system produces working, executable test frameworks
 describe 'End-to-End Project Generation and Execution' do
   # Helper to run commands in a generated project directory
-  def run_in_project(project_name, command, timeout: 300)
+  def run_in_project(project_name, command, timeout: 300, env: {})
     result = {
       success: false,
       stdout: '',
@@ -26,7 +28,7 @@ describe 'End-to-End Project Generation and Execution' do
     Dir.chdir(project_name) do
       Bundler.with_unbundled_env do
         Timeout.timeout(timeout) do
-          stdout, stderr, status = Open3.capture3(command)
+          stdout, stderr, status = Open3.capture3(env, command)
           result[:stdout] = stdout
           result[:stderr] = stderr
           result[:exit_code] = status.exitstatus
@@ -347,6 +349,213 @@ describe 'End-to-End Project Generation and Execution' do
                                 timeout: 120)
         expect(result[:success]).to be(true), "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
         expect_azure_ci_block(project)
+      end
+    end
+  end
+
+  # Failure video replay against real browsers. Needs raider_reporter 0.10 (unpublished: a local checkout,
+  # RAIDER_REPORTER_PATH) and an ffmpeg with libvpx (RAIDER_FFMPEG_PATH), because the RaiderHQ ffmpeg release
+  # has no checksums yet. Skipped when either, or the browser, is missing. Firefox can be pointed at a
+  # specific binary with FIREFOX_BINARY.
+  context 'Failure video replay', :slow, :video do
+    let(:reporter_path) { ENV.fetch('RAIDER_REPORTER_PATH', '/Users/augustingottlieb/raider_reporter') }
+    let(:ffmpeg_path) { ENV.fetch('RAIDER_FFMPEG_PATH', '') }
+    let(:cache_dir) { Dir.mktmpdir('raider-cache') }
+
+    after { FileUtils.rm_rf(cache_dir) }
+
+    def skip_unless_video_prerequisites(browser)
+      skip "raider_reporter 0.10 checkout not found at #{reporter_path} (set RAIDER_REPORTER_PATH)" unless
+        File.exist?(File.join(reporter_path, 'raider_reporter.gemspec'))
+      skip 'RAIDER_FFMPEG_PATH is not set to an executable ffmpeg with libvpx' unless
+        File.file?(ffmpeg_path) && File.executable?(ffmpeg_path)
+      skip "#{browser} is not installed" unless browser_installed?(browser)
+    end
+
+    def browser_installed?(browser)
+      if browser == 'firefox'
+        ENV['FIREFOX_BINARY'] ? File.executable?(ENV['FIREFOX_BINARY']) : app_or_command?('Firefox', 'firefox')
+      else
+        app_or_command?('Google Chrome', 'google-chrome') || app_or_command?('Chromium', 'chromium')
+      end
+    end
+
+    def app_or_command?(app, command)
+      File.directory?("/Applications/#{app}.app") || system("command -v #{command} > /dev/null 2>&1")
+    end
+
+    # A separate project, so the default projects keep resolving raider_reporter 0.9 from RubyGems
+    def generate_video_project(framework, automation)
+      name = "video_#{framework}_#{automation}"
+      unless LazyProjectGenerator::GENERATED.include?(name)
+        generate_framework(framework:, automation:, name:)
+        LazyProjectGenerator::GENERATED.add(name)
+        use_local_ruby_raider(name)
+        gemfile = File.join(name, 'Gemfile')
+        File.write(gemfile, File.read(gemfile).sub(/^gem 'raider_reporter'.*$/, "gem 'raider_reporter', path: '#{reporter_path}'"))
+        expect(run_in_project(name, 'bundle install --quiet', timeout: 300)[:success]).to be(true)
+      end
+      FileUtils.rm_rf(File.join(name, 'raider-results'))
+      name
+    end
+
+    def video_env(overrides = {})
+      { 'HEADLESS' => 'true', 'RAIDER_FFMPEG_PATH' => ffmpeg_path, 'RAIDER_CACHE_DIR' => cache_dir,
+        'RAIDER_TOKEN' => nil, 'RAIDER_ENDPOINT' => nil, 'VIDEO' => nil }.merge(overrides)
+    end
+
+    def page_url
+      "data:text/html,#{ERB::Util.url_encode('<h1 id="title">Video</h1><input id="name"><button id="go">Go</button>')}"
+    end
+
+    def add_rspec_video_spec(project)
+      File.write(File.join(project, 'spec/video_replay_spec.rb'), <<~SPEC)
+        # frozen_string_literal: true
+
+        require_relative '../helpers/spec_helper'
+
+        describe 'Video replay' do
+          it 'passes after driving the page' do
+            driver.navigate.to('#{page_url}')
+            driver.find_element(id: 'name').send_keys('ok')
+            expect(driver.find_element(id: 'title').text).to eq('Video')
+          end
+
+          it 'fails after driving the page' do
+            driver.navigate.to('#{page_url}')
+            driver.find_element(id: 'name').send_keys('broken')
+            driver.find_element(id: 'go').click
+            expect(driver.find_element(id: 'title').text).to eq('deliberate video failure')
+          end
+        end
+      SPEC
+    end
+
+    def add_cucumber_video_feature(project, firefox_binary)
+      File.write(File.join(project, 'features/video_replay.feature'), <<~FEATURE)
+        Feature: Video replay
+
+        Scenario: A passing scenario
+            Given the video page is open
+            Then the video page title is "Video"
+
+        Scenario: A failing scenario
+            Given the video page is open
+            Then the video page title is "deliberate video failure"
+      FEATURE
+      File.write(File.join(project, 'features/step_definitions/video_replay_steps.rb'), <<~STEPS)
+        # frozen_string_literal: true
+
+        Given('the video page is open') do
+          browser.goto('#{page_url}')
+          browser.text_field(id: 'name').set('typed')
+          browser.button(id: 'go').click
+        end
+
+        Then('the video page title is {string}') do |title|
+          raise "expected title \#{title}" unless browser.h1(id: 'title').text == title
+        end
+      STEPS
+      config = File.join(project, 'config/config.yml')
+      File.write(config, File.read(config).sub(/^browser: .*$/, 'browser: firefox'))
+      # Test setup only: the generated templates do not read FIREFOX_BINARY.
+      File.write(File.join(project, 'features/support/zz_firefox_binary.rb'), <<~RUBY) if firefox_binary
+        # frozen_string_literal: true
+
+        Selenium::WebDriver::Firefox.path = ENV['FIREFOX_BINARY'] if ENV['FIREFOX_BINARY']
+      RUBY
+    end
+
+    def results(project)
+      JSON.parse(File.read(File.join(project, 'raider-results', 'run.json')))['results']
+    end
+
+    def video_files(project)
+      Dir.glob(File.join(project, 'raider-results', '**', '*.{webm,mp4}'))
+    end
+
+    def video_attachments(result)
+      result['attachments'].select { |attachment| attachment['name'] == 'video' }
+    end
+
+    def expect_video_for_failure_only(project, failing_name, run)
+      by_status = results(project).group_by { |r| r['status'] }
+      expect(by_status.keys).to match_array(%w[passed failed]), "STDOUT: #{run[:stdout]}\nSTDERR: #{run[:stderr]}"
+      failing = by_status['failed'].find { |r| r['full_name'].include?(failing_name) }
+      expect(failing).not_to be_nil, "No failing result named #{failing_name}"
+      expect(video_attachments(failing).size).to eq(1)
+      expect(video_attachments(failing).first['content_type']).to eq('video/webm')
+      by_status.fetch('passed', []).each { |r| expect(video_attachments(r)).to be_empty }
+      videos = video_files(project)
+      expect(videos.size).to eq(1)
+      expect(videos.first).to end_with('video.webm')
+      expect(File.size(videos.first)).to be_positive
+      expect(File.read(File.join(project, 'raider-results', 'index.html'))).to include('<video')
+    end
+
+    describe 'Selenium + RSpec on headless Chrome' do
+      let(:project) { 'video_rspec_selenium' }
+      let(:command) { 'bundle exec rspec spec/video_replay_spec.rb' }
+
+      before do
+        skip_unless_video_prerequisites('chrome')
+        generate_video_project('rspec', 'selenium')
+        add_rspec_video_spec(project)
+      end
+
+      after { FileUtils.rm_f(File.join(project, 'spec/video_replay_spec.rb')) }
+
+      it 'attaches video.webm to the failing example only and plays it in index.html', :aggregate_failures do
+        result = run_in_project(project, command, env: video_env)
+        expect(result[:exit_code]).to eq(1), "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
+        expect(result[:stderr]).not_to include('[video]')
+        expect_video_for_failure_only(project, 'fails after driving the page', result)
+      end
+
+      it 'writes no video with VIDEO=off', :aggregate_failures do
+        result = run_in_project(project, command, env: video_env('VIDEO' => 'off'))
+        expect(result[:exit_code]).to eq(1), "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
+        expect(video_files(project)).to be_empty
+        expect(results(project).flat_map { |r| video_attachments(r) }).to be_empty
+        expect(result[:stderr]).not_to include('[video]')
+      end
+
+      it 'runs unchanged with one [video] line and no download when no ffmpeg is usable', :aggregate_failures do
+        off = run_in_project(project, command, env: video_env('VIDEO' => 'off'))
+        FileUtils.rm_rf(File.join(project, 'raider-results'))
+        result = run_in_project(project, command, env: video_env('RAIDER_FFMPEG_PATH' => nil))
+
+        expect(result[:exit_code]).to eq(off[:exit_code]), "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
+        video_lines = result[:stderr].lines.grep(/\[video\]/)
+        expect(video_lines.size).to eq(1), "STDERR: #{result[:stderr]}"
+        # Emitted before any fetch: the placeholder manifest has no checksum, so nothing is downloaded.
+        expect(video_lines.first).to include('ffmpeg build not published yet')
+        expect(video_files(project)).to be_empty
+        expect(Dir.glob(File.join(cache_dir, '**', '*'))).to be_empty
+      end
+    end
+
+    describe 'Watir + Cucumber on headless Firefox' do
+      let(:project) { 'video_cucumber_watir' }
+      let(:firefox_binary) { ENV.fetch('FIREFOX_BINARY', nil) }
+
+      before do
+        skip_unless_video_prerequisites('firefox')
+        generate_video_project('cucumber', 'watir')
+        add_cucumber_video_feature(project, firefox_binary)
+      end
+
+      after do
+        FileUtils.rm_f(File.join(project, 'features/video_replay.feature'))
+        FileUtils.rm_f(File.join(project, 'features/step_definitions/video_replay_steps.rb'))
+      end
+
+      it 'attaches video.webm to the failing scenario only and plays it in index.html', :aggregate_failures do
+        result = run_in_project(project, 'bundle exec cucumber features/video_replay.feature',
+                                env: video_env('FIREFOX_BINARY' => firefox_binary), timeout: 240)
+        expect(result[:exit_code]).to eq(1), "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
+        expect(result[:stderr]).not_to include('[video]')
+        expect_video_for_failure_only(project, 'A failing scenario', result)
       end
     end
   end

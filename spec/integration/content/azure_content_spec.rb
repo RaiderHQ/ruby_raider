@@ -60,7 +60,11 @@ describe 'Azure Pipelines content' do
           'key' => "raider-ffmpeg-#{RubyRaider::Ffmpeg::MANIFEST[:version]} | \"$(Agent.OS)\"",
           'path' => '$(RAIDER_CACHE_DIR)'
         )
-        expect(steps[install]['continueOnError']).to be(true)
+      end
+
+      it 'caches RAIDER_CACHE_DIR in the pipeline workspace and keeps the ffmpeg install from failing the build' do
+        install = yml['jobs'][0]['steps'].find { |s| s['script'] == 'bundle exec raider u video install' }
+        expect(install['continueOnError']).to be(true)
         expect(yml['variables']['RAIDER_CACHE_DIR']).to eq('$(Pipeline.Workspace)/.cache/raider')
       end
 

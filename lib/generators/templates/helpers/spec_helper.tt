@@ -63,9 +63,9 @@ module SpecHelper
         end
       end
       RaiderReporter.attach('video', video_path, type: <%= mobile? ? ':mp4' : ':webm' %>) if video_path
-      <%= partial('quit_driver', strip: true) %>
     ensure
       @video_recorder&.cleanup
+      <%= partial('quit_driver', strip: true) %>
     end
   end
 end

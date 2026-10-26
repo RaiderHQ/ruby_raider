@@ -162,14 +162,13 @@ describe 'Helper file content' do
       expect(after_hook).to include("RaiderReporter.attach('video', video_path, type: #{video_type}) if video_path")
     end
 
-    it 'stops the recorder before quitting the driver and cleans up in an ensure' do
-      stop = after_hook.index('@video_recorder&.stop(keep: keep_video)')
-      attach = after_hook.index("RaiderReporter.attach('video'")
-      quit = after_hook.index(/driver\.quit|browser\.quit/)
-      cleanup = after_hook.index('@video_recorder&.cleanup')
-      expect(stop).to be < quit
-      expect(attach).to be < cleanup
-      expect(after_hook.index("\n    ensure\n")).to be < cleanup
+    it 'stops and attaches, then cleans up and quits the driver in the ensure, so the browser closes if an attach raises' do
+      order = [after_hook.index('@video_recorder&.stop(keep: keep_video)'), after_hook.index("RaiderReporter.attach('video'"),
+               after_hook.index("\n    ensure\n"), after_hook.index('@video_recorder&.cleanup'),
+               after_hook.index(/driver\.quit|browser\.quit/)]
+      expect(order).to all(be_an(Integer)).and eq(order.compact.sort)
+      expect(after_hook.scan(/driver\.quit|browser\.quit/).size).to eq(1)
+      expect(after_hook[order[2]..]).to match(/\n      @video_recorder&\.cleanup\n      (driver|browser)\.quit(_driver)?\n    end\n/)
     end
 
     it 'keeps the screenshot attachment' do
