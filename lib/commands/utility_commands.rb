@@ -68,12 +68,6 @@ class UtilityCommands < Thor
     end
   end
 
-  desc 'config', 'Creates a new config file'
-  option :path,
-         type: :string, required: false, desc: 'The path where your config file will be created', aliases: '-p'
-  option :delete,
-         type: :boolean, required: false, desc: 'This will delete the selected config file', aliases: '-d'
-
   desc 'timeout [SECONDS]', 'Sets the default test timeout in seconds'
 
   def timeout(seconds)
@@ -114,4 +108,37 @@ class UtilityCommands < Thor
     say 'Raider Desktop downloaded successfully!', :green
   end
 
+  desc 'video [install|status|on|off]', 'Manages failure video recording (ffmpeg install, status, on/off)'
+
+  def video(action)
+    case action
+    when 'install' then video_install
+    when 'status' then video_status
+    when 'on', 'off' then video_toggle(action == 'on')
+    else
+      say_error "Unknown video command '#{action}'. Use install|status|on|off", :red
+      exit 1
+    end
+  end
+
+  no_commands do
+    def video_install
+      require_relative '../ruby_raider/ffmpeg'
+      path = RubyRaider::Ffmpeg.ensure!
+      exit 1 unless path
+
+      say path
+    end
+
+    def video_status
+      require_relative '../ruby_raider/ffmpeg'
+      version = RubyRaider::Ffmpeg::MANIFEST[:version]
+      say "ffmpeg #{version}: #{RubyRaider::Ffmpeg.resolve || 'not installed'}"
+    end
+
+    def video_toggle(enabled)
+      Utilities.video_enabled = enabled
+      say "Failure video #{enabled ? 'enabled' : 'disabled'}", :green
+    end
+  end
 end

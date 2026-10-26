@@ -62,6 +62,13 @@ module Utilities
       set('headless', enabled)
     end
 
+    def video_enabled=(enabled)
+      reload_config
+      video = @config['video']
+      @config['video'] = (video.is_a?(Hash) ? video : {}).merge('enabled' => enabled)
+      overwrite_yaml
+    end
+
     # Set multiple config keys in a single YAML write.
     # Usage: Utilities.batch_update(browser: 'chrome', timeout: 30)
     def batch_update(**settings)
