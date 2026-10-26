@@ -132,8 +132,9 @@ class UtilityCommands < Thor
 
     def video_status
       require_relative '../ruby_raider/ffmpeg'
-      version = RubyRaider::Ffmpeg::MANIFEST[:version]
-      say "ffmpeg #{version}: #{RubyRaider::Ffmpeg.resolve || 'not installed'}"
+      path = RubyRaider::Ffmpeg.resolve
+      source = path && path == ENV['RAIDER_FFMPEG_PATH'] ? '(RAIDER_FFMPEG_PATH)' : RubyRaider::Ffmpeg::MANIFEST[:version]
+      say "ffmpeg #{source}: #{path || 'not installed'}"
     end
 
     def video_toggle(enabled)

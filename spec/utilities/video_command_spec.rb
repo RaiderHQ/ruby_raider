@@ -66,13 +66,20 @@ RSpec.describe UtilityCommands do
       expect(out.strip).to eq('ffmpeg 7.1: not installed')
     end
 
-    it 'prints the resolved path without downloading' do
+    it 'labels a RAIDER_FFMPEG_PATH binary by its source, not the manifest version' do
       script = File.join(cache, 'fake-ffmpeg')
       File.write(script, "#!/bin/sh\n")
       File.chmod(0o755, script)
       ENV['RAIDER_FFMPEG_PATH'] = script
       out, = run_cli('video', 'status')
-      expect(out.strip).to eq("ffmpeg 7.1: #{script}")
+      expect(out.strip).to eq("ffmpeg (RAIDER_FFMPEG_PATH): #{script}")
+    end
+
+    it 'prints the cached binary with the manifest version without downloading' do
+      require 'ruby_raider/ffmpeg'
+      allow(RubyRaider::Ffmpeg).to receive(:resolve).and_return('/cache/ffmpeg/7.1/ffmpeg')
+      out, = run_cli('video', 'status')
+      expect(out.strip).to eq('ffmpeg 7.1: /cache/ffmpeg/7.1/ffmpeg')
     end
   end
 
