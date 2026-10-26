@@ -4,13 +4,18 @@ module RubyRaider
     type manifest = { version: String, assets: Hash[String, asset] }
 
     MAX_REDIRECTS: Integer
+    RELEASE_BASE: String
     MANIFEST: manifest
+    PLATFORMS: Array[String]
     DEFAULT_WARN: ^(String) -> void
 
+    self.@verified: Hash[Array[untyped], bool]
+
     def self.platform: (?host_os: String, ?host_cpu: String) -> String?
-    def self.cache_dir: (?env: Hash[String, String]) -> String
-    def self.resolve: (?env: Hash[String, String], ?manifest: manifest) -> String?
-    def self.ensure!: (?env: Hash[String, String], ?manifest: manifest, ?fetch: ^(String, String) -> untyped, ?warn: ^(String) -> void) -> String?
+    def self.cache_dir: (?env: Hash[String, String], ?platform: String?) -> String
+    def self.cached_path: (?env: Hash[String, String], ?manifest: manifest, ?platform: String?) -> String
+    def self.resolve: (?env: Hash[String, String], ?manifest: manifest, ?warn: ^(String) -> void, ?platform: String?) -> String?
+    def self.ensure!: (?env: Hash[String, String], ?manifest: manifest, ?fetch: ^(String, String) -> untyped, ?warn: ^(String) -> void, ?platform: String?) -> String?
     def self.http_get: (String url, String destination, ?Integer limit) -> void
   end
 end
