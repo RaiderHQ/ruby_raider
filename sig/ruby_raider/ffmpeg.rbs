@@ -4,6 +4,7 @@ module RubyRaider
     type manifest = { version: String, assets: Hash[String, asset] }
 
     MAX_REDIRECTS: Integer
+    DOWNLOAD_TIMEOUT: Integer
     RELEASE_BASE: String
     MANIFEST: manifest
     PLATFORMS: Array[String]
@@ -17,6 +18,6 @@ module RubyRaider
     def self.resolve: (?env: Hash[String, String], ?manifest: manifest, ?warn: (^(String) -> void)?, ?platform: String?) -> String?
     def self.ensure!: (?env: Hash[String, String], ?manifest: manifest, ?fetch: (^(String, String) -> untyped)?, ?warn: (^(String) -> void)?, ?platform: String?) -> String?
     def self.obtainable?: (?env: Hash[String, String], ?manifest: manifest, ?platform: String?) -> bool
-    def self.http_get: (String url, String destination, ?Integer limit) -> void
+    def self.http_get: (String url, String destination, ?Integer limit, ?timeout: Numeric, ?deadline: Float?) -> void
   end
 end

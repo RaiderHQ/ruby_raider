@@ -48,7 +48,7 @@ describe 'Azure Pipelines content' do
         )
       end
 
-      it 'caches the ffmpeg dir keyed on the ffmpeg version, then installs ffmpeg, before the tests' do
+      it 'caches the ffmpeg dir keyed on the ffmpeg version and Gemfile.lock, then installs ffmpeg, before the tests' do
         steps = yml['jobs'][0]['steps']
         cache = steps.index { |s| s['task'] == 'Cache@2' }
         install = steps.index { |s| s['script'] == 'bundle exec raider u video install' }
@@ -57,7 +57,7 @@ describe 'Azure Pipelines content' do
         expect(cache).to be < install
         expect(install).to be < tests
         expect(steps[cache]['inputs']).to eq(
-          'key' => "raider-ffmpeg-#{RubyRaider::Ffmpeg::MANIFEST[:version]} | \"$(Agent.OS)\"",
+          'key' => "raider-ffmpeg-#{RubyRaider::Ffmpeg::MANIFEST[:version]} | \"$(Agent.OS)\" | Gemfile.lock",
           'path' => '$(RAIDER_CACHE_DIR)'
         )
       end

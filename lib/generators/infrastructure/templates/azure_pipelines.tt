@@ -26,7 +26,7 @@ jobs:
       - task: Cache@2
         displayName: Cache ffmpeg for failure videos
         inputs:
-          key: 'raider-ffmpeg-<%= RubyRaider::Ffmpeg::MANIFEST[:version] %> | "$(Agent.OS)"'
+          key: 'raider-ffmpeg-<%= RubyRaider::Ffmpeg::MANIFEST[:version] %> | "$(Agent.OS)" | Gemfile.lock'
           path: $(RAIDER_CACHE_DIR)
       # Video is optional: a failed download is visible here but never fails the build.
       - script: bundle exec raider u video install

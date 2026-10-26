@@ -12,6 +12,8 @@ module RubyRaider
   # projects can load it standalone via `require 'ruby_raider/ffmpeg'`.
   module Ffmpeg
     MAX_REDIRECTS = 5
+    # Seconds for the whole download, redirects included.
+    DOWNLOAD_TIMEOUT = 300
 
     # Checksums are filled in when the RaiderHQ `ffmpeg-7.1` release is cut.
     RELEASE_BASE = 'https://github.com/RaiderHQ/ruby_raider/releases/download/ffmpeg-7.1/ffmpeg-7.1-'
@@ -92,29 +94,56 @@ module RubyRaider
         false
       end
 
-      def http_get(url, destination, limit = MAX_REDIRECTS)
+      def http_get(url, destination, limit = MAX_REDIRECTS, timeout: DOWNLOAD_TIMEOUT, deadline: nil)
         raise ArgumentError, "refusing non-https url: #{url}" unless https?(url)
         raise IOError, 'too many redirects' if limit.negative?
 
+        deadline ||= monotonic_now + timeout
         uri = URI(url)
         location = nil
-        Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 10, read_timeout: 60) do |http|
+        Net::HTTP.start(uri.host, uri.port, use_ssl: true, **socket_timeouts(deadline, timeout)) do |http|
           http.request(Net::HTTP::Get.new(uri)) do |response|
-            case response
-            when Net::HTTPSuccess
-              File.open(destination, 'wb') { |file| response.read_body { |chunk| file.write(chunk) } }
-            when Net::HTTPRedirection
-              location = response['location']
-              raise IOError, 'redirect without Location header' unless location
-            else
-              raise IOError, "download failed: HTTP #{response.code}"
-            end
+            location = handle_response(response, destination, deadline, timeout)
           end
         end
-        http_get(URI.join(url, location).to_s, destination, limit - 1) if location
+        http_get(URI.join(url, location).to_s, destination, limit - 1, timeout:, deadline:) if location
       end
 
       private
+
+      # Returns the redirect location, or nil once the body is written.
+      def handle_response(response, destination, deadline, timeout)
+        case response
+        when Net::HTTPSuccess
+          File.open(destination, 'wb') do |file|
+            response.read_body do |chunk|
+              check_deadline(deadline, timeout)
+              file.write(chunk)
+            end
+          end
+          nil
+        when Net::HTTPRedirection
+          response['location'] || raise(IOError, 'redirect without Location header')
+        else
+          raise IOError, "download failed: HTTP #{response.code}"
+        end
+      end
+
+      def socket_timeouts(deadline, timeout)
+        left = check_deadline(deadline, timeout)
+        { open_timeout: [10, left].min, read_timeout: [60, left].min }
+      end
+
+      def check_deadline(deadline, timeout)
+        left = deadline - monotonic_now
+        raise IOError, "download took longer than #{timeout} seconds" unless left.positive?
+
+        left
+      end
+
+      def monotonic_now
+        Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      end
 
       def guarded(warn)
         yield
@@ -192,6 +221,7 @@ module RubyRaider
 
       def download(destination, asset, fetch, warn)
         part = "#{destination}.#{Process.pid}.#{SecureRandom.hex(4)}.part"
+        created = missing_dirs(File.dirname(destination))
         begin
           FileUtils.mkdir_p(File.dirname(destination))
           fetch.call(asset[:url], part)
@@ -206,7 +236,26 @@ module RubyRaider
           warn_nil(warn, "ffmpeg download failed: #{e.message}")
         ensure
           FileUtils.rm_f(part)
+          remove_empty(created)
         end
+      end
+
+      # The dirs mkdir_p would create for dir, deepest first.
+      def missing_dirs(dir)
+        missing = []
+        until File.exist?(dir) || File.dirname(dir) == dir
+          missing << dir
+          dir = File.dirname(dir)
+        end
+        missing
+      end
+
+      # After a failed download, so CI never caches an empty ffmpeg/<version>/.
+      # Dir.rmdir only removes empty dirs, so a concurrent install is kept.
+      def remove_empty(dirs)
+        dirs.each { |dir| Dir.rmdir(dir) }
+      rescue SystemCallError
+        nil
       end
 
       def verified?(path, sha256)

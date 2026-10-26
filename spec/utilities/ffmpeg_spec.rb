@@ -187,6 +187,29 @@ describe RubyRaider::Ffmpeg do
     end
   end
 
+  describe 'a failed download leaves no empty dirs for CI to cache' do
+    let(:boom) { ->(_url, _dest) { raise IOError, 'network down' } }
+
+    it 'removes the version dir (and the ffmpeg dir) it created' do
+      described_class.ensure!(env:, manifest:, fetch: boom, warn: warner)
+      expect(File).not_to exist(File.join(cache, 'ffmpeg'))
+      expect(File).to exist(cache)
+    end
+
+    it 'removes them after a checksum mismatch too' do
+      bad = ->(_url, dest) { File.binwrite(dest, 'tampered') }
+      described_class.ensure!(env:, manifest:, fetch: bad, warn: warner)
+      expect(File).not_to exist(File.join(cache, 'ffmpeg'))
+    end
+
+    it 'keeps a version dir that already existed or is not empty' do
+      FileUtils.mkdir_p(File.dirname(cached_path))
+      File.write(File.join(File.dirname(cached_path), 'other'), 'x')
+      described_class.ensure!(env:, manifest:, fetch: boom, warn: warner)
+      expect(File).to exist(File.join(File.dirname(cached_path), 'other'))
+    end
+  end
+
   describe 'never raising' do
     it 'warns once and returns nil when the cache dir cannot be created', :aggregate_failures do
       blocker = File.join(cache, 'blocker')
@@ -323,6 +346,54 @@ describe RubyRaider::Ffmpeg do
     it 'raises on a redirect without Location' do
       stub_responses(response(Net::HTTPFound, '302'))
       expect { described_class.http_get('https://example.test/f', dest) }.to raise_error(IOError, /Location/)
+    end
+
+    context 'with an overall deadline' do
+      def slow_ok(chunks:, pause:)
+        Net::HTTPOK.new('1.1', '200', 'x').tap do |res|
+          allow(res).to receive(:read_body) do |&blk|
+            chunks.times do
+              sleep pause
+              blk.call('x')
+            end
+          end
+        end
+      end
+
+      it 'defaults to 300 seconds' do
+        expect(described_class::DOWNLOAD_TIMEOUT).to eq(300)
+      end
+
+      it 'aborts a body that trickles past the deadline' do
+        stub_responses(slow_ok(chunks: 50, pause: 0.02))
+        started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        expect { described_class.http_get('https://example.test/f', dest, timeout: 0.2) }
+          .to raise_error(IOError, /longer than 0.2 seconds/)
+        expect(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).to be < 0.6
+      end
+
+      it 'caps the socket timeouts at the time left' do
+        stub_responses(response(Net::HTTPOK, '200', body: 'x'))
+        described_class.http_get('https://example.test/f', dest, timeout: 5)
+        expect(Net::HTTP).to have_received(:start)
+          .with('example.test', 443, hash_including(open_timeout: be <= 5, read_timeout: be <= 5))
+      end
+
+      it 'shares one deadline across redirects' do
+        stub_responses(response(Net::HTTPFound, '302', location: 'https://example.test/g'),
+                       slow_ok(chunks: 50, pause: 0.02))
+        expect { described_class.http_get('https://example.test/f', dest, timeout: 0.2) }
+          .to raise_error(IOError, /longer than 0.2 seconds/)
+      end
+
+      it 'makes ensure! warn once, delete the .part and return nil' do
+        stub_responses(slow_ok(chunks: 50, pause: 0.02))
+        fetch = ->(url, part) { described_class.http_get(url, part, timeout: 0.2) }
+        result = described_class.ensure!(env:, manifest:, fetch:, warn: warner)
+        expect(result).to be_nil
+        expect(warnings).to eq(['ffmpeg download failed: download took longer than 0.2 seconds'])
+        expect(Dir.glob(File.join(cache, '**', '*.part'))).to be_empty
+      end
     end
 
     it 'does not nest connections when following redirects' do

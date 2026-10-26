@@ -215,7 +215,7 @@ describe 'CI pipeline content' do
     let(:jobs) { YAML.safe_load(pipeline)['jobs'] }
 
     test_jobs.each do |job_name|
-      it "caches ~/.cache/raider keyed on the ffmpeg version, then installs ffmpeg, before the tests in #{job_name}" do
+      it "caches ~/.cache/raider keyed on the ffmpeg version and Gemfile.lock, then installs ffmpeg, before the tests in #{job_name}" do
         steps = jobs[job_name]['steps']
         cache = steps.index { |step| step['uses'] == 'actions/cache@v4' }
         install = steps.index { |step| step['run'] == 'bundle exec raider u video install' }
@@ -227,7 +227,7 @@ describe 'CI pipeline content' do
         expect(install).to be < tests
         expect(steps[cache]['with']).to eq(
           'path' => '~/.cache/raider',
-          'key' => "raider-ffmpeg-#{RubyRaider::Ffmpeg::MANIFEST[:version]}-${{ runner.os }}"
+          'key' => "raider-ffmpeg-#{RubyRaider::Ffmpeg::MANIFEST[:version]}-${{ runner.os }}-${{ hashFiles('**/Gemfile.lock') }}"
         )
       end
 

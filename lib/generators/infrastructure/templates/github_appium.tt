@@ -48,7 +48,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/raider
-          key: raider-ffmpeg-<%= RubyRaider::Ffmpeg::MANIFEST[:version] %>-${{ runner.os }}
+          key: raider-ffmpeg-<%= RubyRaider::Ffmpeg::MANIFEST[:version] %>-${{ runner.os }}-${{ hashFiles('**/Gemfile.lock') }}
 
       - name: Install ffmpeg for failure videos
         run: bundle exec raider u video install
@@ -116,7 +116,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/raider
-          key: raider-ffmpeg-<%= RubyRaider::Ffmpeg::MANIFEST[:version] %>-${{ runner.os }}
+          key: raider-ffmpeg-<%= RubyRaider::Ffmpeg::MANIFEST[:version] %>-${{ runner.os }}-${{ hashFiles('**/Gemfile.lock') }}
 
       - name: Install ffmpeg for failure videos
         run: bundle exec raider u video install
