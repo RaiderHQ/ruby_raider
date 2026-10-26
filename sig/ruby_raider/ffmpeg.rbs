@@ -16,6 +16,7 @@ module RubyRaider
     def self.cached_path: (?env: Hash[String, String], ?manifest: manifest, ?platform: String?) -> String
     def self.resolve: (?env: Hash[String, String], ?manifest: manifest, ?warn: (^(String) -> void)?, ?platform: String?) -> String?
     def self.ensure!: (?env: Hash[String, String], ?manifest: manifest, ?fetch: (^(String, String) -> untyped)?, ?warn: (^(String) -> void)?, ?platform: String?) -> String?
+    def self.obtainable?: (?env: Hash[String, String], ?manifest: manifest, ?platform: String?) -> bool
     def self.http_get: (String url, String destination, ?Integer limit) -> void
   end
 end

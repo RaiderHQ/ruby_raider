@@ -241,6 +241,46 @@ describe RubyRaider::Ffmpeg do
     end
   end
 
+  describe '.obtainable?' do
+    let(:unpublished) { manifest.merge(assets: manifest[:assets].transform_values { |a| a.merge(sha256: nil) }) }
+    let(:override) do
+      File.join(cache, 'my-ffmpeg').tap do |path|
+        File.write(path, bytes)
+        File.chmod(0o755, path)
+      end
+    end
+
+    it 'is true when RAIDER_FFMPEG_PATH is an executable file, even with an unpublished manifest' do
+      expect(described_class.obtainable?(env: { 'RAIDER_FFMPEG_PATH' => override }, manifest: unpublished)).to be(true)
+    end
+
+    it 'is true when the platform has a checksummed asset' do
+      expect(described_class.obtainable?(env: {}, manifest:, platform: 'linux-x64')).to be(true)
+    end
+
+    it 'is false with no override and a nil checksum (the placeholder manifest)' do
+      expect(described_class.obtainable?(env: {}, platform: 'darwin-arm64')).to be(false)
+    end
+
+    it 'is false for an unknown platform or a non-executable override' do
+      File.chmod(0o644, override)
+      expect(described_class.obtainable?(env: {}, manifest:, platform: 'plan9-mips')).to be(false)
+      expect(described_class.obtainable?(env: { 'RAIDER_FFMPEG_PATH' => override }, manifest: unpublished)).to be(false)
+    end
+
+    it 'never fetches, hashes or warns' do
+      allow(Digest::SHA256).to receive(:file)
+      allow(Net::HTTP).to receive(:start)
+      expect { described_class.obtainable?(env:, manifest:) }.not_to output.to_stderr
+      expect(Digest::SHA256).not_to have_received(:file)
+      expect(Net::HTTP).not_to have_received(:start)
+    end
+
+    it 'returns false instead of raising on a broken manifest' do
+      expect(described_class.obtainable?(env: {}, manifest: { version: '1' }, platform: 'linux-x64')).to be(false)
+    end
+  end
+
   describe '.http_get' do
     let(:dest) { File.join(cache, 'download') }
     let(:http) { instance_double(Net::HTTP) }

@@ -83,7 +83,7 @@ describe 'Generated VideoHelper' do
 
   before do
     # Recorder tmpdirs land inside the project, which the around hook removes.
-    stub_const('ENV', ENV.to_h.merge(env).merge('TMPDIR' => tmp))
+    stub_const('ENV', ENV.to_h.merge(env).merge('TMPDIR' => tmp).compact)
     allow(alerts).to receive(:alert).and_raise(Selenium::WebDriver::Error::NoSuchAlertError)
     allow(driver).to receive(:save_screenshot) do |path|
       shots << path
@@ -357,6 +357,46 @@ describe 'Generated VideoHelper' do
 
         expect(recorder.stop(keep: true)).to be_nil
         expect(warnings).to eq(["[video] ruby_raider gem too old for video; update it; recording disabled for this run\n"])
+      end
+    end
+
+    context 'when no ffmpeg can be obtained (no override, placeholder manifest)' do
+      let(:env) { { 'RAIDER_FFMPEG_PATH' => nil } }
+
+      it 'decides once, at the first call: listener nil, NullRecorder, exactly one [video] line' do
+        require 'ruby_raider/ffmpeg'
+        allow(RubyRaider::Ffmpeg).to receive(:ensure!)
+
+        expect(VideoHelper.listener).to be_nil
+        expect(warnings.size).to eq(1)
+        expect(VideoHelper.recorder_for(driver)).to be_a(VideoHelper::NullRecorder)
+        expect(VideoHelper.listener).to be_nil
+        expect(warnings).to eq(['[video] no ffmpeg available for this platform yet (set RAIDER_FFMPEG_PATH, or run ' \
+                                '`raider u video install` once the ffmpeg release is published); ' \
+                                "recording disabled for this run\n"])
+        expect(RubyRaider::Ffmpeg).not_to have_received(:ensure!)
+        expect(shots).to be_empty
+      end
+    end
+
+    it 'checks Ffmpeg.obtainable? only once per process' do
+      require 'ruby_raider/ffmpeg'
+      allow(RubyRaider::Ffmpeg).to receive(:obtainable?).and_call_original
+      3.times { VideoHelper.recorder_for(driver) }
+      VideoHelper.listener
+
+      expect(RubyRaider::Ffmpeg).to have_received(:obtainable?).once
+      expect(VideoHelper.enabled?).to be(true)
+    end
+
+    context 'when VIDEO=off and no ffmpeg can be obtained' do
+      let(:env) { { 'RAIDER_FFMPEG_PATH' => nil, 'VIDEO' => 'off' } }
+
+      it 'prints nothing' do
+        VideoHelper.listener
+        VideoHelper.recorder_for(driver)
+
+        expect(warnings).to be_empty
       end
     end
 

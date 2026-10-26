@@ -81,6 +81,17 @@ module RubyRaider
         end
       end
 
+      # Cheap check, no network and no hashing: can this run get an ffmpeg at all?
+      # True for an executable RAIDER_FFMPEG_PATH or a checksummed asset for the platform.
+      def obtainable?(env: ENV, manifest: MANIFEST, platform: nil)
+        override = env['RAIDER_FFMPEG_PATH']
+        return true if override && !override.empty? && executable_file?(override)
+
+        !manifest[:assets][(platform || self.platform).to_s]&.fetch(:sha256, nil).nil?
+      rescue StandardError
+        false
+      end
+
       def http_get(url, destination, limit = MAX_REDIRECTS)
         raise ArgumentError, "refusing non-https url: #{url}" unless https?(url)
         raise IOError, 'too many redirects' if limit.negative?

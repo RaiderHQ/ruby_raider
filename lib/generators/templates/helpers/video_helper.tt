@@ -15,6 +15,7 @@ require 'yaml'
 # Web tests capture a page screenshot after each navigation, click and text
 # change (FrameListener), plus one final frame, and only failing tests are
 # encoded to WebM with the ffmpeg provisioned by the ruby_raider gem.
+# When no ffmpeg can be obtained, recording is off from the first driver on.
 <%- end -%>
 # Any recorder error prints one [video] warning and turns recording off for
 # the rest of the run; it never raises into a test. VIDEO=off skips recording.
@@ -23,12 +24,15 @@ module VideoHelper
 <%- unless mobile? -%>
   MAX_FRAME_SECONDS = 2.0
   ENCODE_TIMEOUT = 120
+  NO_FFMPEG = 'no ffmpeg available for this platform yet (set RAIDER_FFMPEG_PATH, or run ' \
+              '`raider u video install` once the ffmpeg release is published)'
 <%- end -%>
 
   @disabled = false
   @warned = false
 <%- unless mobile? -%>
   @active_recorder = nil
+  @ffmpeg_obtainable = nil
 <%- end -%>
 
   class << self
@@ -45,7 +49,11 @@ module VideoHelper
     end
 
     def recorder_for(driver_or_browser)
+<%- if mobile? -%>
       return NullRecorder.new unless enabled?
+<%- else -%>
+      return NullRecorder.new unless enabled? && ffmpeg_obtainable?
+<%- end -%>
 
 <%- if mobile? -%>
       AppiumRecorder.new(driver_or_browser)
@@ -83,7 +91,7 @@ module VideoHelper
 
     # Passed to Selenium as `listener:` when the driver is created.
     def listener
-      return nil unless enabled?
+      return nil unless enabled? && ffmpeg_obtainable?
 
       @listener ||= FrameListener.new
     end
@@ -160,6 +168,25 @@ module VideoHelper
     # Watir::Browser wraps the Selenium driver.
     def selenium_driver(driver_or_browser)
       driver_or_browser.respond_to?(:wd) ? driver_or_browser.wd : driver_or_browser
+    end
+
+    # Decided once per process, at the first listener/recorder_for call, so a run
+    # that can never get an ffmpeg warns at the start and pays no capture cost.
+    def ffmpeg_obtainable?
+      return @ffmpeg_obtainable unless @ffmpeg_obtainable.nil?
+
+      @ffmpeg_obtainable = check_ffmpeg_obtainable
+    end
+
+    def check_ffmpeg_obtainable
+      require 'ruby_raider/ffmpeg'
+      return true if RubyRaider::Ffmpeg.obtainable?
+
+      disable!(NO_FFMPEG)
+      false
+    rescue LoadError, NoMethodError
+      disable!('ruby_raider gem too old for video; update it')
+      false
     end
 
     def ffmpeg_path
