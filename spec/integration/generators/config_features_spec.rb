@@ -40,6 +40,11 @@ describe 'Config features for generated projects' do
       expect(helper).to include("config.fetch('timeout', 10)")
     end
 
+    it 'generates driver_helper reading implicit_wait, falling back to timeout' do
+      helper = File.read('config_selenium_test/helpers/driver_helper.rb')
+      expect(helper).to include("implicit_wait = @config.fetch('implicit_wait', @config.fetch('timeout', 10))")
+    end
+
     it 'generates spec_helper with viewport-aware window setup' do
       helper = File.read('config_selenium_test/helpers/spec_helper.rb')
       expect(helper).to include('viewport')
@@ -61,7 +66,9 @@ describe 'Config features for generated projects' do
 
     it 'sets Watir.default_timeout from config' do
       helper = File.read('config_watir_test/helpers/browser_helper.rb')
-      expect(helper).to include("Watir.default_timeout = config.fetch('timeout', 10)")
+      expect(helper).to include(
+        "Watir.default_timeout = config.fetch('explicit_wait', config.fetch('timeout', 10))"
+      )
     end
 
     it 'generates spec_helper with viewport-aware window setup' do

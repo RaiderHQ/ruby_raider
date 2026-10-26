@@ -17,7 +17,7 @@ module BrowserHelper
   end
 
   def create_browser(*args)
-    Watir.default_timeout = config.fetch('timeout', 10)
+    Watir.default_timeout = config.fetch('explicit_wait', config.fetch('timeout', 10))
     browser_name = config['browser'].to_s
     args = args.empty? ? config['browser_arguments'][browser_name] : args
     args += ['--headless'] if (ENV['HEADLESS'] || config['headless']) && !args.include?('--headless')
