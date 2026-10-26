@@ -57,6 +57,16 @@ module VideoHelper
       NullRecorder.new
     end
 
+    # True when the example passed or no retry is left, so a failed attempt
+    # that will be retried does not pay for an encode. rspec-retry sets
+    # metadata[:retry_attempts] (0-based) before each attempt, and after(:each)
+    # hooks run inside that attempt.
+    def final_attempt?(example)
+      return true unless example.exception
+
+      example.metadata[:retry_attempts].to_i + 1 >= retry_count(example)
+    end
+
     # A nil reason means the cause was already reported (by RubyRaider::Ffmpeg).
     def disable!(reason = nil)
       @disabled = true
@@ -129,6 +139,16 @@ module VideoHelper
       {}
     end
 
+    # Same precedence as rspec-retry, which never retries fewer than once.
+    def retry_count(example)
+      configured = ENV['RSPEC_RETRY_RETRY_COUNT'] || example.metadata[:retry] || default_retry_count
+      [configured.to_i, 1].max
+    end
+
+    def default_retry_count
+      RSpec.configuration.respond_to?(:default_retry_count) ? RSpec.configuration.default_retry_count : 0
+    end
+
     # $stderr.puts, not Kernel#warn: warn is silenced under -W0.
     # rubocop:disable Style/StderrPuts
     def say(message)
@@ -167,6 +187,13 @@ module VideoHelper
        '-b:v', '1M', '-r', format('%g', fps), '-pix_fmt', 'yuv420p', output]
     end
 
+    # ffmpeg may exit between the join timeout and the kill.
+    def kill(process)
+      Process.kill('KILL', process.pid)
+    rescue Errno::ESRCH
+      nil
+    end
+
     def run_ffmpeg(arguments)
       Open3.popen2e(*arguments) do |stdin, output, process|
         stdin.close
@@ -174,7 +201,7 @@ module VideoHelper
         reader.report_on_exception = false
         return [process.value.success?, reader.value] if process.join(ENCODE_TIMEOUT)
 
-        Process.kill('KILL', process.pid)
+        kill(process)
         process.value
         reader.join(1)
         [false, "ffmpeg timed out after #{ENCODE_TIMEOUT} seconds"]

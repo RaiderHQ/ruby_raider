@@ -12,6 +12,7 @@ require_relative 'browser_helper'
 <%- else -%>
 require_relative 'driver_helper'
 <%- end -%>
+require_relative 'video_helper'
 
 module SpecHelper
   RSpec.configure do |config|
@@ -45,10 +46,14 @@ module SpecHelper
         browser.window.maximize
       end
     <%- end -%>
+      @video_recorder = VideoHelper.recorder_for(<%= watir? ? 'browser' : 'driver' %>)
+      @video_recorder.start
     end
 
     config.after(:each) do |example|
       example_name = example.description
+      keep_video = example.exception ? VideoHelper.final_attempt?(example) : false
+      video_path = @video_recorder&.stop(keep: keep_video)
       if example.exception
         @_exception = example.exception
         Dir.mktmpdir do |temp_folder|
@@ -57,7 +62,10 @@ module SpecHelper
           RaiderReporter.attach('screenshot', screenshot_path, type: :png)
         end
       end
+      RaiderReporter.attach('video', video_path, type: <%= mobile? ? ':mp4' : ':webm' %>) if video_path
       <%= partial('quit_driver', strip: true) %>
+    ensure
+      @video_recorder&.cleanup
     end
   end
 end

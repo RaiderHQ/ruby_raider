@@ -3,6 +3,7 @@
 require 'raider_reporter/cucumber'
 require 'tmpdir'
 require 'yaml'
+require_relative '../../helpers/video_helper'
 
 Before do
   viewport = YAML.load_file('config/config.yml')['viewport']
@@ -11,9 +12,13 @@ Before do
   else
     browser.window.maximize
   end
+  @video_recorder = VideoHelper.recorder_for(browser)
+  @video_recorder.start
 end
 
 After do |scenario|
+  video_path = @video_recorder&.stop(keep: scenario.failed?)
+  RaiderReporter.attach('video', video_path, type: :webm) if video_path
   if scenario.failed?
     Dir.mktmpdir do |temp_folder|
       screenshot_path = File.join(temp_folder, 'screenshot.png')
@@ -22,5 +27,6 @@ After do |scenario|
     end
   end
 ensure
+  @video_recorder&.cleanup
   browser.quit
 end

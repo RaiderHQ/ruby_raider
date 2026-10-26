@@ -139,6 +139,44 @@ describe 'Helper file content' do
     end
   end
 
+  shared_examples 'video spec helper wiring' do |project_name, recorder_target, video_type|
+    subject(:helper) { read_generated(project_name, 'helpers/spec_helper.rb') }
+
+    let(:before_hook) { helper[/config\.before\(:each\) do.*?^    end$/m] }
+    let(:after_hook) { helper[/config\.after\(:each\).*\z/m] }
+
+    it 'requires video_helper' do
+      expect(helper).to include("require_relative 'video_helper'")
+    end
+
+    it 'starts a recorder in before(:each), after the viewport resize or driver start' do
+      start = "@video_recorder = VideoHelper.recorder_for(#{recorder_target})"
+      expect(before_hook).to include(start, '@video_recorder.start')
+      setup = before_hook[/driver\.start_driver|\.window\.maximize/]
+      expect(before_hook.index(setup)).to be < before_hook.index(start)
+      expect(before_hook.index(start)).to be < before_hook.index('@video_recorder.start')
+    end
+
+    it 'attaches "video" only when example.exception && VideoHelper.final_attempt?(example)' do
+      expect(after_hook).to match(/example\.exception\s*(\?|&&)\s*VideoHelper\.final_attempt\?\(example\)/)
+      expect(after_hook).to include("RaiderReporter.attach('video', video_path, type: #{video_type}) if video_path")
+    end
+
+    it 'stops the recorder before quitting the driver and cleans up in an ensure' do
+      stop = after_hook.index('@video_recorder&.stop(keep: keep_video)')
+      attach = after_hook.index("RaiderReporter.attach('video'")
+      quit = after_hook.index(/driver\.quit|browser\.quit/)
+      cleanup = after_hook.index('@video_recorder&.cleanup')
+      expect(stop).to be < quit
+      expect(attach).to be < cleanup
+      expect(after_hook.index("\n    ensure\n")).to be < cleanup
+    end
+
+    it 'keeps the screenshot attachment' do
+      expect(after_hook).to include("RaiderReporter.attach('screenshot', screenshot_path, type: :png)")
+    end
+  end
+
   shared_examples 'selenium spec helper' do |project_name|
     subject(:helper) { read_generated(project_name, 'helpers/spec_helper.rb') }
 
@@ -318,6 +356,8 @@ describe 'Helper file content' do
         'watir' => 'browser.screenshot.save(screenshot_path)'
       }.fetch(automation, 'driver.screenshot(screenshot_path)')
       it_behaves_like 'raider reporter spec helper', name, screenshot_call
+      it_behaves_like 'video spec helper wiring', name, automation == 'watir' ? 'browser' : 'driver',
+                      %w[selenium watir].include?(automation) ? ':webm' : ':mp4'
     end
 
     context "with cucumber and #{automation}" do

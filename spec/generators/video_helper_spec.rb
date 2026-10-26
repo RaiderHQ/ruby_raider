@@ -236,6 +236,25 @@ describe 'Generated VideoHelper' do
       end
     end
 
+    context 'when ffmpeg exits between the join timeout and the kill' do
+      let(:ffmpeg_mode) { :hang }
+
+      it 'ignores the missing process and still reports the timeout once' do
+        stub_const('VideoHelper::ENCODE_TIMEOUT', 0.5)
+        # Kill for real so the hung process ends, then report it as already gone.
+        allow(Process).to receive(:kill).and_wrap_original do |original, *args|
+          original.call(*args)
+          raise Errno::ESRCH
+        end
+        recorder = VideoHelper.recorder_for(driver)
+        recorder.start
+
+        expect { expect(recorder.stop(keep: true)).to be_nil }.not_to raise_error
+        expect(stderr.string).to include('ffmpeg timed out after 0.5 seconds')
+        expect(warnings.size).to eq(1)
+      end
+    end
+
     it 'still encodes the saved frames, quietly, when only the final frame fails' do
       recorder = VideoHelper.recorder_for(driver)
       recorder.start
@@ -405,6 +424,51 @@ describe 'Generated VideoHelper' do
     end
   end
 
+  describe '.final_attempt?' do
+    let(:automation) { 'selenium' }
+
+    def example_with(exception: StandardError.new('boom'), **metadata)
+      double('example', exception:, metadata:)
+    end
+
+    it 'is true when the example passed' do
+      expect(VideoHelper.final_attempt?(example_with(exception: nil, retry: 3, retry_attempts: 0))).to be(true)
+    end
+
+    it 'is false on attempt 1 of 3' do
+      expect(VideoHelper.final_attempt?(example_with(retry: 3, retry_attempts: 0))).to be(false)
+    end
+
+    it 'is false on attempt 2 of 3' do
+      expect(VideoHelper.final_attempt?(example_with(retry: 3, retry_attempts: 1))).to be(false)
+    end
+
+    it 'is true on attempt 3 of 3' do
+      expect(VideoHelper.final_attempt?(example_with(retry: 3, retry_attempts: 2))).to be(true)
+    end
+
+    it 'is true when the retry count is 0 or unset' do
+      expect(VideoHelper.final_attempt?(example_with(retry: 0, retry_attempts: 0))).to be(true)
+      expect(VideoHelper.final_attempt?(example_with)).to be(true)
+    end
+
+    it 'reads the default retry count of rspec-retry when the example has no retry metadata' do
+      RSpec.configuration.define_singleton_method(:default_retry_count) { 2 }
+
+      expect(VideoHelper.final_attempt?(example_with(retry_attempts: 0))).to be(false)
+      expect(VideoHelper.final_attempt?(example_with(retry_attempts: 1))).to be(true)
+    ensure
+      RSpec.configuration.singleton_class.send(:remove_method, :default_retry_count)
+    end
+
+    it 'lets RSPEC_RETRY_RETRY_COUNT win, as rspec-retry does' do
+      stub_const('ENV', ENV.to_h.merge('RSPEC_RETRY_RETRY_COUNT' => '2'))
+
+      expect(VideoHelper.final_attempt?(example_with(retry: 5, retry_attempts: 0))).to be(false)
+      expect(VideoHelper.final_attempt?(example_with(retry: 5, retry_attempts: 1))).to be(true)
+    end
+  end
+
   context 'with an appium project' do
     let(:automation) { 'ios' }
     let(:mp4) { "\x00\x00\x00\x18ftypmp42".b }
@@ -451,6 +515,12 @@ describe 'Generated VideoHelper' do
 
     it 'has no listener' do
       expect(VideoHelper).not_to respond_to(:listener)
+    end
+
+    it 'defines final_attempt? too' do
+      example = double('example', exception: StandardError.new('boom'), metadata: { retry: 3, retry_attempts: 2 })
+
+      expect(VideoHelper.final_attempt?(example)).to be(true)
     end
   end
 end
