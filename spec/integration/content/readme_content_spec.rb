@@ -3,6 +3,46 @@
 require_relative 'content_helper'
 
 describe 'Generated Readme content' do
+  FRAMEWORKS.product(AUTOMATION_TYPES).each do |framework, automation|
+    context "with #{framework} and #{automation}, the Video replay section" do
+      subject(:section) { readme[/^### Video replay\n.*?(?=^##)/m]&.gsub(/\s+/, ' ') }
+
+      let(:readme) { read_generated("#{framework}_#{automation}", 'Readme.md') }
+      let(:web) { %w[selenium watir].include?(automation) }
+
+      it 'exists and covers the defaults, VIDEO=off, the install commands and the cache' do
+        expect(section).not_to be_nil
+        expect(section).to include('only for failing tests', 'VIDEO=off', 'raider u video install',
+                                   'raider u video status', '~/.cache/raider', 'RAIDER_FFMPEG_PATH',
+                                   'RAIDER_CACHE_DIR', 'raider-results/attachments/')
+      end
+
+      it 'says that video needs RAIDER_FFMPEG_PATH until the ffmpeg release is published' do
+        expect(section).to include('ffmpeg-7.1', 'not published yet')
+      end
+
+      it 'names the right video format and how to turn video off for this project' do
+        if web
+          expect(section).to include('video.webm', 'raider u video off', 'raider u video on', 'video:')
+        elsif %w[android ios].include?(automation)
+          expect(section).to include('video.mp4', 'no `config/config.yml`')
+          expect(section).not_to include('raider u video off')
+        else
+          expect(section).to include('video.mp4', 'raider u video off')
+        end
+      end
+
+      it 'lists the known limits of web recording' do
+        if web
+          expect(section).to include('after each page load, click and text change', 'next frame',
+                                     'one recorded driver per process')
+        else
+          expect(section).not_to include('next frame')
+        end
+      end
+    end
+  end
+
   AUTOMATION_TYPES.each do |automation|
     context "with rspec and #{automation}" do
       subject(:readme) { read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'Readme.md') }

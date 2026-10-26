@@ -61,13 +61,20 @@ Every generated project comes with:
 - **Page Object Model** — Base page and component classes with example pages
 - **Test examples** — Working login tests against the [Raider Test Store](https://raider-test-site.onrender.com/)
 - **Raider reporting** — RSpec and Cucumber projects include [raider_reporter](https://github.com/RaiderHQ/raider_reporter), which writes results to `raider-results/` and uploads runs when `RAIDER_TOKEN` and `RAIDER_ENDPOINT` are set; generated CI runs the suite through `raider-reporter exec` with `RAIDER_QUARANTINE`, so quarantined tests do not fail the build; an opt-in `raider-gate` job (`RAIDER_GATE=1`) fails CI when the Raider quality gate fails
-- **GitHub Actions CI** — Ready-to-use test pipeline
+- **Failure video replay** — Every test is recorded and the video is kept only for failing tests, attached to the report as `video` (WebM from page screenshots for Selenium and Watir, Appium's own MP4 for mobile). Turn it off per run with `VIDEO=off`, or per project with `raider u video off`; ffmpeg is downloaded once, SHA-256 checked and cached in `~/.cache/raider`. The RaiderHQ `ffmpeg-7.1` build that the download uses is not published yet, so for now set `RAIDER_FFMPEG_PATH` to an ffmpeg with libvpx to get web videos
+- **GitHub Actions CI** — Ready-to-use test pipeline that caches ffmpeg for failure videos
 - **Rake tasks** — Default, smoke, and regression tasks with tag-based filtering
 - **Retry support** — RSpec retry with configurable retry count via `RETRY_COUNT` env var
 - **Re-run failed tests** — Persistence file for tracking example status
 - **Parallel execution** — parallel_tests and parallel_split_test gems included
 - **Configurable browser** — Chrome/Firefox with customizable arguments, viewport, timeout, and headless mode
 - **Linting** — RuboCop and Reek configs included
+
+> **Upgrading from 3.9 or earlier:** existing projects are not changed automatically. To get failure videos, generate a
+> new project with the same options and copy `helpers/video_helper.rb`, the video lines in `helpers/spec_helper.rb`
+> (RSpec) or `features/support/env.rb` (Cucumber), the `listener:` in the driver or browser helper, the `video:` block
+> in `config/config.yml`, and the ffmpeg cache and install steps in your CI pipeline. raider_reporter 0.10 or later
+> adds the inline video player in `raider-results/index.html` and a larger size limit for video attachments.
 
 For Appium projects, download the example [app](https://github.com/RaiderHQ/raider_test_app) and start the server:
 
@@ -156,6 +163,7 @@ raider u viewport [DIMENSIONS]  # Set viewport size (e.g., 1920x1080)
 raider u platform [PLATFORM]    # Set platform for cross-platform tests
 raider u start_appium           # Start Appium server
 raider u desktop                # Download Raider Desktop
+raider u video [ACTION]         # Failure videos: install (ffmpeg), status, on, off
 ```
 
 ## Development

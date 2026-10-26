@@ -108,6 +108,45 @@ Without `RAIDER_TOKEN`, nothing is uploaded and the suite output is unchanged. F
 report and to Raider. See the [raider_reporter README](https://github.com/RaiderHQ/raider_reporter) for details.
 <%- end -%>
 
+### Video replay
+
+Every test is recorded, and the video is kept only for failing tests<%= rspec? ? ' (on the last retry attempt)' : '' %>. It is attached
+to the report as `video` and saved under `raider-results/attachments/`, next to the failure screenshot.
+<%- if mobile? -%>
+Appium records the device screen and the video is attached as `video.mp4`.
+<%- else -%>
+The video is a `video.webm` built from page screenshots with ffmpeg.
+<%- end -%>
+
+<%- if single_platform? -%>
+- Turn video off for a run with `VIDEO=off bundle exec <%= rspec? ? 'rspec' : 'cucumber' %>`. This project has no
+  `config/config.yml`, so `VIDEO=off` is the only switch.
+<%- else -%>
+- Video is on by default: `video:` in `config/config.yml` (`enabled: true`, `fps: 5`, `max_width: 1280`).
+- Turn it off for one run with `VIDEO=off bundle exec <%= rspec? ? 'rspec' : 'cucumber' %>`, or for the project with
+  `raider u video off` (`raider u video on` turns it back on).
+<%- end -%>
+<%- unless mobile? -%>
+- ffmpeg is downloaded on first use, checked against a pinned SHA-256 and cached in `~/.cache/raider`
+  (`%LOCALAPPDATA%\raider` on Windows). `raider u video install` downloads it ahead of time (CI does this before the
+  tests and caches the folder), and `raider u video status` prints the binary in use.
+- `RAIDER_FFMPEG_PATH` uses your own ffmpeg (it needs libvpx) instead of the download, and `RAIDER_CACHE_DIR` moves
+  the cache.
+- The RaiderHQ `ffmpeg-7.1` release that the download comes from is not published yet. Until it is, set
+  `RAIDER_FFMPEG_PATH` to get videos; without it the suite runs as usual and prints one `[video]` line.
+- If ffmpeg is missing or recording fails, the suite still runs and its exit code is unchanged; you get one `[video]`
+  line on stderr and no video.
+- Known limits: a frame is taken after each page load, click and text change, plus one at the end of a failing test,
+  so changes the page makes on its own between actions show up in the next frame. There is one recorded driver per
+  process.
+<%- else -%>
+- Mobile videos do not use ffmpeg. `raider u video install` and `raider u video status` manage the ffmpeg that web
+  projects use; it is cached in `~/.cache/raider` (override with `RAIDER_FFMPEG_PATH` or `RAIDER_CACHE_DIR`).
+  The RaiderHQ `ffmpeg-7.1` release it comes from is not published yet.
+- If recording fails, the suite still runs and its exit code is unchanged; you get one `[video]` line on stderr and
+  no video.
+<%- end -%>
+
 <%- unless azure? && mobile? -%>
 ### Quarantine
 
