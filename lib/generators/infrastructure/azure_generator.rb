@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../generator'
+require_relative '../../ruby_raider/ffmpeg'
 
 class AzureGenerator < Generator
   def generate_azure_pipeline

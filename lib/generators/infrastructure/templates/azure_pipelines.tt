@@ -12,6 +12,8 @@ pool:
 
 variables:
   HEADLESS: 'true'
+  # Where ffmpeg for failure videos is cached between runs.
+  RAIDER_CACHE_DIR: $(Pipeline.Workspace)/.cache/raider
   # Add RAIDER_TOKEN (secret) and RAIDER_ENDPOINT as pipeline variables.
 
 jobs:
@@ -21,6 +23,15 @@ jobs:
         inputs: { versionSpec: '3.4' }
       - script: bundle install
         displayName: Install gems
+      - task: Cache@2
+        displayName: Cache ffmpeg for failure videos
+        inputs:
+          key: 'raider-ffmpeg-<%= RubyRaider::Ffmpeg::MANIFEST[:version] %> | "$(Agent.OS)"'
+          path: $(RAIDER_CACHE_DIR)
+      # Video is optional: a failed download is visible here but never fails the build.
+      - script: bundle exec raider u video install
+        displayName: Install ffmpeg for failure videos
+        continueOnError: true
       - script: <%- if cucumber? -%>bundle exec raider-reporter exec -- bundle exec cucumber features/ --format pretty<%- else -%>bundle exec raider-reporter exec -- bundle exec rspec spec/ --format documentation<%- end %>
         displayName: Run tests
         env:
