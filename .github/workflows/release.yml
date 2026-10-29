@@ -23,18 +23,10 @@ jobs:
       url: https://rubygems.org/gems/ruby_raider
 
     steps:
-      - name: Generate release token
-        id: app-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ steps.app-token.outputs.token }}
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -42,29 +34,20 @@ jobs:
           ruby-version: '3.3'
           bundler-cache: true
 
-      - name: Configure git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Update version file
+      # master is protected, so the workflow does not push a version bump: bump lib/version in a PR,
+      # merge it, then run this workflow with the same version.
+      - name: Check version file
         id: version
+        env:
+          VERSION: ${{ github.event.inputs.version }}
         run: |
-          VERSION="${{ github.event.inputs.version }}"
-          echo "$VERSION" > lib/version
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Releasing version: $VERSION"
-
-      - name: Commit and push version bump
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          git add lib/version
-          if git diff --cached --quiet; then
-            echo "Version already up to date"
-          else
-            git commit -m "Bump version to ${VERSION}"
-            git push origin HEAD
+          CURRENT="$(tr -d '[:space:]' < lib/version)"
+          if [ "$CURRENT" != "$VERSION" ]; then
+            echo "::error::lib/version is $CURRENT but $VERSION was requested. Bump lib/version to $VERSION in a PR, merge it, then run this workflow again."
+            exit 1
           fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Releasing version: $VERSION"
 
       - name: Install dependencies
         run: bundle install
