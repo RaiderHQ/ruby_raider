@@ -1,1 +1,6 @@
 platform: :ios
+
+video:
+  enabled: true
+  fps: 5
+  max_width: 1280

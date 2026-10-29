@@ -4,6 +4,7 @@ require 'yaml'
 <%- if selenium_based? -%>
 require 'active_support/inflector'
 require 'selenium-webdriver'
+require_relative 'video_helper'
 <%- else -%>
 require 'appium_lib'
 <%- end -%>

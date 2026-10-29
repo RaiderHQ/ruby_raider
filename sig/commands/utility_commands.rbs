@@ -5,10 +5,13 @@ class UtilityCommands < Thor
   def browser: (?String? default_browser) -> void
   def browser_options: (*String opts) -> void
   def raid: () -> void
-  def config: () -> void
   def timeout: (String seconds) -> void
   def viewport: (String dimensions) -> void
   def platform: (String platform) -> void
   def start_appium: () -> void
   def desktop: () -> void
+  def video: (String action) -> void
+  def video_install: () -> void
+  def video_status: () -> void
+  def video_toggle: (bool enabled) -> void
 end

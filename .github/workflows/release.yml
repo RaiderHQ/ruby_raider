@@ -170,6 +170,12 @@ jobs:
             echo "Could not check RubyGems (HTTP $HTTP_CODE) — will attempt push"
           fi
 
+      # The Rakefile has no bundler/gem_tasks, so rubygems/release-gem (which runs `rake release`)
+      # cannot be used; push the gem built above with trusted-publishing (OIDC) credentials instead.
+      - name: Configure RubyGems credentials (trusted publishing)
+        if: steps.check_gem.outputs.published == 'false'
+        uses: rubygems/configure-rubygems-credentials@v2.1.0
+
       - name: Push gem to RubyGems
         if: steps.check_gem.outputs.published == 'false'
-        uses: rubygems/release-gem@v1
+        run: gem push "${{ steps.build.outputs.gem_file }}"

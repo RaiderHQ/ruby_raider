@@ -3,6 +3,7 @@
 require 'yaml'
 require 'fileutils'
 require_relative 'content_helper'
+require_relative '../../../lib/ruby_raider/ffmpeg'
 
 # UseRubyVersion@0 versionSpec '3.4' resolves against the hosted tool cache, which lists Ruby 3.4.x
 # (3.2, 3.3, 3.4, 4.0): https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md
@@ -45,6 +46,33 @@ describe 'Azure Pipelines content' do
           'targetPath' => 'raider-results',
           'artifact' => 'raider-results-$(System.JobPositionInPhase)-$(System.JobAttempt)'
         )
+      end
+
+      it 'caches the ffmpeg dir keyed on the ffmpeg version and Gemfile.lock, then installs ffmpeg, before the tests' do
+        steps = yml['jobs'][0]['steps']
+        cache = steps.index { |s| s['task'] == 'Cache@2' }
+        install = steps.index { |s| s['script'] == 'bundle exec raider u video install' }
+        tests = steps.index { |s| s['script'] == run_command }
+        expect([cache, install, tests]).to all(be_an(Integer))
+        expect(cache).to be < install
+        expect(install).to be < tests
+        expect(steps[cache]['inputs']).to eq(
+          'key' => "raider-ffmpeg-#{RubyRaider::Ffmpeg::MANIFEST[:version]} | \"$(Agent.OS)\" | Gemfile.lock",
+          'path' => '$(RAIDER_CACHE_DIR)'
+        )
+      end
+
+      it 'caches RAIDER_CACHE_DIR in the pipeline workspace and keeps the ffmpeg install from failing the build' do
+        install = yml['jobs'][0]['steps'].find { |s| s['script'] == 'bundle exec raider u video install' }
+        expect(install['continueOnError']).to be(true)
+        expect(yml['variables']['RAIDER_CACHE_DIR']).to eq('$(Pipeline.Workspace)/.cache/raider')
+      end
+
+      it 'adds no cache or install step to the comment and gate jobs' do
+        yml['jobs'][1..].each do |job|
+          expect(job['steps'].map { |s| s['task'] || s['script'] })
+            .not_to include('Cache@2', 'bundle exec raider u video install')
+        end
       end
 
       it 'passes exactly the Raider settings to the test step' do
@@ -102,6 +130,7 @@ describe 'Azure Pipelines content' do
                                   'pool: { name: Default }', 'Build validation branch policy',
                                   'same stage', 'raider_gate', 'RAIDER_GATE=1', 'RAIDER_SHARD_TOTAL', 'RAIDER_SHARD_INDEX')
         expect(readme).not_to match(/GitHub Actions/i)
+        expect(readme).to include('`RAIDER_CACHE_DIR` to `$(Pipeline.Workspace)/.cache/raider`')
       end
     end
   end

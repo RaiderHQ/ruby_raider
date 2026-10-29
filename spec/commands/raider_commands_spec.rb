@@ -65,4 +65,58 @@ RSpec.describe RubyRaider::Raider do
       expect(subcommands).to include('utility')
     end
   end
+
+  describe 'CLI exit status' do
+    require 'open3'
+    require 'tmpdir'
+
+    let(:raider_bin) { File.expand_path('../../bin/raider', __dir__) }
+
+    def run_raider(*args, chdir: Dir.pwd)
+      Open3.capture3(RbConfig.ruby, raider_bin, *args, chdir:)
+    end
+
+    it 'exits non-zero for an unknown command' do
+      _out, err, status = run_raider('u', 'debug', 'on')
+
+      expect(status.exitstatus).not_to eq(0)
+      expect(err).to include('Could not find command "debug"')
+    end
+
+    it 'exits zero for version' do
+      _out, _err, status = run_raider('version')
+
+      expect(status.exitstatus).to eq(0)
+    end
+
+    it 'rejects an unknown framework without creating the project' do
+      Dir.mktmpdir do |dir|
+        out, err, status = run_raider('new', 'x', '-p', 'framework:minitest', 'automation:selenium', chdir: dir)
+
+        expect(status.exitstatus).not_to eq(0)
+        expect(out + err).to include('framework', 'rspec', 'cucumber')
+        expect(File.exist?(File.join(dir, 'x'))).to be(false)
+      end
+    end
+
+    it 'rejects an unknown automation without creating the project' do
+      Dir.mktmpdir do |dir|
+        out, err, status = run_raider('new', 'x', '-p', 'framework:rspec', 'automation:playwright', chdir: dir)
+
+        expect(status.exitstatus).not_to eq(0)
+        expect(out + err).to include('automation', 'selenium', 'cross_platform')
+        expect(File.exist?(File.join(dir, 'x'))).to be(false)
+      end
+    end
+
+    it 'rejects automation:appium and points to the mobile platforms' do
+      Dir.mktmpdir do |dir|
+        out, err, status = run_raider('new', 'x', '-p', 'framework:rspec', 'automation:appium', chdir: dir)
+
+        expect(status.exitstatus).not_to eq(0)
+        expect(out + err).to include('automation', 'ios', 'android', 'cross_platform')
+        expect(File.exist?(File.join(dir, 'x'))).to be(false)
+      end
+    end
+  end
 end

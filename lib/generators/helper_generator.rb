@@ -8,6 +8,7 @@ class HelpersGenerator < Generator
     generate_driver_helper
     generate_appium_helper
     generate_spec_helper
+    generate_video_helper
   end
 
   private
@@ -30,10 +31,13 @@ class HelpersGenerator < Generator
     template('helpers/driver_helper.tt', "#{name}/helpers/driver_helper.rb")
   end
 
+  def generate_video_helper
+    template('helpers/video_helper.tt', "#{name}/helpers/video_helper.rb")
+  end
+
   def generate_appium_helper
     return unless cross_platform?
 
     template('helpers/appium_helper.tt', "#{name}/helpers/appium_helper.rb")
   end
-
 end

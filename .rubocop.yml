@@ -60,6 +60,11 @@ Naming/AccessorMethodName:
 # Migration
 
 # Naming
+# Stands in for the selenium-webdriver gem, so it keeps the gem's require name.
+Naming/FileName:
+  Exclude:
+    - 'spec/generators/fixtures/video_helper_stubs/selenium-webdriver.rb'
+
 Naming/PredicateName:
   ForbiddenPrefixes:
     - 'is_'

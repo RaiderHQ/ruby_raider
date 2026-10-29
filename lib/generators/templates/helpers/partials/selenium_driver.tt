@@ -1,7 +1,10 @@
   def create_driver(*opts)
     @config = YAML.load_file('config/config.yml')
     browser = @config['browser']
-    driver = Selenium::WebDriver.for(browser.to_sym, options: create_webdriver_options(*opts))
+    arguments = { options: create_webdriver_options(*opts) }
+    listener = VideoHelper.listener
+    arguments[:listener] = listener if listener
+    driver = Selenium::WebDriver.for(browser.to_sym, **arguments)
     driver.manage.timeouts.implicit_wait = @config.fetch('timeout', 10)
     driver
   end

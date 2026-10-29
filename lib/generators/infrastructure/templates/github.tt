@@ -33,6 +33,17 @@ jobs:
         with:
           chrome-version: stable
 
+      - name: Cache ffmpeg for failure videos
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/raider
+          key: raider-ffmpeg-<%= RubyRaider::Ffmpeg::MANIFEST[:version] %>-${{ runner.os }}-${{ hashFiles('**/Gemfile.lock') }}
+
+      - name: Install ffmpeg for failure videos
+        run: bundle exec raider u video install
+        # Video is optional: a failed download is visible here but never fails the build.
+        continue-on-error: true
+
       - name: Run tests
         run: <%- if framework == 'cucumber' -%>bundle exec raider-reporter exec -- bundle exec cucumber features --format pretty<%- else -%>bundle exec raider-reporter exec -- bundle exec rspec spec --format documentation<%- end %>
         env:

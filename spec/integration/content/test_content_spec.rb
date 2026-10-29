@@ -111,8 +111,8 @@ describe 'Test file content' do
       expect(config).to include('default:')
     end
 
-    it 'uses the pretty formatter, with the reporter activated from env.rb' do
-      expect(config.strip).to eq('default: --format pretty --publish-quiet --retry 0')
+    it 'uses the pretty and rerun formatters, with the reporter activated from env.rb' do
+      expect(config.strip).to eq('default: --format pretty --format rerun --out rerun.txt --publish-quiet --retry 0')
     end
   end
 

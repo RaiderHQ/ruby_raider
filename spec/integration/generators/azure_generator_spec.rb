@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'fileutils'
+require 'open3'
 require 'yaml'
 require_relative '../../../lib/generators/infrastructure/azure_generator'
 require_relative '../spec_helper'
@@ -63,10 +64,10 @@ describe AzureGenerator do
   end
 
   context 'with an invalid ci' do
-    it 'raises an ArgumentError and generates nothing' do
+    it 'raises a Thor::Error and generates nothing' do
       expect do
         InvokeGenerators.generate_framework(automation: 'selenium', framework: 'rspec', name: 'azure_bad', ci: 'gitlab')
-      end.to raise_error(ArgumentError, 'ci must be github or azure')
+      end.to raise_error(Thor::Error, 'ci must be github or azure')
       expect(File).not_to exist('azure_bad')
     end
   end
@@ -74,10 +75,10 @@ describe AzureGenerator do
   context 'with raider new and ci:gitlab' do
     it 'prints the error, generates nothing and exits non-zero' do
       root = File.expand_path('../../..', __dir__)
-      out = IO.popen(['ruby', "#{root}/bin/raider", 'new', 'azure_cli_bad', '-p', 'framework:rspec',
-                      'automation:selenium', 'ci:gitlab', { err: %i[child out] }], &:read)
-      expect($CHILD_STATUS.exitstatus).not_to eq(0)
-      expect(out).to include('Invalid parameters: ci must be github or azure')
+      out, status = Open3.capture2e('ruby', "#{root}/bin/raider", 'new', 'azure_cli_bad', '-p', 'framework:rspec',
+                                    'automation:selenium', 'ci:gitlab')
+      expect(status.exitstatus).not_to eq(0)
+      expect(out).to include('ci must be github or azure')
       expect(File).not_to exist('azure_cli_bad')
     end
   end

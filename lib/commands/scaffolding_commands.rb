@@ -10,6 +10,8 @@ require_relative '../scaffolding/project_detector'
 require_relative '../commands/utility_commands'
 
 class ScaffoldingCommands < Thor
+  def self.exit_on_failure? = true
+
   desc 'page [PAGE_NAME]', 'Creates a new page object'
   option :path, type: :string, required: false,
                 desc: 'The path where your page will be created', aliases: '-p'

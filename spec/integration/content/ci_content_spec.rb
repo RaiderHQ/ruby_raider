@@ -2,6 +2,7 @@
 
 require 'yaml'
 require_relative 'content_helper'
+require_relative '../../../lib/ruby_raider/ffmpeg'
 
 describe 'CI pipeline content' do
   shared_examples 'valid github pipeline' do |project_name|
@@ -208,8 +209,45 @@ describe 'CI pipeline content' do
     end
   end
 
+  shared_examples 'github ffmpeg cache' do |project_name, file, test_jobs, runner = 'rspec'|
+    subject(:pipeline) { read_generated(project_name, ".github/workflows/#{file}") }
+
+    let(:jobs) { YAML.safe_load(pipeline)['jobs'] }
+
+    test_jobs.each do |job_name|
+      it "caches ~/.cache/raider keyed on the ffmpeg version and Gemfile.lock, then installs ffmpeg, before the tests in #{job_name}" do
+        steps = jobs[job_name]['steps']
+        cache = steps.index { |step| step['uses'] == 'actions/cache@v4' }
+        install = steps.index { |step| step['run'] == 'bundle exec raider u video install' }
+        tests = steps.index do |step|
+          step['run'].to_s.include?(runner) || step['with'].to_h['script'].to_s.include?(runner)
+        end
+        expect([cache, install, tests]).to all(be_an(Integer))
+        expect(cache).to be < install
+        expect(install).to be < tests
+        expect(steps[cache]['with']).to eq(
+          'path' => '~/.cache/raider',
+          'key' => "raider-ffmpeg-#{RubyRaider::Ffmpeg::MANIFEST[:version]}-${{ runner.os }}-${{ hashFiles('**/Gemfile.lock') }}"
+        )
+      end
+
+      it "keeps the ffmpeg install step from failing #{job_name}, since video is optional" do
+        install = jobs[job_name]['steps'].find { |step| step['run'] == 'bundle exec raider u video install' }
+        expect(install['continue-on-error']).to be(true)
+      end
+    end
+
+    it 'adds no cache or install step to the comment and gate jobs' do
+      jobs.slice('raider-comment', 'raider-gate').each_value do |job|
+        expect(job['steps'].map { |step| step['run'] || step['uses'] })
+          .not_to include('actions/cache@v4', 'bundle exec raider u video install')
+      end
+    end
+  end
+
   context 'with rspec and selenium' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
+    include_examples 'github ffmpeg cache', name, 'test_pipeline.yml', %w[build]
     include_examples 'valid github pipeline', name
     include_examples 'github rspec pipeline', name
     include_examples 'github triggers', name, 'test_pipeline.yml'
@@ -221,6 +259,7 @@ describe 'CI pipeline content' do
 
   context 'with cucumber and selenium' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
+    include_examples 'github ffmpeg cache', name, 'test_pipeline.yml', %w[build], 'cucumber'
     include_examples 'valid github pipeline', name
     include_examples 'github cucumber pipeline', name
     include_examples 'github triggers', name, 'test_pipeline.yml'
@@ -232,6 +271,7 @@ describe 'CI pipeline content' do
 
   context 'with rspec and watir' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
+    include_examples 'github ffmpeg cache', name, 'test_pipeline.yml', %w[build]
     include_examples 'valid github pipeline', name
     include_examples 'github rspec pipeline', name
     include_examples 'github triggers', name, 'test_pipeline.yml'
@@ -243,6 +283,7 @@ describe 'CI pipeline content' do
 
   context 'with cucumber and watir' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
+    include_examples 'github ffmpeg cache', name, 'test_pipeline.yml', %w[build], 'cucumber'
     include_examples 'valid github pipeline', name
     include_examples 'github cucumber pipeline', name
     include_examples 'github triggers', name, 'test_pipeline.yml'
@@ -261,6 +302,7 @@ describe 'CI pipeline content' do
     context "with rspec and #{automation}" do
       name = "#{FrameworkIndex::RSPEC}_#{automation}"
       include_examples 'github appium shards', name, 'rspec', appium_shards[automation]
+      include_examples 'github ffmpeg cache', name, 'appium_pipeline.yml', test_jobs
       include_examples 'github raider-comment job', name, 'appium_pipeline.yml', test_jobs
       include_examples 'github raider-gate job', name, 'appium_pipeline.yml', test_jobs
       include_examples 'github triggers', name, 'appium_pipeline.yml'
@@ -270,6 +312,7 @@ describe 'CI pipeline content' do
     context "with cucumber and #{automation}" do
       name = "#{FrameworkIndex::CUCUMBER}_#{automation}"
       include_examples 'github appium shards', name, 'cucumber', appium_shards[automation]
+      include_examples 'github ffmpeg cache', name, 'appium_pipeline.yml', test_jobs, 'cucumber'
       include_examples 'github triggers', name, 'appium_pipeline.yml'
       include_examples 'github raider wiring', name, 'appium_pipeline.yml', 'cucumber'
       include_examples 'github raider-comment job', name, 'appium_pipeline.yml', test_jobs

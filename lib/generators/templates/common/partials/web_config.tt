@@ -14,3 +14,8 @@ browser_arguments:
   firefox:
     - acceptInsecureCerts
     - no-sandbox
+
+video:
+  enabled: true
+  fps: 5
+  max_width: 1280

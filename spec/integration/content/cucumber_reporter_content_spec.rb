@@ -36,7 +36,7 @@ describe 'Cucumber raider_reporter wiring' do
 
       it 'quits the driver in an ensure of the After block, without a redundant begin' do
         quit = %w[android ios cross_platform].include?(automation) ? 'driver.quit_driver' : quit_call
-        expect(hook).to match(/^\s*After do \|scenario\|\n.*\n^ensure\n\s+#{Regexp.escape(quit)}\nend/m)
+        expect(hook).to match(/^\s*After do \|scenario\|\n.*\n^ensure\n.*\n\s+#{Regexp.escape(quit)}\nend/m)
         expect(hook).not_to match(/^\s+begin$/)
       end
 
@@ -45,6 +45,27 @@ describe 'Cucumber raider_reporter wiring' do
         expect(env).to include(attach)
         expect(env.index(screenshot_call)).to be < env.index(attach)
         expect(env.index(attach)).to be < env.index(/driver\.quit|browser\.quit/, env.index(attach))
+      end
+
+      context 'with video recording' do
+        target = automation == 'watir' ? 'browser' : 'driver'
+        video_type = %w[selenium watir].include?(automation) ? ':webm' : ':mp4'
+
+        it 'requires video_helper' do
+          expect(env).to include("require_relative '../../helpers/video_helper'")
+        end
+
+        it 'starts the recorder in Before' do
+          expect(env[/^Before do.*?^end$/m]).to include("@video_recorder = VideoHelper.recorder_for(#{target})", '@video_recorder.start')
+        end
+
+        it 'stops with keep: scenario.failed? before quitting, attaches the path and cleans up in the ensure' do
+          expect(hook).to include('video_path = @video_recorder&.stop(keep: scenario.failed?)')
+          expect(hook).to include("RaiderReporter.attach('video', video_path, type: #{video_type}) if video_path")
+          expect(hook.index('@video_recorder&.stop')).to be < hook.index("RaiderReporter.attach('video'")
+          expect(hook.index("RaiderReporter.attach('video'")).to be < hook.index(/^ensure/)
+          expect(hook.index(/^ensure/)).to be < hook.index('@video_recorder&.cleanup')
+        end
       end
 
       it 'does not generate the allure helper' do

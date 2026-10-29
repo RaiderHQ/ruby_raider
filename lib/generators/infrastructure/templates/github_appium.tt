@@ -44,6 +44,17 @@ jobs:
           appium &
           sleep 5
 
+      - name: Cache ffmpeg for failure videos
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/raider
+          key: raider-ffmpeg-<%= RubyRaider::Ffmpeg::MANIFEST[:version] %>-${{ runner.os }}-${{ hashFiles('**/Gemfile.lock') }}
+
+      - name: Install ffmpeg for failure videos
+        run: bundle exec raider u video install
+        # Video is optional: a failed download is visible here but never fails the build.
+        continue-on-error: true
+
       - name: Run tests
 <%- if cucumber? -%>
         run: bundle exec raider-reporter exec -- bundle exec cucumber features/ --format pretty
@@ -100,6 +111,17 @@ jobs:
           appium driver install uiautomator2
           appium &
           sleep 5
+
+      - name: Cache ffmpeg for failure videos
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/raider
+          key: raider-ffmpeg-<%= RubyRaider::Ffmpeg::MANIFEST[:version] %>-${{ runner.os }}-${{ hashFiles('**/Gemfile.lock') }}
+
+      - name: Install ffmpeg for failure videos
+        run: bundle exec raider u video install
+        # Video is optional: a failed download is visible here but never fails the build.
+        continue-on-error: true
 
       - name: Run Android Emulator and Tests
         uses: reactivecircus/android-emulator-runner@v2
