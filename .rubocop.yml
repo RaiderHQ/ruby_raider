@@ -65,6 +65,29 @@ Naming/PredicateName:
     - 'is_'
 
 # Security
+Security:
+  Enabled: true
+
+Security/CompoundHash:
+  Enabled: true
+
+Security/Eval:
+  Enabled: true
+
+Security/IoMethods:
+  Enabled: true
+
+Security/JSONLoad:
+  Enabled: true
+
+Security/MarshalLoad:
+  Enabled: true
+
+Security/Open:
+  Enabled: true
+
+Security/YAMLLoad:
+  Enabled: true
 
 # Styles
 

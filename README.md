@@ -168,6 +168,16 @@ bundle exec rubocop     # Run linter
 bundle exec reek        # Run code smell detection
 ```
 
+### Security checks
+
+```bash
+bundle exec bundler-audit check --update  # Check gems for known vulnerabilities
+bundle exec ruby-audit check              # Check Ruby and RubyGems versions for known vulnerabilities
+bundle exec rubocop --only Security       # Run RuboCop's Security cops
+```
+
+The same checks (plus OSV-Scanner) run in CI via `.github/workflows/security.yml`.
+
 ## Links
 
 * [RubyGems](https://rubygems.org/gems/ruby_raider)
