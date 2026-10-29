@@ -373,20 +373,16 @@ describe 'End-to-End Project Generation and Execution' do
     end
   end
 
-  # Failure video replay against real browsers. Needs raider_reporter 0.10 (unpublished: a local checkout,
-  # RAIDER_REPORTER_PATH) and an ffmpeg with libvpx (RAIDER_FFMPEG_PATH), because the RaiderHQ ffmpeg release
-  # has no checksums yet. Skipped when either, or the browser, is missing. Firefox can be pointed at a
-  # specific binary with FIREFOX_BINARY.
+  # Failure video replay against real browsers. Needs an ffmpeg with libvpx (RAIDER_FFMPEG_PATH), because the
+  # RaiderHQ ffmpeg release has no checksums yet. Skipped when it, or the browser, is missing. Firefox can be
+  # pointed at a specific binary with FIREFOX_BINARY.
   context 'Failure video replay', :slow, :video do
-    let(:reporter_path) { ENV.fetch('RAIDER_REPORTER_PATH', File.expand_path('../../../raider_reporter', __dir__)) }
     let(:ffmpeg_path) { ENV.fetch('RAIDER_FFMPEG_PATH', '') }
     let(:cache_dir) { Dir.mktmpdir('raider-cache') }
 
     after { FileUtils.rm_rf(cache_dir) }
 
     def skip_unless_video_prerequisites(browser)
-      skip "raider_reporter 0.10 checkout not found at #{reporter_path} (set RAIDER_REPORTER_PATH)" unless
-        File.exist?(File.join(reporter_path, 'raider_reporter.gemspec'))
       skip 'RAIDER_FFMPEG_PATH is not set to an executable ffmpeg with libvpx' unless
         File.file?(ffmpeg_path) && File.executable?(ffmpeg_path)
       skip "#{browser} is not installed" unless browser_installed?(browser)
@@ -411,8 +407,6 @@ describe 'End-to-End Project Generation and Execution' do
         generate_framework(framework:, automation:, name:)
         LazyProjectGenerator::GENERATED.add(name)
         use_local_ruby_raider(name)
-        gemfile = File.join(name, 'Gemfile')
-        File.write(gemfile, File.read(gemfile).sub(/^gem 'raider_reporter'.*$/, "gem 'raider_reporter', path: '#{reporter_path}'"))
         expect(run_in_project(name, 'bundle install --quiet', timeout: 300)[:success]).to be(true)
       end
       FileUtils.rm_rf(File.join(name, 'raider-results'))
