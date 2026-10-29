@@ -13,12 +13,14 @@ Gem::Specification.new do |s|
   s.files  = `git ls-files -z`.split("\x0")
   s.bindir = 'bin'
   s.executables << 'raider'
+  s.add_development_dependency 'bundler-audit', '~> 0.9'
   s.add_development_dependency 'rake', '~> 13.0.6'
   s.add_development_dependency 'reek', '~> 6.1.0'
   s.add_development_dependency 'rspec', '~> 3.11.0'
   s.add_development_dependency 'rubocop', '~> 1.27'
   s.add_development_dependency 'rubocop-performance', '~> 1.15.0'
   s.add_development_dependency 'rubocop-rspec', '~> 2.9.0'
+  s.add_development_dependency 'ruby_audit', '~> 3.1'
   s.add_development_dependency 'steep', '~> 1.9'
 
   s.add_runtime_dependency 'thor', '~> 1.2.1'
