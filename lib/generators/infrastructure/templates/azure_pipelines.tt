@@ -14,7 +14,7 @@ variables:
   HEADLESS: 'true'
   # Where ffmpeg for failure videos is cached between runs.
   RAIDER_CACHE_DIR: $(Pipeline.Workspace)/.cache/raider
-  # Add RAIDER_TOKEN (secret) and RAIDER_ENDPOINT as pipeline variables.
+  # Add RAIDER_TOKEN (secret) and RAIDER_ENDPOINT (your Raider Hideout URL) as pipeline variables.
 
 jobs:
   - job: tests

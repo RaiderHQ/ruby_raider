@@ -93,11 +93,13 @@ Every run writes machine-readable results to `raider-results/` (including `run.j
 `features/support/env.rb` requires `raider_reporter/cucumber`, so no extra Cucumber formatter flag is needed.
 <%- end -%>
 
-To upload runs to Raider, set these environment variables before running the suite:
+To upload runs to Raider, set these environment variables before running the suite.
+`RAIDER_TOKEN` and `RAIDER_ENDPOINT` come from your Raider Hideout server (its setup page, or `bin/rails hideout:setup` /
+`hideout:token`):
 
 ```bash
 export RAIDER_TOKEN=your-token
-export RAIDER_ENDPOINT=https://your-raider-endpoint
+export RAIDER_ENDPOINT=https://hideout.example.com
 ```
 
 <%- if rspec? -%>
