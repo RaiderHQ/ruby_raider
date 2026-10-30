@@ -104,7 +104,7 @@ describe 'Browser update after framework creation' do
       UtilityCommands.new.invoke(:browser, nil, %w[:firefox --opts headless])
       UtilityCommands.new.invoke(:browser, nil, %w[--delete])
       config = YAML.load_file('config/config.yml')
-      expect(config.dig('browser_arguments', 'firefox')).to be_nil
+      expect(config.dig('browser_arguments', 'firefox')).to eq([])
     end
   end
 
