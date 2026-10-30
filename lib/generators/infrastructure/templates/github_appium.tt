@@ -61,6 +61,7 @@ jobs:
 <%- else -%>
         run: bundle exec raider-reporter exec -- bundle exec rspec spec/ --format documentation
 <%- end -%>
+        # RAIDER_ENDPOINT: your Raider Hideout URL (repository variable); RAIDER_TOKEN: a project token (secret).
         env:
           APP_PATH: ${{ github.workspace }}/apps/RaiderTestApp.app
           RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}

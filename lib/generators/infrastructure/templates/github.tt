@@ -46,6 +46,7 @@ jobs:
 
       - name: Run tests
         run: <%- if framework == 'cucumber' -%>bundle exec raider-reporter exec -- bundle exec cucumber features --format pretty<%- else -%>bundle exec raider-reporter exec -- bundle exec rspec spec --format documentation<%- end %>
+        # RAIDER_ENDPOINT: your Raider Hideout URL (repository variable); RAIDER_TOKEN: a project token (secret).
         env:
           HEADLESS: true
           RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
