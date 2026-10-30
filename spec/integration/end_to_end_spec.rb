@@ -285,20 +285,22 @@ describe 'End-to-End Project Generation and Execution' do
   end
 
   # Recorded Azure Pipelines env of a push (IndividualCI) build, see raider_reporter's CiDetector specs
-  AZURE_PUSH_ENV = {
-    'TF_BUILD' => 'True',
-    'SYSTEM_COLLECTIONURI' => 'https://dev.azure.com/raider-test/',
-    'SYSTEM_TEAMPROJECT' => 'My Project',
-    'SYSTEM_TEAMPROJECTID' => '6ce954b1-ce1f-45d1-b94d-e6bf2464ba2c',
-    'BUILD_REPOSITORY_NAME' => 'web tests',
-    'BUILD_REPOSITORY_ID' => '1c2bd1a0-3f63-4d93-9c3c-2b4f2b1d8f11',
-    'BUILD_REPOSITORY_PROVIDER' => 'TfsGit',
-    'BUILD_BUILDID' => '42',
-    'SYSTEM_JOBDISPLAYNAME' => 'tests',
-    'BUILD_REASON' => 'IndividualCI',
-    'BUILD_SOURCEBRANCH' => 'refs/heads/release/1.2',
-    'BUILD_SOURCEVERSION' => 'abc'
-  }.freeze
+  def azure_push_env
+    {
+      'TF_BUILD' => 'True',
+      'SYSTEM_COLLECTIONURI' => 'https://dev.azure.com/raider-test/',
+      'SYSTEM_TEAMPROJECT' => 'My Project',
+      'SYSTEM_TEAMPROJECTID' => '6ce954b1-ce1f-45d1-b94d-e6bf2464ba2c',
+      'BUILD_REPOSITORY_NAME' => 'web tests',
+      'BUILD_REPOSITORY_ID' => '1c2bd1a0-3f63-4d93-9c3c-2b4f2b1d8f11',
+      'BUILD_REPOSITORY_PROVIDER' => 'TfsGit',
+      'BUILD_BUILDID' => '42',
+      'SYSTEM_JOBDISPLAYNAME' => 'tests',
+      'BUILD_REASON' => 'IndividualCI',
+      'BUILD_SOURCEBRANCH' => 'refs/heads/release/1.2',
+      'BUILD_SOURCEVERSION' => 'abc'
+    }.freeze
+  end
 
   # Generates a ci: azure web project (the shared before(:all) only builds the default github ones)
   def generate_azure_project(framework)
@@ -311,7 +313,7 @@ describe 'End-to-End Project Generation and Execution' do
   end
 
   def azure_env_prefix
-    "GITHUB_ACTIONS= HEADLESS=true #{AZURE_PUSH_ENV.map { |k, v| "#{k}='#{v}'" }.join(' ')}"
+    "GITHUB_ACTIONS= HEADLESS=true #{azure_push_env.map { |k, v| "#{k}='#{v}'" }.join(' ')}"
   end
 
   def expect_azure_ci_block(project)

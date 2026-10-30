@@ -156,5 +156,4 @@ describe 'Gemfile content' do
       end
     end
   end
-
 end

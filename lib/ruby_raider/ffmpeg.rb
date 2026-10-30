@@ -164,10 +164,9 @@ module RubyRaider
       end
 
       def host_cpu_name(host_cpu)
-        if host_cpu.match?(/arm64|aarch64/)
-          'arm64'
-        elsif host_cpu.match?(/x86_64|x64|amd64/)
-          'x64'
+        case host_cpu
+        when /arm64|aarch64/ then 'arm64'
+        when /x86_64|x64|amd64/ then 'x64'
         end
       end
 

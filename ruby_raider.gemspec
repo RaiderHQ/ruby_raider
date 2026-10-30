@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.executables << 'raider'
   s.add_development_dependency 'bundler-audit', '~> 0.9'
   s.add_development_dependency 'rake', '~> 13.0.6'
-  s.add_development_dependency 'reek', '~> 6.1.0'
+  s.add_development_dependency 'reek', '~> 6.5'
   s.add_development_dependency 'rspec', '~> 3.11.0'
   s.add_development_dependency 'rubocop', '~> 1.27'
   s.add_development_dependency 'rubocop-performance', '~> 1.15.0'

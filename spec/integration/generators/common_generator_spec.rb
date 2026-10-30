@@ -18,7 +18,7 @@ describe CommonGenerator do
     end
   end
 
-shared_examples 'creates a config file' do |name|
+  shared_examples 'creates a config file' do |name|
     it 'creates a config file' do
       expect(File).to exist("#{name}/config/config.yml")
     end

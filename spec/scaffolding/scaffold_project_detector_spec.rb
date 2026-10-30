@@ -33,7 +33,6 @@ RSpec.describe ScaffoldProjectDetector do
     it 'reports selenium?' do
       expect(described_class.selenium?).to be true
     end
-
   end
 
   context 'with watir project' do

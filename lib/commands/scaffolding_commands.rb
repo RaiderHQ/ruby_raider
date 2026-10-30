@@ -84,9 +84,7 @@ class ScaffoldingCommands < Thor
       else
         automation = ScaffoldProjectDetector.detect_automation(gemfile)
         framework = ScaffoldProjectDetector.detect_framework(gemfile)
-        if automation.nil?
-          say 'Warning: Could not detect automation library from Gemfile, defaulting to selenium.', :yellow
-        end
+        say 'Warning: Could not detect automation library from Gemfile, defaulting to selenium.', :yellow if automation.nil?
         say 'Warning: Could not detect test framework from Gemfile, defaulting to rspec.', :yellow if framework.nil?
       end
     end

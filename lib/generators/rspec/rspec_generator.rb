@@ -20,5 +20,4 @@ class RspecGenerator < Generator
 
     template('accessibility_spec.tt', "#{name}/spec/accessibility_spec.rb")
   end
-
 end

@@ -3,7 +3,8 @@
 require 'rspec'
 require_relative '../../lib/ruby_raider'
 
-RSpec.describe RubyRaider::Raider do
+# Command specs are grouped by CLI area under spec/commands, not by constant path
+RSpec.describe RubyRaider::Raider do # rubocop:disable RSpec/FilePath
   describe 'new command' do
     context 'with parameters' do
       it 'calls InvokeGenerators.generate_framework with parsed hash' do

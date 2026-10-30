@@ -147,5 +147,4 @@ describe 'Test file content' do
     include_examples 'valid cucumber world', name
     include_examples 'valid cucumber config', name
   end
-
 end
