@@ -16,7 +16,7 @@ describe 'Browser update after framework creation' do
 
   def generate_project(framework:, automation:)
     name = "browser_update_#{framework}_#{automation}"
-    generate_framework(automation: automation, framework: framework, name: name)
+    generate_framework(automation:, framework:, name:)
     name
   end
 
@@ -25,17 +25,19 @@ describe 'Browser update after framework creation' do
   end
 
   shared_examples 'updates browser config after creation' do |framework, automation|
+    project_name = nil
+
     before(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      @project_name = generate_project(framework: framework, automation: automation)
+      project_name = generate_project(framework:, automation:)
     end
 
     after(:all) do # rubocop:disable RSpec/BeforeAfterAll
       Dir.chdir orig_dir
-      FileUtils.rm_rf(@project_name) if @project_name
+      FileUtils.rm_rf(project_name) if project_name
     end
 
     before do
-      Dir.chdir @project_name
+      Dir.chdir project_name
     end
 
     it 'starts with chrome as default browser' do
@@ -119,5 +121,4 @@ describe 'Browser update after framework creation' do
   context 'with watir + rspec' do
     include_examples 'updates browser config after creation', 'rspec', 'watir'
   end
-
 end

@@ -104,5 +104,4 @@ RSpec.describe 'Scaffolding features' do
       expect(Pathname.new('spec/dashboard_page_spec.rb')).to be_file
     end
   end
-
 end

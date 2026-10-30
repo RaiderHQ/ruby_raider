@@ -242,7 +242,6 @@ describe 'End-to-End Feature Validation' do
         end
       end
     end
-
   end
 
   # --- Feature: GitHub Actions CI ---
@@ -264,5 +263,4 @@ describe 'End-to-End Feature Validation' do
       expect(content).to include('rspec')
     end
   end
-
 end

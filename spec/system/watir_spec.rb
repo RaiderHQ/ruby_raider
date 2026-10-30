@@ -35,5 +35,4 @@ describe 'Watir based frameworks' do
   context 'with cucumber' do
     include_examples 'runs tests successfully', 'cucumber'
   end
-
 end

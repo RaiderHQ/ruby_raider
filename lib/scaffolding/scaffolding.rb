@@ -95,5 +95,4 @@ class Scaffolding < Thor::Group
   def default_path(standard_path, file_type)
     path ? "#{path}/#{normalized_name}#{file_type}" : standard_path
   end
-
 end

@@ -23,11 +23,7 @@ end
 
 # End-to-end scaffolding tests that verify the scaffold command creates the right
 # files with the right content across all automation × framework combinations.
-describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
-
-  WEB_AUTOMATIONS = %w[selenium watir].freeze
-  TEST_FRAMEWORKS = %w[rspec cucumber].freeze
-
+describe 'Scaffolding E2E' do
   def self.scaffold_style(framework)
     case framework
     when 'rspec'    then :spec
@@ -36,7 +32,7 @@ describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
   end
 
   # Build a minimal mock project that the scaffolding system can detect.
-  def self.build_mock_project(automation, framework) # rubocop:disable Metrics/MethodLength
+  def self.build_mock_project(automation, framework)
     dir = File.expand_path("tmp_scaffold_e2e_#{framework}_#{automation}")
     FileUtils.rm_rf(dir)
     FileUtils.mkdir_p("#{dir}/page_objects/pages")
@@ -61,7 +57,7 @@ describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
     when 'rspec'    then gems << "gem 'rspec'"
     when 'cucumber' then gems << "gem 'cucumber'"
     end
-    File.write("#{dir}/Gemfile", gems.join("\n") + "\n")
+    File.write("#{dir}/Gemfile", "#{gems.join("\n")}\n")
     File.write("#{dir}/config/config.yml", "browser: chrome\nurl: http://localhost:3000\n")
     File.write("#{dir}/page_objects/abstract/page.rb", "class Page; end\n")
     File.write("#{dir}/page_objects/abstract/component.rb", "class Component; end\n")
@@ -91,7 +87,7 @@ describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
     end
 
     it 'includes url method (config has url)' do
-      expect(page_content).to include("def url(_page)")
+      expect(page_content).to include('def url(_page)')
       expect(page_content).to include("'checkout'")
     end
   end
@@ -326,11 +322,11 @@ describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
   # Test matrix: automation × framework
   # ══════════════════════════════════════════════
 
-  WEB_AUTOMATIONS.each do |automation|
-    TEST_FRAMEWORKS.each do |framework|
+  %w[selenium watir].each do |automation|
+    %w[rspec cucumber].each do |framework|
       style = scaffold_style(framework)
 
-      context "with #{framework} and #{automation}" do # rubocop:disable RSpec/ContextWording
+      context "with #{framework} and #{automation}" do
         let(:scaffold) { ScaffoldingCommands }
 
         # Use absolute path so Dir.chdir is safe regardless of current CWD
@@ -367,6 +363,9 @@ describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
             end
           end
 
+          # Page content validation
+          let(:page_content) { File.read('page_objects/pages/checkout.rb') }
+
           it 'creates page object' do
             expect(Pathname.new('page_objects/pages/checkout.rb')).to be_file
           end
@@ -388,9 +387,6 @@ describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
               expect(Pathname.new('features/step_definitions/checkout_steps.rb')).to be_file
             end
           end
-
-          # Page content validation
-          let(:page_content) { File.read('page_objects/pages/checkout.rb') }
 
           include_examples 'valid scaffolded page'
           include_examples "#{automation} scaffolded page"
@@ -459,16 +455,10 @@ describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
 
           it 'generates multiple scaffolds at once' do
             scaffold.new.invoke(:scaffold, nil, %w[search filter])
-            expect(Pathname.new('page_objects/pages/search.rb')).to be_file
-            expect(Pathname.new('page_objects/pages/filter.rb')).to be_file
-
-            if style == :spec
-              expect(Pathname.new('spec/search_page_spec.rb')).to be_file
-              expect(Pathname.new('spec/filter_page_spec.rb')).to be_file
-            else
-              expect(Pathname.new('features/search.feature')).to be_file
-              expect(Pathname.new('features/filter.feature')).to be_file
+            files = %w[search filter].flat_map do |name|
+              ["page_objects/pages/#{name}.rb", style == :spec ? "spec/#{name}_page_spec.rb" : "features/#{name}.feature"]
             end
+            expect(files.reject { |file| File.file?(file) }).to be_empty
           end
         end
 
@@ -496,7 +486,6 @@ describe 'Scaffolding E2E' do # rubocop:disable RSpec/DescribeClass
             expect(Pathname.new('page_objects/pages/checkout.rb')).to be_file
           end
         end
-
       end
     end
   end

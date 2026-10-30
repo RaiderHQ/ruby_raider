@@ -66,9 +66,7 @@ module ScaffoldProjectDetector
   def validate_project
     warnings = []
     warnings << 'Gemfile not found. Are you in a Ruby Raider project directory?' unless File.exist?('Gemfile')
-    unless File.exist?(CONFIG_PATH)
-      warnings << "#{CONFIG_PATH} not found. Scaffolded pages won't include URL navigation methods."
-    end
+    warnings << "#{CONFIG_PATH} not found. Scaffolded pages won't include URL navigation methods." unless File.exist?(CONFIG_PATH)
     warnings
   end
 

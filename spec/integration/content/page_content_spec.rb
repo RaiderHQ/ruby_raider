@@ -166,5 +166,4 @@ describe 'Page object content' do
     include_examples 'valid abstract page', name
     include_examples 'watir abstract page', name
   end
-
 end
