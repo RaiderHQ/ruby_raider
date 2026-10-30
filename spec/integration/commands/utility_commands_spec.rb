@@ -100,14 +100,14 @@ describe UtilityCommands do
     it 'deletes the browser arguments when passed with the delete parameter' do
       utility.new.invoke(:browser, nil, %w[:firefox --opts headless --delete])
       config = YAML.load_file('config/config.yml')
-      expect(config.dig('browser_arguments', 'firefox')).to be_nil
+      expect(config.dig('browser_arguments', 'firefox')).to eq([])
     end
 
     it 'deletes the browser arguments' do
       utility.new.invoke(:browser, nil, %w[:firefox --opts headless])
       utility.new.invoke(:browser, nil, %w[--delete])
       config = YAML.load_file('config/config.yml')
-      expect(config.dig('browser_arguments', 'firefox')).to be_nil
+      expect(config.dig('browser_arguments', 'firefox')).to eq([])
     end
   end
 end
