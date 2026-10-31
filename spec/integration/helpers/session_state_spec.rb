@@ -28,8 +28,7 @@ module SessionStateSpec
 
     def initialize(cookies: [], local: {}, session: {}, reject: nil, url: ORIGIN_URL)
       @reject = reject
-      @cookies = cookies
-      @url = url
+      @page = { cookies:, url: }
       @storage = { 'localStorage' => local, 'sessionStorage' => session }
       @log = { calls: [], added: [] }
     end
@@ -41,8 +40,8 @@ module SessionStateSpec
 
     def manage = self
     def navigate = self
-    def all_cookies = @cookies
-    def current_url = @url
+    def all_cookies = @page[:cookies]
+    def current_url = @page[:url]
     def refresh = calls << :refresh
     def delete_all_cookies = calls << :delete_all_cookies
 
@@ -54,7 +53,7 @@ module SessionStateSpec
     end
 
     def to(url)
-      @url = url
+      @page[:url] = url
       calls << [:to, url]
     end
 
