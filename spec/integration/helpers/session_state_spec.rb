@@ -23,16 +23,17 @@ SessionStateSpec.load_template
 module SessionStateSpec
   # Implements exactly the driver calls SessionState uses and records them in order.
   class FakeDriver
-    attr_reader :calls, :added, :local, :session
-
     def initialize(cookies: [], local: {}, session: {}, reject: nil)
       @reject = reject
       @cookies = cookies
-      @local = local
-      @session = session
-      @calls = []
-      @added = []
+      @storage = { 'localStorage' => local, 'sessionStorage' => session }
+      @log = { calls: [], added: [] }
     end
+
+    def calls = @log[:calls]
+    def added = @log[:added]
+    def local = @storage['localStorage']
+    def session = @storage['sessionStorage']
 
     def manage = self
     def navigate = self
@@ -41,21 +42,20 @@ module SessionStateSpec
     def add_cookie(cookie)
       raise 'rejected' if @reject&.call(cookie)
 
-      @calls << :add_cookie
-      @added << cookie
+      calls << :add_cookie
+      added << cookie
     end
 
-    def delete_all_cookies = @calls << :delete_all_cookies
-    def to(url) = @calls << [:to, url]
-    def refresh = @calls << :refresh
+    def delete_all_cookies = calls << :delete_all_cookies
+    def to(url) = calls << [:to, url]
+    def refresh = calls << :refresh
 
     def execute_script(_script, *args)
       kind, values = args
-      store = kind == 'localStorage' ? :@local : :@session
-      return instance_variable_get(store) if values.nil?
+      return @storage[kind] if values.nil?
 
-      @calls << [:write, kind]
-      instance_variable_set(store, values)
+      calls << [:write, kind]
+      @storage[kind] = values
     end
   end
 end

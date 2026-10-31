@@ -124,6 +124,10 @@ describe 'Azure Pipelines content' do
         expect(raw).not_to match(/allure/i)
       end
 
+      it 'does not mention the saved login state' do
+        expect(raw).not_to include('.raider')
+      end
+
       it 'documents Azure Pipelines in the README and no GitHub Actions setup' do
         readme = read_generated(name, 'Readme.md')
         expect(readme).to include('## Azure Pipelines', 'RAIDER_TOKEN', 'Contribute to pull requests',

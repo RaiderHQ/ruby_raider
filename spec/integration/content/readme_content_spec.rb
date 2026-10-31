@@ -112,4 +112,29 @@ describe 'Generated Readme content' do
       end
     end
   end
+
+  FRAMEWORKS.product(AUTOMATION_TYPES).each do |framework, automation|
+    context "with #{framework} and #{automation}, the login reuse section" do
+      subject(:readme) { read_generated("#{framework}_#{automation}", 'Readme.md') }
+
+      if %w[selenium watir].include?(automation)
+        it 'documents the tags, other roles, max_age, the env switch and the secrets warning' do
+          section = readme[/^### Reusing the login\n.*?(?=^##)/m].gsub(/\s+/, ' ')
+          expect(section).to include('`:logged_in`', '`@logged_in`', "SessionState.new(driver, name: 'admin')",
+                                     'browser.driver', 'login_state', 'max_age', 'RAIDER_LOGIN_STATE=off',
+                                     'RAIDER_LOGIN_STATE=refresh', '.raider/auth/', 'git-ignored',
+                                     'live session tokens', 'must not be committed, cached or uploaded')
+        end
+
+        it 'sits between the Quality gate and the CI section' do
+          expect(readme.index('### Quality gate')).to be < readme.index('### Reusing the login')
+          expect(readme.index('### Reusing the login')).to be < readme.index('## ', readme.index('### Reusing the login') + 5)
+        end
+      else
+        it 'does not mention login reuse' do
+          expect(readme).not_to include('### Reusing the login', 'RAIDER_LOGIN_STATE', '.raider/auth/')
+        end
+      end
+    end
+  end
 end
