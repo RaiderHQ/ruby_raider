@@ -22,7 +22,6 @@ class SessionState
   READ_STORAGE = 'return Object.assign({}, window[arguments[0]]);'
   WRITE_STORAGE = 'var s = window[arguments[0]]; s.clear(); var d = arguments[1]; ' \
                   'Object.keys(d).forEach(function (k) { s.setItem(k, d[k]); });'
-
   STORAGES = { 'local_storage' => 'localStorage', 'session_storage' => 'sessionStorage' }.freeze
   COOKIE_KEYS = %i[name value domain path secure http_only same_site].freeze
 
@@ -40,16 +39,14 @@ class SessionState
   end
 
   def reuse(valid: nil, &login)
-    ensure_dir
-    File.open(File.join(DIR, "#{name}.lock"), File::RDWR | File::CREAT, 0o600) do |lock|
-      lock.flock(File::LOCK_EX)
-      reuse_locked(valid, &login)
-    end
+    lock = open_lock unless ENV.fetch('RAIDER_LOGIN_STATE', nil) == 'off'
+    lock ? reuse_locked(lock, valid, &login) : login.call
     true
   end
 
   def save
     ensure_dir
+    visit_origin
     state = { 'format' => FORMAT, 'name' => name, 'origin' => origin, 'saved_at' => Time.now.utc.iso8601,
               'cookies' => @driver.manage.all_cookies.map { |cookie| dump_cookie(cookie) } }
     STORAGES.each { |key, kind| state[key] = @driver.execute_script(READ_STORAGE, kind) || {} }
@@ -59,17 +56,13 @@ class SessionState
 
   def restore
     state = read_state
-    return false unless usable?(state)
-
-    apply(state)
-    true
+    usable?(state) && apply(state)
   rescue StandardError => e
     fall_back("could not restore #{path} (#{e.class})")
   end
 
   def clear
     FileUtils.rm_f(path)
-    nil
   end
 
   def fresh?
@@ -81,14 +74,41 @@ class SessionState
 
   private
 
-  def reuse_locked(valid, &login)
-    mode = ENV.fetch('RAIDER_LOGIN_STATE', nil)
-    return login.call if mode == 'off'
-    return if mode != 'refresh' && fresh? && restore && still_valid?(valid)
+  def reuse_locked(lock, valid, &login)
+    lock.flock(File::LOCK_EX)
+    return if ENV.fetch('RAIDER_LOGIN_STATE', nil) != 'refresh' && fresh? && restore && still_valid?(valid)
 
     clear
+    reset if @applied
     login.call
+    save_after_login
+  ensure
+    lock.close
+  end
+
+  def open_lock
+    ensure_dir
+    File.open(File.join(DIR, "#{name}.lock"), File::RDWR | File::CREAT, 0o600)
+  rescue SystemCallError => e
+    fall_back("cannot write #{DIR} (#{e.class}), so nothing is saved")
+  end
+
+  def save_after_login
     save
+  rescue StandardError => e
+    warn("[login_state] could not save #{path} (#{e.class}), the next run logs in again")
+  end
+
+  def reset
+    visit_origin
+    @driver.manage.delete_all_cookies
+    STORAGES.each_value { |kind| @driver.execute_script(WRITE_STORAGE, kind, {}) }
+  rescue StandardError
+    nil # a browser that cannot be reset fails the real login on its own
+  end
+
+  def visit_origin
+    @driver.navigate.to("#{origin}/") unless origin_of(URI.parse(@driver.current_url.to_s)) == origin
   end
 
   def still_valid?(valid)
@@ -99,16 +119,18 @@ class SessionState
 
   def apply(state)
     @driver.navigate.to("#{origin}/")
+    @applied = true
     @driver.manage.delete_all_cookies
     live, skipped = state['cookies'].partition { |cookie| live_for_origin?(cookie) }
     live.each { |cookie| add_cookie(load_cookie(cookie)) }
     warn("[login_state] #{skipped.size} cookies skipped (expired or another domain) from #{path}") if skipped.any?
     STORAGES.each { |key, kind| @driver.execute_script(WRITE_STORAGE, kind, state[key] || {}) }
     @driver.navigate.refresh
+    true
   end
 
   def add_cookie(attributes)
-    @driver.manage.add_cookie(attributes)
+    @driver.manage.add_cookie(attributes.dup) # Selenium's Manager rewrites the hash it is given
   rescue StandardError
     raise unless attributes.key?(:same_site)
 
@@ -116,8 +138,7 @@ class SessionState
   end
 
   def live_for_origin?(cookie)
-    expires = cookie['expires']
-    (expires.nil? || Time.iso8601(expires) > Time.now) && domain_matches?(cookie['domain'])
+    (cookie['expires'].nil? || Time.iso8601(cookie['expires']) > Time.now) && domain_matches?(cookie['domain'])
   end
 
   def domain_matches?(domain)
@@ -126,8 +147,7 @@ class SessionState
   end
 
   def dump_cookie(cookie)
-    COOKIE_KEYS.to_h { |key| [key.to_s, cookie[key]] }
-               .merge('expires' => cookie[:expires]&.to_time&.utc&.iso8601)
+    COOKIE_KEYS.to_h { |key| [key.to_s, cookie[key]] }.merge('expires' => cookie[:expires]&.to_time&.utc&.iso8601)
   end
 
   def load_cookie(cookie)
@@ -139,7 +159,6 @@ class SessionState
     JSON.parse(File.read(path)) if File.exist?(path)
   rescue JSON::ParserError, SystemCallError
     fall_back("#{path} is unreadable or corrupt")
-    nil
   end
 
   def usable?(state)
@@ -172,8 +191,12 @@ class SessionState
   end
 
   def origin
-    port = base_uri.port == base_uri.default_port ? '' : ":#{base_uri.port}"
-    "#{base_uri.scheme}://#{base_uri.host}#{port}"
+    @origin ||= origin_of(base_uri)
+  end
+
+  def origin_of(uri)
+    port = uri.port == uri.default_port ? '' : ":#{uri.port}"
+    "#{uri.scheme}://#{uri.host}#{port}"
   end
 
   def fall_back(reason)

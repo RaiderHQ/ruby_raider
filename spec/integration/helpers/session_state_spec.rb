@@ -2,6 +2,7 @@
 
 require 'erb'
 require 'json'
+require 'selenium-webdriver'
 require 'time'
 require 'tmpdir'
 require 'yaml'
@@ -23,9 +24,12 @@ SessionStateSpec.load_template
 module SessionStateSpec
   # Implements exactly the driver calls SessionState uses and records them in order.
   class FakeDriver
-    def initialize(cookies: [], local: {}, session: {}, reject: nil)
+    ORIGIN_URL = 'https://raider-test-site.onrender.com/account'
+
+    def initialize(cookies: [], local: {}, session: {}, reject: nil, url: ORIGIN_URL)
       @reject = reject
       @cookies = cookies
+      @url = url
       @storage = { 'localStorage' => local, 'sessionStorage' => session }
       @log = { calls: [], added: [] }
     end
@@ -38,6 +42,7 @@ module SessionStateSpec
     def manage = self
     def navigate = self
     def all_cookies = @cookies
+    def current_url = @url
 
     def add_cookie(cookie)
       raise 'rejected' if @reject&.call(cookie)
@@ -47,7 +52,10 @@ module SessionStateSpec
     end
 
     def delete_all_cookies = calls << :delete_all_cookies
-    def to(url) = calls << [:to, url]
+    def to(url)
+      @url = url
+      calls << [:to, url]
+    end
     def refresh = calls << :refresh
 
     def execute_script(_script, *args)
@@ -56,6 +64,31 @@ module SessionStateSpec
 
       calls << [:write, kind]
       @storage[kind] = values
+    end
+  end
+
+  # The browser end of a real Selenium::WebDriver::Manager: records the wire payloads it receives.
+  class FakeBridge
+    def initialize(log, reject)
+      @log = log
+      @reject = reject
+    end
+
+    def add_cookie(cookie)
+      raise Selenium::WebDriver::Error::InvalidArgumentError, 'rejected' if @reject&.call(cookie)
+
+      @log[:calls] << :add_cookie
+      @log[:added] << cookie
+    end
+
+    def delete_all_cookies = @log[:calls] << :delete_all_cookies
+    def cookies = []
+  end
+
+  # A FakeDriver whose manage is the real Selenium Manager, so its key translation is under test.
+  class ManagedDriver < FakeDriver
+    def manage
+      @manage ||= Selenium::WebDriver::Manager.new(FakeBridge.new(@log, @reject))
     end
   end
 end
@@ -133,6 +166,19 @@ describe 'SessionState' do
     end
   end
 
+  describe '#save on another origin' do
+    it 'goes back to the origin before reading when the login ended elsewhere' do
+      sso = SessionStateSpec::FakeDriver.new(url: 'https://sso.other.test/x')
+      SessionState.new(sso).save
+      expect(sso.calls).to eq([[:to, "#{origin}/"]])
+    end
+
+    it 'stays put when the login ended on the origin' do
+      state.save
+      expect(driver.calls).to be_empty
+    end
+  end
+
   describe '#fresh?' do
     it 'is false when the file is missing' do
       expect(state.fresh?).to be(false)
@@ -163,9 +209,11 @@ describe 'SessionState' do
   end
 
   describe '#restore' do
+    let(:driver) { SessionStateSpec::ManagedDriver.new }
+
     it 'restores live cookies for the origin and skips expired and foreign ones' do
       write_state('cookies' => [
-                    saved_cookie('session'),
+                    saved_cookie('session', same_site: 'Lax', http_only: true),
                     saved_cookie('future', expires: (Time.now.utc + 86_400).iso8601),
                     saved_cookie('past', expires: (Time.now.utc - 1).iso8601),
                     saved_cookie('dotted', domain: '.raider-test-site.onrender.com'),
@@ -174,6 +222,9 @@ describe 'SessionState' do
       warning = "[login_state] 2 cookies skipped (expired or another domain) from #{state_file}\n"
       expect { expect(state.restore).to be(true) }.to output(warning).to_stderr
       expect(driver.added.map { |c| c[:name] }).to eq(%w[session future dotted])
+      expect(driver.added.first).to include(sameSite: 'Lax', httpOnly: true, secure: false)
+      expect(driver.added.flat_map(&:keys)).not_to include(:same_site, :http_only, :expires)
+      expect(driver.added[1][:expiry]).to be_a(Integer)
       expect(driver.calls).to eq([[:to, "#{origin}/"], :delete_all_cookies, :add_cookie, :add_cookie, :add_cookie,
                                   [:write, 'localStorage'], [:write, 'sessionStorage'], :refresh])
     end
@@ -213,11 +264,11 @@ describe 'SessionState' do
       end.not_to output.to_stderr
     end
 
-    it 'retries a cookie the driver rejects without same_site' do
-      rejecting = SessionStateSpec::FakeDriver.new(reject: ->(cookie) { cookie.key?(:same_site) })
-      write_state('cookies' => [saved_cookie('a', same_site: 'Lax')])
+    it 'retries a cookie the browser rejects without sameSite' do
+      rejecting = SessionStateSpec::ManagedDriver.new(reject: ->(cookie) { cookie.key?(:sameSite) })
+      write_state('cookies' => [saved_cookie('a', same_site: 'None')])
       expect(SessionState.new(rejecting).restore).to be(true)
-      expect(rejecting.added.map { |c| [c[:name], c.key?(:same_site)] }).to eq([['a', false]])
+      expect(rejecting.added.map { |c| [c[:name], c.key?(:sameSite)] }).to eq([['a', false]])
     end
   end
 
@@ -236,9 +287,65 @@ describe 'SessionState' do
       $stderr = original
     end
 
+    def warnings
+      original = $stderr
+      $stderr = StringIO.new
+      yield
+      $stderr.string
+    ensure
+      $stderr = original
+    end
+
     it 'logs in and saves when there is no file' do
       expect(run_reuse).to eq(1)
       expect(File).to exist(state_file)
+      expect(driver.calls).not_to include(:delete_all_cookies)
+    end
+
+    it 'clears the restored cookies and storage before the fallback login' do
+      managed = SessionStateSpec::ManagedDriver.new
+      write_state('cookies' => [saved_cookie('a')], 'local_storage' => { 'k' => 'v' })
+      silence { SessionState.new(managed).reuse(valid: -> { false }) { managed.calls << :login } }
+      after_refresh = managed.calls.drop(managed.calls.index(:refresh) + 1)
+      expect(after_refresh).to eq([:delete_all_cookies, [:write, 'localStorage'], [:write, 'sessionStorage'], :login])
+      expect(managed.local).to eq({})
+    end
+
+    it 'clears a half-applied restore before the fallback login' do
+      broken = SessionStateSpec::ManagedDriver.new(reject: ->(_cookie) { true })
+      write_state('cookies' => [saved_cookie('a')])
+      silence { SessionState.new(broken).reuse { broken.calls << :login } }
+      expect(broken.calls.last(4)).to eq([:delete_all_cookies, [:write, 'localStorage'], [:write, 'sessionStorage'],
+                                          :login])
+    end
+
+    it 'logs in without saving, with one warning, when the auth directory cannot be created' do
+      FileUtils.mkdir_p('.raider')
+      File.chmod(0o500, '.raider')
+      count = 0
+      output = warnings { expect(state.reuse { count += 1 }).to be(true) }
+      expect(count).to eq(1)
+      expect(output.lines).to match([start_with('[login_state] ')])
+    ensure
+      File.chmod(0o700, '.raider')
+    end
+
+    it 'logs in without saving, with one warning, when the lock cannot be opened' do
+      FileUtils.mkdir_p(File.join('.raider', 'auth', 'user.lock'))
+      count = 0
+      output = warnings { expect(state.reuse { count += 1 }).to be(true) }
+      expect(count).to eq(1)
+      expect(output.lines).to match([start_with('[login_state] ')])
+      expect(File).not_to exist(state_file)
+    end
+
+    it 'keeps the login, with one warning naming the file, when saving after it fails' do
+      allow(driver).to receive(:execute_script).and_raise(Selenium::WebDriver::Error::JavascriptError, 'abc')
+      count = 0
+      output = warnings { expect(state.reuse { count += 1 }).to be(true) }
+      expect(count).to eq(1)
+      expect(output.lines).to match([include(state_file, 'JavascriptError')])
+      expect(output).not_to include('abc')
     end
 
     it 'restores and skips the login when fresh and valid' do
@@ -283,10 +390,10 @@ describe 'SessionState' do
       expect(count).to eq(1)
     end
 
-    it 'RAIDER_LOGIN_STATE=off logs in and does not save' do
+    it 'RAIDER_LOGIN_STATE=off logs in and does not touch the disk' do
       stub_const('ENV', ENV.to_h.merge('RAIDER_LOGIN_STATE' => 'off'))
       expect(run_reuse).to eq(1)
-      expect(File).not_to exist(state_file)
+      expect(File).not_to exist('.raider')
     end
 
     it 'RAIDER_LOGIN_STATE=refresh logs in even when fresh' do
