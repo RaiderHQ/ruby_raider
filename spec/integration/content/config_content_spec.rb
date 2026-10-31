@@ -59,6 +59,13 @@ describe 'Config file content' do
     end
   end
 
+  shared_examples 'login state config' do |project_name|
+    it 'has a login_state max_age of an hour' do
+      config = YAML.safe_load(read_generated(project_name, 'config/config.yml'), permitted_classes: [Symbol])
+      expect(config['login_state']).to eq('max_age' => 3600)
+    end
+  end
+
   # --- Web config per automation ---
 
   context 'with rspec and selenium' do
@@ -66,18 +73,21 @@ describe 'Config file content' do
     include_examples 'valid web config', name
     include_examples 'selenium config with timeout', name
     include_examples 'video config', name
+    include_examples 'login state config', name
   end
 
   context 'with rspec and watir' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'valid web config', name
     include_examples 'config without driver_options', name
+    include_examples 'login state config', name
   end
 
   context 'with cucumber and selenium' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'valid web config', name
     include_examples 'selenium config with timeout', name
+    include_examples 'login state config', name
   end
 
   # --- Mobile config ---
@@ -98,6 +108,14 @@ describe 'Config file content' do
 
     it 'has platform capabilities' do
       expect(caps).to match(/platformName/i)
+    end
+  end
+
+  %w[android ios cross_platform].each do |automation|
+    it "has no login_state in the #{automation} config" do
+      Dir.glob(File.join("#{FrameworkIndex::RSPEC}_#{automation}", 'config', '*.yml')).each do |file|
+        expect(File.read(file)).not_to include('login_state')
+      end
     end
   end
 end

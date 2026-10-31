@@ -83,3 +83,28 @@ describe 'Cucumber raider_reporter wiring' do
     end
   end
 end
+
+describe 'Cucumber login reuse wiring' do
+  { 'selenium' => 'driver', 'watir' => 'browser.driver' }.each do |automation, target|
+    context "with cucumber and #{automation}" do
+      let(:env) { read_generated("#{FrameworkIndex::CUCUMBER}_#{automation}", 'features/support/env.rb') }
+
+      it 'requires session_state' do
+        expect(env).to include("require_relative '../../helpers/session_state'")
+      end
+
+      it "reuses the saved login in Before('@logged_in'), defined after the plain Before" do
+        expect(env).to include("Before('@logged_in') do", "SessionState.new(#{target}).reuse(",
+                               "UserFactory.for('registered user')")
+        expect(env.index("Before('@logged_in')")).to be > env.index(/^Before do/)
+      end
+    end
+  end
+
+  %w[android ios cross_platform].each do |automation|
+    it "does not mention session_state with cucumber and #{automation}" do
+      env = read_generated("#{FrameworkIndex::CUCUMBER}_#{automation}", 'features/support/env.rb')
+      expect(env).not_to include('session_state')
+    end
+  end
+end

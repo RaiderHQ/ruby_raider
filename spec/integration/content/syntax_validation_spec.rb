@@ -24,6 +24,21 @@ describe 'Ruby syntax validation' do
             expect(content).to have_frozen_string_literal
           end
         end
+
+        login_reuse_files = %w[helpers/session_state.rb]
+        login_reuse_files += if framework == 'rspec'
+                               %w[helpers/spec_helper.rb]
+                             else
+                               %w[features/support/env.rb features/step_definitions/login_steps.rb]
+                             end
+
+        login_reuse_files.each do |relative|
+          it "#{relative} is generated as valid Ruby with frozen_string_literal" do
+            content = File.read(File.join(project_name, relative))
+            expect(content).to have_valid_ruby_syntax
+            expect(content).to have_frozen_string_literal
+          end
+        end
       end
     end
   end

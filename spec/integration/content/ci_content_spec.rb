@@ -319,4 +319,15 @@ describe 'CI pipeline content' do
       include_examples 'github raider-gate job', name, 'appium_pipeline.yml', test_jobs
     end
   end
+
+  context 'with the saved login state' do
+    workflows = FRAMEWORKS.product(%w[selenium watir]).map { |f, a| ["#{f}_#{a}", 'test_pipeline.yml'] } +
+                FRAMEWORKS.product(%w[android ios cross_platform]).map { |f, a| ["#{f}_#{a}", 'appium_pipeline.yml'] }
+
+    workflows.each do |name, file|
+      it "keeps .raider/auth out of #{name}/#{file}" do
+        expect(read_generated(name, ".github/workflows/#{file}")).not_to include('.raider')
+      end
+    end
+  end
 end

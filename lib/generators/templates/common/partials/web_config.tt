@@ -19,3 +19,6 @@ video:
   enabled: true
   fps: 5
   max_width: 1280
+
+login_state:
+  max_age: 3600 # seconds a saved login is reused before logging in again

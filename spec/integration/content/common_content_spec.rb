@@ -139,6 +139,21 @@ describe 'Common file content' do
     end
   end
 
+  shared_examples 'web gitignore for saved logins' do |project_name|
+    subject(:lines) { read_generated(project_name, '.gitignore').lines.map(&:strip) }
+
+    it 'ignores .raider/auth/ but not the whole .raider/' do
+      expect(lines).to include('.raider/auth/')
+      expect(lines).not_to include('.raider/', '.raider')
+    end
+  end
+
+  shared_examples 'mobile gitignore without saved logins' do |project_name|
+    it 'has no .raider line' do
+      expect(read_generated(project_name, '.gitignore')).not_to include('.raider')
+    end
+  end
+
   # --- Spec helper retry config (C4) ---
 
   shared_examples 'spec helper with retry config' do |project_name|
@@ -207,6 +222,7 @@ describe 'Common file content' do
     it_behaves_like 'rspec gitignore', name
     it_behaves_like 'spec helper with retry config', name
     it_behaves_like 'gemfile with rspec-retry', name
+    it_behaves_like 'web gitignore for saved logins', name
   end
 
   context 'with rspec and watir' do
@@ -217,6 +233,7 @@ describe 'Common file content' do
     it_behaves_like 'rspec gitignore', name
     it_behaves_like 'spec helper with retry config', name
     it_behaves_like 'gemfile with rspec-retry', name
+    it_behaves_like 'web gitignore for saved logins', name
   end
 
   # --- Cucumber contexts ---
@@ -229,6 +246,7 @@ describe 'Common file content' do
     it_behaves_like 'non-rspec gitignore', name
     it_behaves_like 'gemfile without rspec-retry', name
     it_behaves_like 'cucumber config with retry', name
+    it_behaves_like 'web gitignore for saved logins', name
   end
 
   context 'with cucumber and watir' do
@@ -239,5 +257,14 @@ describe 'Common file content' do
     it_behaves_like 'non-rspec gitignore', name
     it_behaves_like 'gemfile without rspec-retry', name
     it_behaves_like 'cucumber config with retry', name
+    it_behaves_like 'web gitignore for saved logins', name
+  end
+
+  %w[android ios cross_platform].each do |automation|
+    %w[rspec cucumber].each do |framework|
+      context "with #{framework} and #{automation}" do
+        it_behaves_like 'mobile gitignore without saved logins', "#{framework}_#{automation}"
+      end
+    end
   end
 end

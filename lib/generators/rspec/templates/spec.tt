@@ -6,6 +6,7 @@ require_relative '../models/model_factory'
 require_relative '../page_objects/pages/account'
 require_relative '../page_objects/pages/login'
 
+# rubocop:disable RSpec/MultipleDescribes
 describe 'Login' do
   subject(:header) { account_page.header.customer_name }
 
@@ -36,6 +37,17 @@ describe 'Login' do
     end
   end
 end
+
+describe 'Account', :logged_in do
+  let(:user) { ModelFactory.for('users')['registered user'] }
+  let(:account_page) { <% if watir? -%>Account.new(browser)<% else -%>Account.new(driver)<% end -%> }
+
+  it 'opens the account page with the saved login' do
+    account_page.visit
+    expect(account_page.header.customer_name).to eq "Welcome back #{user['name']}"
+  end
+end
+# rubocop:enable RSpec/MultipleDescribes
 <%- else -%>
 <% if cross_platform? -%>
 require_relative '../helpers/appium_helper'

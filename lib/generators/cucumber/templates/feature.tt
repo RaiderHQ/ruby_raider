@@ -6,6 +6,11 @@ Scenario: A user can login
     When I login with my credentials
     Then I'm logged in
 
+@logged_in
+Scenario: A logged-in user opens the account page
+    Given I'm a registered user
+    Then I'm logged in
+
 <%- else -%>
 Feature: Home Page
 

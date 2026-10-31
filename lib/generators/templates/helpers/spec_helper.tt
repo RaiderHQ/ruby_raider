@@ -13,6 +13,12 @@ require_relative 'browser_helper'
 require_relative 'driver_helper'
 <%- end -%>
 require_relative 'video_helper'
+<%- if web? -%>
+require_relative 'session_state'
+require_relative '../models/model_factory'
+require_relative '../page_objects/pages/login'
+require_relative '../page_objects/pages/account'
+<%- end -%>
 
 module SpecHelper
   RSpec.configure do |config|
@@ -49,6 +55,20 @@ module SpecHelper
       @video_recorder = VideoHelper.recorder_for(<%= watir? ? 'browser' : 'driver' %>)
       @video_recorder.start
     end
+<%- if web? -%>
+
+    config.before(:each, :logged_in) do
+      user = ModelFactory.for('users')['registered user']
+      account = Account.new(<%= watir? ? 'browser' : 'driver' %>)
+      SessionState.new(<%= watir? ? 'browser.driver' : 'driver' %>).reuse(
+        valid: -> { account.tap(&:visit).header.customer_name == "Welcome back #{user['name']}" }
+      ) do
+        login = Login.new(<%= watir? ? 'browser' : 'driver' %>)
+        login.visit
+        login.login(user['username'], user['password'])
+      end
+    end
+<%- end -%>
 
     config.after(:each) do |example|
       example_name = example.description

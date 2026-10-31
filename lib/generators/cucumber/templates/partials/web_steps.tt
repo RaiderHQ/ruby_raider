@@ -9,6 +9,10 @@ Given("I'm a {user} on the login page") do |user|
   @login_page.visit
 end
 
+Given("I'm a {user}") do |user|
+  @user = user
+end
+
 When('I login with my credentials') do
   @login_page.login(@user['username'], @user['password'])
 end

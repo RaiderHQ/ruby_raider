@@ -10,6 +10,18 @@ describe HelpersGenerator do
     end
   end
 
+  shared_examples 'creates a session state helper' do |name|
+    it 'creates a session state helper file' do
+      expect(File).to exist("#{name}/helpers/session_state.rb")
+    end
+  end
+
+  shared_examples 'skips the session state helper' do |name|
+    it 'does not create a session state helper file' do
+      expect(File).not_to exist("#{name}/helpers/session_state.rb")
+    end
+  end
+
   shared_examples 'creates selenium helpers' do |name|
     it 'creates a driver helper file' do
       expect(File).to exist("#{name}/helpers/driver_helper.rb")
@@ -42,54 +54,63 @@ describe HelpersGenerator do
 
   context 'with rspec and selenium' do
     include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates a session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
   end
 
   context 'with rspec and watir' do
     include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
+    include_examples 'creates a session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'creates watir helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
   end
 
   context 'with cucumber and selenium' do
     include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates a session state helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates cucumber helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
   end
 
   context 'with cucumber and watir' do
     include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
+    include_examples 'creates a session state helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
     include_examples 'creates watir helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
     include_examples 'creates cucumber helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
   end
 
   context 'with rspec and appium android' do
     include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
+    include_examples 'skips the session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
     include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
   end
 
   context 'with rspec and appium ios' do
     include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
+    include_examples 'skips the session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
     include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
   end
 
   context 'with cucumber and appium android' do
     include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
+    include_examples 'skips the session state helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
     include_examples 'creates cucumber helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
   end
 
   context 'with cucumber and appium ios' do
     include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
+    include_examples 'skips the session state helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
     include_examples 'creates cucumber helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
   end
 
   context 'with rspec and appium cross platform' do
     include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'skips the session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates cross platform helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
@@ -97,6 +118,7 @@ describe HelpersGenerator do
 
   context 'with cucumber and appium cross platform' do
     include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'skips the session state helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates cucumber helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates cross platform helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"

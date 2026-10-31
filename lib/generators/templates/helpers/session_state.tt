@@ -1,0 +1,206 @@
+# frozen_string_literal: true
+
+require 'fileutils'
+require 'json'
+require 'time'
+require 'uri'
+require 'yaml'
+
+# Saves the browser login (cookies, localStorage, sessionStorage) to .raider/auth/<name>.json
+# and restores it into a new browser. The file holds live session tokens: it is git-ignored,
+# written 0600, and its values are never printed.
+#
+#   SessionState.new(driver, name: 'user').reuse(valid: -> { account.logged_in? }) { log_in }
+#
+# RAIDER_LOGIN_STATE=off always logs in and never saves; =refresh logs in and saves again.
+# Stale age is login_state.max_age (seconds) in config/config.yml.
+class SessionState
+  FORMAT = 1
+  DEFAULT_MAX_AGE = 3600
+  NAME_PATTERN = /\A[a-z0-9_-]+\z/.freeze
+  DIR = File.join('.raider', 'auth')
+  READ_STORAGE = 'return Object.assign({}, window[arguments[0]]);'
+  WRITE_STORAGE = 'var s = window[arguments[0]]; s.clear(); var d = arguments[1]; ' \
+                  'Object.keys(d).forEach(function (k) { s.setItem(k, d[k]); });'
+  STORAGES = { 'local_storage' => 'localStorage', 'session_storage' => 'sessionStorage' }.freeze
+  COOKIE_KEYS = %i[name value domain path secure http_only same_site].freeze
+
+  attr_reader :name
+
+  def initialize(driver, name: 'user')
+    raise ArgumentError, "name must match #{NAME_PATTERN.source}" unless name.to_s.match?(NAME_PATTERN)
+
+    @driver = driver
+    @name = name.to_s
+  end
+
+  def path
+    File.join(DIR, "#{name}.json")
+  end
+
+  def reuse(valid: nil, &login)
+    lock = open_lock unless ENV.fetch('RAIDER_LOGIN_STATE', nil) == 'off'
+    lock ? reuse_locked(lock, valid, &login) : login.call
+    true
+  end
+
+  def save
+    ensure_dir
+    visit_origin
+    state = { 'format' => FORMAT, 'name' => name, 'origin' => origin, 'saved_at' => Time.now.utc.iso8601,
+              'cookies' => @driver.manage.all_cookies.map { |cookie| dump_cookie(cookie) } }
+    STORAGES.each { |key, kind| state[key] = @driver.execute_script(READ_STORAGE, kind) || {} }
+    write_atomically(JSON.generate(state))
+    path
+  end
+
+  def restore
+    state = read_state
+    usable?(state) && apply(state)
+  rescue StandardError => e
+    fall_back("could not restore #{path} (#{e.class})")
+  end
+
+  def clear
+    FileUtils.rm_f(path)
+  end
+
+  def fresh?
+    state = read_state
+    usable?(state) && Time.now - Time.iso8601(state['saved_at']) < max_age
+  rescue ArgumentError, TypeError
+    false
+  end
+
+  private
+
+  def reuse_locked(lock, valid, &login)
+    lock.flock(File::LOCK_EX)
+    return if ENV.fetch('RAIDER_LOGIN_STATE', nil) != 'refresh' && fresh? && restore && still_valid?(valid)
+
+    clear
+    reset if @applied
+    login.call
+    save_after_login
+  ensure
+    lock.close
+  end
+
+  def open_lock
+    ensure_dir
+    File.open(File.join(DIR, "#{name}.lock"), File::RDWR | File::CREAT, 0o600)
+  rescue SystemCallError => e
+    fall_back("cannot write #{DIR} (#{e.class}), so nothing is saved")
+  end
+
+  def save_after_login
+    save
+  rescue StandardError => e
+    warn("[login_state] could not save #{path} (#{e.class}), the next run logs in again")
+  end
+
+  def reset
+    visit_origin
+    @driver.manage.delete_all_cookies
+    STORAGES.each_value { |kind| @driver.execute_script(WRITE_STORAGE, kind, {}) }
+  rescue StandardError
+    nil # a browser that cannot be reset fails the real login on its own
+  end
+
+  def visit_origin
+    @driver.navigate.to("#{origin}/") unless origin_of(URI.parse(@driver.current_url.to_s)) == origin
+  end
+
+  def still_valid?(valid)
+    valid.nil? || valid.call || fall_back("login restored from #{path} is no longer valid")
+  rescue StandardError => e
+    fall_back("validity check failed (#{e.class})")
+  end
+
+  def apply(state)
+    @driver.navigate.to("#{origin}/")
+    @applied = true
+    @driver.manage.delete_all_cookies
+    live, skipped = state['cookies'].partition { |cookie| live_for_origin?(cookie) }
+    live.each { |cookie| add_cookie(load_cookie(cookie)) }
+    warn("[login_state] #{skipped.size} cookies skipped (expired or another domain) from #{path}") if skipped.any?
+    STORAGES.each { |key, kind| @driver.execute_script(WRITE_STORAGE, kind, state[key] || {}) }
+    @driver.navigate.refresh
+    true
+  end
+
+  def add_cookie(attributes)
+    @driver.manage.add_cookie(attributes.dup) # Selenium's Manager rewrites the hash it is given
+  rescue StandardError
+    raise unless attributes.key?(:same_site)
+
+    @driver.manage.add_cookie(attributes.except(:same_site))
+  end
+
+  def live_for_origin?(cookie)
+    (cookie['expires'].nil? || Time.iso8601(cookie['expires']) > Time.now) && domain_matches?(cookie['domain'])
+  end
+
+  def domain_matches?(domain)
+    bare = domain.to_s.delete_prefix('.')
+    bare.empty? || base_uri.host == bare || base_uri.host.end_with?(".#{bare}")
+  end
+
+  def dump_cookie(cookie)
+    COOKIE_KEYS.to_h { |key| [key.to_s, cookie[key]] }.merge('expires' => cookie[:expires]&.to_time&.utc&.iso8601)
+  end
+
+  def load_cookie(cookie)
+    COOKIE_KEYS.to_h { |key| [key, cookie[key.to_s]] }
+               .merge(expires: cookie['expires'] && Time.iso8601(cookie['expires'])).compact
+  end
+
+  def read_state
+    JSON.parse(File.read(path)) if File.exist?(path)
+  rescue JSON::ParserError, SystemCallError
+    fall_back("#{path} is unreadable or corrupt")
+  end
+
+  def usable?(state)
+    return false unless state
+    return state['origin'] == origin if state.is_a?(Hash) && state['format'] == FORMAT
+
+    fall_back("#{path} has an unsupported format")
+  end
+
+  def write_atomically(json)
+    temp = "#{path}.#{Process.pid}.#{Thread.current.object_id}.tmp"
+    File.write(temp, json, perm: 0o600)
+    File.rename(temp, path)
+  end
+
+  def ensure_dir
+    FileUtils.chmod(0o700, FileUtils.mkdir_p(DIR))
+  end
+
+  def config
+    @config ||= YAML.load_file('config/config.yml') || {}
+  end
+
+  def max_age
+    Integer(config.dig('login_state', 'max_age') || DEFAULT_MAX_AGE)
+  end
+
+  def base_uri
+    @base_uri ||= URI.parse(config.fetch('url'))
+  end
+
+  def origin
+    @origin ||= origin_of(base_uri)
+  end
+
+  def origin_of(uri)
+    port = uri.port == uri.default_port ? '' : ":#{uri.port}"
+    "#{uri.scheme}://#{uri.host}#{port}"
+  end
+
+  def fall_back(reason)
+    warn("[login_state] #{reason}, logging in again")
+    false
+  end
+end
