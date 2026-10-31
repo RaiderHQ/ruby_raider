@@ -49,3 +49,12 @@ detectors:
 
   UtilityFunction:
     enabled: false
+
+  # Baseline of warnings that predate whole-repo reek in CI (2026-10-31). Remove an
+  # entry when its code is reworked.
+  MissingSafeMethod:
+    exclude:
+      - 'ScaffoldingCommands' # validate_project! is a Thor command guard; a non-raising twin has no caller
+  TooManyConstants:
+    exclude:
+      - 'RubyRaider::Ffmpeg' # pinned version, release URL and manifest constants
