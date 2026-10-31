@@ -61,7 +61,8 @@ jobs:
         run: bundle exec rubocop
 
       - name: Run Reek
-        run: bundle exec reek
+        # With a path: bare `reek` reads stdin when there is no terminal, which checks nothing in CI
+        run: bundle exec reek .
 
       - name: Build gem
         run: |

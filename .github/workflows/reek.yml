@@ -15,10 +15,14 @@ jobs:
         with:
           ruby-version: '3.3'
           bundler-cache: true
-          
+
       - name: reek
         uses: reviewdog/action-reek@v1
         with:
           reek_version: gemfile
           reporter: github-pr-review # Default is github-pr-check
           fail_on_error: true
+
+      - name: reek (whole repo)
+        # With a path: bare `reek` reads stdin when there is no terminal, which checks nothing in CI
+        run: bundle exec reek .

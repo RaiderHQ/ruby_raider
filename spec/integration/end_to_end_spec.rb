@@ -683,38 +683,26 @@ describe 'End-to-End Project Generation and Execution' do
 
   # Verify template system performance (caching working)
   context 'Template System Performance' do
-    it 'benefits from template caching on second generation' do
+    it 'compiles each partial once and reuses it on the second generation' do
       require_relative '../../lib/generators/generator'
 
-      # Clear cache
       Generator.clear_template_cache
+      compiled = []
+      allow_any_instance_of(TemplateRenderer::PartialCache).to(
+        receive(:compile_template).and_wrap_original { |original, *args| compiled << args.first && original.call(*args) }
+      )
 
-      # First generation (cache miss)
-      start_time = Time.now
-      settings1 = create_settings(framework: 'rspec', automation: 'selenium')
-      settings1[:name] = 'test_cache_1'
-      generate_framework(settings1)
-      first_duration = Time.now - start_time
+      %w[test_cache_1 test_cache_2].map do |name|
+        before = compiled.size
+        generate_framework(create_settings(framework: 'rspec', automation: 'selenium').merge(name:))
+        compiled.size - before
+      end => [first, second]
 
-      # Second generation (cache hit)
-      start_time = Time.now
-      settings2 = create_settings(framework: 'rspec', automation: 'selenium')
-      settings2[:name] = 'test_cache_2'
-      generate_framework(settings2)
-      second_duration = Time.now - start_time
-
-      # Second generation should be faster (or similar if I/O dominates)
-      # At minimum, cache should not slow things down
-      expect(second_duration).to be <= (first_duration * 1.2)
-
-      # Cleanup
-      FileUtils.rm_rf('test_cache_1')
-      FileUtils.rm_rf('test_cache_2')
-
-      # Verify cache has entries
-      stats = Generator.template_cache_stats
-      expect(stats[:size]).to be > 0
-      puts "\n📊 Template cache: #{stats[:size]} entries, ~#{stats[:memory_estimate] / 1024}KB"
+      expect(first).to be_positive
+      expect(second).to eq(0)
+      expect(Generator.template_cache_stats[:size]).to be_positive
+    ensure
+      FileUtils.rm_rf(%w[test_cache_1 test_cache_2])
     end
   end
 end

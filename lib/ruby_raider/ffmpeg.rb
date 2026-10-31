@@ -192,18 +192,18 @@ module RubyRaider
         [nil, true]
       end
 
-      def verified_cached?(path, sha256)
-        key = verification_key(path, sha256)
+      def verified_cached?(path, digest)
+        key = verification_key(path, digest)
         return true if @verified[key]
 
-        ok = verified?(path, sha256)
+        ok = verified?(path, digest)
         @verified[key] = true if ok
         ok
       end
 
-      def verification_key(path, sha256)
+      def verification_key(path, digest)
         stat = File.stat(path)
-        [path, stat.ino, stat.mtime.to_f, stat.ctime.to_f, stat.size, sha256]
+        [path, stat.ino, stat.mtime.to_f, stat.ctime.to_f, stat.size, digest]
       end
 
       def provision(env, manifest, fetch, warn, platform)
@@ -257,8 +257,8 @@ module RubyRaider
         nil
       end
 
-      def verified?(path, sha256)
-        Digest::SHA256.file(path).hexdigest.casecmp?(sha256)
+      def verified?(path, digest)
+        Digest::SHA256.file(path).hexdigest.casecmp?(digest)
       end
 
       def executable_file?(path)

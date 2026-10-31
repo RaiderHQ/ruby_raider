@@ -126,12 +126,12 @@ describe 'Generated Readme content' do
                                      'live session tokens', 'must not be committed, cached or uploaded')
         end
 
-        it 'is its own ## section, straight after the Quality gate and before any CI section' do
+        it 'is its own ## section, straight before Reporting, so Sponsors does not nest under it' do
           heading = readme.index("\n## Reusing the login\n")
-          gate = readme.index("\n### Quality gate\n")
-          expect(gate).to be < heading
-          expect(readme[(gate + 1)...heading]).not_to match(/\n##/)
-          expect(readme[(heading + 1)..][/\n## .*/]).to be_nil.or match(/\A\n## (CI|Azure Pipelines)\z/)
+          expect(heading).not_to be_nil
+          expect(readme[(heading + 1)..][/\n## .*/]).to eq("\n## Reporting")
+          sponsors = readme.index("\n### Sponsors") || readme.size
+          expect(readme[0...sponsors].scan(/\n## .*/).last).not_to eq("\n## Reusing the login")
         end
       else
         it 'does not mention login reuse' do

@@ -2,6 +2,7 @@
 
 require 'erb'
 require 'json'
+require 'timeout'
 require 'selenium-webdriver'
 require 'time'
 require 'tmpdir'
@@ -407,6 +408,51 @@ describe 'SessionState' do
       stub_const('ENV', ENV.to_h.merge('RAIDER_LOGIN_STATE' => 'refresh'))
       expect(run_reuse).to eq(1)
       expect(Time.iso8601(saved['saved_at'])).to be > before
+    end
+
+    it 'lets concurrent callers restore a fresh login at the same time' do
+      write_state('cookies' => [saved_cookie('session')])
+      arrived = Queue.new
+      checked = Queue.new
+      threads = Array.new(2) do
+        Thread.new do
+          valid = lambda do
+            arrived << 1
+            Timeout.timeout(2) { sleep 0.01 until arrived.size == 2 }
+            checked << 1
+          end
+          SessionState.new(SessionStateSpec::FakeDriver.new(cookies:)).reuse(valid:) { raise 'logged in' }
+        end
+      end
+      threads.each(&:join)
+      expect(checked.size).to eq(2)
+    end
+
+    it 'restores a login another worker saved meanwhile, without a fallback warning' do
+      write_state('cookies' => [saved_cookie('session')])
+      checks = 0
+      valid = lambda do
+        checks += 1
+        write_state('cookies' => [saved_cookie('session')], 'saved_at' => Time.now.utc.iso8601) if checks == 1
+        checks > 1
+      end
+      logins = 0
+      expect { state.reuse(valid:) { logins += 1 } }.not_to output.to_stderr
+      expect([logins, checks]).to eq([0, 2])
+    end
+
+    it 'warns once when the second restore after a peer save is also invalid' do
+      write_state('cookies' => [saved_cookie('session')])
+      checks = 0
+      valid = lambda do
+        checks += 1
+        write_state('cookies' => [saved_cookie('session')], 'saved_at' => Time.now.utc.iso8601) if checks == 1
+        false
+      end
+      logins = 0
+      expect { state.reuse(valid:) { logins += 1 } }
+        .to output(/\A\[login_state\] login restored from \S+ is no longer valid, logging in again\n\z/).to_stderr
+      expect(logins).to eq(1)
     end
 
     it 'serializes concurrent callers on the lock' do
