@@ -2,6 +2,7 @@
 
 require 'erb'
 require 'json'
+require 'timeout'
 require 'selenium-webdriver'
 require 'time'
 require 'tmpdir'
@@ -407,6 +408,24 @@ describe 'SessionState' do
       stub_const('ENV', ENV.to_h.merge('RAIDER_LOGIN_STATE' => 'refresh'))
       expect(run_reuse).to eq(1)
       expect(Time.iso8601(saved['saved_at'])).to be > before
+    end
+
+    it 'lets concurrent callers restore a fresh login at the same time' do
+      write_state('cookies' => [saved_cookie('session')])
+      arrived = Queue.new
+      checked = Queue.new
+      threads = Array.new(2) do
+        Thread.new do
+          valid = lambda do
+            arrived << 1
+            Timeout.timeout(2) { sleep 0.01 until arrived.size == 2 }
+            checked << 1
+          end
+          SessionState.new(SessionStateSpec::FakeDriver.new(cookies:)).reuse(valid:) { raise 'logged in' }
+        end
+      end
+      threads.each(&:join)
+      expect(checked.size).to eq(2)
     end
 
     it 'serializes concurrent callers on the lock' do

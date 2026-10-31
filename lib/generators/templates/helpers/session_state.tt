@@ -75,8 +75,7 @@ class SessionState
   private
 
   def reuse_locked(lock, valid, &login)
-    lock.flock(File::LOCK_EX)
-    return if ENV.fetch('RAIDER_LOGIN_STATE', nil) != 'refresh' && fresh? && restore && still_valid?(valid)
+    return if reused?(lock, valid)
 
     clear
     reset if @applied
@@ -84,6 +83,30 @@ class SessionState
     save_after_login
   ensure
     lock.close
+  end
+
+  # Restores under a shared lock, so parallel workers restore at the same time; only a real
+  # login takes the exclusive lock. Upgrading drops the shared lock first, so a worker that
+  # gets the exclusive lock after another one saved restores that login instead.
+  def reused?(lock, valid)
+    if ENV.fetch('RAIDER_LOGIN_STATE', nil) == 'refresh'
+      lock.flock(File::LOCK_EX)
+      return false
+    end
+    lock.flock(File::LOCK_SH)
+    seen = saved_mtime
+    return true if restored?(valid)
+
+    lock.flock(File::LOCK_EX)
+    saved_mtime != seen && restored?(valid)
+  end
+
+  def restored?(valid)
+    fresh? && restore && still_valid?(valid)
+  end
+
+  def saved_mtime
+    File.mtime(path) if File.exist?(path)
   end
 
   def open_lock
