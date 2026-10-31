@@ -82,6 +82,30 @@ raider g steps [NAME]     # Create step definitions
 raider g scaffold [NAME]  # Create page + test + steps
 ```
 
+<%- if web? -%>
+## Reusing the login
+
+Tag an example `:logged_in` (RSpec) or a scenario `@logged_in` (Cucumber) and the suite logs in once, saves the
+session, and restores it for the next tagged example or run instead of filling in the login form again. The generated
+account example shows it. If the saved session no longer works, the real login runs again and the state is saved anew.
+
+For another role, call it yourself with its own name:
+
+```ruby
+SessionState.new(driver, name: 'admin').reuse(valid: -> { dashboard.tap(&:visit).admin? }) do
+  # the real login for the admin
+end
+```
+
+With Watir, pass `browser.driver`, the Selenium driver underneath the browser.
+
+- `login_state: max_age:` in `config/config.yml` is how many seconds a saved login stays valid (default 3600).
+- `RAIDER_LOGIN_STATE=off` always does the real login and saves nothing; `RAIDER_LOGIN_STATE=refresh` ignores the saved
+  file, logs in and saves again.
+- The state lives in `.raider/auth/` and is git-ignored. It holds live session tokens, so it must not be committed,
+  cached or uploaded as a CI artifact. Nothing in it is ever printed.
+
+<%- end -%>
 ## Reporting
 
 <%- if rspec? -%>
@@ -192,30 +216,6 @@ would exit 2 on every run.
 
 Parallel test jobs that upload to one build must each set `RAIDER_SHARD_TOTAL` (the number of jobs) and
 `RAIDER_SHARD_INDEX` (1 to that number), so the gate waits for all of them instead of judging the first one to finish.
-
-<%- end -%>
-<%- if web? -%>
-## Reusing the login
-
-Tag an example `:logged_in` (RSpec) or a scenario `@logged_in` (Cucumber) and the suite logs in once, saves the
-session, and restores it for the next tagged example or run instead of filling in the login form again. The generated
-account example shows it. If the saved session no longer works, the real login runs again and the state is saved anew.
-
-For another role, call it yourself with its own name:
-
-```ruby
-SessionState.new(driver, name: 'admin').reuse(valid: -> { dashboard.tap(&:visit).admin? }) do
-  # the real login for the admin
-end
-```
-
-With Watir, pass `browser.driver`, the Selenium driver underneath the browser.
-
-- `login_state: max_age:` in `config/config.yml` is how many seconds a saved login stays valid (default 3600).
-- `RAIDER_LOGIN_STATE=off` always does the real login and saves nothing; `RAIDER_LOGIN_STATE=refresh` ignores the saved
-  file, logs in and saves again.
-- The state lives in `.raider/auth/` and is git-ignored. It holds live session tokens, so it must not be committed,
-  cached or uploaded as a CI artifact. Nothing in it is ever printed.
 
 <%- end -%>
 <%- if azure? && mobile? -%>
