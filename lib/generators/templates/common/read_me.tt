@@ -195,7 +195,7 @@ Parallel test jobs that upload to one build must each set `RAIDER_SHARD_TOTAL` (
 
 <%- end -%>
 <%- if web? -%>
-### Reusing the login
+## Reusing the login
 
 Tag an example `:logged_in` (RSpec) or a scenario `@logged_in` (Cucumber) and the suite logs in once, saves the
 session, and restores it for the next tagged example or run instead of filling in the login form again. The generated
@@ -204,7 +204,7 @@ account example shows it. If the saved session no longer works, the real login r
 For another role, call it yourself with its own name:
 
 ```ruby
-SessionState.new(driver, name: 'admin').reuse(valid: -> { dashboard.visit; dashboard.admin? }) do
+SessionState.new(driver, name: 'admin').reuse(valid: -> { dashboard.tap(&:visit).admin? }) do
   # the real login for the admin
 end
 ```
