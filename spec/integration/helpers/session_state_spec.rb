@@ -6,49 +6,63 @@ require 'time'
 require 'tmpdir'
 require 'yaml'
 
-TEMPLATE = File.expand_path('../../../lib/generators/templates/helpers/session_state.tt', __dir__)
-RENDERED = File.join(Dir.mktmpdir('session_state_tt'), 'session_state.rb')
-File.write(RENDERED, ERB.new(File.read(TEMPLATE), trim_mode: '-').result)
-load RENDERED
+module SessionStateSpec
+  TEMPLATE = File.expand_path('../../../lib/generators/templates/helpers/session_state.tt', __dir__)
 
-# Implements exactly the driver calls SessionState uses and records them in order.
-class FakeSessionDriver
-  attr_reader :calls, :added, :local, :session
-
-  def initialize(cookies: [], local: {}, session: {})
-    @cookies = cookies
-    @local = local
-    @session = session
-    @calls = []
-    @added = []
+  # Renders the template and loads it from a temp file that is removed straight away.
+  def self.load_template
+    Dir.mktmpdir('session_state_tt') do |dir|
+      file = File.join(dir, 'session_state.rb')
+      File.write(file, ERB.new(File.read(TEMPLATE), trim_mode: '-').result)
+      load file
+    end
   end
+end
+SessionStateSpec.load_template
 
-  def manage = self
-  def navigate = self
-  def all_cookies = @cookies
+module SessionStateSpec
+  # Implements exactly the driver calls SessionState uses and records them in order.
+  class FakeDriver
+    attr_reader :calls, :added, :local, :session
 
-  def add_cookie(cookie)
-    @calls << :add_cookie
-    @added << cookie
-  end
+    def initialize(cookies: [], local: {}, session: {}, reject: nil)
+      @reject = reject
+      @cookies = cookies
+      @local = local
+      @session = session
+      @calls = []
+      @added = []
+    end
 
-  def delete_all_cookies = @calls << :delete_all_cookies
-  def to(url) = @calls << [:to, url]
-  def refresh = @calls << :refresh
+    def manage = self
+    def navigate = self
+    def all_cookies = @cookies
 
-  def execute_script(_script, *args)
-    kind, values = args
-    store = kind == 'localStorage' ? :@local : :@session
-    return instance_variable_get(store) if values.nil?
+    def add_cookie(cookie)
+      raise 'rejected' if @reject&.call(cookie)
 
-    @calls << [:write, kind]
-    instance_variable_set(store, values)
+      @calls << :add_cookie
+      @added << cookie
+    end
+
+    def delete_all_cookies = @calls << :delete_all_cookies
+    def to(url) = @calls << [:to, url]
+    def refresh = @calls << :refresh
+
+    def execute_script(_script, *args)
+      kind, values = args
+      store = kind == 'localStorage' ? :@local : :@session
+      return instance_variable_get(store) if values.nil?
+
+      @calls << [:write, kind]
+      instance_variable_set(store, values)
+    end
   end
 end
 
 describe 'SessionState' do
   let(:url) { 'https://raider-test-site.onrender.com/' }
-  let(:driver) { FakeSessionDriver.new(cookies:, local: { 'token' => 'abc' }, session: { 'tab' => '1' }) }
+  let(:driver) { SessionStateSpec::FakeDriver.new(cookies:, local: { 'token' => 'abc' }, session: { 'tab' => '1' }) }
   let(:state) { SessionState.new(driver) }
   let(:config) { { 'url' => url } }
 
@@ -157,7 +171,8 @@ describe 'SessionState' do
                     saved_cookie('dotted', domain: '.raider-test-site.onrender.com'),
                     saved_cookie('foreign', domain: 'other.com')
                   ], 'local_storage' => { 'a' => 'b' })
-      expect { expect(state.restore).to be(true) }.to output(/2 cookies skipped/).to_stderr
+      warning = "[login_state] 2 cookies skipped (expired or another domain) from #{state_file}\n"
+      expect { expect(state.restore).to be(true) }.to output(warning).to_stderr
       expect(driver.added.map { |c| c[:name] }).to eq(%w[session future dotted])
       expect(driver.calls).to eq([[:to, "#{origin}/"], :delete_all_cookies, :add_cookie, :add_cookie, :add_cookie,
                                   [:write, 'localStorage'], [:write, 'sessionStorage'], :refresh])
@@ -176,10 +191,34 @@ describe 'SessionState' do
       expect do
         state.save
         state.restore
-        write_state('cookies' => [saved_cookie('x', value: 's3cr3t')], 'local_storage' => { 'k' => 'abc' }, 'saved_at' => 'bad')
+        write_state('cookies' => [saved_cookie('x', value: 's3cr3t')], 'local_storage' => { 'k' => 'abc' })
         state.reuse(valid: -> { false }) { nil }
       end.not_to output(leak).to_stdout
     end.not_to output(leak).to_stderr
+  end
+
+  describe 'unsupported or unusable files' do
+    it 'warns once, naming the file, for another format' do
+      write_state('format' => 2)
+      expect { expect(state.restore).to be(false) }.to output(/\A\[login_state\] #{Regexp.escape(state_file)} has an unsupported format.*\n\z/).to_stderr
+    end
+
+    it 'stays silent for a missing, expired or other-origin file' do
+      expect do
+        state.fresh?
+        write_state('origin' => 'https://other.test')
+        state.fresh?
+        write_state('saved_at' => (Time.now.utc - 7200).iso8601)
+        state.fresh?
+      end.not_to output.to_stderr
+    end
+
+    it 'retries a cookie the driver rejects without same_site' do
+      rejecting = SessionStateSpec::FakeDriver.new(reject: ->(cookie) { cookie.key?(:same_site) })
+      write_state('cookies' => [saved_cookie('a', same_site: 'Lax')])
+      expect(SessionState.new(rejecting).restore).to be(true)
+      expect(rejecting.added.map { |c| [c[:name], c.key?(:same_site)] }).to eq([['a', false]])
+    end
   end
 
   describe '#reuse' do
@@ -222,6 +261,28 @@ describe 'SessionState' do
       expect(saved['format']).to eq(1)
     end
 
+    it 'falls back once, with one warning, when valid raises' do
+      write_state
+      count = 0
+      expect { state.reuse(valid: -> { raise 'boom' }) { count += 1 } }.to output(/\A\[login_state\] validity check failed \(RuntimeError\), logging in again\n\z/).to_stderr
+      expect(count).to eq(1)
+    end
+
+    it 'falls back once, with one warning, when restore raises' do
+      write_state('cookies' => [saved_cookie('a')])
+      broken = SessionStateSpec::FakeDriver.new(reject: ->(_cookie) { true })
+      count = 0
+      expect { SessionState.new(broken).reuse { count += 1 } }.to output(/\A\[login_state\] could not restore.*\n\z/).to_stderr
+      expect(count).to eq(1)
+    end
+
+    it 'warns once for another format and logs in' do
+      write_state('format' => 2)
+      count = 0
+      expect { state.reuse { count += 1 } }.to output(/\A\[login_state\] .*unsupported format.*\n\z/).to_stderr
+      expect(count).to eq(1)
+    end
+
     it 'RAIDER_LOGIN_STATE=off logs in and does not save' do
       stub_const('ENV', ENV.to_h.merge('RAIDER_LOGIN_STATE' => 'off'))
       expect(run_reuse).to eq(1)
@@ -238,7 +299,7 @@ describe 'SessionState' do
 
     it 'serializes concurrent callers on the lock' do
       count = 0
-      drivers = Array.new(2) { FakeSessionDriver.new(cookies:) }
+      drivers = Array.new(2) { SessionStateSpec::FakeDriver.new(cookies:) }
       threads = drivers.map do |fake|
         Thread.new do
           SessionState.new(fake).reuse do
