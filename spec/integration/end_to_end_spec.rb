@@ -276,20 +276,21 @@ describe 'End-to-End Project Generation and Execution' do
         state_file = File.join('rspec_selenium', '.raider', 'auth', 'user.json')
         FileUtils.rm_rf(File.join('rspec_selenium', '.raider'))
         first = run_in_project('rspec_selenium', 'bundle exec rspec spec/', env: { 'HEADLESS' => 'true' })
+        failed = ->(run, index) { "Run #{index} failed.\nSTDOUT: #{run[:stdout]}\nSTDERR: #{run[:stderr]}" }
+        raise failed.call(first, 1) unless first[:exit_code].zero? # show run 1's output, not a missing state file
+
         expect(File).to exist(state_file)
         saved = JSON.parse(File.read(state_file))
         second = run_in_project('rspec_selenium', 'bundle exec rspec spec/', env: { 'HEADLESS' => 'true' })
-
-        [first, second].each_with_index do |run, index|
-          expect(run[:exit_code]).to eq(0), "Run #{index + 1} failed.\nSTDOUT: #{run[:stdout]}\nSTDERR: #{run[:stderr]}"
-        end
+        expect(second[:exit_code]).to eq(0), failed.call(second, 2)
         expect(File.stat(state_file).mode & 0o777).to eq(0o600)
         expect(saved).to include('format' => 1, 'origin' => 'https://raider-test-site.onrender.com')
         expect(JSON.parse(File.read(state_file))['saved_at']).to eq(saved['saved_at'])
-        cookie_values = saved['cookies'].map { |cookie| cookie['value'].to_s }.reject(&:empty?)
-        expect(cookie_values).not_to be_empty
+        cookie_values = saved['cookies'].map { |cookie| cookie['value'].to_s }
+        expect(cookie_values.reject(&:empty?)).not_to be_empty
         output = [first, second].map { |run| run[:stdout] + run[:stderr] }.join
-        cookie_values.each { |value| expect(output).not_to include(value) }
+        # Short values like "1" or "en" can appear in any output; a leaked token is long.
+        cookie_values.select { |value| value.length >= 8 }.each { |value| expect(output).not_to include(value) }
       end
     end
 
