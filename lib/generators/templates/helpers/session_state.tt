@@ -74,9 +74,17 @@ class SessionState
 
   private
 
+  # Warnings wait until the outcome is known: a peer's save can still rescue a failed restore,
+  # and each fallback warns once, only when it really logs in.
   def reuse_locked(lock, valid, &login)
-    return if reused?(lock, valid)
+    @reason = @note = nil
+    @deferred = true
+    reused = reused?(lock, valid)
+    @deferred = false
+    return warn(@note) if reused && @note
+    return if reused
 
+    warn("[login_state] #{@reason}, logging in again") if @reason
     clear
     reset if @applied
     login.call
@@ -94,19 +102,24 @@ class SessionState
       return false
     end
     lock.flock(File::LOCK_SH)
-    seen = saved_mtime
+    seen = saved_signature
     return true if restored?(valid)
 
+    lock.flock(File::LOCK_UN) # Windows will not upgrade a held shared lock in place
     lock.flock(File::LOCK_EX)
-    saved_mtime != seen && restored?(valid)
+    saved_signature != seen && restored?(valid)
   end
 
   def restored?(valid)
     fresh? && restore && still_valid?(valid)
   end
 
-  def saved_mtime
-    File.mtime(path) if File.exist?(path)
+  # inode, mtime and size: mtime alone misses a save in the same second on coarse filesystems
+  def saved_signature
+    stat = File.stat(path)
+    [stat.ino, stat.mtime, stat.size]
+  rescue SystemCallError
+    nil
   end
 
   def open_lock
@@ -146,7 +159,7 @@ class SessionState
     @driver.manage.delete_all_cookies
     live, skipped = state['cookies'].partition { |cookie| live_for_origin?(cookie) }
     live.each { |cookie| add_cookie(load_cookie(cookie)) }
-    warn("[login_state] #{skipped.size} cookies skipped (expired or another domain) from #{path}") if skipped.any?
+    note("[login_state] #{skipped.size} cookies skipped (expired or another domain) from #{path}") if skipped.any?
     STORAGES.each { |key, kind| @driver.execute_script(WRITE_STORAGE, kind, state[key] || {}) }
     @driver.navigate.refresh
     true
@@ -223,7 +236,11 @@ class SessionState
   end
 
   def fall_back(reason)
-    warn("[login_state] #{reason}, logging in again")
+    @deferred ? (@reason ||= reason) : warn("[login_state] #{reason}, logging in again")
     false
+  end
+
+  def note(message)
+    @deferred ? @note = message : warn(message)
   end
 end

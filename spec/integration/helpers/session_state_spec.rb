@@ -428,6 +428,33 @@ describe 'SessionState' do
       expect(checked.size).to eq(2)
     end
 
+    it 'restores a login another worker saved meanwhile, without a fallback warning' do
+      write_state('cookies' => [saved_cookie('session')])
+      checks = 0
+      valid = lambda do
+        checks += 1
+        write_state('cookies' => [saved_cookie('session')], 'saved_at' => Time.now.utc.iso8601) if checks == 1
+        checks > 1
+      end
+      logins = 0
+      expect { state.reuse(valid:) { logins += 1 } }.not_to output.to_stderr
+      expect([logins, checks]).to eq([0, 2])
+    end
+
+    it 'warns once when the second restore after a peer save is also invalid' do
+      write_state('cookies' => [saved_cookie('session')])
+      checks = 0
+      valid = lambda do
+        checks += 1
+        write_state('cookies' => [saved_cookie('session')], 'saved_at' => Time.now.utc.iso8601) if checks == 1
+        false
+      end
+      logins = 0
+      expect { state.reuse(valid:) { logins += 1 } }
+        .to output(/\A\[login_state\] login restored from \S+ is no longer valid, logging in again\n\z/).to_stderr
+      expect(logins).to eq(1)
+    end
+
     it 'serializes concurrent callers on the lock' do
       count = 0
       drivers = Array.new(2) { SessionStateSpec::FakeDriver.new(cookies:) }
