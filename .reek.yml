@@ -1,3 +1,7 @@
+# setup-ruby's bundler-cache installs gems into vendor/bundle inside the checkout
+exclude_paths:
+  - vendor
+
 detectors:
   Attribute:
     enabled: false
