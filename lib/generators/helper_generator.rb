@@ -9,6 +9,7 @@ class HelpersGenerator < Generator
     generate_appium_helper
     generate_spec_helper
     generate_video_helper
+    generate_session_state
   end
 
   private
@@ -33,6 +34,12 @@ class HelpersGenerator < Generator
 
   def generate_video_helper
     template('helpers/video_helper.tt', "#{name}/helpers/video_helper.rb")
+  end
+
+  def generate_session_state
+    return if mobile?
+
+    template('helpers/session_state.tt', "#{name}/helpers/session_state.rb")
   end
 
   def generate_appium_helper

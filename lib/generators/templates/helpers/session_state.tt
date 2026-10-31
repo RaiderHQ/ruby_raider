@@ -1,0 +1,221 @@
+# frozen_string_literal: true
+
+require 'fileutils'
+require 'json'
+require 'time'
+require 'uri'
+require 'yaml'
+
+# Saves the browser login (cookies, localStorage, sessionStorage) to
+# .raider/auth/<name>.json and restores it into a new browser, so a suite logs in
+# through the UI once instead of before every test. The file holds live session
+# tokens: it is git-ignored, written 0600, and its values are never printed.
+#
+#   SessionState.new(driver, name: 'user').reuse(valid: -> { account.logged_in? }) do
+#     login_page.login(username, password)
+#   end
+#
+# RAIDER_LOGIN_STATE=off always logs in and never saves; =refresh logs in and saves
+# even when a fresh file exists. Stale age is login_state.max_age in config/config.yml.
+class SessionState
+  FORMAT = 1
+  DEFAULT_MAX_AGE = 3600
+  NAME_PATTERN = /\A[a-z0-9_-]+\z/
+  DIR = File.join('.raider', 'auth')
+  READ_STORAGE = 'return Object.assign({}, window[arguments[0]]);'
+  WRITE_STORAGE = 'var s = window[arguments[0]]; s.clear(); var d = arguments[1]; ' \
+                  'Object.keys(d).forEach(function (k) { s.setItem(k, d[k]); });'
+
+  attr_reader :name
+
+  def initialize(driver, name: 'user')
+    raise ArgumentError, "name must match #{NAME_PATTERN.source}" unless name.to_s.match?(NAME_PATTERN)
+
+    @driver = driver
+    @name = name.to_s
+  end
+
+  def path
+    File.join(DIR, "#{name}.json")
+  end
+
+  def reuse(valid: nil, &login)
+    ensure_dir
+    File.open(File.join(DIR, "#{name}.lock"), File::RDWR | File::CREAT, 0o600) do |lock|
+      lock.flock(File::LOCK_EX)
+      reuse_locked(valid, &login)
+    end
+    true
+  end
+
+  def save
+    ensure_dir
+    state = { 'format' => FORMAT, 'name' => name, 'origin' => origin, 'saved_at' => Time.now.utc.iso8601,
+              'cookies' => driver.manage.all_cookies.map { |cookie| dump_cookie(cookie) },
+              'local_storage' => read_storage('localStorage'), 'session_storage' => read_storage('sessionStorage') }
+    write_atomically(JSON.generate(state))
+    path
+  end
+
+  def restore
+    state = read_state
+    return false unless state && compatible?(state)
+
+    apply(state)
+    true
+  rescue StandardError => e
+    warn_state("could not restore #{path} (#{e.class})")
+    false
+  end
+
+  def clear
+    FileUtils.rm_f(path)
+    nil
+  end
+
+  def fresh?
+    state = read_state
+    return false unless state && compatible?(state)
+
+    Time.now - Time.iso8601(state['saved_at']) < max_age
+  rescue ArgumentError, TypeError
+    false
+  end
+
+  private
+
+  attr_reader :driver
+
+  def reuse_locked(valid, &login)
+    mode = ENV.fetch('RAIDER_LOGIN_STATE', nil)
+    return login.call if mode == 'off'
+    return log_in_and_save(&login) if mode == 'refresh' || !fresh?
+    return if restore && still_valid?(valid)
+
+    warn_state("saved login in #{path} was not usable, logging in again")
+    log_in_and_save(&login)
+  end
+
+  def log_in_and_save
+    clear
+    yield
+    save
+  end
+
+  def still_valid?(valid)
+    valid.nil? || valid.call
+  rescue StandardError => e
+    warn_state("validity check failed (#{e.class})")
+    false
+  end
+
+  def apply(state)
+    driver.navigate.to("#{origin}/")
+    driver.manage.delete_all_cookies
+    live, skipped = state['cookies'].partition { |cookie| live_for_origin?(cookie) }
+    live.each { |cookie| add_cookie(load_cookie(cookie)) }
+    warn_skipped(skipped.size) if skipped.any?
+    write_storage('localStorage', state['local_storage'])
+    write_storage('sessionStorage', state['session_storage'])
+    driver.navigate.refresh
+  end
+
+  def warn_skipped(count)
+    noun = count == 1 ? 'cookie' : 'cookies'
+    warn_state("#{count} #{noun} skipped (expired or another domain) from #{path}")
+  end
+
+  def add_cookie(attributes)
+    driver.manage.add_cookie(attributes)
+  rescue StandardError
+    raise unless attributes.key?(:same_site)
+
+    driver.manage.add_cookie(attributes.except(:same_site))
+  end
+
+  def live_for_origin?(cookie)
+    expires = cookie['expires']
+    (expires.nil? || Time.iso8601(expires) > Time.now) && domain_matches?(cookie['domain'])
+  end
+
+  def domain_matches?(domain)
+    return true if domain.nil? || domain.empty?
+
+    bare = domain.delete_prefix('.')
+    host == bare || host.end_with?(".#{bare}")
+  end
+
+  def dump_cookie(cookie)
+    expires = cookie[:expires]
+    { 'name' => cookie[:name], 'value' => cookie[:value], 'domain' => cookie[:domain], 'path' => cookie[:path],
+      'expires' => expires && expires.to_time.utc.iso8601, 'secure' => cookie[:secure],
+      'http_only' => cookie[:http_only], 'same_site' => cookie[:same_site] }
+  end
+
+  def load_cookie(cookie)
+    attributes = { name: cookie['name'], value: cookie['value'], domain: cookie['domain'], path: cookie['path'],
+                   secure: cookie['secure'], http_only: cookie['http_only'], same_site: cookie['same_site'] }
+    attributes[:expires] = Time.iso8601(cookie['expires']) if cookie['expires']
+    attributes.compact
+  end
+
+  def read_storage(kind)
+    driver.execute_script(READ_STORAGE, kind) || {}
+  end
+
+  def write_storage(kind, values)
+    driver.execute_script(WRITE_STORAGE, kind, values || {})
+  end
+
+  def read_state
+    return nil unless File.exist?(path)
+
+    JSON.parse(File.read(path))
+  rescue JSON::ParserError, SystemCallError
+    warn_state("#{path} is unreadable or corrupt")
+    nil
+  end
+
+  def compatible?(state)
+    state.is_a?(Hash) && state['format'] == FORMAT && state['origin'] == origin
+  end
+
+  def write_atomically(json)
+    temp = "#{path}.#{Process.pid}.#{Thread.current.object_id}.tmp"
+    File.write(temp, json, perm: 0o600)
+    File.rename(temp, path)
+  ensure
+    FileUtils.rm_f(temp) if temp
+  end
+
+  def ensure_dir
+    FileUtils.mkdir_p('.raider')
+    FileUtils.mkdir_p(DIR, mode: 0o700)
+  end
+
+  def config
+    YAML.load_file('config/config.yml') || {}
+  end
+
+  def max_age
+    Integer(config.dig('login_state', 'max_age') || DEFAULT_MAX_AGE)
+  end
+
+  def base_uri
+    URI.parse(config.fetch('url'))
+  end
+
+  def host
+    base_uri.host
+  end
+
+  def origin
+    uri = base_uri
+    port = uri.port == uri.default_port ? '' : ":#{uri.port}"
+    "#{uri.scheme}://#{uri.host}#{port}"
+  end
+
+  def warn_state(message)
+    warn("[login_state] #{message}")
+  end
+end
