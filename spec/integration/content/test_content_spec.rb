@@ -116,18 +116,41 @@ describe 'Test file content' do
     end
   end
 
+  shared_examples 'logged in example' do |project_name|
+    it 'adds a :logged_in example that reuses the saved login and keeps the login example' do
+      spec = read_generated(project_name, 'spec/login_page_spec.rb')
+      expect(spec).to include("describe 'Account', :logged_in", 'opens the account page with the saved login',
+                              "describe 'Login' do", 'can successfully log in')
+    end
+  end
+
+  shared_examples 'logged in scenario' do |project_name|
+    it 'adds a @logged_in scenario and keeps the login scenario' do
+      feature = read_generated(project_name, 'features/login.feature')
+      expect(feature).to include("@logged_in\nScenario: A logged-in user opens the account page",
+                                 "Given I'm a registered user\n", 'Scenario: A user can login')
+    end
+
+    it 'defines the step that picks the user without logging in' do
+      steps = read_generated(project_name, 'features/step_definitions/login_steps.rb')
+      expect(steps).to include(%q(Given("I'm a {user}") do |user|))
+    end
+  end
+
   # --- RSpec contexts ---
 
   context 'with rspec and selenium' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'valid rspec spec', name
     include_examples 'selenium rspec spec', name
+    include_examples 'logged in example', name
   end
 
   context 'with rspec and watir' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'valid rspec spec', name
     include_examples 'watir rspec spec', name
+    include_examples 'logged in example', name
   end
 
   # --- Cucumber contexts ---
@@ -138,6 +161,7 @@ describe 'Test file content' do
     include_examples 'valid cucumber env', name
     include_examples 'valid cucumber world', name
     include_examples 'valid cucumber config', name
+    include_examples 'logged in scenario', name
   end
 
   context 'with cucumber and watir' do
@@ -146,5 +170,6 @@ describe 'Test file content' do
     include_examples 'valid cucumber env', name
     include_examples 'valid cucumber world', name
     include_examples 'valid cucumber config', name
+    include_examples 'logged in scenario', name
   end
 end

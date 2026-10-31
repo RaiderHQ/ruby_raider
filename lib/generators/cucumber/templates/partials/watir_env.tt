@@ -4,6 +4,10 @@ require 'raider_reporter/cucumber'
 require 'tmpdir'
 require 'yaml'
 require_relative '../../helpers/video_helper'
+require_relative '../../helpers/session_state'
+require_relative '../../models/user_factory'
+require_relative '../../page_objects/pages/account'
+require_relative '../../page_objects/pages/login'
 
 Before do
   viewport = YAML.load_file('config/config.yml')['viewport']
@@ -14,6 +18,18 @@ Before do
   end
   @video_recorder = VideoHelper.recorder_for(browser)
   @video_recorder.start
+end
+
+Before('@logged_in') do
+  user = UserFactory.for('registered user')
+  account = Account.new(browser)
+  SessionState.new(browser.driver).reuse(
+    valid: -> { account.tap(&:visit).header.customer_name == "Welcome back #{user['name']}" }
+  ) do
+    login = Login.new(browser)
+    login.visit
+    login.login(user['username'], user['password'])
+  end
 end
 
 After do |scenario|

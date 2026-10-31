@@ -365,4 +365,36 @@ describe 'Helper file content' do
       end
     end
   end
+
+  # --- Opt-in login reuse ---
+
+  { 'selenium' => 'driver', 'watir' => 'browser.driver' }.each do |automation, target|
+    context "with rspec and #{automation} login reuse" do
+      subject(:helper) { read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'helpers/spec_helper.rb') }
+
+      it 'requires session_state and opts in through the :logged_in tag' do
+        expect(helper).to include("require_relative 'session_state'", 'config.before(:each, :logged_in)')
+      end
+
+      it 'reuses the saved login for the driver, falling back to the real login' do
+        expect(helper).to include("SessionState.new(#{target}).reuse(")
+        expect(helper).to include("user = ModelFactory.for('users')['registered user']", ".login(user['username'], user['password'])")
+        expect(helper).to include("header.customer_name == \"Welcome back \#{user['name']}\"")
+      end
+
+      it 'requires the models and pages the login needs' do
+        expect(helper).to include("require_relative '../models/model_factory'",
+                                  "require_relative '../page_objects/pages/login'",
+                                  "require_relative '../page_objects/pages/account'")
+      end
+    end
+  end
+
+  %w[android ios cross_platform].each do |automation|
+    context "with rspec and #{automation} without login reuse" do
+      it 'does not mention session_state' do
+        expect(read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'helpers/spec_helper.rb')).not_to include('session_state')
+      end
+    end
+  end
 end

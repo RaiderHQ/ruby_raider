@@ -5,3 +5,6 @@ spec/examples.txt
 <%- if cucumber? -%>
 rerun.txt
 <%- end -%>
+<%- if web? -%>
+.raider/auth/
+<%- end -%>
