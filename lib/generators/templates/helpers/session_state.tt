@@ -35,7 +35,9 @@ class SessionState
     @name = name.to_s
   end
 
-  def path = File.join(DIR, "#{name}.json")
+  def path
+    File.join(DIR, "#{name}.json")
+  end
 
   def reuse(valid: nil, &login)
     ensure_dir
@@ -65,7 +67,10 @@ class SessionState
     fall_back("could not restore #{path} (#{e.class})")
   end
 
-  def clear = FileUtils.rm_f(path) && nil
+  def clear
+    FileUtils.rm_f(path)
+    nil
+  end
 
   def fresh?
     state = read_state
@@ -120,9 +125,15 @@ class SessionState
     bare.empty? || base_uri.host == bare || base_uri.host.end_with?(".#{bare}")
   end
 
-  def dump_cookie(cookie) = COOKIE_KEYS.to_h { |key| [key.to_s, cookie[key]] }.merge('expires' => cookie[:expires]&.to_time&.utc&.iso8601)
+  def dump_cookie(cookie)
+    COOKIE_KEYS.to_h { |key| [key.to_s, cookie[key]] }
+               .merge('expires' => cookie[:expires]&.to_time&.utc&.iso8601)
+  end
 
-  def load_cookie(cookie) = COOKIE_KEYS.to_h { |key| [key, cookie[key.to_s]] }.merge(expires: cookie['expires'] && Time.iso8601(cookie['expires'])).compact
+  def load_cookie(cookie)
+    COOKIE_KEYS.to_h { |key| [key, cookie[key.to_s]] }
+               .merge(expires: cookie['expires'] && Time.iso8601(cookie['expires'])).compact
+  end
 
   def read_state
     JSON.parse(File.read(path)) if File.exist?(path)
@@ -144,13 +155,21 @@ class SessionState
     File.rename(temp, path)
   end
 
-  def ensure_dir = FileUtils.chmod(0o700, FileUtils.mkdir_p(DIR))
+  def ensure_dir
+    FileUtils.chmod(0o700, FileUtils.mkdir_p(DIR))
+  end
 
-  def config = (@config ||= YAML.load_file('config/config.yml') || {})
+  def config
+    @config ||= YAML.load_file('config/config.yml') || {}
+  end
 
-  def max_age = Integer(config.dig('login_state', 'max_age') || DEFAULT_MAX_AGE)
+  def max_age
+    Integer(config.dig('login_state', 'max_age') || DEFAULT_MAX_AGE)
+  end
 
-  def base_uri = (@base_uri ||= URI.parse(config.fetch('url')))
+  def base_uri
+    @base_uri ||= URI.parse(config.fetch('url'))
+  end
 
   def origin
     port = base_uri.port == base_uri.default_port ? '' : ":#{base_uri.port}"
