@@ -43,6 +43,8 @@ module SessionStateSpec
     def navigate = self
     def all_cookies = @cookies
     def current_url = @url
+    def refresh = calls << :refresh
+    def delete_all_cookies = calls << :delete_all_cookies
 
     def add_cookie(cookie)
       raise 'rejected' if @reject&.call(cookie)
@@ -51,12 +53,10 @@ module SessionStateSpec
       added << cookie
     end
 
-    def delete_all_cookies = calls << :delete_all_cookies
     def to(url)
       @url = url
       calls << [:to, url]
     end
-    def refresh = calls << :refresh
 
     def execute_script(_script, *args)
       kind, values = args
@@ -213,7 +213,7 @@ describe 'SessionState' do
 
     it 'restores live cookies for the origin and skips expired and foreign ones' do
       write_state('cookies' => [
-                    saved_cookie('session', same_site: 'Lax', http_only: true),
+                    saved_cookie('session'),
                     saved_cookie('future', expires: (Time.now.utc + 86_400).iso8601),
                     saved_cookie('past', expires: (Time.now.utc - 1).iso8601),
                     saved_cookie('dotted', domain: '.raider-test-site.onrender.com'),
@@ -222,11 +222,17 @@ describe 'SessionState' do
       warning = "[login_state] 2 cookies skipped (expired or another domain) from #{state_file}\n"
       expect { expect(state.restore).to be(true) }.to output(warning).to_stderr
       expect(driver.added.map { |c| c[:name] }).to eq(%w[session future dotted])
-      expect(driver.added.first).to include(sameSite: 'Lax', httpOnly: true, secure: false)
-      expect(driver.added.flat_map(&:keys)).not_to include(:same_site, :http_only, :expires)
-      expect(driver.added[1][:expiry]).to be_a(Integer)
       expect(driver.calls).to eq([[:to, "#{origin}/"], :delete_all_cookies, :add_cookie, :add_cookie, :add_cookie,
                                   [:write, 'localStorage'], [:write, 'sessionStorage'], :refresh])
+    end
+
+    it 'hands Selenium the cookie keys it translates to the wire format' do
+      write_state('cookies' => [saved_cookie('session', same_site: 'Lax', http_only: true),
+                                saved_cookie('future', expires: (Time.now.utc + 86_400).iso8601)])
+      expect(state.restore).to be(true)
+      expect(driver.added.first).to include(sameSite: 'Lax', httpOnly: true, secure: false)
+      expect(driver.added.flat_map(&:keys)).not_to include(:same_site, :http_only, :expires)
+      expect(driver.added.last[:expiry]).to be_a(Integer)
     end
 
     it 'returns false and warns for corrupt JSON' do
