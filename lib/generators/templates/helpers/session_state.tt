@@ -17,7 +17,7 @@ require 'yaml'
 class SessionState
   FORMAT = 1
   DEFAULT_MAX_AGE = 3600
-  NAME_PATTERN = /\A[a-z0-9_-]+\z/
+  NAME_PATTERN = /\A[a-z0-9_-]+\z/.freeze
   DIR = File.join('.raider', 'auth')
   READ_STORAGE = 'return Object.assign({}, window[arguments[0]]);'
   WRITE_STORAGE = 'var s = window[arguments[0]]; s.clear(); var d = arguments[1]; ' \
