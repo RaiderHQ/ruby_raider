@@ -224,6 +224,9 @@ timeout: 15
 - `headless`: not in the file by default. Add `headless: true`, or set `HEADLESS=true` for one run, to run the
   browser without a window.
 - `video`: failure videos, see [Video replay](#video-replay).
+<%- if trace_helper? -%>
+- `trace`: failing-test traces, see [Trace replay](#trace-replay).
+<%- end -%>
 - `login_state`: how long a saved login is reused, see [Reusing the login](#reusing-the-login).
 <%- end -%>
 
@@ -530,6 +533,10 @@ The wait helper is ordinary code in your project, so you can take it out. To do 
 <%- end -%>
 5. Scaffolding (`raider g page` and `raider g component`) then writes plain `driver.find_element` examples on its
    own, because it checks for `helpers/wait_helper.rb`.
+<%- if trace_helper? -%>
+
+Note that without WaitHelper a trace records only navigation and the failure (see [Trace replay](#trace-replay)).
+<%- end -%>
 
 <%- end -%>
 <%- if web? -%>
@@ -674,6 +681,43 @@ The video is a `video.webm` built from page screenshots with ffmpeg.
   no video.
 <%- end -%>
 
+<%- if trace_helper? -%>
+### Trace replay
+
+Every test records a trace, and the trace is kept only for failing tests<%= rspec? ? ' (on the last retry attempt)' : '' %>. A trace is a step-by-step
+record of the test: each action and page load, with the locator, how long it waited, a screenshot and the page HTML
+after it, the network requests, and the browser console. It is saved as `raider-results/attachments/<n>-trace.zip`,
+next to the failure screenshot and video, and attached to the report as `trace`.
+
+- Keep the trace of passing tests too with `TRACE=on bundle exec <%= rspec? ? 'rspec' : 'cucumber' %>`. Capture nothing for one run with
+  `TRACE=off bundle exec <%= rspec? ? 'rspec' : 'cucumber' %>`, or for the project with `raider u trace off` (`raider u trace on` turns it back on).
+  Both write `enabled:` under `trace:` in `config/config.yml`.
+- Open a trace in Raider Desktop, or from the test's page on Hideout when the run is uploaded.
+- Cost: a trace takes one screenshot and one page HTML for every step that changes the page (a click, typing,
+  a page load), including in passing tests, whose traces are then thrown away. If that slows your suite down,
+  switch tracing off as above.
+- Caps, under `trace:` in `config/config.yml`: `max_steps` (200) keeps the newest steps, and `max_mb` (20) keeps the
+  zip under that size. When a cap is reached, the HTML of the oldest steps is dropped first, then their
+  screenshots, then the oldest network and console entries. The last 10 steps always keep theirs.
+- Network requests and console messages are captured only on Chrome, Edge or Firefox. Other browsers, such as
+  Safari, get a trace with steps, screenshots and HTML only. Capture is passive: the trace listens to the browser and
+  never changes a request.
+- The trace helper never fails a test. If capturing breaks, you get one `[trace]` line on stderr and no more traces
+  for that run.
+
+**Treat a trace like the video: it can contain secrets.** What is hidden: values typed into password fields
+(`type=password`, or an `autocomplete` that contains "password"), and any typed value equal to a `RAIDER_SECRET_*`
+environment variable. Everything else is kept: other typed values, page text, URLs with their query strings, and
+console text. So a secret typed into an ordinary field, or shown on the page, ends up in the trace. Request headers,
+cookies and request or response bodies are never captured. Do not share or upload traces from runs that handle real
+credentials.
+
+**Removing the trace helper.** The trace helper is ordinary code in your project. Delete `helpers/trace_helper.rb` and
+the `require_relative` lines that load `trace_helper`: in <%= rspec? ? '`helpers/driver_helper.rb`' : '`helpers/driver_helper.rb` and `features/support/env.rb`' %>. The other lines that use it
+(in <%= rspec? ? '`helpers/spec_helper.rb`' : '`features/support/env.rb`' %> and the driver helper's listeners) only run when `TraceHelper` is defined,
+so they can stay. Remove the `trace:` block from `config/config.yml` if you like.
+
+<%- end -%>
 <%- unless azure? && mobile? -%>
 ### Quarantine
 
