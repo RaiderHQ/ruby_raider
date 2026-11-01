@@ -32,7 +32,7 @@
   end
 <%- end -%>
 
-<%= partial('browserstack_config', strip: true) %>
+  <%= partial('browserstack_config', strip: true) %>
 
   def configure_driver
     if browserstack?

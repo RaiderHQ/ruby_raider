@@ -6,7 +6,6 @@ require 'watir'
 require_relative 'video_helper'
 
 module BrowserHelper
-
   def browser(*args)
     @browser ||= create_browser(*args)
   end
@@ -23,7 +22,7 @@ module BrowserHelper
     args = args.empty? ? config['browser_arguments'][browser_name] : args
     args += ['--headless'] if (ENV['HEADLESS'] || config['headless']) && !args.include?('--headless')
     capitalized = browser_name == 'ie' ? browser_name.upcase : browser_name.capitalize
-    browser_options = "Selenium::WebDriver::#{capitalized}::Options".constantize.new(args:)
+    browser_options = "Selenium::WebDriver::#{capitalized}::Options".constantize.new(args: args)
     arguments = { options: browser_options }
     listener = VideoHelper.listener
     arguments[:listener] = listener if listener

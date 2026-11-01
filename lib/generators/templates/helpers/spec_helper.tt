@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-<%- if axe_addon? %>
+<%- if axe_addon? -%>
 require 'axe-rspec'
 <%- end -%>
 require 'rspec'

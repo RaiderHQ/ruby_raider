@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../spec_helper'
+require_relative '../frozen_string_literal_matcher'
 
 module ContentHelper
   def read_generated(project, relative_path)
@@ -10,11 +11,6 @@ module ContentHelper
   def project(framework, automation)
     "#{framework}_#{automation}"
   end
-end
-
-RSpec::Matchers.define :have_frozen_string_literal do
-  match { |content| content.include?('# frozen_string_literal: true') }
-  failure_message { 'expected file to contain frozen_string_literal magic comment' }
 end
 
 RSpec::Matchers.define :have_valid_ruby_syntax do

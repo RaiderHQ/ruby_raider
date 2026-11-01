@@ -212,10 +212,13 @@ describe 'Example tests on the wait helper' do
   end
 end
 
-# The Watir output must stay as master generated it (1274a66); the snapshots in
+# The Watir output must stay as master generated it (1274a66), plus the 3.12.1 lint fixes; the snapshots in
 # spec/fixtures/watir_master were generated from that commit's lib.
 # To regenerate: `git archive 1274a66 lib` into a scratch dir, generate rspec and cucumber Watir projects there,
-# then apply only the Readme deprecation-line delta (the `> **Deprecated:**` line under the heading block).
+# then apply only the Readme deprecation-line delta (the `> **Deprecated:**` line under the heading block) and
+# the 3.12.1 changes: RuboCop lint fixes (page.rb loses its extra blank lines, login_steps.rb ends with a newline)
+# plus the frozen_string_literal comments the syntax spec requires (Style/FrozenStringLiteralComment is disabled
+# in the generated .rubocop.yml, so RuboCop does not ask for them) on the Watir page, world and user_factory files.
 describe 'Watir example output' do
   snapshots = File.expand_path('../../fixtures/watir_master', __dir__)
 

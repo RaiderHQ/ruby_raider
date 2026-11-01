@@ -1,4 +1,5 @@
-<% if web? %>
+<%- if web? -%>
+
   def full_url(*page)
     "#{base_url}#{url(*page)}"
   end
@@ -10,4 +11,4 @@
   def url(_page)
     raise 'Url must be defined on child pages'
   end
-<% end %>
+<%- end -%>

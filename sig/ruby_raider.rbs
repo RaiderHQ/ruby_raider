@@ -8,6 +8,7 @@ module RubyRaider
 
     private
 
+    def parse_examples: (untyped value) -> bool
     def generate_from_parameters: (Hash[Symbol, untyped] params) -> void
     def merge_flags: (Hash[Symbol, untyped] params) -> void
   end
