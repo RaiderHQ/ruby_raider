@@ -323,6 +323,69 @@ describe 'WaitHelper' do
       expect { member.click(timeout: 1) }.to raise_error(errors::StaleElementReferenceError, /find_elements again/)
     end
 
+    context 'when a parent that cannot be found again goes stale' do
+      let(:raw_row) { element.script({ css: 'td' }, element) }
+      let(:hint) { /find_elements again/ }
+
+      def stale_row
+        driver.script_many({ css: 'tr' }, [raw_row])
+        row = page.find_elements(css: 'tr').first
+        raw_row.go_stale
+        row
+      end
+
+      def at_once
+        started = clock
+        yield
+        expect(clock - started).to be < 0.3
+      end
+
+      it 'raises from find_elements at timeout: 0 instead of answering []' do
+        row = stale_row
+        expect { row.find_elements({ css: '.err' }, timeout: 0) }.to raise_error(errors::StaleElementReferenceError, hint)
+      end
+
+      it 'raises from find_elements at once instead of waiting and answering []' do
+        row = stale_row
+        at_once { expect { row.find_elements(css: 'td', timeout: 2) }.to raise_error(errors::StaleElementReferenceError, hint) }
+      end
+
+      it 'raises from find_element at once with the hint' do
+        row = stale_row
+        at_once { expect { row.find_element(css: 'td', timeout: 2) }.to raise_error(errors::StaleElementReferenceError, hint) }
+      end
+
+      it 'raises for a parent passed in as an element, suggesting a locator' do
+        parent = page.find_element(raw_row)
+        raw_row.go_stale
+        at_once do
+          expect { parent.find_element(css: 'td', timeout: 2) }
+            .to raise_error(errors::StaleElementReferenceError, /pass .*locator/)
+        end
+      end
+
+      it 'raises at once for a stale ancestor further up the chain' do
+        leaf = element
+        middle = element.script({ css: 'td' }, leaf)
+        raw_row.script({ css: '.cell' }, middle)
+        driver.script_many({ css: 'tr' }, [raw_row])
+        button = page.find_elements(css: 'tr').first.find_element(css: '.cell').find_element(css: 'td')
+        [raw_row, middle, leaf].each(&:go_stale)
+        at_once { expect { button.click(timeout: 2) }.to raise_error(errors::StaleElementReferenceError, hint) }
+      end
+
+      it 'still re-finds a stale child inside a live parent' do
+        old_button = element
+        new_button = element
+        raw_row.script({ css: 'button' }, old_button, new_button)
+        driver.script_many({ css: 'tr' }, [raw_row])
+        button = page.find_elements(css: 'tr').first.find_element(css: 'button')
+        old_button.go_stale
+        button.click(timeout: 1)
+        expect(new_button.log).to eq([[:click]])
+      end
+    end
+
     it 'passes both raw elements to drag_and_drop' do
       source = element
       target = element

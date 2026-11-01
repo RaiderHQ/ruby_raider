@@ -146,6 +146,17 @@ module WaitHelperSpec
     def dom_attribute(name) = live(@state[:attributes][name.to_s])
     def property(name) = live(@state[name.to_sym])
 
+    # A stale element cannot be searched inside, as in Selenium.
+    def find_element(**locator)
+      live(nil)
+      super
+    end
+
+    def find_elements(**locator)
+      live(nil)
+      super
+    end
+
     def rect
       rects = @state[:rects]
       live(rects.size > 1 ? rects.shift : rects.first)

@@ -168,6 +168,7 @@ module WaitHelper
       @last_found = element
       @hint = hint
       @many = many
+      @scope_stale = false
     end
 
     # The last element found. A reset only drops the re-find cache, so a wrapper
@@ -185,17 +186,22 @@ module WaitHelper
 
       return @element if @element || !@locator
 
-      @element = @last_found = context.find_element(**@locator)
+      @element = @last_found = in_scope { |context| context.find_element(**@locator) }
     end
 
     # A stale element may mean its parent was re-rendered too, so stale resets the chain.
     def reset(stale: false)
       @element = nil if @locator
+      @scope_stale = false
       @scope.reset(stale: true) if stale && @scope.is_a?(Lookup)
     end
 
-    def refindable?
-      !@locator.nil?
+    # After a stale error: the Lookup up the chain whose element went stale and cannot be
+    # found again (passed in, or from find_elements), or nil when re-finding can heal it.
+    def lost
+      return self unless @locator
+
+      @scope.lost if @scope_stale
     end
 
     def describe
@@ -206,14 +212,22 @@ module WaitHelper
 
     private
 
-    def context
-      @scope.is_a?(Lookup) ? @scope.locate : @scope
+    # A stale error while searching inside the parent means the parent, or one above it, went stale.
+    def in_scope
+      return yield(@scope) unless @scope.is_a?(Lookup)
+
+      begin
+        yield(@scope.locate)
+      rescue Selenium::WebDriver::Error::StaleElementReferenceError
+        @scope_stale = true
+        raise
+      end
     end
 
     def find_all
       return [@element] unless @locator
 
-      found = context.find_elements(**@locator)
+      found = in_scope { |context| context.find_elements(**@locator) }
       raise Selenium::WebDriver::Error::NoSuchElementError, 'no match' if found.empty?
 
       found
@@ -355,7 +369,8 @@ module WaitHelper
       detail = error.message.lines.first.to_s.strip
       case error
       when Selenium::WebDriver::Error::StaleElementReferenceError
-        raise error.class, "#{detail} (during #{action}): #{lookup.hint}", backtrace unless lookup.refindable?
+        lost = lookup.lost
+        raise error.class, "#{detail} (during #{action}): #{lost.hint}", backtrace if lost
 
         STALE
       when Selenium::WebDriver::Error::ElementClickInterceptedError then "click intercepted: #{detail}"
