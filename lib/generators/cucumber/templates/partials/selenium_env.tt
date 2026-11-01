@@ -25,26 +25,34 @@ TRACE_ATTEMPTS = Hash.new(0)
 # Each Gherkin step becomes a group in the trace, named by its keyword and text; hook steps are not steps.
 InstallPlugin do |config, _registry|
   if defined?(TraceHelper)
-    ast_lookup = Cucumber::Formatter::AstLookup.new(config)
-    groups = {}
-    config.on_event(:test_step_started) do |event|
-      next if event.test_step.hook?
+    begin
+      ast_lookup = Cucumber::Formatter::AstLookup.new(config)
+      groups = {}
+      config.on_event(:test_step_started) do |event|
+        next if event.test_step.hook?
 
-      step = event.test_step
-      keyword = begin
-        ast_lookup.step_source(step).step.keyword.strip
-      rescue StandardError
-        nil
+        step = event.test_step
+        keyword = begin
+          ast_lookup.step_source(step).step.keyword.strip
+        rescue StandardError
+          nil
+        end
+        location = { file: step.location.file, line: step.location.lines.min }
+        groups[step.id] = TraceHelper.active_recorder&.step_started(name: [keyword, step.text].compact.join(' '), source: location)
+      rescue StandardError => e
+        TraceHelper.warn_once("step groups failed: #{e.message}; tracing disabled for this run")
       end
-      location = { file: step.location.file, line: step.location.lines.min }
-      groups[step.id] = TraceHelper.active_recorder&.step_started(name: [keyword, step.text].compact.join(' '), source: location)
-    end
-    config.on_event(:test_step_finished) do |event|
-      next if event.test_step.hook?
+      config.on_event(:test_step_finished) do |event|
+        next if event.test_step.hook?
 
-      status = %i[passed failed].include?(event.result.to_sym) ? event.result.to_sym : :skipped
-      error = event.result.failed? ? event.result.exception : nil
-      TraceHelper.active_recorder&.step_finished(groups.delete(event.test_step.id), status: status, error: error)
+        status = %i[passed failed].include?(event.result.to_sym) ? event.result.to_sym : :skipped
+        error = event.result.failed? ? event.result.exception : nil
+        TraceHelper.active_recorder&.step_finished(groups.delete(event.test_step.id), status: status, error: error)
+      rescue StandardError => e
+        TraceHelper.warn_once("step groups failed: #{e.message}; tracing disabled for this run")
+      end
+    rescue StandardError => e
+      TraceHelper.warn_once("Gherkin step groups unavailable: #{e.message}")
     end
   end
 end
@@ -87,7 +95,7 @@ After do |scenario|
 <%- if trace_helper? -%>
   if defined?(TraceHelper)
     keep_trace = TraceHelper.keep_all? || scenario.failed?
-    trace_test = @trace_test.merge(status: scenario.failed? ? 'failed' : 'passed', error: scenario.exception)
+    trace_test = @trace_test&.merge(status: scenario.failed? ? 'failed' : 'passed', error: scenario.exception)
     trace_path = @trace_recorder&.stop(keep: keep_trace, test: trace_test)
   end
 <%- end -%>

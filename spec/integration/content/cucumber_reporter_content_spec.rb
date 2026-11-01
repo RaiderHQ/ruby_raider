@@ -91,6 +91,15 @@ describe 'Cucumber raider_reporter wiring' do
             expect(order).to all(be_an(Integer)).and eq(order.compact.sort)
           end
 
+          it 'survives a Before that raised before the trace init, and a failing plugin setup or handler' do
+            expect(hook).to include('@trace_test&.merge(')
+            expect(hook).not_to include('@trace_test.merge(')
+            plugin = env[/^InstallPlugin do.*?^end$/m]
+            expect(plugin.scan('rescue StandardError => e').size).to eq(3)
+            expect(plugin.index('AstLookup.new')).to be > plugin.index("begin\n")
+            expect(plugin).to include('TraceHelper.warn_once("Gherkin step groups unavailable')
+          end
+
           it 'records each Gherkin step as a group through the InstallPlugin step events, skipping hooks' do
             plugin = env[/^InstallPlugin do.*?^end$/m]
             expect(plugin).to include('config.on_event(:test_step_started)', 'config.on_event(:test_step_finished)', 'next if event.test_step.hook?')
