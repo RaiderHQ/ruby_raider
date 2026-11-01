@@ -1,0 +1,305 @@
+# frozen_string_literal: true
+
+require 'selenium-webdriver'
+require 'yaml'
+require_relative 'raider_element'
+
+# Waits before it acts. Each method takes a locator ({ id: 'name' }, with or
+# without braces), a RaiderElement or a raw element, polls every 0.1s until the
+# element is ready, then calls the Selenium method of the same name:
+#   click({ id: 'login' })
+#   send_keys({ id: 'user' }, 'admin')
+#   eventually { expect(text(css: '.welcome')).to eq('Hi') }
+# The wait is config/config.yml `timeout` seconds, or `timeout:` for one call.
+module WaitHelper
+  class TimeoutError < Selenium::WebDriver::Error::TimeoutError; end
+
+  CONFIG_FILE = 'config/config.yml'
+  DEFAULT_TIMEOUT = 10
+
+  def self.default_timeout
+    @default_timeout ||= begin
+      config = File.exist?(CONFIG_FILE) ? YAML.load_file(CONFIG_FILE) : nil
+      (config.is_a?(Hash) && config['timeout']) || DEFAULT_TIMEOUT
+    end
+  end
+
+  def self.element(driver, locator, by = {})
+    RaiderElement.new(driver, Lookup.for(driver, locator, by))
+  end
+
+  def find_element(locator = nil, visible: true, timeout: nil, **by)
+    Waiter.new(driver, timeout: timeout).find_element(Lookup.for(driver, locator, by), visible)
+  end
+
+  def find_elements(locator = nil, timeout: nil, **by)
+    Waiter.new(driver, timeout: timeout).find_elements(Lookup.for(driver, locator, by))
+  end
+
+  %i[click clear submit hover scroll_into_view text displayed? enabled? selected?].each do |action|
+    define_method(action) do |locator = nil, timeout: nil, **by|
+      WaitHelper.element(driver, locator, by).public_send(action, timeout: timeout)
+    end
+  end
+
+  def send_keys(locator, *keys, timeout: nil)
+    WaitHelper.element(driver, locator).send_keys(*keys, timeout: timeout)
+  end
+
+  def select_by(locator, how, what, timeout: nil)
+    WaitHelper.element(driver, locator).select_by(how, what, timeout: timeout)
+  end
+
+  def attribute(locator, name, timeout: nil)
+    WaitHelper.element(driver, locator).attribute(name, timeout: timeout)
+  end
+
+  def drag_and_drop(source, target, timeout: nil)
+    WaitHelper.element(driver, source).drag_and_drop(target, timeout: timeout)
+  end
+
+  def eventually(timeout: nil, &block)
+    Waiter.new(nil, timeout: timeout).eventually(&block)
+  end
+
+  # How an element is found: a locator in a scope (the driver or a parent
+  # Lookup), or an element given as is. The found element is cached until reset.
+  class Lookup
+    OS_KEYS = %i[android ios].freeze
+    PASSED_HINT = 'it was passed in as an element, so it cannot be found again; ' \
+                  "pass its locator (for example { id: 'name' }) instead"
+    MEMBER_HINT = 'it came from find_elements, which keeps no locator per element; call find_elements again to re-query'
+
+    attr_reader :element, :hint
+
+    def self.for(driver, locator, by, scope: driver)
+      raise ArgumentError, 'pass the locator in braces or as keywords, not both' if locator && !by.empty?
+
+      given = locator || by
+      # A wrapper keeps how it was found, so it can still re-find itself.
+      return given.__send__(:lookup) if given.is_a?(RaiderElement)
+      return new(scope, element: given, hint: PASSED_HINT) if !given.is_a?(Hash) && given.respond_to?(:displayed?)
+
+      new(scope, locator: normalize(driver, given))
+    end
+
+    def self.normalize(driver, given)
+      locator = symbolize(given)
+      per_os = !locator.empty? && (locator.keys - OS_KEYS).empty?
+      locator = symbolize(locator.fetch(driver.appium_device.to_s.downcase.to_sym, nil), given) if per_os
+      return locator if locator.size == 1
+
+      raise ArgumentError, "a locator is a Hash with one key, such as { id: 'name' }; got #{given.inspect}"
+    end
+
+    def self.symbolize(hash, given = hash)
+      return hash.transform_keys(&:to_sym) if hash.is_a?(Hash)
+
+      raise ArgumentError, "a locator is a Hash with one key, such as { id: 'name' }; got #{given.inspect}"
+    end
+
+    def initialize(scope, locator: nil, element: nil, hint: nil, many: false)
+      @scope = scope
+      @locator = locator
+      @element = element
+      @hint = hint
+      @many = many
+    end
+
+    def many
+      Lookup.new(@scope, locator: @locator, element: @element, many: true)
+    end
+
+    def locate
+      return find_all if @many
+
+      return @element if @element
+
+      @element = context.find_element(**@locator)
+    end
+
+    # A stale element may mean its parent was re-rendered too, so stale resets the chain.
+    def reset(stale: false)
+      @element = nil if @locator
+      @scope.reset(stale: true) if stale && @scope.is_a?(Lookup)
+    end
+
+    def refindable?
+      !@locator.nil?
+    end
+
+    def describe
+      return 'the element' unless @locator
+
+      "{#{@locator.map { |key, value| "#{key}: #{value.inspect}" }.join(', ')}}"
+    end
+
+    private
+
+    def context
+      @scope.is_a?(Lookup) ? @scope.locate : @scope
+    end
+
+    def find_all
+      return [@element] unless @locator
+
+      found = context.find_elements(**@locator)
+      raise Selenium::WebDriver::Error::NoSuchElementError, 'no match' if found.empty?
+
+      found
+    end
+  end
+
+  # Polls until a Lookup is ready, then yields the raw element. perform_action
+  # is the one choke point every public method (bar eventually) goes through.
+  class Waiter
+    POLL_INTERVAL = 0.1
+    DEADLINE_KEY = :raider_wait_deadline
+    VISIBLE_ENABLED = %i[visible enabled].freeze
+    PRESENT = [].freeze
+    CHECKS = {
+      click: %i[visible enabled stable].freeze,
+      send_keys: VISIBLE_ENABLED, clear: VISIBLE_ENABLED, submit: VISIBLE_ENABLED, select_by: VISIBLE_ENABLED,
+      hover: %i[visible stable].freeze,
+      drag_and_drop: %i[visible enabled stable].freeze,
+      scroll_into_view: PRESENT, text: PRESENT, attribute: PRESENT,
+      displayed?: PRESENT, enabled?: PRESENT, selected?: PRESENT
+    }.freeze
+    TARGET_CHECKS = %i[visible].freeze
+    STALE = 'stale element'
+    RETRIED = [Selenium::WebDriver::Error::StaleElementReferenceError,
+               Selenium::WebDriver::Error::ElementClickInterceptedError,
+               Selenium::WebDriver::Error::ElementNotInteractableError].freeze
+    HELPER_FILES = [__FILE__, File.expand_path('raider_element.rb', __dir__)].freeze
+
+    def initialize(driver, timeout: nil)
+      @driver = driver
+      @timeout = timeout || WaitHelper.default_timeout
+      @last_rect = nil
+    end
+
+    def find_element(lookup, visible)
+      perform_action(:find_element, lookup, visible ? TARGET_CHECKS : PRESENT) { RaiderElement.new(@driver, lookup) }
+    end
+
+    def find_elements(lookup)
+      perform_action(:find_elements, lookup.many, PRESENT) do |elements|
+        elements.map { |found| RaiderElement.new(@driver, Lookup.new(@driver, element: found, hint: Lookup::MEMBER_HINT)) }
+      end
+    rescue TimeoutError
+      []
+    end
+
+    # checks: a subset of %i[visible enabled stable]; present is always checked.
+    # target: a second Lookup (the drop target) that must be visible in the same poll.
+    def perform_action(action, locator, checks, target: nil)
+      lookup = locator.is_a?(Lookup) ? locator : Lookup.for(@driver, locator, {})
+      within_deadline do |deadline, waited|
+        loop do
+          seen = catch(:not_ready) do
+            elements = [ready(lookup, checks)]
+            elements << ready(target, TARGET_CHECKS, 'drop target ') if target
+            return yield(*elements)
+          rescue *RETRIED => e
+            retry_reason(lookup, e, action)
+          end
+          lookup.reset(stale: seen == STALE)
+          target&.reset
+          raise TimeoutError, timeout_message(lookup, checks, seen, waited), backtrace if now >= deadline
+
+          pause(deadline)
+        end
+      end
+    end
+
+    def eventually
+      require 'rspec/expectations'
+      retried = [RSpec::Expectations::ExpectationNotMetError, Selenium::WebDriver::Error::NoSuchElementError,
+                 Selenium::WebDriver::Error::StaleElementReferenceError]
+      within_deadline do |deadline, waited|
+        loop do
+          return yield
+        rescue *retried => e
+          raise e.exception("(still failing after #{seconds(waited)}s)\n#{e.message}") if now >= deadline
+
+          pause(deadline)
+        end
+      end
+    end
+
+    private
+
+    # An action inside eventually gets what is left of the enclosing deadline.
+    def within_deadline
+      enclosing = Thread.current[DEADLINE_KEY]
+      started = now
+      deadline = [started + @timeout, enclosing].compact.min
+      Thread.current[DEADLINE_KEY] = deadline
+      yield deadline, deadline - started
+    ensure
+      Thread.current[DEADLINE_KEY] = enclosing
+    end
+
+    def ready(lookup, checks, prefix = '')
+      element = lookup.locate
+      reason = unready(element, checks)
+      throw :not_ready, "#{prefix}#{reason}" if reason
+
+      element
+    rescue Selenium::WebDriver::Error::NoSuchElementError
+      throw :not_ready, "#{prefix}not found"
+    end
+
+    def unready(element, checks)
+      return 'present but not visible' if checks.include?(:visible) && !element.displayed?
+      return 'visible but disabled' if checks.include?(:enabled) && !element.enabled?
+
+      'still moving' if checks.include?(:stable) && !stable?(element)
+    end
+
+    # Stable: the same rect on two consecutive polls.
+    def stable?(element)
+      rect = element.rect
+      steady = rect == @last_rect
+      @last_rect = rect
+      steady
+    end
+
+    def retry_reason(lookup, error, action)
+      detail = error.message.lines.first.to_s.strip
+      case error
+      when Selenium::WebDriver::Error::StaleElementReferenceError
+        raise error.class, "#{detail} (during #{action}): #{lookup.hint}", backtrace unless lookup.refindable?
+
+        STALE
+      when Selenium::WebDriver::Error::ElementClickInterceptedError then "click intercepted: #{detail}"
+      else "not interactable: #{detail}"
+      end
+    end
+
+    def timeout_message(lookup, checks, seen, waited)
+      names = checks.map(&:to_s)
+      wanted = names.empty? ? 'present' : [names[0..-2].join(', '), names.last].reject(&:empty?).join(' and ')
+      "Waited #{seconds(waited)}s for #{lookup.describe} to be #{wanted}; last seen: #{seen}"
+    end
+
+    def seconds(value)
+      rounded = value.round(2)
+      rounded == rounded.to_i ? rounded.to_i : rounded
+    end
+
+    # Drops this helper's frames so the error points at the page object or spec line.
+    def backtrace
+      caller.reject { |line| HELPER_FILES.any? { |file| line.start_with?(file) } }
+            .drop_while { |line| line.start_with?('<internal:') }
+    end
+
+    def pause(deadline)
+      sleep([[POLL_INTERVAL, deadline - now].min, 0].max)
+    end
+
+    def now
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    end
+  end
+end

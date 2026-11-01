@@ -1,0 +1,112 @@
+# frozen_string_literal: true
+
+# An element found through WaitHelper. It has the same waiting methods as the
+# mixin, minus the locator, so calls chain:
+#   find_element(css: '.form').find_element(id: 'email').send_keys('a')
+# Everything else (tag_name, rect, property, ...) goes to the raw Selenium
+# element without waiting. Selenium APIs that type-check their argument
+# (switch_to.frame, Support::Select, driver.action, execute_script) need .native.
+class RaiderElement
+  def initialize(driver, lookup)
+    @driver = driver
+    @lookup = lookup
+  end
+
+  def native
+    @lookup.element
+  end
+
+  def find_element(locator = nil, visible: true, timeout: nil, **by)
+    waiter(timeout).find_element(child(locator, by), visible)
+  end
+
+  def find_elements(locator = nil, timeout: nil, **by)
+    waiter(timeout).find_elements(child(locator, by))
+  end
+
+  %i[click clear submit].each do |action|
+    define_method(action) do |timeout: nil|
+      perform(action, timeout) { |element| element.public_send(action) }
+      self
+    end
+  end
+
+  %i[text displayed? enabled? selected?].each do |reader|
+    define_method(reader) do |timeout: nil|
+      perform(reader, timeout) { |element| element.public_send(reader) }
+    end
+  end
+
+  def send_keys(*keys, timeout: nil)
+    perform(:send_keys, timeout) { |element| element.send_keys(*keys) }
+    self
+  end
+
+  def select_by(how, what, timeout: nil)
+    perform(:select_by, timeout) { |element| Selenium::WebDriver::Support::Select.new(element).select_by(how, what) }
+    self
+  end
+
+  def attribute(name, timeout: nil)
+    perform(:attribute, timeout) { |element| element.attribute(name) }
+  end
+
+  def hover(timeout: nil)
+    perform(:hover, timeout) { |element| @driver.action.move_to(element).perform }
+    self
+  end
+
+  def scroll_into_view(timeout: nil)
+    perform(:scroll_into_view, timeout) { |element| @driver.action.scroll_to(element).perform }
+    self
+  end
+
+  # target: a RaiderElement, a raw element, or a driver-scoped locator.
+  def drag_and_drop(target, timeout: nil)
+    drop = WaitHelper::Lookup.for(@driver, target, {})
+    waiter(timeout).perform_action(:drag_and_drop, @lookup, WaitHelper::Waiter::CHECKS[:drag_and_drop],
+                                   target: drop) do |source, destination|
+      @driver.action.drag_and_drop(source, destination).perform
+    end
+    self
+  end
+
+  def ==(other)
+    native == (other.is_a?(RaiderElement) ? other.native : other)
+  end
+
+  def eql?(other)
+    self == other
+  end
+
+  def hash
+    native.hash
+  end
+
+  private
+
+  # WaitHelper::Lookup.for reads this to reuse how a wrapper was found.
+  attr_reader :lookup
+
+  def waiter(timeout)
+    WaitHelper::Waiter.new(@driver, timeout: timeout)
+  end
+
+  def child(locator, by)
+    WaitHelper::Lookup.for(@driver, locator, by, scope: @lookup)
+  end
+
+  def perform(action, timeout, &block)
+    waiter(timeout).perform_action(action, @lookup, WaitHelper::Waiter::CHECKS.fetch(action), &block)
+  end
+
+  def method_missing(name, *args, **options, &block)
+    return super unless native.respond_to?(name)
+
+    native.public_send(name, *args, **options, &block)
+  end
+
+  def respond_to_missing?(name, include_private = false)
+    native.respond_to?(name) || super
+  end
+end
