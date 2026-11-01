@@ -62,6 +62,10 @@ module SpecHelper
     <%- end -%>
       @video_recorder = VideoHelper.recorder_for(<%= watir? ? 'browser' : 'driver' %>)
       @video_recorder.start
+<%- if trace_helper? -%>
+      @trace_recorder = TraceHelper.recorder_for(driver) if defined?(TraceHelper)
+      @trace_recorder&.start
+<%- end -%>
     end
 <%- if web? && examples? -%>
 
@@ -80,6 +84,15 @@ module SpecHelper
 
     config.after(:each) do |example|
       example_name = example.description
+<%- if trace_helper? -%>
+      if defined?(TraceHelper)
+        attempt = example.metadata[:retry_attempts].to_i + 1
+        keep_trace = TraceHelper.keep_all? || (example.exception && (defined?(VideoHelper) ? VideoHelper.final_attempt?(example) : true))
+        trace_test = { identifier: example.id.delete_prefix('./'), full_name: example.full_description,
+                       status: example.exception ? 'failed' : 'passed', attempt: attempt, error: example.exception }
+        trace_path = @trace_recorder&.stop(keep: keep_trace, test: trace_test)
+      end
+<%- end -%>
       keep_video = example.exception ? VideoHelper.final_attempt?(example) : false
       video_path = @video_recorder&.stop(keep: keep_video)
       if example.exception
@@ -91,7 +104,13 @@ module SpecHelper
         end
       end
       RaiderReporter.attach('video', video_path, type: <%= mobile? ? ':mp4' : ':webm' %>) if video_path
+<%- if trace_helper? -%>
+      RaiderReporter.attach('trace', trace_path, type: :trace, attempt: attempt) if trace_path
+<%- end -%>
     ensure
+<%- if trace_helper? -%>
+      @trace_recorder&.cleanup
+<%- end -%>
       @video_recorder&.cleanup
       <%= partial('quit_driver', strip: true) %>
     end

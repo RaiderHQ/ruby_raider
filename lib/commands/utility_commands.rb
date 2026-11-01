@@ -123,7 +123,23 @@ class UtilityCommands < Thor
     end
   end
 
+  desc 'trace [on|off]', 'Turns trace capture on or off (writes trace.enabled in config/config.yml)'
+
+  def trace(action)
+    case action
+    when 'on', 'off' then trace_toggle(action == 'on')
+    else
+      say_error "Unknown trace command '#{action}'. Use on|off", :red
+      exit 1
+    end
+  end
+
   no_commands do
+    def trace_toggle(enabled)
+      Utilities.trace_enabled = enabled
+      say "Trace capture #{enabled ? 'enabled' : 'disabled'}", :green
+    end
+
     def video_install
       require_relative '../ruby_raider/ffmpeg'
       path = RubyRaider::Ffmpeg.ensure!

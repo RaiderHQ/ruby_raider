@@ -68,6 +68,42 @@ describe 'Cucumber raider_reporter wiring' do
         end
       end
 
+      if automation == 'selenium'
+        context 'with trace recording' do
+          it 'requires trace_helper' do
+            expect(env).to include("require_relative '../../helpers/trace_helper'")
+          end
+
+          it 'counts attempts per scenario location and starts the trace recorder after the video recorder' do
+            before_hook = env[/^Before do.*?^end$/m]
+            expect(env).to match(/^TRACE_ATTEMPTS = Hash\.new\(0\)$/)
+            expect(before_hook).to include('TRACE_ATTEMPTS[scenario.location.to_s] += 1', '@trace_recorder = TraceHelper.recorder_for(driver)')
+            expect(before_hook).to match(/^Before do \|scenario\|$/)
+            expect(before_hook.index('@video_recorder.start')).to be < before_hook.index('@trace_recorder = TraceHelper')
+            expect(before_hook).to match(/if defined\?\(TraceHelper\)\n(.*\n)*.*@trace_recorder = TraceHelper/)
+          end
+
+          it 'stops with keep: TraceHelper.keep_all? || scenario.failed? before the video, attaches it and cleans up before quitting' do
+            expect(hook).to include('TraceHelper.keep_all? || scenario.failed?', 'error: scenario.exception', 'attempt: @trace_attempt')
+            expect(hook).to include("RaiderReporter.attach('trace', trace_path, type: :trace, attempt: @trace_attempt) if trace_path")
+            order = [hook.index('@trace_recorder&.stop'), hook.index('@video_recorder&.stop'), hook.index("RaiderReporter.attach('trace'"),
+                     hook.index(/^ensure/), hook.index('@trace_recorder&.cleanup'), hook.index('@video_recorder&.cleanup'), hook.index('driver.quit')]
+            expect(order).to all(be_an(Integer)).and eq(order.compact.sort)
+          end
+
+          it 'records each Gherkin step as a group through the InstallPlugin step events, skipping hooks' do
+            plugin = env[/^InstallPlugin do.*?^end$/m]
+            expect(plugin).to include('config.on_event(:test_step_started)', 'config.on_event(:test_step_finished)', 'next if event.test_step.hook?')
+            expect(plugin).to include('TraceHelper.active_recorder&.step_started', 'TraceHelper.active_recorder&.step_finished')
+            expect(plugin).to include('defined?(TraceHelper)')
+          end
+        end
+      else
+        it 'has no trace wiring' do
+          expect(env).not_to match(/trace/i)
+        end
+      end
+
       it 'does not generate the allure helper' do
         expect(File).not_to exist(File.join(project_name, 'helpers/allure_helper.rb'))
       end

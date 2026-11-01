@@ -183,11 +183,46 @@ describe 'Helper file content' do
                after_hook.index(/driver\.quit|browser\.quit/)]
       expect(order).to all(be_an(Integer)).and eq(order.compact.sort)
       expect(after_hook.scan(/driver\.quit|browser\.quit/).size).to eq(1)
-      expect(after_hook[order[2]..]).to match(/\n      @video_recorder&\.cleanup\n      (driver|browser)\.quit(_driver)?\n    end\n/)
+      expect(after_hook[order[2]..]).to match(/\n      (@trace_recorder&\.cleanup\n      )?@video_recorder&\.cleanup\n      (driver|browser)\.quit(_driver)?\n    end\n/)
     end
 
     it 'keeps the screenshot attachment' do
       expect(after_hook).to include("RaiderReporter.attach('screenshot', screenshot_path, type: :png)")
+    end
+  end
+
+  shared_examples 'trace spec helper wiring' do |project_name|
+    subject(:helper) { read_generated(project_name, 'helpers/spec_helper.rb') }
+
+    let(:before_hook) { helper[/config\.before\(:each\) do.*?^    end$/m] }
+    let(:after_hook) { helper[/config\.after\(:each\).*\z/m] }
+
+    it 'starts the trace recorder after the video recorder, each guarded by defined?(TraceHelper)' do
+      expect(before_hook).to include('@trace_recorder = TraceHelper.recorder_for(driver) if defined?(TraceHelper)', '@trace_recorder&.start')
+      expect(before_hook.index('@video_recorder.start')).to be < before_hook.index('@trace_recorder = TraceHelper')
+    end
+
+    it 'keeps the trace for TRACE=on or a final-attempt failure, falling back to keeping failures without a video helper' do
+      expect(after_hook).to include('TraceHelper.keep_all? || (example.exception && (defined?(VideoHelper) ? VideoHelper.final_attempt?(example) : true))')
+    end
+
+    it 'counts the attempt from the rspec-retry metadata and hands the recorder the test' do
+      expect(after_hook).to include('example.metadata[:retry_attempts].to_i + 1', 'error: example.exception')
+      expect(after_hook).to include('@trace_recorder&.stop(keep: keep_trace, test: trace_test)')
+    end
+
+    it 'stops the trace before the video and the screenshot, then attaches it, then cleans up before quitting' do
+      order = [after_hook.index('@trace_recorder&.stop'), after_hook.index('@video_recorder&.stop'), after_hook.index('RaiderReporter.attach(\'screenshot\''),
+               after_hook.index("RaiderReporter.attach('trace', trace_path, type: :trace, attempt: attempt) if trace_path"),
+               after_hook.index("\n    ensure\n"), after_hook.index('@trace_recorder&.cleanup'), after_hook.index('@video_recorder&.cleanup'),
+               after_hook.index('driver.quit')]
+      expect(order).to all(be_an(Integer)).and eq(order.compact.sort)
+    end
+  end
+
+  shared_examples 'no trace wiring' do |project_name, file|
+    it "leaves #{file} without trace code" do
+      expect(read_generated(project_name, file)).not_to match(/trace/i)
     end
   end
 
@@ -376,6 +411,11 @@ describe 'Helper file content' do
       it_behaves_like 'raider reporter spec helper', name, screenshot_call
       it_behaves_like 'video spec helper wiring', name, automation == 'watir' ? 'browser' : 'driver',
                       %w[selenium watir].include?(automation) ? ':webm' : ':mp4'
+      if automation == 'selenium'
+        it_behaves_like 'trace spec helper wiring', name
+      else
+        it_behaves_like 'no trace wiring', name, 'helpers/spec_helper.rb'
+      end
     end
 
     context "with cucumber and #{automation}" do

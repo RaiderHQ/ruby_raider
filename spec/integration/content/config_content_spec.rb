@@ -59,6 +59,22 @@ describe 'Config file content' do
     end
   end
 
+  shared_examples 'trace config' do |project_name|
+    it 'has tracing enabled with 200 steps and 20 MB, with the spec comments' do
+      raw = read_generated(project_name, 'config/config.yml')
+      config = YAML.safe_load(raw, permitted_classes: [Symbol])
+      expect(config['trace']).to eq('enabled' => true, 'max_steps' => 200, 'max_mb' => 20)
+      expect(raw.index('trace:')).to be > raw.index('video:')
+      expect(raw.index('trace:')).to be < raw.index('login_state:')
+    end
+  end
+
+  shared_examples 'no trace config' do |project_name|
+    it 'has no trace block' do
+      expect(read_generated(project_name, 'config/config.yml')).not_to include('trace')
+    end
+  end
+
   shared_examples 'login state config' do |project_name|
     it 'has a login_state max_age of an hour' do
       config = YAML.safe_load(read_generated(project_name, 'config/config.yml'), permitted_classes: [Symbol])
@@ -73,6 +89,7 @@ describe 'Config file content' do
     include_examples 'valid web config', name
     include_examples 'selenium config with timeout', name
     include_examples 'video config', name
+    include_examples 'trace config', name
     include_examples 'login state config', name
   end
 
@@ -80,6 +97,7 @@ describe 'Config file content' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'valid web config', name
     include_examples 'config without driver_options', name
+    include_examples 'no trace config', name
     include_examples 'login state config', name
   end
 
@@ -87,6 +105,7 @@ describe 'Config file content' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'valid web config', name
     include_examples 'selenium config with timeout', name
+    include_examples 'trace config', name
     include_examples 'login state config', name
   end
 
@@ -95,6 +114,7 @@ describe 'Config file content' do
   # Single-platform Appium projects have no config.yml; VideoHelper falls back to its defaults.
   context 'with rspec and cross platform' do
     include_examples 'video config', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'no trace config', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
   end
 
   context 'with rspec and appium android' do

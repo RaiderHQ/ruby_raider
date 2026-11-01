@@ -153,7 +153,7 @@ module TraceHelper
   # element is the format's { tag, label, role }; secret is true, false, or nil while the field is unknown.
   Step = Struct.new(:seq, :parent, :kind, :action, :locator, :url, :page_title, :started_at, :clock, :duration_ms,
                     :waited_ms, :retries, :status, :error, :source, :rect, :screenshot, :snapshot, :element,
-                    :value, :secret, :typed_strings, keyword_init: true) do
+                    :value, :secret, :typed_strings, :name, keyword_init: true) do
     def finish(status, error)
       self.status = status.to_s
       self.error = error
@@ -169,6 +169,7 @@ module TraceHelper
     def as_json(index, parent_index, media)
       json = { index: index, parent_index: parent_index, kind: kind, action: action, locator: locator }
       json[:element] = element if element
+      json[:name] = name if name
       json.update(typed) if TYPED_ACTIONS.include?(action)
       json.update(url: url, page_title: page_title, started_at: started_at, duration_ms: duration_ms.to_i,
                   waited_ms: waited_ms.to_i, retries: retries.to_i, status: status, error: TraceHelper.error_json(error),
@@ -267,6 +268,17 @@ module TraceHelper
         group.retries = retries
         nil
       end
+    end
+
+    # A Cucumber step is a group named by its keyword and text; the actions it runs become its children.
+    def step_started(name:, source:)
+      group = group_started(action: :cucumber_step, source: source)
+      group.name = name if group.is_a?(Step)
+      group
+    end
+
+    def step_finished(group, status:, error:)
+      group_finished(group, status: status, retries: 0, error: error) if group.is_a?(Step)
     end
 
     def navigated(url)
