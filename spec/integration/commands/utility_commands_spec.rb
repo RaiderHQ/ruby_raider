@@ -110,4 +110,12 @@ describe UtilityCommands do
       expect(config.dig('browser_arguments', 'firefox')).to eq([])
     end
   end
+
+  # Generated drivers connect to appium_lib's default, http://127.0.0.1:4723, with no base path.
+  it 'starts Appium on the default path the generated drivers connect to' do
+    command = utility.new
+    allow(command).to receive(:system)
+    command.start_appium
+    expect(command).to have_received(:system).with('appium')
+  end
 end

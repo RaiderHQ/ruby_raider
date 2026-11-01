@@ -500,7 +500,8 @@ To log in once and reuse the session across tests, see [Reusing the login](#reus
 2. Download the example [app](https://github.com/RaiderHQ/raider_test_app) and put it in the project folder.
    `app` in `config/capabilities.yml` is its path<%= cross_platform? ? ' (`RaiderTestApp.app` for iOS, `app-release.apk` for Android)' : (ios? ? ' (`RaiderTestApp.app`)' : ' (`app-release.apk`)') %>.
 3. Start a<%= android? ? 'n Android emulator' : (ios? ? 'n iOS simulator' : ' simulator or an emulator') %> that matches `deviceName` and `platformVersion`.
-4. Start the Appium server with `raider u start_appium`, and keep it running while the tests run.
+4. Start the Appium server with `raider u start_appium` (plain `appium`), and keep it running while the tests run.
+   The tests connect to it at `http://127.0.0.1:4723`, Appium's default address.
 <%- end -%>
 
 ### Removing the wait helper

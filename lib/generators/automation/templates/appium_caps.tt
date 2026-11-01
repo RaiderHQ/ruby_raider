@@ -25,7 +25,6 @@ browserstack:
   name: 'RaiderTestApp-Android'
 <% elsif ios? %>platformName: iOS
 appium:options:
-  url: http://localhost:4723/wd/hub
   platformVersion: '17.0'
   deviceName: iPhone 15
   automationName: XCUITest
@@ -43,7 +42,6 @@ browserstack:
   name: 'RaiderTestApp-IOS'
 <% elsif android? %>platformName: Android
 appium:options:
-  url: http://localhost:4723/wd/hub
   platformVersion: '14'
   automationName: UiAutomator2
   deviceName: Pixel 8 API 34
