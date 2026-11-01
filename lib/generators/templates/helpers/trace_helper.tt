@@ -2,6 +2,7 @@
 
 require 'fileutils'
 require 'json'
+require 'selenium-webdriver'
 require 'tmpdir'
 require 'yaml'
 require 'zlib'
@@ -13,7 +14,8 @@ require 'zlib'
 # for the rest of the run; it never raises into a test. TRACE=off skips tracing and
 # TRACE=on keeps the trace of passing tests too.
 # The Recorder follows WaitHelper as its observer. Without helpers/wait_helper.rb a
-# trace records only navigation and the failure.
+# trace records only navigation and the failure. Navigation comes from TraceHelper.listener,
+# and network and console from passive WebDriver BiDi events (chrome, edge and firefox).
 module TraceHelper
   DEFAULTS = { 'enabled' => true, 'max_steps' => 200, 'max_mb' => 20 }.freeze
   PRODUCER = { name: 'ruby_raider', version: '<%= ruby_raider_version %>' }.freeze
@@ -22,6 +24,8 @@ module TraceHelper
   # Only these record what was typed or selected, as value (null when secret).
   TYPED_ACTIONS = %w[send_keys select_by].freeze
   SECRET_ENV_PREFIX = 'RAIDER_SECRET_'
+  # The driver helper sets web_socket_url for these while tracing is on.
+  BIDI_BROWSERS = %w[chrome edge firefox].freeze
 
   @disabled = false
   @warned = false
@@ -40,6 +44,19 @@ module TraceHelper
 
     def keep_all?
       ENV['TRACE'] == 'on'
+    end
+
+    # True while tracing is on for a browser that speaks WebDriver BiDi (Edge reports MicrosoftEdge).
+    def bidi?(browser)
+      name = browser.to_s.downcase.delete_prefix('microsoft')
+      enabled? && BIDI_BROWSERS.any? { |bidi_browser| name.start_with?(bidi_browser) }
+    end
+
+    # Passed to Selenium through the driver helper's fan-out listener when the driver is created.
+    def listener
+      return nil unless enabled?
+
+      @listener ||= Listener.new
     end
 
     # screenshot: ->(driver) { [bytes, ext] }, snapshot: ->(driver) { html }; nil takes the default.
@@ -87,8 +104,8 @@ module TraceHelper
     end
 
     # UTC ISO-8601 with milliseconds.
-    def timestamp
-      Time.now.utc.strftime('%Y-%m-%dT%H:%M:%S.%LZ')
+    def timestamp(time = Time.now)
+      time.getutc.strftime('%Y-%m-%dT%H:%M:%S.%LZ')
     end
 
     def monotonic_now
@@ -167,17 +184,20 @@ module TraceHelper
 
   # Follows a test: WaitHelper reports its actions (the observer protocol) and the
   # navigation listener calls navigated. Media goes to its own tmpdir until stop.
+  # BiDi events arrive on Selenium's websocket threads, so the event lists are locked.
   class Recorder
-    SCREENSHOT = ->(driver) { [driver.screenshot_as(:png), 'png'] }
     SNAPSHOT = :page_source.to_proc
 
     attr_reader :dir, :capabilities
 
+    # The default screenshot is a viewport JPEG through BiDi when it is attached, else a PNG.
     def initialize(driver, screenshot: nil, snapshot: nil)
       @driver = driver
-      @screenshot = screenshot || SCREENSHOT
+      @screenshot = screenshot || ->(page_driver) { Screenshot.take(page_driver, bidi: @bidi) }
       @snapshot = snapshot || SNAPSHOT
       @recording = false
+      @bidi = false
+      @lock = Mutex.new
     end
 
     def start
@@ -185,6 +205,7 @@ module TraceHelper
       reset
       @recording = true
       TraceHelper.active_recorder = self
+      connect_bidi
       nil
     rescue StandardError => e
       TraceHelper.disable!("tracing failed to start: #{e.message}")
@@ -260,12 +281,41 @@ module TraceHelper
 
     # hash: a network[] entry of the format; step_index is filled in when written.
     def network_event(hash)
-      record('network') { event(:network, hash) }
+      record('network') do
+        event(:network, hash)
+        nil
+      end
+    end
+
+    # A request whose response is still to come: network_completed finishes it by its BiDi
+    # request id. at: the event's epoch milliseconds, for duration_ms.
+    def network_started(request, hash, at: nil)
+      record('network') do
+        entry = event(:network, hash)
+        @lock.synchronize { @requests[request] = [entry, at] }
+        nil
+      end
+    end
+
+    # Merges fields into the entry started for request; a redirect's next hop starts a new one.
+    # A request this test did not see start is ignored.
+    def network_completed(request, fields, at: nil)
+      record('network') do
+        entry, started = @lock.synchronize { @requests.delete(request) }
+        next nil unless entry
+
+        fields = fields.merge(duration_ms: (at - started).round) if at.is_a?(Numeric) && started.is_a?(Numeric)
+        @lock.synchronize { entry.update(fields.transform_keys(&:to_s)) }
+        nil
+      end
     end
 
     # hash: a console[] entry of the format; step_index is filled in when written.
     def console_event(hash)
-      record('console') { event(:console, hash) }
+      record('console') do
+        event(:console, hash)
+        nil
+      end
     end
 
     # The screenshot and the sanitised page HTML after a step, and the page it ended on.
@@ -313,7 +363,11 @@ module TraceHelper
     def reset
       @steps = []
       @groups = []
-      @events = []
+      @lock.synchronize do
+        @events = []
+        @requests = {}
+      end
+      @bidi = false
       @seq = 0
       @secrets = []
       @page = { url: nil, page_title: nil }
@@ -321,6 +375,17 @@ module TraceHelper
       @capabilities = { network: false, console: false, screenshots: true, snapshots: true }
       @meta = { browser: browser, viewport: viewport, device_pixel_ratio: pixel_ratio }
       @started_at = TraceHelper.timestamp
+    end
+
+    # Network and console come over BiDi; without it the trace still has its steps and media.
+    def connect_bidi
+      name = @meta[:browser][:name]
+      if TraceHelper.bidi?(name)
+        @bidi = Bidi.attach(@driver, self)
+      else
+        TraceHelper.warn_once("network and console not captured: #{name || 'this browser'} has no WebDriver BiDi")
+      end
+      @capabilities[:network] = @capabilities[:console] = @bidi
     end
 
     # Runs a hook while recording. A hook that fails turns tracing off instead of
@@ -348,9 +413,11 @@ module TraceHelper
       @truncated[:steps] += 1
     end
 
+    # Returns the stored entry, which network_completed may still fill in.
     def event(list, hash)
-      @events << [list, @seq, hash.transform_keys(&:to_s)]
-      nil
+      entry = hash.transform_keys(&:to_s)
+      @lock.synchronize { @events << [list, @seq, entry] }
+      entry
     end
 
     def trace_locator(locator, within, label)
@@ -461,7 +528,8 @@ module TraceHelper
     # [Caps::Event] in arrival order, each with the step that was running or had just run.
     def event_entries
       seqs = @steps.map(&:seq)
-      @events.map do |list, seq, hash|
+      events = @lock.synchronize { @events.map { |list, seq, hash| [list, seq, hash.dup] } }
+      events.map do |list, seq, hash|
         step_index = [seqs.bsearch_index { |each_seq| each_seq > seq } || seqs.size, 1].max
         entry = { 'step_index' => step_index }.merge(hash.reject { |key, _| key == 'step_index' })
         Caps::Event.new(list, entry, JSON.generate(entry).bytesize + 1)
@@ -650,6 +718,14 @@ module TraceHelper
     end
 
     def network_event(_hash)
+      nil
+    end
+
+    def network_started(_request, _hash, **)
+      nil
+    end
+
+    def network_completed(_request, _fields, **)
       nil
     end
 
@@ -849,6 +925,126 @@ module TraceHelper
       return html.sub(/<html\b(?:[^>"']|"[^"]*"|'[^']*')*>/i) { "#{Regexp.last_match(0)}#{style}" } if html.match?(/<html\b/i)
 
       style + html
+    end
+  end
+end
+
+# What comes from the browser beside WaitHelper: navigation from Selenium's event listener,
+# network and console from WebDriver BiDi, and the screenshot.
+module TraceHelper
+  # Selenium calls these after each navigation (through the driver helper's fan-out listener).
+  class Listener < Selenium::WebDriver::Support::AbstractEventListener
+    def after_navigate_to(url, _driver)
+      navigated(url)
+    end
+
+    # The URL is read from the page with the step's media.
+    def after_navigate_back(_driver)
+      navigated(nil)
+    end
+
+    def after_navigate_forward(_driver)
+      navigated(nil)
+    end
+
+    private
+
+    def navigated(url)
+      TraceHelper.active_recorder&.navigated(url)
+      nil
+    end
+  end
+
+  # Passive BiDi: one session.subscribe per driver, never network.addIntercept, which would
+  # pause every request. Events go to the recorder last attached to that driver. Only the
+  # method, URL, status, MIME type, timing, size and error text are kept: no headers, no bodies.
+  module Bidi
+    HANDLERS = { 'network.beforeRequestSent' => :request_sent, 'network.responseCompleted' => :response_completed,
+                 'network.fetchError' => :fetch_error, 'log.entryAdded' => :log_entry }.freeze
+    Link = Struct.new(:recorder)
+    @links = ObjectSpace::WeakMap.new
+
+    # True when the driver's network and console events now reach recorder. False, with one
+    # [trace] warning, when the driver has no BiDi or the subscription fails.
+    def self.attach(driver, recorder)
+      link = @links[driver] ||= subscribe(driver.bidi)
+      link.recorder = recorder
+      true
+    rescue StandardError => e
+      TraceHelper.warn_once("network and console not captured: BiDi subscribe failed: #{e.message}")
+      false
+    end
+
+    def self.subscribe(bidi)
+      bidi.session.subscribe(HANDLERS.keys)
+      link = Link.new
+      HANDLERS.each { |event, handler| bidi.add_callback(event) { |params| deliver(link, handler, params) } }
+      link
+    end
+
+    # On a websocket thread, which swallows errors: a failure is reported here.
+    def self.deliver(link, handler, params)
+      recorder = link.recorder
+      send(handler, recorder, params) if recorder
+    rescue StandardError => e
+      TraceHelper.disable!("network and console capture failed: #{e.message}")
+    end
+
+    def self.request_sent(recorder, params)
+      request = params['request'] || {}
+      recorder.network_started(request['request'],
+                               { method: request['method'], url: request['url'], status: nil, mime_type: nil,
+                                 started_at: time(params['timestamp']), duration_ms: nil, bytes: nil, error: nil },
+                               at: params['timestamp'])
+    end
+
+    def self.response_completed(recorder, params)
+      response = params['response'] || {}
+      recorder.network_completed(params.dig('request', 'request'),
+                                 { status: response['status'], mime_type: response['mimeType'],
+                                   bytes: response['bytesReceived'] || response['encodedDataLength'] },
+                                 at: params['timestamp'])
+    end
+
+    def self.fetch_error(recorder, params)
+      recorder.network_completed(params.dig('request', 'request'), { error: params['errorText'] }, at: params['timestamp'])
+    end
+
+    def self.log_entry(recorder, params)
+      recorder.console_event(level: params['level'], text: params['text'], source: location(params),
+                             at: time(params['timestamp']))
+    end
+
+    # "url:line:column" of the innermost frame, 1-based; nil without a stack trace.
+    def self.location(params)
+      frame = Array(params.dig('stackTrace', 'callFrames')).first
+      frame && "#{frame['url']}:#{frame['lineNumber'].to_i + 1}:#{frame['columnNumber'].to_i + 1}"
+    end
+
+    # BiDi timestamps are epoch milliseconds.
+    def self.time(milliseconds)
+      return TraceHelper.timestamp unless milliseconds.is_a?(Numeric)
+
+      TraceHelper.timestamp(Time.at(Rational(milliseconds.to_i, 1000)))
+    end
+  end
+
+  # The viewport after a step: a JPEG through BiDi, else (or when BiDi fails for that shot) a PNG.
+  module Screenshot
+    JPEG = { type: 'image/jpeg', quality: 0.7 }.freeze
+
+    # [bytes, ext]
+    def self.take(driver, bidi:)
+      (bidi && jpeg(driver)) || [driver.screenshot_as(:png), 'png']
+    end
+
+    # In Chrome and Firefox BiDi the window handle is the browsing context id.
+    def self.jpeg(driver)
+      params = { context: driver.window_handle, origin: 'viewport', format: JPEG }
+      result = driver.bidi.send_cmd('browsingContext.captureScreenshot', **params)
+      [result.fetch('data').unpack1('m'), 'jpg']
+    rescue StandardError
+      nil
     end
   end
 end

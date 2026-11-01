@@ -9,6 +9,50 @@ require 'zip'
 require_relative '../../lib/generators/helper_generator'
 require_relative '../integration/trace_format_checker'
 
+$LOAD_PATH.unshift(File.expand_path('fixtures/video_helper_stubs', __dir__))
+require 'selenium-webdriver'
+
+# Stands in for Selenium::WebDriver::BiDi (4.52): session.subscribe(events), add_callback(event, &block)
+# and send_cmd(method, **params). emit delivers an event on its own thread, as the websocket does.
+class FakeTraceBidi
+  attr_reader :subscribed, :callbacks, :commands
+  attr_accessor :failure, :screenshot
+
+  def initialize(screenshot)
+    @screenshot = screenshot
+    @subscribed = []
+    @callbacks = Hash.new { |hash, event| hash[event] = [] }
+    @commands = []
+  end
+
+  def session
+    self
+  end
+
+  def subscribe(events, _browsing_contexts = nil)
+    raise failure if failure
+
+    @subscribed << Array(events)
+    {}
+  end
+
+  def add_callback(event, &block)
+    @callbacks[event] << block
+    block.object_id
+  end
+
+  def send_cmd(method, **params)
+    @commands << [method, params]
+    raise screenshot if screenshot.is_a?(Exception)
+
+    { 'data' => [screenshot].pack('m0') }
+  end
+
+  def emit(event, params)
+    @callbacks[event].each { |callback| Thread.new { callback.call(params) }.join }
+  end
+end
+
 # Renders the real trace_helper.tt for a Selenium project, loads it, and drives its
 # Recorder the way WaitHelper's observer hook and the navigation listener do, with a
 # driver double. The zips it writes are read back with rubyzip.
@@ -19,12 +63,15 @@ describe 'Generated TraceHelper' do
   let(:trace_config) { { 'enabled' => true, 'max_steps' => 200, 'max_mb' => 20 } }
   let(:env) { {} }
   let(:png) { "\x89PNG\r\n\x1A\nfake-png".b }
+  let(:jpeg) { "\xFF\xD8\xFFfake-jpeg".b }
+  let(:bidi) { FakeTraceBidi.new(jpeg) }
   let(:html) { "<html><head><title>Login</title></head><body>#{'<p>row</p>' * 50}</body></html>" }
   let(:capabilities) { double('capabilities', browser_name: 'chrome', browser_version: '131.0.6778.85') }
   let(:window) { double('window', size: double('size', width: 1920, height: 1080)) }
   let(:driver) do
     double('driver', screenshot_as: png, page_source: html, current_url: 'https://example.test/login', title: 'Login',
-                     capabilities: capabilities, manage: double('manage', window: window), execute_script: 2)
+                     capabilities: capabilities, manage: double('manage', window: window), execute_script: 2,
+                     bidi: bidi, window_handle: 'context-1')
   end
   let(:wait_helper) do
     Module.new do
@@ -113,7 +160,7 @@ describe 'Generated TraceHelper' do
                                          'status' => 'failed', 'attempt' => 2, 'error' => nil },
                              'browser' => { 'name' => 'chrome', 'version' => '131.0.6778.85' },
                              'viewport' => { 'width' => 1920, 'height' => 1080 }, 'device_pixel_ratio' => 2,
-                             'capabilities' => { 'network' => false, 'console' => false, 'screenshots' => true, 'snapshots' => true },
+                             'capabilities' => { 'network' => true, 'console' => true, 'screenshots' => true, 'snapshots' => true },
                              'truncated' => { 'steps' => 0, 'screenshots' => 0, 'snapshots' => 0, 'network' => 0, 'console' => 0 })
     expect(trace['finished_at'] >= trace['started_at']).to be(true)
   end
@@ -127,12 +174,12 @@ describe 'Generated TraceHelper' do
     expect(steps.map { |step| step.values_at('index', 'kind', 'action') }).to eq([[1, 'navigate', 'navigate'], [2, 'action', 'click']])
     expect(steps.first).to include('parent_index' => nil, 'locator' => nil, 'url' => 'https://example.test/login', 'page_title' => 'Login',
                                    'waited_ms' => 0, 'retries' => 0, 'status' => 'passed', 'error' => nil, 'rect' => nil,
-                                   'screenshot' => 'steps/0001.png', 'snapshot' => 'steps/0001.html')
+                                   'screenshot' => 'steps/0001.jpg', 'snapshot' => 'steps/0001.html')
     expect(steps.last).to include('locator' => { 'strategy' => 'id', 'selector' => 'go', 'label' => 'login_button',
                                                  'within' => [{ 'strategy' => 'css', 'selector' => '.form' }] },
                                   'source' => { 'file' => 'spec/login_page_spec.rb', 'line' => 12 },
                                   'waited_ms' => 95, 'retries' => 1, 'status' => 'passed',
-                                  'screenshot' => 'steps/0002.png', 'snapshot' => 'steps/0002.html')
+                                  'screenshot' => 'steps/0002.jpg', 'snapshot' => 'steps/0002.html')
     expect(steps.last['duration_ms']).to be_a(Integer)
   end
 
@@ -147,7 +194,7 @@ describe 'Generated TraceHelper' do
     expect(queries.map { |step| step['action'] }).to eq(%w[text attribute displayed? enabled? selected? find_element find_elements])
     expect(queries.map { |step| step.values_at('screenshot', 'snapshot') }.uniq).to eq([[nil, nil]])
     expect(queries.map { |step| step['url'] }.uniq).to eq(['https://example.test/login'])
-    expect(names).to contain_exactly('trace.json', 'steps/0001.png', 'steps/0001.html')
+    expect(names).to contain_exactly('trace.json', 'steps/0001.jpg', 'steps/0001.html')
   end
 
   it 'keeps only the last pass of eventually as child steps and counts the earlier passes in retries' do
@@ -179,7 +226,7 @@ describe 'Generated TraceHelper' do
     expect(trace['test']['error']).to eq(error)
     expect(steps.size).to eq(3)
     expect(steps.last).to include('index' => 3, 'kind' => 'failure', 'status' => 'failed', 'locator' => nil, 'error' => error,
-                                  'screenshot' => 'steps/0003.png', 'snapshot' => 'steps/0003.html')
+                                  'screenshot' => 'steps/0003.jpg', 'snapshot' => 'steps/0003.html')
   end
 
   it 'marks the step that raised as failed and appends no failure step when that step owns the error' do
@@ -527,9 +574,9 @@ describe 'Generated TraceHelper' do
 
     Zip::File.open(path) do |zip|
       methods = zip.entries.to_h { |entry| [entry.name, entry.compression_method] }
-      expect(methods).to eq('trace.json' => Zip::Entry::DEFLATED, 'steps/0001.png' => Zip::Entry::STORED,
+      expect(methods).to eq('trace.json' => Zip::Entry::DEFLATED, 'steps/0001.jpg' => Zip::Entry::STORED,
                             'steps/0001.html' => Zip::Entry::DEFLATED)
-      expect(zip.read('steps/0001.png')).to eq(png)
+      expect(zip.read('steps/0001.jpg')).to eq(jpeg)
       expect(zip.read('steps/0001.html')).to eq(html.sub('<html>', '<html data-raider-skipped-sheets="0">'))
     end
   end
@@ -546,6 +593,224 @@ describe 'Generated TraceHelper' do
     expect(TraceHelper.enabled?).to be(false)
     expect(TraceHelper.recorder_for(driver)).to be_a(TraceHelper::NullRecorder)
     expect(WaitHelper.observer).to be_nil
+  end
+
+  describe 'browser wiring' do
+    let(:started_ms) { 1_793_568_600_020 }
+    let(:bidi_events) { %w[network.beforeRequestSent network.responseCompleted network.fetchError log.entryAdded] }
+
+    def request_sent(id, method, url, at)
+      bidi.emit('network.beforeRequestSent',
+                'request' => { 'request' => id, 'method' => method, 'url' => url,
+                               'headers' => [{ 'name' => 'Cookie', 'value' => { 'type' => 'string', 'value' => 'session=hush' } }] },
+                'timestamp' => at)
+    end
+
+    it 'subscribes passively to the four BiDi events and never adds a request handler' do
+      first = started_recorder
+      first.stop(keep: false, test: failed_test)
+      second = started_recorder
+      bidi.emit('log.entryAdded', 'type' => 'console', 'level' => 'info', 'text' => 'second test', 'timestamp' => started_ms)
+
+      expect(bidi.subscribed).to eq([bidi_events])
+      expect(bidi.callbacks.keys).to match_array(bidi_events)
+      expect(bidi.commands.map(&:first)).not_to include('network.addIntercept')
+      expect(kept(second)['console'].map { |entry| entry['text'] }).to eq(['second test'])
+    end
+
+    it 'maps beforeRequestSent and responseCompleted into one network entry with step_index, method, url, status, mime_type, duration_ms, bytes' do
+      recorder = started_recorder
+      recorder.navigated('https://example.test/login')
+      request_sent('r1', 'GET', 'https://example.test/app.js', started_ms)
+      act(recorder, :click, 'go')
+      bidi.emit('network.responseCompleted',
+                'request' => { 'request' => 'r1', 'url' => 'https://example.test/app.js' }, 'timestamp' => started_ms + 210,
+                'response' => { 'status' => 200, 'mimeType' => 'text/javascript', 'bytesReceived' => 18_234,
+                                'headers' => [{ 'name' => 'Set-Cookie', 'value' => { 'type' => 'string', 'value' => 'session=hush' } }] })
+      request_sent('r2', 'POST', 'https://example.test/api', started_ms + 300)
+      bidi.emit('network.fetchError', 'request' => { 'request' => 'r2' }, 'errorText' => 'net::ERR_CONNECTION_REFUSED',
+                                      'timestamp' => started_ms + 305)
+      path = recorder.stop(keep: true, test: failed_test)
+
+      expect(TraceFormatChecker.problems(path)).to eq([])
+      expect(TraceFormatChecker.read(path).first['network']).to eq(
+        [{ 'step_index' => 1, 'method' => 'GET', 'url' => 'https://example.test/app.js', 'status' => 200,
+           'mime_type' => 'text/javascript', 'started_at' => '2026-11-01T21:30:00.020Z', 'duration_ms' => 210,
+           'bytes' => 18_234, 'error' => nil },
+         { 'step_index' => 2, 'method' => 'POST', 'url' => 'https://example.test/api', 'status' => nil, 'mime_type' => nil,
+           'started_at' => '2026-11-01T21:30:00.320Z', 'duration_ms' => 5, 'bytes' => nil,
+           'error' => 'net::ERR_CONNECTION_REFUSED' }]
+      )
+      expect(Zip::File.open(path) { |zip| zip.read('trace.json') }).not_to include('hush')
+    end
+
+    it 'maps log.entryAdded into a console entry with level, text, source, at' do
+      recorder = started_recorder
+      recorder.navigated('https://example.test/login')
+      bidi.emit('log.entryAdded',
+                'type' => 'javascript', 'level' => 'error', 'text' => 'Uncaught TypeError: x is undefined',
+                'timestamp' => started_ms, 'source' => { 'realm' => 'realm-1', 'context' => 'context-1' },
+                'stackTrace' => { 'callFrames' => [{ 'url' => 'https://example.test/app.js', 'functionName' => 'go',
+                                                     'lineNumber' => 40, 'columnNumber' => 6 }] })
+      bidi.emit('log.entryAdded', 'type' => 'console', 'method' => 'log', 'level' => 'info', 'text' => 'ready',
+                                  'timestamp' => started_ms + 1, 'source' => { 'realm' => 'realm-1' }, 'args' => [])
+
+      expect(kept(recorder)['console']).to eq(
+        [{ 'step_index' => 1, 'level' => 'error', 'text' => 'Uncaught TypeError: x is undefined',
+           'source' => 'https://example.test/app.js:41:7', 'at' => '2026-11-01T21:30:00.020Z' },
+         { 'step_index' => 1, 'level' => 'info', 'text' => 'ready', 'source' => nil, 'at' => '2026-11-01T21:30:00.021Z' }]
+      )
+    end
+
+    it 'records capabilities network/console false and warns once when subscribe raises' do
+      bidi.failure = Selenium::WebDriver::Error::WebDriverError.new('no such frame')
+      traces = Array.new(2) do
+        recorder = started_recorder
+        recorder.navigated('https://example.test/login')
+        kept(recorder)
+      end
+
+      expect(traces.map { |trace| trace['capabilities'] }).to all(include('network' => false, 'console' => false))
+      expect(traces.map { |trace| trace['steps'].first['screenshot'] }).to eq(%w[steps/0001.png steps/0001.png])
+      expect(warnings).to eq(["[trace] network and console not captured: BiDi subscribe failed: no such frame\n"])
+      expect(TraceHelper.enabled?).to be(true)
+    end
+
+    it 'records network/console false and warns once for a browser without BiDi' do
+      allow(capabilities).to receive(:browser_name).and_return('Safari')
+      recorder = started_recorder
+      recorder.navigated('https://example.test/login')
+      trace = kept(recorder)
+
+      expect(trace['capabilities']).to include('network' => false, 'console' => false)
+      expect(bidi.subscribed).to eq([])
+      expect(warnings).to eq(["[trace] network and console not captured: Safari has no WebDriver BiDi\n"])
+    end
+
+    it 'takes a JPEG through BiDi and a PNG without it' do
+      recorder = started_recorder
+      recorder.navigated('https://example.test/login')
+      path = recorder.stop(keep: true, test: failed_test)
+
+      expect(Zip::File.open(path) { |zip| zip.read('steps/0001.jpg') }).to eq(jpeg)
+      expect(bidi.commands).to eq([['browsingContext.captureScreenshot',
+                                    { context: 'context-1', origin: 'viewport', format: { type: 'image/jpeg', quality: 0.7 } }]])
+      expect(TraceHelper::Screenshot.take(driver, bidi: true)).to eq([jpeg, 'jpg'])
+      expect(TraceHelper::Screenshot.take(driver, bidi: false)).to eq([png, 'png'])
+      bidi.screenshot = Selenium::WebDriver::Error::WebDriverError.new('unsupported operation')
+      expect(TraceHelper::Screenshot.take(driver, bidi: true)).to eq([png, 'png'])
+    end
+
+    it 'keeps every network entry when callbacks arrive from many threads at once' do
+      recorder = started_recorder
+      Array.new(8) do |thread|
+        Thread.new do
+          25.times { |request| recorder.network_event({ method: 'GET', url: "https://example.test/#{thread}/#{request}" }) }
+        end
+      end.each(&:join)
+
+      expect(kept(recorder)['network'].size).to eq(200)
+    end
+
+    it 'is true for chrome, edge and firefox only' do
+      expect(%w[chrome edge MicrosoftEdge firefox safari ie].map { |browser| TraceHelper.bidi?(browser) })
+        .to eq([true, true, true, true, false, false])
+    end
+
+    context 'with TRACE=off' do
+      let(:env) { { 'TRACE' => 'off' } }
+
+      it 'is false for every browser, and gives no listener' do
+        expect(%w[chrome edge firefox].map { |browser| TraceHelper.bidi?(browser) }).to eq([false, false, false])
+        expect(TraceHelper.listener).to be_nil
+      end
+    end
+  end
+
+  # The rendered driver_helper.rb with its fan-out listener and BiDi option, loaded next to
+  # the rendered video_helper.rb and the trace_helper.rb loaded above.
+  describe 'the driver helper' do
+    let(:host) { Object.new.extend(DriverHelper) }
+    let(:calls) { [] }
+    let(:video_listener) do
+      seen = calls
+      Class.new(Selenium::WebDriver::Support::AbstractEventListener) do
+        define_method(:after_navigate_to) { |url, _driver| seen << [:video, url] }
+        define_method(:after_click) { |_element, _driver| seen << %i[video click] }
+      end.new
+    end
+    let(:trace_feature) { File.realpath(File.join(project_dir, 'trace_helper.rb')) }
+
+    def load_driver_helper
+      generator = HelpersGenerator.new(%w[selenium rspec proj])
+      %w[driver_helper video_helper].each do |name|
+        source = File.read(File.expand_path("../../lib/generators/templates/helpers/#{name}.tt", __dir__))
+        File.write(File.join(project_dir, "#{name}.rb"), ERB.new(source, trim_mode: '-').result(generator.instance_eval { binding }))
+      end
+      $LOADED_FEATURES << trace_feature
+      load File.join(project_dir, 'driver_helper.rb')
+    end
+
+    def write_config(browser)
+      config = { 'browser' => browser, 'browser_arguments' => { browser => [] }, 'trace' => trace_config }
+      File.write(File.join(project_dir, 'config', 'config.yml'), config.to_yaml)
+    end
+
+    def options_for(browser)
+      stub_const("Selenium::WebDriver::#{browser.capitalize}::Options", Class.new do
+        attr_accessor :web_socket_url
+
+        def add_argument(_argument); end
+      end)
+      write_config(browser)
+      host.instance_variable_set(:@config, YAML.load_file('config/config.yml'))
+      host.send(:create_webdriver_options)
+    end
+
+    def created_arguments
+      write_config('chrome')
+      allow(host).to receive(:create_webdriver_options).and_return(:options)
+      allow(Selenium::WebDriver).to receive(:for) { |_browser, **arguments| arguments }
+      host.send(:create_driver)
+    end
+
+    before { load_driver_helper }
+
+    after do
+      %i[DriverHelper VideoHelper].each { |name| Object.send(:remove_const, name) if Object.const_defined?(name) }
+      $LOADED_FEATURES.delete(trace_feature)
+    end
+
+    it 'fans navigation out to both video and trace listeners' do
+      allow(VideoHelper).to receive(:listener).and_return(video_listener)
+      allow(VideoHelper).to receive(:alert_open?).and_return(false)
+      listener = created_arguments[:listener]
+      recorder = started_recorder
+      listener.after_navigate_to('https://example.test/login', driver)
+      listener.after_navigate_back(driver)
+      listener.after_click(:element, driver)
+
+      expect(listener).to be_a(Selenium::WebDriver::Support::AbstractEventListener)
+      expect(calls).to eq([[:video, 'https://example.test/login'], %i[video click]])
+      expect(kept(recorder)['steps'].map { |step| step.values_at('kind', 'url') })
+        .to eq([['navigate', 'https://example.test/login'], ['navigate', 'https://example.test/login']])
+    end
+
+    context 'with VIDEO=off and TRACE=off' do
+      let(:env) { { 'VIDEO' => 'off', 'TRACE' => 'off' } }
+
+      it 'passes no listener at all' do
+        expect(created_arguments.keys).to eq([:options])
+      end
+
+      it 'does not set web_socket_url' do
+        expect(options_for('chrome').web_socket_url).to be_nil
+      end
+    end
+
+    it 'sets web_socket_url only for chrome, edge and firefox and not with TRACE=off' do
+      expect(%w[chrome edge firefox safari].map { |browser| options_for(browser).web_socket_url }).to eq([true, true, true, nil])
+    end
   end
 end
 # rubocop:enable RSpec/MultipleMemoizedHelpers, RSpec/VerifiedDoubles, RSpec/ExpectOutput, RSpec/MultipleExpectations, RSpec/ExampleLength

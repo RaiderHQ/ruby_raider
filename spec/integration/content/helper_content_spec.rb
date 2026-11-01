@@ -43,6 +43,21 @@ describe 'Helper file content' do
     it 'does not reference Capybara' do
       expect(helper).not_to include('Capybara')
     end
+
+    it 'requires trace_helper' do
+      expect(helper).to include("require_relative 'trace_helper'")
+    end
+
+    it 'sets web_socket_url only for chrome, edge and firefox and not with TRACE=off' do
+      expect(helper).to include('options.web_socket_url = true if defined?(TraceHelper) && TraceHelper.bidi?(load_browser)')
+    end
+
+    it 'fans the video and trace listeners out through one listener, each guarded by defined?' do
+      expect(helper).to include('class FanOutListener < Selenium::WebDriver::Support::AbstractEventListener',
+                                'listener = FanOutListener.for(listeners)',
+                                'listeners << VideoHelper.listener if defined?(VideoHelper)',
+                                'listeners << TraceHelper.listener if defined?(TraceHelper)')
+    end
   end
 
   # --- Browser helper ---
@@ -312,6 +327,10 @@ describe 'Helper file content' do
 
     it 'does not wire a listener into the appium driver helper' do
       expect(read_generated(name, 'helpers/driver_helper.rb')).not_to include('listener')
+    end
+
+    it 'does not wire tracing or BiDi into the appium driver helper' do
+      expect(read_generated(name, 'helpers/driver_helper.rb')).not_to include('TraceHelper', 'web_socket_url')
     end
   end
 
