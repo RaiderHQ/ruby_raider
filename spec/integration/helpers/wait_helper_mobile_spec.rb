@@ -260,6 +260,22 @@ module WaitHelperMobileSpec
         tries = 0
         expect(page.eventually(timeout: 1) { expect(tries += 1).to eq(2) }).to be(true)
       end
+
+      it 'retries a nested timeout: until its own deadline, as on web' do
+        started = clock
+        expect { page.eventually(timeout: 0.6) { page.text({ accessibility_id: 'never' }, timeout: 0.2) } }
+          .to raise_error(App::WaitHelper::TimeoutError, /\A\(still failing after 0.6s\)/)
+        expect(clock - started).to be_between(0.5, 1.0)
+      end
+
+      it 'raises at once for a stale find_elements member used as a parent' do
+        row = element.script({ accessibility_id: 'cell' }, element)
+        driver.script_many({ accessibility_id: 'row' }, [row])
+        member = page.find_elements(accessibility_id: 'row').first
+        row.go_stale
+        expect { member.find_element(accessibility_id: 'cell', timeout: 2) }
+          .to raise_error(Selenium::WebDriver::Error::StaleElementReferenceError, /find_elements again/)
+      end
     end
   end
 end
