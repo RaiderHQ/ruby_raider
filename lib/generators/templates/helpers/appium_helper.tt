@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module AppiumHelper
   def element(opts = {})
      return driver.find_element(strategy(opts) => selector(opts)) if opts[os]

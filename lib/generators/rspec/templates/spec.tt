@@ -63,6 +63,8 @@ describe 'Account', :logged_in do
 end
 # rubocop:enable RSpec/MultipleDescribes
 <%- else -%>
+# frozen_string_literal: true
+
 <% if cross_platform? -%>
 require_relative '../helpers/appium_helper'
 <%- end -%>

@@ -1,3 +1,7 @@
+<%- unless watir? -%>
+# frozen_string_literal: true
+
+<%- end -%>
 <%- if web? && examples? -%>
 require_relative '../components/header'
 <%- end -%>
