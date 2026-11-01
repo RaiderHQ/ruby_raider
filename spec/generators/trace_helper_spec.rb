@@ -275,6 +275,13 @@ describe 'Generated TraceHelper' do
       expect(clean).not_to match(/<base/i)
       expect(clean).to include('<html data-raider-skipped-sheets="0">', '<style>a { color: red; }</style></head>')
     end
+
+    it 'counts the stylesheet links it removed as skipped, and keeps <style>, when the CSS could not be read' do
+      page = '<html data-raider-skipped-sheets="9" lang="en"><head><link rel="stylesheet" href="/a.css"><link rel="stylesheet" href="/b.css">' \
+             '<style>p { margin: 0; }</style></head><body></body></html>'
+
+      expect(sanitize(page, css: nil)).to eq('<html lang="en" data-raider-skipped-sheets="2"><head><style>p { margin: 0; }</style></head><body></body></html>')
+    end
   end
 
   describe 'typed values and element info' do

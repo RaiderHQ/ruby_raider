@@ -696,7 +696,7 @@ module TraceHelper
         else if (['', 'text', 'email', 'password', 'search', 'tel', 'url'].indexOf(type) >= 0) { role = 'textbox'; }
       }
       var autocomplete = (el.getAttribute('autocomplete') || '').toLowerCase();
-      return { rect: { x: box.x, y: box.y, width: box.width, height: box.height }, tag: tag,
+      return { rect: { x: box.left, y: box.top, width: box.width, height: box.height }, tag: tag,
                label: text || el.getAttribute('aria-label') || el.getAttribute('placeholder') || null, role: role,
                secret: type === 'password' || autocomplete.indexOf('password') >= 0 };
     JS
@@ -760,8 +760,9 @@ module TraceHelper
         attributes = tag[2].to_enum(:scan, ATTRIBUTE).map { Regexp.last_match }
         next '' if removed?(tag[1].downcase, attributes) { links += 1 }
 
-        clean(tag[0], tag[1], attributes, css ? skipped : links)
+        clean(tag[0], tag[1], attributes)
       end
+      html = counted(html, css ? skipped : links)
       css ? with_style(html, css) : html
     end
 
@@ -775,16 +776,28 @@ module TraceHelper
       true
     end
 
-    def self.clean(original, name, attributes, skipped)
-      tag = name.downcase
-      secret = tag == 'input' && secret?(attributes)
-      kept = attributes.reject { |attribute| unsafe?(attribute) || (tag == 'html' && attribute[1].casecmp?(SKIPPED_ATTRIBUTE)) }
-      return original if kept.size == attributes.size && !secret && tag != 'html'
+    def self.clean(original, name, attributes)
+      secret = name.casecmp?('input') && secret?(attributes)
+      kept = attributes.reject { |attribute| unsafe?(attribute) }
+      return original if kept.size == attributes.size && !secret
 
       parts = kept.map { |attribute| secret && attribute[1].casecmp?('value') ? 'value=""' : attribute[0] }
-      parts << %(#{SKIPPED_ATTRIBUTE}="#{skipped.to_i}") if tag == 'html'
+      rebuilt(original, name, parts)
+    end
+
+    def self.rebuilt(original, name, parts)
       slash = original.match?(%r{/\s*>\z}) ? ' /' : ''
       "<#{[name, *parts].join(' ')}#{slash}>"
+    end
+
+    # Sets data-raider-skipped-sheets on <html>, once every stylesheet link has been counted.
+    def self.counted(html, skipped)
+      html.sub(/<(html)\b((?:[^>"']|"[^"]*"|'[^']*')*)>/i) do
+        tag = Regexp.last_match
+        parts = tag[2].to_enum(:scan, ATTRIBUTE).map { Regexp.last_match }
+                      .reject { |attribute| attribute[1].casecmp?(SKIPPED_ATTRIBUTE) }.map { |attribute| attribute[0] }
+        rebuilt(tag[0], tag[1], parts << %(#{SKIPPED_ATTRIBUTE}="#{skipped.to_i}"))
+      end
     end
 
     def self.unsafe?(attribute)
