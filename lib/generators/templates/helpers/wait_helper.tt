@@ -28,6 +28,24 @@ module WaitHelper
   CONFIG_FILE = 'config/config.yml'
   DEFAULT_TIMEOUT = 10
 
+  class << self
+    # Follows every action and eventually when set (the trace helper does). Optional:
+    # nothing is called on it while nil, and one that raises is dropped.
+    attr_accessor :observer
+
+    # Calls the observer's hook, or returns nil without one. A broken observer must
+    # never fail a test: it is warned about once and removed.
+    def report(hook, *args, **details)
+      current = observer
+      return unless current
+
+      current.public_send(hook, *args, **details)
+    rescue StandardError => e
+      warn "[trace] observer stopped: #{e.class}: #{e.message}"
+      self.observer = nil
+    end
+  end
+
   def self.default_timeout
     @default_timeout ||= begin
       config = File.exist?(CONFIG_FILE) ? YAML.load_file(CONFIG_FILE) : nil
@@ -128,6 +146,9 @@ module WaitHelper
 
     attr_reader :hint
 
+    # Selenium's aliases for the locator strategies, as the trace names them.
+    STRATEGIES = { css_selector: 'css', class: 'class_name', link: 'link_text', partial_link: 'partial_link_text' }.freeze
+
     def self.for(driver, locator, by, scope: driver)
       raise ArgumentError, 'pass the locator in braces or as keywords, not both' if locator && !by.empty?
 
@@ -202,6 +223,21 @@ module WaitHelper
       return self unless @locator
 
       @scope.lost if @scope_stale
+    end
+
+    # { strategy:, selector: } for the observer, or nil when this locates nothing.
+    def trace_locator
+      return unless @locator
+
+      strategy, selector = @locator.first
+      { strategy: STRATEGIES.fetch(strategy) { strategy.to_s }, selector: selector }
+    end
+
+    # The locators this one is searched inside, outermost first.
+    def trace_within
+      return [] unless @scope.is_a?(Lookup)
+
+      [*@scope.trace_within, @scope.trace_locator].compact
     end
 
     def describe
@@ -289,13 +325,64 @@ module WaitHelper
     # target: a second Lookup (the drop target) that must be visible in the same poll.
     # between: called after each poll that was not ready (scroll_to scrolls there); once it
     # returns false the wait stops, and the timeout message ends with its to_s.
-    def perform_action(action, locator, checks, target: nil, between: nil)
+    def perform_action(action, locator, checks, target: nil, between: nil, &block)
       lookup = locator.is_a?(Lookup) ? locator : Lookup.for(@driver, locator, {})
+      return poll(action, lookup, checks, target, between, nil, &block) unless WaitHelper.observer
+
+      observed(action, lookup) { |run| poll(action, lookup, checks, target, between, run, &block) }
+    end
+
+    # Retries the block until it passes. Calls inside it share its deadline (see deadline_and_wait).
+    def eventually(&block)
+      return retry_block(nil, &block) unless WaitHelper.observer
+
+      token = WaitHelper.report(:group_started, action: :eventually, source: Observation.source)
+      run = { retries: 0 }
+      begin
+        result = retry_block(run, &block)
+        WaitHelper.report(:group_finished, token, status: :passed, retries: run[:retries], error: nil) if token
+        result
+      rescue Exception => e # rubocop:disable Lint/RescueException
+        WaitHelper.report(:group_finished, token, status: :failed, retries: run[:retries], error: e) if token
+        raise
+      end
+    end
+
+    private
+
+    # Tells the observer an action started and how it ended. The block gets a run
+    # hash that poll fills with the retries it took and the ready element.
+    def observed(action, lookup)
+      started = now
+      run = { retries: 0, element: nil }
+      token = WaitHelper.report(:action_started, action: action, locator: lookup.trace_locator,
+                                                 within: lookup.trace_within, source: Observation.source,
+                                                 label: Observation.label)
+      begin
+        result = yield(run)
+        finished(token, :passed, started, run, nil)
+        result
+      rescue Exception => e # rubocop:disable Lint/RescueException
+        finished(token, :failed, started, run, e)
+        raise
+      end
+    end
+
+    def finished(token, status, started, run, error)
+      return unless token
+
+      WaitHelper.report(:action_finished, token, status: status, waited_ms: ((now - started) * 1000).round,
+                                                 retries: run[:retries], error: error, element: run[:element])
+    end
+
+    # run: where to count retries and keep the ready element, or nil when nobody observes.
+    def poll(action, lookup, checks, target, between, run)
       deadline, waited = deadline_and_wait
       loop do
         seen = catch(:not_ready) do
           elements = [ready(lookup, checks)]
           elements << ready(target, TARGET_CHECKS, 'drop target ') if target
+          run[:element] = elements.first if run
           return yield(*elements)
         rescue *RETRIED => e
           retry_reason(lookup, e, action)
@@ -307,12 +394,12 @@ module WaitHelper
           raise TimeoutError, timeout_message(lookup, checks, seen, [waited, waited + now - deadline].min), backtrace
         end
 
+        run[:retries] += 1 if run
         pause(deadline)
       end
     end
 
-    # Retries the block until it passes. Calls inside it share its deadline (see deadline_and_wait).
-    def eventually
+    def retry_block(run)
       enclosing = Thread.current[DEADLINE_KEY]
       require 'rspec/expectations'
       retried = [RSpec::Expectations::ExpectationNotMetError, Selenium::WebDriver::Error::NoSuchElementError,
@@ -324,13 +411,12 @@ module WaitHelper
       rescue *retried => e
         raise e.exception("(still failing after #{seconds(waited)}s)\n#{e.message}") if now >= deadline
 
+        run[:retries] += 1 if run
         pause(deadline)
       end
     ensure
       Thread.current[DEADLINE_KEY] = enclosing
     end
-
-    private
 
     # Inside eventually, a call without timeout: waits for what is left of eventually's
     # deadline; one with timeout: waits that long per attempt, never past eventually's deadline.
@@ -403,6 +489,43 @@ module WaitHelper
 
     def now
       Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    end
+  end
+
+  # Where an action was called from, for the observer.
+  module Observation
+    PAGE_OBJECTS = '/page_objects/'
+    # By their given and their real path (a symlinked directory differs).
+    HELPER_FILES = Waiter::HELPER_FILES.flat_map { |file| [file, File.realpath(file)] }.freeze
+
+    # The first frame outside the helper files, Ruby and gems, as { file:, line: } (file relative
+    # to the working directory when inside it), or nil.
+    def self.source
+      frame = caller_locations.find { |location| project?(location.absolute_path || location.path) }
+      return unless frame
+
+      { file: relative(frame.absolute_path || frame.path), line: frame.lineno }
+    end
+
+    # The method name of the nearest calling frame in a page_objects/ directory, or nil.
+    def self.label
+      caller_locations.find { |location| location.path.include?(PAGE_OBJECTS) }&.base_label
+    end
+
+    def self.project?(path)
+      return false if path.start_with?('<internal:') || HELPER_FILES.include?(path)
+
+      library_paths.none? { |root| path.start_with?(root) }
+    end
+
+    def self.library_paths
+      @library_paths ||= [*RbConfig::CONFIG.values_at('rubylibdir', 'rubyarchdir'), *Gem.path]
+                         .compact.map { |dir| File.join(dir, '') }
+    end
+
+    def self.relative(path)
+      root = File.join(Dir.pwd, '')
+      path.start_with?(root) ? path.delete_prefix(root) : path
     end
   end
 <%- if mobile? -%>

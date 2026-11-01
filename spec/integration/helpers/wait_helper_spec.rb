@@ -472,6 +472,121 @@ describe 'WaitHelper' do
     end
   end
 
+  describe '.observer' do
+    # Records every hook call; tokens are the call's index.
+    let(:observer) do
+      Class.new do
+        attr_reader :calls
+
+        def initialize = @calls = []
+
+        %i[action_started group_started].each do |hook|
+          define_method(hook) do |**details|
+            @calls << [hook, details]
+            @calls.size - 1
+          end
+        end
+
+        %i[action_finished group_finished].each do |hook|
+          define_method(hook) do |token, **details|
+            @calls << [hook, token, details]
+          end
+        end
+      end.new
+    end
+
+    around do |example|
+      WaitHelper.observer = observer
+      example.run
+    ensure
+      WaitHelper.observer = nil
+    end
+
+    def started = observer.calls.select { |call| call.first == :action_started }.map(&:last)
+    def finished = observer.calls.select { |call| call.first == :action_finished }.map(&:last)
+
+    it 'reports a click with its locator, source line, waited time and the ready element' do
+      button = element
+      driver.script({ id: 'go' }, nil, button)
+      line = __LINE__ + 1
+      page.click({ id: 'go' }, timeout: 1)
+
+      expect(observer.calls.first(2).map(&:first)).to eq(%i[action_started action_finished])
+      expect(started.first).to include(action: :click, locator: { strategy: 'id', selector: 'go' }, within: [], label: nil,
+                                       source: { file: Pathname(__FILE__).relative_path_from(Dir.pwd).to_s, line: line })
+      expect(observer.calls[1][1]).to eq(0)
+      expect(finished.first).to include(status: :passed, retries: 2, error: nil, element: button)
+      expect(finished.first[:waited_ms]).to be_between(50, 500)
+    end
+
+    it 'reports a chained find with within, outermost first' do
+      driver.script({ css: '.form' }, element.script({ tag_name: 'td' }, element.script({ id: 'email' }, element)))
+      page.find_element(css: '.form').find_element(tag_name: 'td').find_element(id: 'email')
+
+      expect(started.last).to include(action: :find_element, locator: { strategy: 'id', selector: 'email' },
+                                      within: [{ strategy: 'css', selector: '.form' }, { strategy: 'tag_name', selector: 'td' }])
+    end
+
+    it 'reports a timed-out action as failed with its error, then re-raises' do
+      driver.script({ id: 'gone' }, nil)
+      expect { page.click({ id: 'gone' }, timeout: 0.3) }.to raise_error(WaitHelper::TimeoutError)
+
+      expect(finished.first).to include(status: :failed, element: nil)
+      expect(finished.first[:error]).to be_a(WaitHelper::TimeoutError)
+      expect(finished.first[:retries]).to be >= 2
+    end
+
+    it 'reports eventually as a group with the retries it took' do
+      tries = 0
+      page.eventually(timeout: 2) { expect(tries += 1).to eq(3) }
+
+      group = observer.calls.find { |call| call.first == :group_started }.last
+      expect(group).to include(action: :eventually)
+      expect(group[:source]).to include(line: be_a(Integer))
+      expect(observer.calls.last).to match([:group_finished, 0, { status: :passed, retries: 2, error: nil }])
+    end
+
+    it 'reports a failing eventually as failed with its error' do
+      tries = 0
+      expect { page.eventually(timeout: 0.2) { expect(tries += 1).to eq(0) } }.to raise_error(RSpec::Expectations::ExpectationNotMetError)
+      expect(observer.calls.last.last).to include(status: :failed, error: be_a(RSpec::Expectations::ExpectationNotMetError))
+    end
+
+    it 'normalises class to class_name and link to link_text' do
+      aliases = { css_selector: 'css', class: 'class_name', link: 'link_text', partial_link: 'partial_link_text', name: 'name' }
+      aliases.each_key do |strategy|
+        driver.script({ strategy => 'x' }, element)
+        page.displayed?({ strategy => 'x' }, timeout: 0)
+      end
+
+      expect(started.map { |event| event[:locator][:strategy] }).to eq(aliases.values)
+    end
+
+    it 'labels an action by the nearest page_objects method' do
+      Dir.mktmpdir do |dir|
+        FileUtils.mkdir_p(File.join(dir, 'page_objects'))
+        path = File.join(dir, 'page_objects', 'login.rb')
+        File.write(path, "def login_button(page) = page.click({ id: 'go' }, timeout: 1)\n")
+        load path
+        driver.script({ id: 'go' }, element)
+        login_button(page)
+      end
+
+      expect(started.first).to include(label: 'login_button')
+      expect(started.first[:source][:file]).to end_with('page_objects/login.rb')
+    end
+
+    it 'drops an observer that raises, warns once, and still clicks' do
+      allow(observer).to receive(:action_started).and_raise('boom')
+      button = element
+      driver.script({ id: 'go' }, button)
+
+      expect { 2.times { page.click({ id: 'go' }, timeout: 1) } }.to output(/\A\[trace\] observer stopped: RuntimeError: boom\n\z/).to_stderr
+      expect(button.log).to eq([%i[click]] * 2)
+      expect(WaitHelper.observer).to be_nil
+    end
+  end
+
   describe '.default_timeout' do
     around do |example|
       Dir.mktmpdir do |dir|
