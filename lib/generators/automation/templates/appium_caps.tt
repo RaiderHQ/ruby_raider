@@ -18,7 +18,7 @@ browserstack:
   platformName: Android
   os_version: '9.0'
   deviceName: Google Pixel 3
-  app: app: <%= ENV['APP_URL'] %>
+  app: <%= ENV['APP_URL'] %>
   browserstack.user: <%= ENV['BROWSERSTACK_USER'] %>
   browserstack.key: <%= ENV['BROWSERSTACK_KEY'] %>
   project: 'RaiderTestApp'
@@ -51,7 +51,7 @@ browserstack:
   platformName: Android
   os_version: '9.0'
   deviceName: Google Pixel 3
-  app: app: <%= ENV['APP_URL'] %>
+  app: <%= ENV['APP_URL'] %>
   browserstack.user: <%= ENV['BROWSERSTACK_USER'] %>
   browserstack.key: <%= ENV['BROWSERSTACK_KEY'] %>
   project: 'RaiderTestApp'
