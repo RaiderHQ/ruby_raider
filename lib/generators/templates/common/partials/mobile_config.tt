@@ -1,4 +1,5 @@
 platform: :ios
+timeout: 10 # seconds that actions and eventually wait before failing
 
 video:
   enabled: true

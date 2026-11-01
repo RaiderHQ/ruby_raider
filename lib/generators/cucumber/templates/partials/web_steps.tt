@@ -20,5 +20,9 @@ end
 Then("I'm logged in") do
   account_page = <% if watir? %>Account.new(browser)<% else %>Account.new(driver)<% end %>
   account_page.visit
+<%- if watir? -%>
   expect(account_page.header.customer_name).to eq "Welcome back #{@user['name']}"
+<%- else -%>
+  eventually { expect(account_page.header.customer_name).to eq "Welcome back #{@user['name']}" }
+<%- end -%>
 end

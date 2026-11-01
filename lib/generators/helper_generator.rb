@@ -10,6 +10,7 @@ class HelpersGenerator < Generator
     generate_spec_helper
     generate_video_helper
     generate_session_state
+    generate_wait_helper
   end
 
   private
@@ -40,6 +41,13 @@ class HelpersGenerator < Generator
     return if mobile?
 
     template('helpers/session_state.tt', "#{name}/helpers/session_state.rb")
+  end
+
+  def generate_wait_helper
+    return unless wait_helper?
+
+    template('helpers/wait_helper.tt', "#{name}/helpers/wait_helper.rb")
+    template('helpers/raider_element.tt', "#{name}/helpers/raider_element.rb")
   end
 
   def generate_appium_helper

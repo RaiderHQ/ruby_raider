@@ -18,6 +18,7 @@ module ScaffoldProjectDetector
   }.freeze
 
   CONFIG_PATH = 'config/config.yml'
+  WAIT_HELPER_PATH = 'helpers/wait_helper.rb'
 
   class Error < StandardError; end
 
@@ -59,6 +60,11 @@ module ScaffoldProjectDetector
 
   def watir?
     detect_automation == 'watir'
+  end
+
+  # Projects made before WaitHelper, or whose owner removed it, do not have the file.
+  def wait_helper?
+    File.exist?(WAIT_HELPER_PATH)
   end
 
   # Validates that the current directory looks like a Ruby Raider project.

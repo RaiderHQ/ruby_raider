@@ -16,5 +16,5 @@ end
 
 Then("I'm redirected to the product details page") do
   pdp_page = Pdp.new(driver)
-  expect(pdp_page.add_to_cart_text).to eq 'Add to Cart'
+  eventually { expect(pdp_page.add_to_cart_text).to eq 'Add to Cart' }
 end

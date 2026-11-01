@@ -52,7 +52,9 @@ module RubyRaider
     map 'u' => 'utility'
 
     no_tasks do
+      # -p values arrive as strings; only examples:false turns the example tests off
       def generate_from_parameters(params)
+        params[:examples] = params[:examples].to_s.downcase != 'false' if params.key?(:examples)
         InvokeGenerators.generate_framework(params)
       end
 

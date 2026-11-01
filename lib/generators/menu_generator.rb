@@ -31,6 +31,7 @@ class MenuGenerator
       framework: options[:framework],
       accessibility: options[:accessibility],
       ci: options[:ci],
+      examples: options[:examples],
       name: @name
     }
     generate_framework(structure)
@@ -70,32 +71,43 @@ class MenuGenerator
 
   def select_test_framework(automation)
     prompt.select('Please select your test framework') do |menu|
-      menu.choice :Cucumber, -> { select_accessibility('Cucumber', automation) }
-      menu.choice :Rspec, -> { select_accessibility('Rspec', automation) }
+      menu.choice :Cucumber, -> { select_examples('Cucumber', automation) }
+      menu.choice :Rspec, -> { select_examples('Rspec', automation) }
       menu.choice :Quit, -> { exit }
     end
   end
 
-  FrameworkOptions = Struct.new(:automation, :framework, :accessibility, :ci)
+  def select_examples(framework, automation_type)
+    prompt.select('Do you want example tests?') do |menu|
+      menu.choice :Yes, -> { select_accessibility(framework, automation_type, examples: true) }
+      menu.choice :No, -> { select_accessibility(framework, automation_type, examples: false) }
+      menu.choice :Quit, -> { exit }
+    end
+  end
+
+  FrameworkOptions = Struct.new(:automation, :framework, :accessibility, :ci, :examples)
 
   def create_framework_options(params)
-    FrameworkOptions.new(params[:automation], params[:framework], params[:accessibility], params[:ci])
+    FrameworkOptions.new(params[:automation], params[:framework], params[:accessibility], params[:ci],
+                         params[:examples])
   end
 
-  def select_accessibility(framework, automation_type)
-    return create_framework(framework, automation_type) if mobile_automation?(automation_type)
+  def select_accessibility(framework, automation_type, examples: true)
+    return create_framework(framework, automation_type, examples:) if mobile_automation?(automation_type)
 
     prompt.select('Add accessibility testing (axe)?') do |menu|
-      menu.choice :Yes, -> { select_ci(framework, automation_type, accessibility: true) }
-      menu.choice :No, -> { select_ci(framework, automation_type, accessibility: false) }
+      menu.choice :Yes, -> { select_ci(framework, automation_type, accessibility: true, examples:) }
+      menu.choice :No, -> { select_ci(framework, automation_type, accessibility: false, examples:) }
       menu.choice :Quit, -> { exit }
     end
   end
 
-  def select_ci(framework, automation_type, accessibility:)
+  def select_ci(framework, automation_type, accessibility:, examples: true)
     prompt.select('Which CI provider?') do |menu|
-      menu.choice 'GitHub Actions', -> { create_framework(framework, automation_type, accessibility:) }
-      menu.choice 'Azure Pipelines', -> { create_framework(framework, automation_type, accessibility:, ci_provider: 'azure') }
+      menu.choice 'GitHub Actions', -> { create_framework(framework, automation_type, accessibility:, examples:) }
+      menu.choice 'Azure Pipelines', lambda {
+        create_framework(framework, automation_type, accessibility:, ci_provider: 'azure', examples:)
+      }
       menu.choice :Quit, -> { exit }
     end
   end
@@ -104,16 +116,17 @@ class MenuGenerator
     %w[ios android cross_platform].include?(automation_type)
   end
 
-  def create_framework(framework, automation_type, accessibility: false, ci_provider: nil)
+  def create_framework(framework, automation_type, accessibility: false, ci_provider: nil, examples: true)
     options = create_framework_options(automation: automation_type,
                                        framework: framework.downcase,
-                                       accessibility:, ci: ci_provider)
+                                       accessibility:, ci: ci_provider, examples:)
 
     puts 'Chosen Options:'
     puts "  Automation Type: #{options[:automation]}"
     puts "  Framework: #{options[:framework]}"
     puts '  Accessibility: enabled' if options[:accessibility]
     puts '  CI: Azure Pipelines' if options[:ci] == 'azure'
+    puts '  Example tests: none' unless options[:examples]
 
     set_up_framework(options)
     prompt.say("You have chosen to use #{framework} with #{automation_type}")
@@ -135,6 +148,5 @@ class MenuGenerator
   def automation_options(menu)
     menu.choice :Selenium, -> { choose_test_framework('selenium') }
     menu.choice :Appium, -> { choose_test_framework('appium') }
-    menu.choice :Watir, -> { choose_test_framework('watir') }
   end
 end

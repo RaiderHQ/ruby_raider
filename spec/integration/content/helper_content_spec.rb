@@ -398,3 +398,82 @@ describe 'Helper file content' do
     end
   end
 end
+
+describe 'Auto-waiting helper wiring' do
+  %w[selenium ios android cross_platform].each do |automation|
+    context "with rspec and #{automation}" do
+      it 'includes WaitHelper in the spec helper' do
+        helper = read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'helpers/spec_helper.rb')
+        expect(helper).to include("require_relative 'wait_helper'", 'config.include(WaitHelper)')
+      end
+    end
+  end
+
+  %w[ios android cross_platform].each do |automation|
+    %w[rspec cucumber].each do |framework|
+      it "does not pass a wait to appium_lib in #{framework} #{automation}" do
+        driver = read_generated("#{framework}_#{automation}", 'helpers/driver_helper.rb')
+        expect(driver).not_to match(/\bwait:/)
+      end
+    end
+  end
+
+  %w[rspec cucumber].each do |framework|
+    it "returns the new driver without a redundant assignment in #{framework} selenium" do
+      driver = read_generated("#{framework}_selenium", 'helpers/driver_helper.rb')
+      expect(driver).to include("    Selenium::WebDriver.for(browser.to_sym, **arguments)\n  end")
+      expect(driver).not_to include('driver = Selenium::WebDriver.for')
+    end
+
+    it "leaves no implicit wait in #{framework} selenium" do
+      driver = read_generated("#{framework}_selenium", 'helpers/driver_helper.rb')
+      expect(driver).not_to include('implicit_wait')
+    end
+
+    it "keeps Watir untouched in #{framework} watir" do
+      project = "#{framework}_watir"
+      expect(File.exist?(File.join(project, 'helpers/wait_helper.rb'))).to be(false)
+      expect(read_generated(project, 'helpers/browser_helper.rb')).to include('Watir.default_timeout')
+      files = Dir.glob(File.join(project, '**/*.rb')).map { |f| File.read(f) }
+      expect(files.grep(/WaitHelper/)).to be_empty
+    end
+  end
+
+  describe 'without example tests' do
+    %w[selenium ios cross_platform].each do |automation|
+      context "with rspec and #{automation}" do
+        subject(:helper) { read_generated(ensure_project(framework: 'rspec', automation:, examples: false), 'helpers/spec_helper.rb') }
+
+        it 'names no example class or hook' do
+          expect(helper).not_to match(/Login|Account|logged_in|model_factory/)
+        end
+
+        it 'has valid Ruby syntax' do
+          expect(helper).to have_valid_ruby_syntax
+        end
+      end
+
+      context "with cucumber and #{automation}" do
+        let(:name) { ensure_project(framework: 'cucumber', automation:, examples: false) }
+
+        it 'names no example class or hook in the env and the World' do
+          %w[env.rb world.rb].each do |file|
+            expect(read_generated(name, "features/support/#{file}")).not_to match(/Login|Account|logged_in|factory/)
+          end
+        end
+
+        it 'has a valid env and World' do
+          %w[env.rb world.rb].each do |file|
+            expect(read_generated(name, "features/support/#{file}")).to have_valid_ruby_syntax
+          end
+        end
+      end
+    end
+
+    it 'keeps the session state require in the selenium rspec spec helper' do
+      helper = read_generated(ensure_project(framework: 'rspec', automation: 'selenium', examples: false),
+                              'helpers/spec_helper.rb')
+      expect(helper).to include("require_relative 'session_state'")
+    end
+  end
+end

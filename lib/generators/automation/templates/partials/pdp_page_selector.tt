@@ -1,8 +1,6 @@
-<%- if ios? -%>
-driver.find_element(accessibility_id: 'add-to-cart-button')
-<%- elsif android? -%>
-driver.find_element(accessibility_id: 'add-to-cart-button')
+<%- if cross_platform? -%>
+{ ios: { accessibility_id: 'add-to-cart-button' },
+      android: { accessibility_id: 'add-to-cart-button' } }
 <%- else -%>
-element(ios: { accessibility_id: 'add-to-cart-button' },
-            android: { accessibility_id: 'add-to-cart-button' })
+{ accessibility_id: 'add-to-cart-button' }
 <%- end -%>

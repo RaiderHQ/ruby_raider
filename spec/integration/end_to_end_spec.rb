@@ -398,6 +398,40 @@ describe 'End-to-End Project Generation and Execution' do
     end
   end
 
+  # An empty skeleton (examples: false) still passes its run, so its CI is green until tests are added
+  def generate_skeleton_project(framework)
+    name = "skeleton_e2e_#{framework}_selenium"
+    unless LazyProjectGenerator::GENERATED.include?(name)
+      generate_framework(framework:, automation: 'selenium', name:, examples: false)
+      LazyProjectGenerator::GENERATED.add(name)
+    end
+    name
+  end
+
+  context 'Empty skeleton projects (examples: false)' do
+    it 'runs bundle exec rspec on a selenium rspec skeleton with 0 examples', :aggregate_failures do
+      project = generate_skeleton_project('rspec')
+      skip 'Bundle install failed' unless bundle_install(project)
+
+      ['rspec', 'rspec spec/'].each do |command|
+        result = run_in_project(project, "bundle exec #{command}", timeout: 120)
+        expect(result[:exit_code]).to eq(0), "#{command}\nSTDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
+        expect(result[:stdout]).to include('0 examples, 0 failures')
+      end
+    end
+
+    it 'runs bundle exec cucumber on a selenium cucumber skeleton with 0 scenarios', :aggregate_failures do
+      project = generate_skeleton_project('cucumber')
+      skip 'Bundle install failed' unless bundle_install(project)
+
+      ['cucumber', 'cucumber features'].each do |command|
+        result = run_in_project(project, "bundle exec #{command}", timeout: 120)
+        expect(result[:exit_code]).to eq(0), "#{command}\nSTDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
+        expect(result[:stdout]).to include('0 scenarios')
+      end
+    end
+  end
+
   # Failure video replay against real browsers. Needs an ffmpeg with libvpx (RAIDER_FFMPEG_PATH), because the
   # RaiderHQ ffmpeg release has no checksums yet. Skipped when it, or the browser, is missing. Firefox can be
   # pointed at a specific binary with FIREFOX_BINARY.

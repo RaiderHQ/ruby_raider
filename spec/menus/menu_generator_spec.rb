@@ -21,8 +21,9 @@ RSpec.describe MenuGenerator do
 
       expect(menu).to have_received(:choice).with(:Selenium, anything)
       expect(menu).to have_received(:choice).with(:Appium, anything)
-      expect(menu).to have_received(:choice).with(:Watir, anything)
       expect(menu).to have_received(:choice).with(:Quit, anything)
+      expect(menu).not_to have_received(:choice).with(:Watir, anything)
+      expect(menu).to have_received(:choice).exactly(3).times
     end
   end
 
@@ -186,7 +187,7 @@ RSpec.describe MenuGenerator do
 
       menu_generator.send(:select_accessibility, 'Rspec', 'selenium')
 
-      expect(menu_generator).to have_received(:select_ci).with('Rspec', 'selenium', accessibility: false)
+      expect(menu_generator).to have_received(:select_ci).with('Rspec', 'selenium', accessibility: false, examples: true)
     end
 
     it 'is skipped for mobile' do
@@ -203,6 +204,67 @@ RSpec.describe MenuGenerator do
 
       expect(menu_generator).to have_received(:generate_framework).with(
         hash_including(automation: 'selenium', ci: 'azure')
+      )
+    end
+  end
+
+  describe 'example tests question' do
+    let(:menu) { double('menu') } # rubocop:disable RSpec/VerifiedDoubles
+
+    before do
+      allow(menu).to receive(:choice)
+      allow(menu_generator).to receive(:generate_framework)
+      allow(menu_generator).to receive(:system)
+      allow(prompt).to receive(:say)
+      allow(prompt).to receive(:yes?).and_return(false)
+    end
+
+    it 'is asked after the test framework question' do
+      allow(prompt).to receive(:select).with('Please select your test framework').and_yield(menu)
+      allow(menu).to receive(:choice).with(:Rspec, anything) { |_, action| action.call }
+      allow(menu_generator).to receive(:select_examples)
+
+      menu_generator.choose_test_framework('selenium')
+
+      expect(menu_generator).to have_received(:select_examples).with('Rspec', 'selenium')
+    end
+
+    it 'offers Yes first, so yes is the default' do
+      allow(prompt).to receive(:select).with('Do you want example tests?').and_yield(menu)
+      allow(menu).to receive(:choice).with(:Yes, anything) { |_, action| action.call }
+      allow(menu_generator).to receive(:select_accessibility)
+
+      menu_generator.send(:select_examples, 'Rspec', 'selenium')
+
+      expect(menu).to have_received(:choice).with(:Yes, anything).ordered
+      expect(menu).to have_received(:choice).with(:No, anything).ordered
+      expect(menu).to have_received(:choice).with(:Quit, anything).ordered
+      expect(menu_generator).to have_received(:select_accessibility).with('Rspec', 'selenium', examples: true)
+    end
+
+    it 'carries No through to generate_framework as examples: false' do
+      allow(prompt).to receive(:select).with('Do you want example tests?').and_yield(menu)
+      allow(menu).to receive(:choice).with(:No, anything) { |_, action| action.call }
+      allow(prompt).to receive(:select).with('Add accessibility testing (axe)?').and_yield(menu)
+      allow(menu).to receive(:choice).with(:No, anything) { |_, action| action.call }
+      allow(prompt).to receive(:select).with('Which CI provider?').and_yield(menu)
+      allow(menu).to receive(:choice).with('GitHub Actions', anything) { |_, action| action.call }
+
+      menu_generator.send(:select_examples, 'Rspec', 'selenium')
+
+      expect(menu_generator).to have_received(:generate_framework).with(
+        hash_including(automation: 'selenium', framework: 'rspec', examples: false)
+      )
+    end
+
+    it 'carries No through for mobile, which has no accessibility question' do
+      allow(prompt).to receive(:select).with('Do you want example tests?').and_yield(menu)
+      allow(menu).to receive(:choice).with(:No, anything) { |_, action| action.call }
+
+      menu_generator.send(:select_examples, 'Cucumber', 'ios')
+
+      expect(menu_generator).to have_received(:generate_framework).with(
+        hash_including(automation: 'ios', framework: 'cucumber', examples: false)
       )
     end
   end

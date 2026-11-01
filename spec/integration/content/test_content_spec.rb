@@ -173,3 +173,60 @@ describe 'Test file content' do
     include_examples 'logged in scenario', name
   end
 end
+
+describe 'Cucumber world WaitHelper wiring' do
+  %w[selenium ios android cross_platform].each do |automation|
+    it "makes WaitHelper available to steps in #{automation}" do
+      world = read_generated("cucumber_#{automation}", 'features/support/world.rb')
+      expect(world).to include("require_relative '../../helpers/wait_helper'", 'World(WaitHelper)')
+    end
+  end
+
+  it 'leaves the watir world without WaitHelper' do
+    expect(read_generated('cucumber_watir', 'features/support/world.rb')).not_to include('WaitHelper')
+  end
+end
+
+describe 'Example tests on the wait helper' do
+  it 'wraps every assertion of the selenium rspec spec in eventually' do
+    spec = read_generated('rspec_selenium', 'spec/login_page_spec.rb')
+    expect(spec.scan('eventually { expect(').size).to eq(3)
+    expect(spec.scan(/^ +expect\(/)).to be_empty
+  end
+
+  it "wraps the selenium cucumber Then step's assertion in eventually" do
+    steps = read_generated('cucumber_selenium', 'features/step_definitions/login_steps.rb')
+    expect(steps).to include('eventually { expect(account_page.header.customer_name).to eq ')
+  end
+
+  %w[ios android cross_platform].each do |automation|
+    it "wraps the #{automation} rspec assertion in eventually" do
+      spec = read_generated("rspec_#{automation}", 'spec/pdp_page_spec.rb')
+      expect(spec).to include("eventually { expect(pdp_page.add_to_cart_text).to eq 'Add to Cart' }")
+    end
+
+    it "wraps the #{automation} cucumber Then step's assertion in eventually" do
+      steps = read_generated("cucumber_#{automation}", 'features/step_definitions/home_steps.rb')
+      expect(steps).to include("eventually { expect(pdp_page.add_to_cart_text).to eq 'Add to Cart' }")
+    end
+  end
+end
+
+# The Watir output must stay as master generated it (1274a66); the snapshots in
+# spec/fixtures/watir_master were generated from that commit's lib.
+# To regenerate: `git archive 1274a66 lib` into a scratch dir, generate rspec and cucumber Watir projects there,
+# then apply only the Readme deprecation-line delta (the `> **Deprecated:**` line under the heading block).
+describe 'Watir example output' do
+  snapshots = File.expand_path('../../fixtures/watir_master', __dir__)
+
+  { 'rspec_watir' => %w[page_objects/pages/login.rb page_objects/abstract/page.rb spec/login_page_spec.rb Readme.md],
+    'cucumber_watir' => %w[page_objects/pages/login.rb page_objects/abstract/page.rb
+                           features/step_definitions/login_steps.rb Readme.md] }.each do |project, files|
+    files.each do |file|
+      it "keeps #{project}/#{file} as master generates it" do
+        expected = File.read(File.join(snapshots, project, "#{file}.snapshot"))
+        expect(read_generated(project, file)).to eq(expected)
+      end
+    end
+  end
+end

@@ -46,4 +46,24 @@ describe RspecGenerator do
     include_examples 'creates rspec files examples',
                      "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}", 'pdp'
   end
+
+  describe 'without example tests' do
+    %w[selenium ios cross_platform].each do |automation|
+      context "with rspec and #{automation}" do
+        let(:name) { ensure_project(framework: 'rspec', automation:, examples: false) }
+
+        it 'creates an empty spec folder' do
+          expect(Dir.children("#{name}/spec")).to eq(['.keep'])
+        end
+      end
+    end
+
+    it 'creates no accessibility example' do
+      InvokeGenerators.generate_framework(framework: 'rspec', automation: 'selenium', name: 'skeleton_axe_rspec',
+                                          examples: false, accessibility: true)
+      expect(Dir.children('skeleton_axe_rspec/spec')).to eq(['.keep'])
+    ensure
+      FileUtils.rm_rf('skeleton_axe_rspec')
+    end
+  end
 end

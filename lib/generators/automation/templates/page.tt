@@ -1,10 +1,16 @@
-<%- if web? -%>
+<%- if web? && examples? -%>
 require_relative '../components/header'
+<%- end -%>
+<%- if wait_helper? -%>
+require_relative '../../helpers/wait_helper'
 <%- end -%>
 
 class Page
 <%- if cross_platform? -%>
   include AppiumHelper
+<%- end -%>
+<%- if wait_helper? -%>
+  include WaitHelper
 <%- end -%>
 <%=- partial('initialize_selector', trim: false) -%>
 <%=- partial('visit_method', trim: false) -%>
@@ -13,14 +19,15 @@ class Page
   def to_s
     self.class.to_s.sub('Page', ' Page')
   end
+  <%- if selenium_based? && examples? -%>
 
-  <%- if selenium_based? -%>
   # Components
 
   def header
-    Header.new(driver.find_element(css: '.welcome-msg'))
+    Header.new(find_element(css: '.welcome-msg'))
   end
   <%- elsif watir? -%>
+
   # Components
 
   def header

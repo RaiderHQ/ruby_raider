@@ -141,3 +141,124 @@ describe 'Generated Readme content' do
     end
   end
 end
+
+describe 'Generated Readme: How the framework works' do
+  def section_of(readme)
+    readme[/^## How the framework works\n.*?(?=^## )/m]
+  end
+
+  FRAMEWORKS.each do |framework|
+    context "with #{framework} and selenium" do
+      subject(:readme) { read_generated("#{framework}_selenium", 'Readme.md') }
+
+      it 'sits between Getting Started and Reusing the login' do
+        works = readme.index("\n## How the framework works\n")
+        expect(works).not_to be_nil
+        expect(readme.index("\n## Getting Started\n")).to be < works
+        expect(readme.index("\n## Reusing the login\n")).to be > works
+      end
+
+      it 'covers the web wait helper, chaining, .native, absence checks and how to remove it' do
+        section = section_of(readme)
+        expect(section).to include('### Removing the wait helper', '.native',
+                                   "find_element(css: '.form').find_element(id: 'email')",
+                                   'select_by', 'hover', 'drag_and_drop', 'eventually', 'timeout: 0',
+                                   'find_elements', 'config/config.yml', '[Reporting](#reporting)',
+                                   '[Reusing the login](#reusing-the-login)', 'parallel_tests', 'HEADLESS',
+                                   framework == 'rspec' ? 'RETRY_COUNT' : '--retry 2')
+        expect(section).not_to include('scroll_to', 'swipe')
+      end
+
+      it 'explains that the waits inside eventually stretch to its time and are retried' do
+        eventually = section_of(readme)[/^### eventually\n.*?(?=^### )/m]
+        expect(eventually).to include('a wait inside it that timed out', 'whatever is left of the block',
+                                      '`timeout: 2` gets 2 seconds per try', '(still failing after 10s)')
+      end
+
+      it 'replaces eventually with a true/false Wait block and points at the generators that check' do
+        removal = section_of(readme)[/^### Removing the wait helper\n.*/m]
+        expect(removal).to include('a plain `expect`, or `Selenium::WebDriver::Wait.new(timeout: 10).until { condition }`',
+                                   'a block that returns true or false', '`raider g page` and `raider g component`')
+        expect(removal).not_to include('raider g spec')
+      end
+
+      it 'lists the five steps to remove the wait helper' do
+        removal = section_of(readme)[/^### Removing the wait helper\n.*/m]
+        expect(removal).to include('helpers/wait_helper.rb', 'helpers/raider_element.rb', 'include WaitHelper',
+                                   'driver.find_element(**', 'Selenium::WebDriver::Wait.new', 'implicit_wait',
+                                   'raider g')
+        expect(removal.scan(/^\d\. /).size).to eq(5)
+      end
+    end
+
+    %w[ios android cross_platform].each do |automation|
+      context "with #{framework} and #{automation}" do
+        subject(:readme) { read_generated("#{framework}_#{automation}", 'Readme.md') }
+
+        it 'sits between Getting Started and Reporting' do
+          works = readme.index("\n## How the framework works\n")
+          expect(works).not_to be_nil
+          expect(readme.index("\n## Getting Started\n")).to be < works
+          expect(readme.index("\n## Reporting\n")).to be > works
+        end
+
+        it 'covers the mobile method set, per-OS locators, Appium setup and how to remove the wait helper' do
+          section = section_of(readme)
+          expect(section).to include('swipe', 'scroll_to', 'tap', 'capabilities.yml', 'raider u start_appium',
+                                     '### Removing the wait helper', '.native', '[Reporting](#reporting)',
+                                     'timeout: 15')
+          expect(section).not_to include('select_by', 'hover', 'drag_and_drop', 'Reusing the login')
+          expect(section).to include('ios: {') if automation == 'cross_platform'
+        end
+
+        it 'says the device capabilities sit under appium:options' do
+          settings = section_of(readme)[/^### Settings\n.*?(?=^### )/m]
+          expect(settings).to include('under `appium:options`')
+          expect(settings).to include('under the `ios:` and `android:` parts') if automation == 'cross_platform'
+        end
+      end
+    end
+
+    it "marks the #{framework} watir Readme as deprecated and not the selenium one" do
+      watir = read_generated("#{framework}_watir", 'Readme.md')
+      expect(watir).to include('> **Deprecated:** Watir is deprecated', 'only available through `-p automation:watir`',
+                               'https://github.com/RaiderHQ/ruby_raider#migrating-from-watir')
+      expect(read_generated("#{framework}_selenium", 'Readme.md')).not_to include('**Deprecated:**')
+    end
+
+    it "has no such section for #{framework} and watir" do
+      expect(read_generated("#{framework}_watir", 'Readme.md')).not_to include('How the framework works')
+    end
+  end
+
+  describe 'without example tests' do
+    %w[rspec cucumber].product(%w[selenium ios cross_platform]).each do |framework, automation|
+      context "with #{framework} and #{automation}" do
+        subject(:readme) { read_generated(ensure_project(framework:, automation:, examples: false), 'Readme.md') }
+
+        it 'still explains how the framework works' do
+          expect(readme).to include('## How the framework works', '### The wait helper and RaiderElement')
+        end
+
+        it 'points at no example file' do
+          expect(readme).not_to match(/login\.rb|account\.rb|header\.rb|home\.rb|pdp\.rb|users\.yml|model_factory|
+                                       user_factory|login_page_spec|pdp_page_spec|login\.feature|home\.feature|
+                                       login_steps|home_steps|account\ example|files\ in\ this\ project/x)
+        end
+
+        it 'says it has no example tests and how it grows with scaffolding' do
+          expect(readme).to include('generated without example tests', 'raider g scaffold checkout')
+        end
+      end
+    end
+
+    %w[rspec cucumber].each do |framework|
+      it "shows how to add the login hook for the project's own login page in #{framework}" do
+        readme = read_generated(ensure_project(framework:, automation: 'selenium', examples: false), 'Readme.md')
+        section = readme[/^## Reusing the login\n.*?(?=^## )/m]
+        hook = framework == 'rspec' ? 'config.before(:each, :logged_in) do' : "Before('@logged_in') do"
+        expect(section).to include(hook, 'SessionState.new(driver).reuse(')
+      end
+    end
+  end
+end

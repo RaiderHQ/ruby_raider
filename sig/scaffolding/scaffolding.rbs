@@ -25,5 +25,6 @@ class Scaffolding < Thor::Group
   def project_config: () -> Hash[String, untyped]
   def selenium?: () -> bool
   def watir?: () -> bool
+  def wait_helper?: () -> bool
   def default_path: (String standard_path, String file_type) -> String
 end

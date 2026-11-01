@@ -107,4 +107,24 @@ describe CommonGenerator do
     include_examples 'creates a config file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates a gitignore file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
   end
+
+  describe 'without example tests' do
+    %w[rspec cucumber].product(%w[selenium ios cross_platform]).each do |framework, automation|
+      context "with #{framework} and #{automation}" do
+        let(:name) { ensure_project(framework:, automation:, examples: false) }
+        let(:ci_file) { automation == 'selenium' ? 'test_pipeline.yml' : 'appium_pipeline.yml' }
+
+        it 'creates the README, Gemfile, Rakefile and CI file' do
+          %W[Readme.md Gemfile Rakefile .github/workflows/#{ci_file}].each do |file|
+            expect(File).to exist("#{name}/#{file}")
+          end
+        end
+
+        it 'creates the settings' do
+          settings = automation == 'ios' ? 'config/capabilities.yml' : 'config/config.yml'
+          expect(File).to exist("#{name}/#{settings}")
+        end
+      end
+    end
+  end
 end

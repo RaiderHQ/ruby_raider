@@ -84,6 +84,18 @@ RSpec.describe ScaffoldProjectDetector do
     end
   end
 
+  describe '.wait_helper?' do
+    it 'is true when helpers/wait_helper.rb exists' do
+      FileUtils.mkdir_p('helpers')
+      File.write('helpers/wait_helper.rb', "# frozen_string_literal: true\n")
+      expect(described_class.wait_helper?).to be true
+    end
+
+    it 'is false when the file does not exist' do
+      expect(described_class.wait_helper?).to be false
+    end
+  end
+
   describe '.config' do
     it 'returns empty hash when config missing' do
       expect(described_class.config).to eq({})

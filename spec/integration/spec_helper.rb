@@ -28,8 +28,8 @@ module LazyProjectGenerator
   GENERATED = Set.new
   MUTEX = Mutex.new
 
-  def ensure_project(framework:, automation:)
-    settings = create_settings(framework:, automation:)
+  def ensure_project(framework:, automation:, examples: true)
+    settings = create_settings(framework:, automation:, examples:)
     project_name = settings[:name]
 
     MUTEX.synchronize do

@@ -31,6 +31,8 @@ describe 'Ruby syntax validation' do
                              else
                                %w[features/support/env.rb features/step_definitions/login_steps.rb]
                              end
+        # The glob above runs at load time, before the projects exist, so new helpers are listed here.
+        login_reuse_files += %w[helpers/wait_helper.rb helpers/raider_element.rb] if automation == 'selenium'
 
         login_reuse_files.each do |relative|
           it "#{relative} is generated as valid Ruby with frozen_string_literal" do
@@ -38,6 +40,27 @@ describe 'Ruby syntax validation' do
             expect(content).to have_valid_ruby_syntax
             expect(content).to have_frozen_string_literal
           end
+        end
+      end
+    end
+
+    # Mobile projects get the mobile branch of the wait helper templates.
+    %w[android ios cross_platform].each do |automation|
+      context "with #{framework} and #{automation}" do
+        project_name = "#{framework}_#{automation}"
+
+        %w[helpers/wait_helper.rb helpers/raider_element.rb].each do |relative|
+          it "#{relative} is generated as valid Ruby with frozen_string_literal" do
+            content = File.read(File.join(project_name, relative))
+            expect(content).to have_valid_ruby_syntax
+            expect(content).to have_frozen_string_literal
+          end
+        end
+
+        it 'helpers/wait_helper.rb has the mobile gestures and no web-only methods' do
+          content = File.read(File.join(project_name, 'helpers/wait_helper.rb'))
+          expect(content).to include("'mobile: swipeGesture'").and include('def scroll_to(')
+          expect(content).not_to include('def drag_and_drop(')
         end
       end
     end
