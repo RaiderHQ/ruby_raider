@@ -12,7 +12,11 @@ class <%= class_name %> < Component
   private
 
   # Elements
+<%- if wait_helper? -%>
+  # Example: click({ css: '.selector' })
+<%- else -%>
   # Example: driver.find_element(css: '.selector')
+<%- end -%>
 <%- elsif watir? -%>
 
   def content

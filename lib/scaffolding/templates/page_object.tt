@@ -18,7 +18,11 @@ require_relative '../abstract/page'
 
 <%= '  ' * module_parts.size %>  # Elements
 <%- if selenium? -%>
+<%- if wait_helper? -%>
+<%= '  ' * module_parts.size %>  # Example: click({ id: 'element_id' })
+<%- else -%>
 <%= '  ' * module_parts.size %>  # Example: driver.find_element(id: 'element_id')
+<%- end -%>
 <%- elsif watir? -%>
 <%= '  ' * module_parts.size %>  # Example: browser.text_field(id: 'element_id')
 <%- end -%>
@@ -40,7 +44,11 @@ class <%= page_class_name %> < Page
 
   # Elements
 <%- if selenium? -%>
+<%- if wait_helper? -%>
+  # Example: click({ id: 'element_id' })
+<%- else -%>
   # Example: driver.find_element(id: 'element_id')
+<%- end -%>
 <%- elsif watir? -%>
   # Example: browser.text_field(id: 'element_id')
 <%- end -%>
