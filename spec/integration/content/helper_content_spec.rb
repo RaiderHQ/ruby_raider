@@ -419,6 +419,12 @@ describe 'Auto-waiting helper wiring' do
   end
 
   %w[rspec cucumber].each do |framework|
+    it "returns the new driver without a redundant assignment in #{framework} selenium" do
+      driver = read_generated("#{framework}_selenium", 'helpers/driver_helper.rb')
+      expect(driver).to include("    Selenium::WebDriver.for(browser.to_sym, **arguments)\n  end")
+      expect(driver).not_to include('driver = Selenium::WebDriver.for')
+    end
+
     it "leaves no implicit wait in #{framework} selenium" do
       driver = read_generated("#{framework}_selenium", 'helpers/driver_helper.rb')
       expect(driver).not_to include('implicit_wait')

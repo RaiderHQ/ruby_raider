@@ -145,10 +145,15 @@ Watir is deprecated; to move a Watir project to Selenium, generate a Selenium pr
 
 Gem upgrades do not rewrite generated code, so existing projects keep their implicit wait until you opt in:
 
-1. Copy `helpers/wait_helper.rb` from a freshly generated project.
-2. Include it in `Page`, the spec helper, or the World.
-3. Remove the `implicit_wait` line.
-4. Move flaky spots to `click`, `send_keys` and `eventually` first.
+1. Copy both `helpers/wait_helper.rb` and `helpers/raider_element.rb` from a freshly generated project into your
+   `helpers/` folder. Keep them side by side: `wait_helper.rb` loads the other with `require_relative 'raider_element'`.
+2. Include it in `Page`, the spec helper, or the World, after loading it with `require_relative`, for example
+   `require_relative '../../helpers/wait_helper'` at the top of `page_objects/abstract/page.rb`.
+3. Set how long it waits: add `timeout: 10` to `config/config.yml`. Single-platform mobile projects (iOS or Android
+   only) have no `config/config.yml`, so pass `timeout:` to a call, or create `config/config.yml` with that line;
+   without either, it waits 10 seconds.
+4. Remove the `implicit_wait` line.
+5. Move flaky spots to `click`, `send_keys` and `eventually` first.
 
 Keep in mind that keeping the implicit wait while using the layer makes every `find` miss cost up to `timeout` seconds per poll cycle, so remove it once you have moved over.
 

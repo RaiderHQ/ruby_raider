@@ -175,6 +175,13 @@ describe 'Generated Readme: How the framework works' do
                                       '`timeout: 2` gets 2 seconds per try', '(still failing after 10s)')
       end
 
+      it 'replaces eventually with a true/false Wait block and points at the generators that check' do
+        removal = section_of(readme)[/^### Removing the wait helper\n.*/m]
+        expect(removal).to include('a plain `expect`, or `Selenium::WebDriver::Wait.new(timeout: 10).until { condition }`',
+                                   'a block that returns true or false', '`raider g page` and `raider g component`')
+        expect(removal).not_to include('raider g spec')
+      end
+
       it 'lists the five steps to remove the wait helper' do
         removal = section_of(readme)[/^### Removing the wait helper\n.*/m]
         expect(removal).to include('helpers/wait_helper.rb', 'helpers/raider_element.rb', 'include WaitHelper',
@@ -202,6 +209,12 @@ describe 'Generated Readme: How the framework works' do
                                      'timeout: 15')
           expect(section).not_to include('select_by', 'hover', 'drag_and_drop', 'Reusing the login')
           expect(section).to include('ios: {') if automation == 'cross_platform'
+        end
+
+        it 'says the device capabilities sit under appium:options' do
+          settings = section_of(readme)[/^### Settings\n.*?(?=^### )/m]
+          expect(settings).to include('under `appium:options`')
+          expect(settings).to include('under the `ios:` and `android:` parts') if automation == 'cross_platform'
         end
       end
     end

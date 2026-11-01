@@ -60,12 +60,13 @@ class Generator < Thor::Group
     !azure?
   end
 
+  # The automation arg only, so a project named "watir" or "selenium" keeps its own automation
   def selenium?
-    args.include?('selenium')
+    automation == 'selenium'
   end
 
   def watir?
-    args.include?('watir')
+    automation == 'watir'
   end
 
   # Selenium and Appium projects get the auto-waiting WaitHelper; Watir keeps its own waits
@@ -75,11 +76,11 @@ class Generator < Thor::Group
 
   # False for `raider new -p examples:false`: an empty skeleton without the example pages, tests and wiring
   def examples?
-    !args.include?('no_examples')
+    !args.drop(3).include?('no_examples')
   end
 
   def web?
-    (args & %w[selenium watir]).count.positive?
+    selenium? || watir?
   end
 
   def axe_addon?
@@ -87,7 +88,7 @@ class Generator < Thor::Group
   end
 
   def selenium_based?
-    args.include?('selenium')
+    selenium?
   end
 
   def ruby_raider_version_requirement

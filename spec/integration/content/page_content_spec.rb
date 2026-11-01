@@ -187,6 +187,19 @@ describe 'Page WaitHelper wiring' do
   end
 end
 
+describe 'Abstract page layout' do
+  %w[rspec cucumber].each do |framework|
+    %w[selenium ios android cross_platform].each do |automation|
+      [true, false].each do |examples|
+        it "has no blank line before the class end in #{framework} #{automation}#{' (skeleton)' unless examples}" do
+          page = read_generated(ensure_project(framework:, automation:, examples:), 'page_objects/abstract/page.rb')
+          expect(page).not_to match(/\n\n\s*end\s*\z/)
+        end
+      end
+    end
+  end
+end
+
 describe 'Example pages on the wait helper' do
   %w[rspec cucumber].each do |framework|
     it "finds the header through the wait helper in #{framework} selenium" do

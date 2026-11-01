@@ -96,3 +96,27 @@ describe InvokeGenerators do
     end
   end
 end
+
+describe 'Projects named like a generator option' do
+  after { FileUtils.rm_rf(%w[no_examples watir selenium]) }
+
+  it 'keeps the example tests in a project named no_examples' do
+    InvokeGenerators.generate_framework(automation: 'selenium', framework: 'rspec', name: 'no_examples')
+    expect(File).to exist('no_examples/spec/login_page_spec.rb')
+    expect(File).to exist('no_examples/page_objects/pages/login.rb')
+  end
+
+  it 'gives a Selenium project named watir the wait helper it wires in' do
+    InvokeGenerators.generate_framework(automation: 'selenium', framework: 'cucumber', name: 'watir')
+    expect(File).to exist('watir/helpers/wait_helper.rb')
+    expect(File.read('watir/features/support/env.rb')).not_to include('Watir')
+    expect(File.read('watir/page_objects/abstract/page.rb')).to include('include WaitHelper')
+  end
+
+  it 'keeps a Watir project named selenium on Watir' do
+    InvokeGenerators.generate_framework(automation: 'watir', framework: 'rspec', name: 'selenium')
+    expect(File).not_to exist('selenium/helpers/wait_helper.rb')
+    expect(File.read('selenium/page_objects/abstract/page.rb')).to include('browser.element')
+    expect(File.read('selenium/page_objects/abstract/page.rb')).not_to include('find_element')
+  end
+end

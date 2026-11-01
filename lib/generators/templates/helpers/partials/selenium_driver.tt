@@ -4,8 +4,7 @@
     arguments = { options: create_webdriver_options(*opts) }
     listener = VideoHelper.listener
     arguments[:listener] = listener if listener
-    driver = Selenium::WebDriver.for(browser.to_sym, **arguments)
-    driver
+    Selenium::WebDriver.for(browser.to_sym, **arguments)
   end
 
   def browser_arguments(*opts)

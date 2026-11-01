@@ -19,14 +19,15 @@ class Page
   def to_s
     self.class.to_s.sub('Page', ' Page')
   end
-
   <%- if selenium_based? && examples? -%>
+
   # Components
 
   def header
     Header.new(find_element(css: '.welcome-msg'))
   end
   <%- elsif watir? -%>
+
   # Components
 
   def header

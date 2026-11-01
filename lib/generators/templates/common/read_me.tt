@@ -181,9 +181,17 @@ languages call a function (it starts with `def` and ends with `end`).
 ### Settings
 
 <%- if mobile? -%>
-`config/capabilities.yml` tells Appium which device to use and which app to install: `platformName`,
-`platformVersion`, `deviceName`, `automationName` (`XCUITest` on iOS, `UiAutomator2` on Android) and `app`, the
-path to the app file. The `browserstack` part is used instead when you run with `TEST_ENV=browserstack`.
+<%- if cross_platform? -%>
+`config/capabilities.yml` tells Appium which device to use and which app to install. The capabilities for each
+platform sit under the `ios:` and `android:` parts. In each part, `platformName` sits at the top, and the rest sits
+under `appium:options`: `platformVersion`, `deviceName`, `automationName` (`XCUITest` on iOS, `UiAutomator2` on
+Android) and `app`, the path to the app file.
+<%- else -%>
+`config/capabilities.yml` tells Appium which device to use and which app to install. `platformName` sits at the
+top, and the rest sits under `appium:options`: `platformVersion`, `deviceName`, `automationName` (`XCUITest` on
+iOS, `UiAutomator2` on Android) and `app`, the path to the app file.
+<%- end -%>
+The `browserstack` part is used instead when you run with `TEST_ENV=browserstack`.
 
 <%- if cross_platform? -%>
 `config/config.yml`:
@@ -505,7 +513,8 @@ The wait helper is ordinary code in your project, so you can take it out. To do 
 3. Replace the calls:
    - `find_element(loc)` with `driver.find_element(**loc)`;
    - `click(loc)` and `send_keys(loc, …)` with `driver.find_element(**loc).click` and `.send_keys(…)`;
-   - `eventually { … }` with `Selenium::WebDriver::Wait.new(timeout: 10).until { … }`, or a plain `expect`.
+   - `eventually { … }` with a plain `expect`, or `Selenium::WebDriver::Wait.new(timeout: 10).until { condition }`
+     with a block that returns true or false (`until` does not retry a failing `expect`).
 <%- if cross_platform? -%>
    - Per-OS locators (`{ ios: { … }, android: { … } }`) with `element(ios: { … }, android: { … })` from
      `helpers/appium_helper.rb`.
@@ -518,8 +527,8 @@ The wait helper is ordinary code in your project, so you can take it out. To do 
 4. Optionally put back an implicit wait, `driver.manage.timeouts.implicit_wait = 10`, in `create_driver` in
    `helpers/driver_helper.rb`, so plain lookups wait for the element to be present.
 <%- end -%>
-5. Scaffolding (`raider g page`, `raider g spec` and the others) then writes plain `driver.find_element` examples on
-   its own, because it checks for `helpers/wait_helper.rb`.
+5. Scaffolding (`raider g page` and `raider g component`) then writes plain `driver.find_element` examples on its
+   own, because it checks for `helpers/wait_helper.rb`.
 
 <%- end -%>
 <%- if web? -%>
