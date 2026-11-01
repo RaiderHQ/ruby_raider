@@ -11,6 +11,7 @@ class HelpersGenerator < Generator
     generate_video_helper
     generate_session_state
     generate_wait_helper
+    generate_trace_helper
   end
 
   private
@@ -48,6 +49,12 @@ class HelpersGenerator < Generator
 
     template('helpers/wait_helper.tt', "#{name}/helpers/wait_helper.rb")
     template('helpers/raider_element.tt', "#{name}/helpers/raider_element.rb")
+  end
+
+  def generate_trace_helper
+    return unless trace_helper?
+
+    template('helpers/trace_helper.tt', "#{name}/helpers/trace_helper.rb")
   end
 
   def generate_appium_helper

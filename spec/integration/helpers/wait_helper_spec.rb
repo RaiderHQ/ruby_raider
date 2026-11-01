@@ -487,7 +487,7 @@ describe 'WaitHelper' do
           end
         end
 
-        %i[action_finished group_finished].each do |hook|
+        %i[action_finished group_retried group_finished].each do |hook|
           define_method(hook) do |token, **details|
             @calls << [hook, token, details]
           end
@@ -544,6 +544,16 @@ describe 'WaitHelper' do
       expect(group).to include(action: :eventually)
       expect(group[:source]).to include(line: be_a(Integer))
       expect(observer.calls.last).to match([:group_finished, 0, { status: :passed, retries: 2, error: nil }])
+    end
+
+    it 'reports group_retried with the group token and the earlier error before each new pass of eventually' do
+      tries = 0
+      page.eventually(timeout: 2) { expect(tries += 1).to eq(3) }
+
+      retried = observer.calls.select { |call| call.first == :group_retried }
+      expect(retried.map { |call| call[1] }).to eq([0, 0])
+      expect(retried.map { |call| call.last[:error] }).to all(be_a(RSpec::Expectations::ExpectationNotMetError))
+      expect(observer.calls.map(&:first)).to eq(%i[group_started group_retried group_retried group_finished])
     end
 
     it 'reports a failing eventually as failed with its error' do

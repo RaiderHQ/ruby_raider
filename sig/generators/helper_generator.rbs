@@ -8,4 +8,5 @@ class HelpersGenerator < Generator
   def generate_spec_helper: () -> void
   def generate_driver_helper: () -> void
   def generate_appium_helper: () -> void
+  def generate_trace_helper: () -> void
 end

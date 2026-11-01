@@ -1,0 +1,598 @@
+# frozen_string_literal: true
+
+require 'fileutils'
+require 'json'
+require 'tmpdir'
+require 'yaml'
+require 'zlib'
+
+# Records a trace of each test: one step per WaitHelper action and navigation, with
+# a screenshot and the page HTML after each state-changing step. stop(keep: true)
+# writes it as trace.zip in the raider-trace v1 format, which Raider Desktop and
+# Hideout open. Any capture error prints one [trace] warning and turns tracing off
+# for the rest of the run; it never raises into a test. TRACE=off skips tracing and
+# TRACE=on keeps the trace of passing tests too.
+# The Recorder follows WaitHelper as its observer. Without helpers/wait_helper.rb a
+# trace records only navigation and the failure.
+module TraceHelper
+  DEFAULTS = { 'enabled' => true, 'max_steps' => 200, 'max_mb' => 20 }.freeze
+  PRODUCER = { name: 'ruby_raider', version: '<%= ruby_raider_version %>' }.freeze
+  # Only these get a screenshot and a snapshot; query actions cost almost nothing.
+  MEDIA_ACTIONS = %w[navigate click send_keys clear submit select_by hover drag_and_drop scroll_into_view].freeze
+
+  @disabled = false
+  @warned = false
+  @active_recorder = nil
+
+  class << self
+    attr_accessor :active_recorder
+
+    def config
+      @config ||= DEFAULTS.merge(trace_config)
+    end
+
+    def enabled?
+      config['enabled'] != false && ENV['TRACE'] != 'off' && !@disabled
+    end
+
+    def keep_all?
+      ENV['TRACE'] == 'on'
+    end
+
+    # screenshot: ->(driver) { [bytes, ext] }, snapshot: ->(driver) { html }; nil takes the default.
+    def recorder_for(driver, screenshot: nil, snapshot: nil)
+      return null_recorder unless enabled?
+
+      recorder = Recorder.new(driver, screenshot: screenshot, snapshot: snapshot)
+      WaitHelper.observer = recorder if defined?(WaitHelper)
+      recorder
+    rescue StandardError => e
+      disable!("could not create a recorder: #{e.message}")
+      null_recorder
+    end
+
+    # Unhooks the recorder from WaitHelper and the navigation listener.
+    def release(recorder)
+      @active_recorder = nil if @active_recorder.equal?(recorder)
+      WaitHelper.observer = nil if defined?(WaitHelper) && WaitHelper.observer.equal?(recorder)
+    end
+
+    def disable!(reason)
+      @disabled = true
+      release(@active_recorder)
+      detach_observer
+      warn_once("#{reason}; tracing disabled for this run")
+    end
+
+    # One [trace] warning per run, whatever went wrong first.
+    def warn_once(message)
+      return nil if @warned
+
+      @warned = true
+      say(message)
+      nil
+    end
+
+    def max_steps
+      value = config['max_steps'].to_i
+      value.positive? ? value : DEFAULTS['max_steps']
+    end
+
+    def max_bytes
+      value = config['max_mb'].to_f
+      ((value.positive? ? value : DEFAULTS['max_mb']) * 1024 * 1024).floor
+    end
+
+    # UTC ISO-8601 with milliseconds.
+    def timestamp
+      Time.now.utc.strftime('%Y-%m-%dT%H:%M:%S.%LZ')
+    end
+
+    def monotonic_now
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    end
+
+    def error_text(error)
+      error && "#{error.class}: #{error.message}"
+    end
+
+    private
+
+    def null_recorder
+      detach_observer
+      NullRecorder.new
+    end
+
+    def detach_observer
+      WaitHelper.observer = nil if defined?(WaitHelper) && WaitHelper.observer.is_a?(Recorder)
+    end
+
+    def trace_config
+      trace = YAML.load_file('config/config.yml')['trace']
+      trace.is_a?(Hash) ? trace : {}
+    rescue StandardError
+      {}
+    end
+
+    # $stderr.puts, not Kernel#warn: warn is silenced under -W0.
+    # rubocop:disable Style/StderrPuts
+    def say(message)
+      $stderr.puts("[trace] #{message}")
+    end
+    # rubocop:enable Style/StderrPuts
+  end
+
+  # One step of the timeline. parent is the enclosing group Step; the index is given
+  # when the trace is written, after max_steps and eventually have dropped steps.
+  Step = Struct.new(:seq, :parent, :kind, :action, :locator, :url, :page_title, :started_at, :clock, :duration_ms,
+                    :waited_ms, :retries, :status, :error, :source, :rect, :screenshot, :snapshot, :element,
+                    keyword_init: true) do
+    def finish(status, error)
+      self.status = status.to_s
+      self.error = error
+      self.duration_ms = ((TraceHelper.monotonic_now - clock) * 1000).round
+    end
+
+    def within?(group)
+      step = parent
+      step = step.parent until step.nil? || step.equal?(group)
+      !step.nil?
+    end
+
+    def as_json(index, parent_index, media)
+      { index: index, parent_index: parent_index, kind: kind, action: action, locator: locator, url: url,
+        page_title: page_title, started_at: started_at, duration_ms: duration_ms.to_i, waited_ms: waited_ms.to_i,
+        retries: retries.to_i, status: status, error: TraceHelper.error_text(error), source: source, rect: rect,
+        screenshot: media[:screenshots], snapshot: media[:snapshots] }
+    end
+  end
+
+  # Follows a test: WaitHelper reports its actions (the observer protocol) and the
+  # navigation listener calls navigated. Media goes to its own tmpdir until stop.
+  class Recorder
+    SCREENSHOT = ->(driver) { [driver.screenshot_as(:png), 'png'] }
+    SNAPSHOT = :page_source.to_proc
+
+    attr_reader :dir, :capabilities
+
+    def initialize(driver, screenshot: nil, snapshot: nil)
+      @driver = driver
+      @screenshot = screenshot || SCREENSHOT
+      @snapshot = snapshot || SNAPSHOT
+      @recording = false
+    end
+
+    def start
+      @dir = Dir.mktmpdir('raider-trace')
+      reset
+      @recording = true
+      TraceHelper.active_recorder = self
+      nil
+    rescue StandardError => e
+      TraceHelper.disable!("tracing failed to start: #{e.message}")
+      discard
+    end
+
+    # Returns the step as the token WaitHelper hands back.
+    def action_started(action:, locator:, within:, source:, label:)
+      record('action') do
+        add(kind: 'action', action: action.to_s, locator: trace_locator(locator, within, label), source: source)
+      end
+    end
+
+    def action_finished(step, status:, waited_ms:, retries:, error:, element:)
+      record('action') do
+        finished(step, status, error)
+        step.waited_ms = waited_ms
+        step.retries = retries
+        step.element = element
+        capture_step_media(step) if MEDIA_ACTIONS.include?(step.action)
+        nil
+      end
+    end
+
+    def group_started(action:, source:)
+      record('group') do
+        group = add(kind: 'group', action: action.to_s, locator: nil, source: source)
+        @groups.push(group)
+        group
+      end
+    end
+
+    # A new pass of eventually: only the last pass's steps are kept, and the
+    # group's error is the last one an earlier pass raised.
+    def group_retried(group, error: nil)
+      record('group') do
+        dropped, @steps = @steps.partition { |step| step.within?(group) }
+        dropped.each { |step| delete_media(step) }
+        group.error = error
+        nil
+      end
+    end
+
+    def group_finished(group, status:, retries:, error:)
+      record('group') do
+        @groups.reject! { |open| open.equal?(group) }
+        finished(group, status, error || group.error)
+        group.retries = retries
+        nil
+      end
+    end
+
+    def navigated(url)
+      record('navigation') do
+        step = add(kind: 'navigate', action: 'navigate', locator: nil, source: navigation_source)
+        step.url = url
+        step.finish(:passed, nil)
+        capture_step_media(step)
+        nil
+      end
+    end
+
+    # hash: a network[] entry of the format; step_index is filled in when written.
+    def network_event(hash)
+      record('network') { event(:network, hash) }
+    end
+
+    # hash: a console[] entry of the format; step_index is filled in when written.
+    def console_event(hash)
+      record('console') { event(:console, hash) }
+    end
+
+    # The screenshot and the page HTML after a step, and the page it ended on.
+    # One that fails is left out (null in the trace); the step is still kept.
+    def capture_step_media(step)
+      read_page(step)
+      step.screenshot = media(step, 'screenshot') { @screenshot.call(@driver) }
+      step.snapshot = media(step, 'snapshot') { [@snapshot.call(@driver), 'html'] }
+      nil
+    end
+
+    # test: { identifier:, full_name:, status:, attempt:, error: }. Returns the trace.zip path, or nil.
+    def stop(keep:, test:)
+      return nil unless @recording
+
+      @recording = false
+      TraceHelper.release(self)
+      return discard unless keep && TraceHelper.enabled?
+
+      failure(test[:error])
+      write(test)
+    rescue StandardError => e
+      TraceHelper.disable!("could not write the trace: #{e.message}")
+      discard
+    end
+
+    def cleanup
+      TraceHelper.release(self)
+      FileUtils.rm_rf(@dir) if @dir
+      nil
+    rescue StandardError => e
+      TraceHelper.disable!("could not remove the trace files: #{e.message}")
+    end
+
+    private
+
+    def reset
+      @steps = []
+      @groups = []
+      @events = []
+      @errors = []
+      @seq = 0
+      @page = { url: nil, page_title: nil }
+      @truncated = { steps: 0, screenshots: 0, snapshots: 0, network: 0, console: 0 }
+      @capabilities = { network: false, console: false, screenshots: true, snapshots: true }
+      @meta = { browser: browser, viewport: viewport, device_pixel_ratio: pixel_ratio }
+      @started_at = TraceHelper.timestamp
+    end
+
+    # Runs a hook while recording. A hook that fails turns tracing off instead of
+    # raising into WaitHelper (which would warn a second time).
+    def record(what)
+      return nil unless @recording && TraceHelper.enabled?
+
+      yield
+    rescue StandardError => e
+      TraceHelper.disable!("#{what} capture failed: #{e.message}")
+    end
+
+    def add(kind:, action:, locator:, source:)
+      @seq += 1
+      step = Step.new(seq: @seq, parent: @groups.last, kind: kind, action: action, locator: locator, source: source,
+                      url: @page[:url], page_title: @page[:page_title], started_at: TraceHelper.timestamp,
+                      clock: TraceHelper.monotonic_now, waited_ms: 0, retries: 0)
+      @steps << step
+      drop_oldest_step while @steps.size > TraceHelper.max_steps
+      step
+    end
+
+    def finished(step, status, error)
+      step.finish(status, error)
+      @errors << error if error
+    end
+
+    def drop_oldest_step
+      delete_media(@steps.shift)
+      @truncated[:steps] += 1
+    end
+
+    def event(list, hash)
+      @events << [list, @seq, hash.transform_keys(&:to_s)]
+      nil
+    end
+
+    def trace_locator(locator, within, label)
+      return nil unless locator
+
+      traced = { strategy: locator[:strategy], selector: locator[:selector] }
+      traced[:label] = label if label
+      traced[:within] = within unless within.nil? || within.empty?
+      traced
+    end
+
+    def navigation_source
+      WaitHelper::Observation.source if defined?(WaitHelper::Observation)
+    end
+
+    # A step whose page cannot be read keeps the URL it started with.
+    def read_page(step)
+      @page = { url: @driver.current_url, page_title: @driver.title }
+      step.url = @page[:url]
+      step.page_title = @page[:page_title]
+    rescue StandardError
+      nil
+    end
+
+    def media(step, kind)
+      bytes, ext = yield
+      path = File.join(@dir, format('%<seq>06d-%<kind>s.%<ext>s', seq: step.seq, kind: kind, ext: ext))
+      File.binwrite(path, bytes)
+      path
+    rescue StandardError => e
+      TraceHelper.warn_once("#{kind} not captured: #{e.message}")
+      nil
+    end
+
+    def delete_media(step)
+      [step.screenshot, step.snapshot].compact.each { |path| FileUtils.rm_f(path) }
+    end
+
+    # A test that raised outside every traced step gets a last failure step.
+    def failure(error)
+      return if error.nil? || @errors.any? { |seen| seen.equal?(error) }
+
+      step = add(kind: 'failure', action: 'failure', locator: nil, source: nil)
+      step.finish(:failed, error)
+      capture_step_media(step)
+    end
+
+    def write(test)
+      @steps.each { |step| step.finish(:failed, nil) unless step.status }
+      positions = {}.compare_by_identity
+      @steps.each_with_index { |step, position| positions[step] = position }
+      caps = Caps.new(TraceHelper.max_bytes)
+      media, events = caps.fit(media_entries, event_entries, @steps.size) { |kept, listed| index(test, positions, kept, listed) }
+      caps.drops.each { |kind, count| @truncated[kind] += count }
+      path = File.join(@dir, 'trace.zip')
+      ZipWriter.write(path, [['trace.json', index(test, positions, media, events), true], *media.map(&:entry)])
+    end
+
+    # [Caps::Media] for every captured file, oldest step first.
+    def media_entries
+      @steps.each_with_index.flat_map do |step, position|
+        { screenshots: step.screenshot, snapshots: step.snapshot }.filter_map do |kind, file|
+          next unless file
+
+          name = format('steps/%<index>04d%<ext>s', index: position + 1, ext: File.extname(file))
+          Caps::Media.new(position, kind, ZipWriter.entry(name, File.binread(file), kind == :snapshots))
+        end
+      end
+    end
+
+    # [Caps::Event] in arrival order, each with the step that was running or had just run.
+    def event_entries
+      seqs = @steps.map(&:seq)
+      @events.map do |list, seq, hash|
+        step_index = [seqs.bsearch_index { |each_seq| each_seq > seq } || seqs.size, 1].max
+        entry = { 'step_index' => step_index }.merge(hash.reject { |key, _| key == 'step_index' })
+        Caps::Event.new(list, entry, JSON.generate(entry).bytesize + 1)
+      end
+    end
+
+    def index(test, positions, media, events)
+      names = media.each_with_object(Hash.new { |hash, key| hash[key] = {} }) do |item, by_position|
+        by_position[item.position][item.kind] = item.entry.name
+      end
+      JSON.generate(document(test, steps_json(positions, names), events))
+    end
+
+    def steps_json(positions, names)
+      @steps.each_with_index.map do |step, position|
+        parent = step.parent && positions[step.parent]
+        step.as_json(position + 1, parent && (parent + 1), names.fetch(position, {}))
+      end
+    end
+
+    def document(test, steps, events)
+      { format: 'raider-trace', version: 1, producer: PRODUCER,
+        test: { identifier: test[:identifier], full_name: test[:full_name], status: test[:status].to_s, attempt: test[:attempt] },
+        browser: @meta[:browser], viewport: @meta[:viewport], device_pixel_ratio: @meta[:device_pixel_ratio],
+        started_at: @started_at, finished_at: TraceHelper.timestamp, capabilities: @capabilities, truncated: @truncated,
+        steps: steps, network: events.select { |item| item.list == :network }.map(&:entry),
+        console: events.select { |item| item.list == :console }.map(&:entry) }
+    end
+
+    def browser
+      caps = @driver.capabilities
+      { name: caps.browser_name.to_s, version: caps.browser_version.to_s }
+    rescue StandardError
+      { name: nil, version: nil }
+    end
+
+    def viewport
+      size = @driver.manage.window.size
+      { width: size.width, height: size.height }
+    rescue StandardError
+      { width: nil, height: nil }
+    end
+
+    def pixel_ratio
+      ratio = @driver.execute_script('return window.devicePixelRatio')
+      ratio.is_a?(Numeric) && ratio.positive? ? ratio : 1
+    rescue StandardError
+      1
+    end
+
+    def discard
+      cleanup
+      nil
+    end
+  end
+
+  # Keeps the zip under max_mb. Drops, in order: the HTML of the oldest steps, then
+  # their screenshots, then the oldest network and console entries. The index and
+  # the last 10 steps' media are never dropped. drops counts what went, by kind.
+  class Caps
+    KEEP_LAST = 10
+    MEDIA_ORDER = %i[snapshots screenshots].freeze
+    Media = Struct.new(:position, :kind, :entry)
+    Event = Struct.new(:list, :entry, :bytes)
+
+    attr_reader :drops
+
+    def initialize(limit)
+      @limit = limit
+      @drops = Hash.new(0)
+    end
+
+    # Yields (media, events) for the trace.json they give; returns the [media, events] to keep.
+    def fit(media, events, step_count)
+      queue = drop_order(media, events, step_count)
+      loop do
+        index = yield(media, events)
+        excess = size(media, index) - @limit
+        return [media, events] if excess <= 0 || queue.empty?
+
+        ratio = deflated(index).bytesize.fdiv([index.bytesize, 1].max)
+        media, events = drop(queue, media, events, excess, ratio)
+      end
+    end
+
+    private
+
+    def drop_order(media, events, step_count)
+      droppable = media.select { |item| item.position < step_count - KEEP_LAST }
+      MEDIA_ORDER.flat_map { |kind| droppable.select { |item| item.kind == kind } } + events
+    end
+
+    # Drops from the front of the queue until the estimate says excess bytes went.
+    def drop(queue, media, events, excess, ratio)
+      gone = {}.compare_by_identity
+      while excess.positive? && !queue.empty?
+        item = queue.shift
+        gone[item] = true
+        @drops[item.is_a?(Media) ? item.kind : item.list] += 1
+        excess -= item.is_a?(Media) ? ZipWriter.footprint(item.entry) : item.bytes * ratio
+      end
+      [media.reject { |item| gone.key?(item) }, events.reject { |item| gone.key?(item) }]
+    end
+
+    def size(media, index)
+      ZipWriter::END_RECORD_BYTES + ZipWriter.footprint(ZipWriter::Entry.new('trace.json', deflated(index))) +
+        media.sum { |item| ZipWriter.footprint(item.entry) }
+    end
+
+    def deflated(bytes)
+      ZipWriter.entry('trace.json', bytes, true).data
+    end
+  end
+
+  # A minimal zip writer (no rubyzip in generated projects): stored or raw-deflated
+  # entries, a central directory and the end record. No directories, no zip64.
+  module ZipWriter
+    Entry = Struct.new(:name, :data, :crc, :raw_size, :compression)
+    STORED = 0
+    DEFLATED = 8
+    VERSION = 20
+    LOCAL_HEADER_BYTES = 30
+    CENTRAL_RECORD_BYTES = 46
+    END_RECORD_BYTES = 22
+
+    def self.entry(name, bytes, deflate)
+      bytes = bytes.to_s.b
+      data = deflate ? raw_deflate(bytes) : bytes
+      Entry.new(name, data, Zlib.crc32(bytes), bytes.bytesize, deflate ? DEFLATED : STORED)
+    end
+
+    # The bytes an entry takes in the zip: its local header, its data and its central record.
+    def self.footprint(entry)
+      LOCAL_HEADER_BYTES + CENTRAL_RECORD_BYTES + (2 * entry.name.bytesize) + entry.data.bytesize
+    end
+
+    # entries: [[name, bytes, deflate]] or Entry. Returns path.
+    def self.write(path, entries)
+      entries = entries.map { |each_entry| each_entry.is_a?(Entry) ? each_entry : entry(*each_entry) }
+      stamp = dos_time(Time.now)
+      File.open(path, 'wb') do |file|
+        central = entries.map do |each_entry|
+          offset = file.pos
+          file.write(header(each_entry, stamp), each_entry.data)
+          central_record(each_entry, stamp, offset)
+        end
+        start = file.pos
+        file.write(central.join)
+        file.write([0x06054b50, 0, 0, entries.size, entries.size, file.pos - start, start, 0].pack('VvvvvVVv'))
+      end
+      path
+    end
+
+    def self.raw_deflate(bytes)
+      deflater = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS)
+      deflater.deflate(bytes, Zlib::FINISH)
+    ensure
+      deflater&.close
+    end
+
+    def self.header(entry, stamp)
+      [0x04034b50, VERSION, 0, entry.compression, *stamp, entry.crc, entry.data.bytesize, entry.raw_size,
+       entry.name.bytesize, 0].pack('VvvvvvVVVvv') + entry.name
+    end
+
+    def self.central_record(entry, stamp, offset)
+      [0x02014b50, VERSION, VERSION, 0, entry.compression, *stamp, entry.crc, entry.data.bytesize, entry.raw_size,
+       entry.name.bytesize, 0, 0, 0, 0, 0, offset].pack('VvvvvvvVVVvvvvvVV') + entry.name
+    end
+
+    # [time, date] in MS-DOS format.
+    def self.dos_time(time)
+      [(time.hour << 11) | (time.min << 5) | (time.sec / 2), ((time.year - 1980) << 9) | (time.month << 5) | time.day]
+    end
+  end
+
+  # Used when tracing is off.
+  class NullRecorder
+    def start
+      nil
+    end
+
+    def navigated(_url)
+      nil
+    end
+
+    def network_event(_hash)
+      nil
+    end
+
+    def console_event(_hash)
+      nil
+    end
+
+    def stop(**)
+      nil
+    end
+
+    def cleanup
+      nil
+    end
+  end
+end

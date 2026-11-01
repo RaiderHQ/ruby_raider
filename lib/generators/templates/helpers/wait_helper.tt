@@ -339,7 +339,7 @@ module WaitHelper
       return retry_block(nil, &block) unless WaitHelper.observer
 
       token = WaitHelper.report(:group_started) { { action: :eventually, source: Observation.source } }
-      run = { retries: 0 }
+      run = { retries: 0, token: token }
       begin
         result = retry_block(run, &block)
         WaitHelper.report(:group_finished, token, status: :passed, retries: run[:retries], error: nil) if token
@@ -414,11 +414,20 @@ module WaitHelper
       rescue *retried => e
         raise e.exception("(still failing after #{seconds(waited)}s)\n#{e.message}") if now >= deadline
 
-        run[:retries] += 1 if run
+        retried(run, e)
         pause(deadline)
       end
     ensure
       Thread.current[DEADLINE_KEY] = enclosing
+    end
+
+    # Counts a failed pass of eventually, and tells the observer a new pass starts.
+    def retried(run, error)
+      return unless run
+
+      run[:retries] += 1
+      token = run[:token]
+      WaitHelper.report(:group_retried, token, error: error) if token
     end
 
     # Inside eventually, a call without timeout: waits for what is left of eventually's
