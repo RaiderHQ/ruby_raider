@@ -35,12 +35,19 @@ class RaiderElement
   end
 
 <%- if mobile? -%>
-  # tap is Appium's word for click.
-  { click: :click, tap: :click, clear: :clear }.each do |action, command|
+  %i[click clear].each do |action|
     define_method(action) do |timeout: nil|
-      perform(action, timeout) { |element| element.public_send(command) }
+      perform(action, timeout) { |element| element.public_send(action) }
       self
     end
+  end
+
+  # tap is Appium's word for click. With a block it stays Ruby's Object#tap.
+  def tap(timeout: nil, &block)
+    return super(&block) if block
+
+    perform(:tap, timeout, &:click)
+    self
   end
 <%- else -%>
   %i[click clear submit].each do |action|

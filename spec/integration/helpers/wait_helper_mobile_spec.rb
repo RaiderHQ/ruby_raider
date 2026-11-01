@@ -39,6 +39,33 @@ module WaitHelperMobileSpec
       end
     end
 
+    describe 'tap with a block' do
+      it 'is Object#tap on a RaiderElement: yields and returns the wrapper without clicking' do
+        card = element
+        driver.script({ accessibility_id: 'card' }, card)
+        wrapper = page.find_element(accessibility_id: 'card')
+        seen = nil
+        expect(wrapper.tap { |yielded| seen = yielded }).to be(wrapper)
+        expect([seen, card.log]).to eq([wrapper, []])
+      end
+
+      it 'is Object#tap on the mixin: yields self without looking anything up' do
+        seen = nil
+        expect(page.tap { |yielded| seen = yielded }).to be(page)
+        expect(page.tap(&:driver)).to be(page)
+        expect([seen, driver.finds, driver.scripts]).to eq([page, [], []])
+      end
+
+      it 'still clicks without a block' do
+        card = element
+        driver.script({ id: 'x' }, card)
+        page.tap({ id: 'x' }, timeout: 1)
+        page.tap(id: 'x')
+        page.find_element(id: 'x').tap
+        expect(card.log).to eq([[:click]] * 3)
+      end
+    end
+
     describe '#swipe' do
       it 'uses mobile: swipe on iOS' do
         card = element

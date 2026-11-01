@@ -61,8 +61,7 @@ module WaitHelper
   end
 
 <%- if mobile? -%>
-  # tap is Appium's word for click; both wait the same way.
-  %i[click tap clear text displayed? enabled? selected?].each do |action|
+  %i[click clear text displayed? enabled? selected?].each do |action|
 <%- else -%>
   %i[click clear submit hover scroll_into_view text displayed? enabled? selected?].each do |action|
 <%- end -%>
@@ -71,6 +70,16 @@ module WaitHelper
     end
   end
 
+<%- if mobile? -%>
+  # tap is Appium's word for click and waits the same way. With a block and no
+  # locator it stays Ruby's Object#tap.
+  def tap(locator = nil, timeout: nil, **by, &block)
+    return super(&block) if block && locator.nil? && by.empty?
+
+    WaitHelper.element(driver, locator, by).tap(timeout: timeout)
+  end
+
+<%- end -%>
   def send_keys(locator, *keys, timeout: nil)
     WaitHelper.element(driver, locator).send_keys(*keys, timeout: timeout)
   end
