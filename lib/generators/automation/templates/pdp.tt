@@ -1,11 +1,12 @@
+# frozen_string_literal: true
+
 require_relative '../abstract/page'
 
 class Pdp < Page
-
   # Actions
 
   def add_to_cart_text
-    driver.wait { add_to_cart_button }.text
+    text(add_to_cart_button)
   end
 
   private

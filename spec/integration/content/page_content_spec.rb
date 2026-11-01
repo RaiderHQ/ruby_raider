@@ -36,12 +36,16 @@ describe 'Page object content' do
   shared_examples 'selenium login page' do |project_name|
     subject(:login) { read_generated(project_name, 'page_objects/pages/login.rb') }
 
-    it 'uses find_element for elements' do
-      expect(login).to include('driver.find_element')
+    it 'returns locator hashes from the element methods' do
+      expect(login).to include("{ id: 'loginFrm_loginname' }", "{ id: 'loginFrm_password' }",
+                               %q({ xpath: "//button[@title='Login']" }))
+      expect(login).not_to include('driver.find_element')
     end
 
-    it 'uses send_keys for input' do
-      expect(login).to include('send_keys')
+    it 'logs in through the wait helper' do
+      expect(login).to include('send_keys(username_field, username)', 'send_keys(password_field, password)',
+                               'click(login_button)')
+      expect(login).not_to include('.send_keys', '.click')
     end
 
     it 'has private element methods' do
@@ -179,6 +183,45 @@ describe 'Page WaitHelper wiring' do
 
     it "does not include WaitHelper in #{framework} watir" do
       expect(read_generated("#{framework}_watir", 'page_objects/abstract/page.rb')).not_to include('WaitHelper')
+    end
+  end
+end
+
+describe 'Example pages on the wait helper' do
+  %w[rspec cucumber].each do |framework|
+    it "finds the header through the wait helper in #{framework} selenium" do
+      page = read_generated("#{framework}_selenium", 'page_objects/abstract/page.rb')
+      expect(page).to include("Header.new(find_element(css: '.welcome-msg'))")
+      expect(page).not_to include('driver.find_element')
+    end
+
+    %w[ios android cross_platform].each do |automation|
+      context "with #{framework} and #{automation}" do
+        let(:home) { read_generated("#{framework}_#{automation}", 'page_objects/pages/home.rb') }
+        let(:pdp) { read_generated("#{framework}_#{automation}", 'page_objects/pages/pdp.rb') }
+
+        it 'taps the first product and reads the add to cart text through the wait helper' do
+          expect(home).to include('tap(first_product)')
+          expect(pdp).to include('text(add_to_cart_button)')
+          expect(home + pdp).not_to include('driver.wait', 'driver.find_element')
+        end
+
+        it 'returns locator hashes from the element methods' do
+          if automation == 'cross_platform'
+            expect(home).to include("{ ios: { accessibility_id: 'product-item-1' },")
+            expect(pdp).to include("{ ios: { accessibility_id: 'add-to-cart-button' },")
+            expect(home + pdp).not_to include('element(ios:')
+          else
+            expect(home).to include("{ accessibility_id: 'product-item-1' }")
+            expect(pdp).to include("{ accessibility_id: 'add-to-cart-button' }")
+          end
+        end
+
+        it 'has valid Ruby syntax' do
+          expect(home).to have_valid_ruby_syntax
+          expect(pdp).to have_valid_ruby_syntax
+        end
+      end
     end
   end
 end

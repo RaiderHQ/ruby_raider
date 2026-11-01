@@ -82,6 +82,390 @@ raider g steps [NAME]     # Create step definitions
 raider g scaffold [NAME]  # Create page + test + steps
 ```
 
+<%- if wait_helper? -%>
+<%- test_cmd = rspec? ? 'rspec' : 'cucumber' -%>
+## How the framework works
+
+This section walks through the project: where things live, how a test finds an element and acts on it, and how to
+run the tests. Most examples come from the files in this project.
+
+Two Ruby words you will see below: a **class** is a named group of methods, and a **method** is what other
+languages call a function (it starts with `def` and ends with `end`).
+
+### Folder layout
+
+- `config/`: the settings the tests read.
+<%- if mobile? -%>
+  `capabilities.yml` describes the device and the app<%= cross_platform? ? ', and `config.yml` holds the other settings' : '' %>.
+  See "Settings" below.
+- `page_objects/pages/`: one class per screen of the app. `home.rb` is the product list and `pdp.rb` the product
+  details page. A page holds the locators of its elements and the actions a test can do on that screen.
+- `page_objects/abstract/`: `page.rb`, the base class every page builds on. It gives each page the wait helper.
+- `helpers/`: `driver_helper.rb` starts the Appium session, `wait_helper.rb` and `raider_element.rb` are the wait
+  helper, and `video_helper.rb` records the screen<%= cross_platform? ? '. `appium_helper.rb` has `element(ios: …, android: …)`, a lookup that does not wait' : '' %>.
+<%- if rspec? -%>
+  `spec_helper.rb` sets up RSpec: it starts the app before each test and closes it after.
+- `spec/`: the tests. `pdp_page_spec.rb` opens a product and checks its "Add to Cart" button.
+<%- else -%>
+- `features/`: the tests. `home.feature` describes them in plain English, `step_definitions/home_steps.rb` holds the
+  Ruby code behind each step, and `support/` starts the app (`env.rb`) and makes the helpers available to the steps
+  (`world.rb`).
+<%- end -%>
+<%- else -%>
+  `config.yml` is described under "Settings" below.
+- `page_objects/pages/`: one class per page of the site. `login.rb` is the login page and `account.rb` the account
+  page. A page holds the locators of its elements and the actions a test can do on that page.
+- `page_objects/components/`: parts that appear on many pages. `header.rb` reads the welcome message at the top.
+- `page_objects/abstract/`: `page.rb` and `component.rb`, the base classes every page and component builds on.
+  `page.rb` gives each page the wait helper.
+- `helpers/`: `driver_helper.rb` starts the browser, `wait_helper.rb` and `raider_element.rb` are the wait helper,
+  `video_helper.rb` records failure videos and `session_state.rb` reuses the login.
+<%- if rspec? -%>
+  `spec_helper.rb` sets up RSpec: it opens the browser before each test and closes it after.
+<%- end -%>
+- `models/`: test data. `data/users.yml` holds the users, and `model_factory.rb`<%= cucumber? ? ' and `user_factory.rb` load' : ' loads' %> them.
+<%- if rspec? -%>
+- `spec/`: the tests. `login_page_spec.rb` logs in with the right password and with a wrong one.
+<%- else -%>
+- `features/`: the tests. `login.feature` describes them in plain English, `step_definitions/login_steps.rb` holds
+  the Ruby code behind each step, and `support/` opens the browser (`env.rb`) and makes the helpers available to the
+  steps (`world.rb`).
+<%- end -%>
+<%- end -%>
+<%- if azure? && !mobile? -%>
+- `azure-pipelines.yml`: the CI pipeline.
+<%- elsif !azure? -%>
+- `.github/workflows/`: the CI pipeline.
+<%- end -%>
+
+### Settings
+
+<%- if mobile? -%>
+`config/capabilities.yml` tells Appium which device to use and which app to install: `platformName`,
+`platformVersion`, `deviceName`, `automationName` (`XCUITest` on iOS, `UiAutomator2` on Android) and `app`, the
+path to the app file. The `browserstack` part is used instead when you run with `TEST_ENV=browserstack`.
+
+<%- if cross_platform? -%>
+`config/config.yml`:
+
+- `platform`: which part of `capabilities.yml` to use, `ios` or `android`.
+- `timeout`: how many seconds the wait helper waits for an element before the test fails (10). To wait longer,
+  change it, for example to `timeout: 15`.
+- `video`: failure videos, see [Video replay](#video-replay).
+<%- else -%>
+This project has no `config/config.yml`, so the wait helper waits up to 10 seconds for an element before the test
+fails. To change that, pass `timeout:` to one call (see below), or create `config/config.yml` with this line:
+
+```yaml
+timeout: 15
+```
+<%- end -%>
+<%- else -%>
+`config/config.yml`:
+
+- `browser`: the browser the tests run in, `chrome` or `firefox`.
+- `url`: the address of the site under test. Each page adds its own path to it (`Login` adds
+  `index.php?rt=account/login`).
+- `timeout`: how many seconds the wait helper waits for an element before the test fails (10).
+- `viewport`: the browser window's width and height.
+- `browser_arguments`: extra options passed to each browser when it starts.
+- `headless`: not in the file by default. Add `headless: true`, or set `HEADLESS=true` for one run, to run the
+  browser without a window.
+- `video`: failure videos, see [Video replay](#video-replay).
+- `login_state`: how long a saved login is reused, see [Reusing the login](#reusing-the-login).
+<%- end -%>
+
+### Pages and components
+
+A page keeps two kinds of methods: **elements**, which say where something is, and **actions**, which do something
+with it. From `page_objects/pages/<%= mobile? ? 'home.rb' : 'login.rb' %>`:
+
+```ruby
+<%- if mobile? -%>
+def go_to_product_detail
+  tap(first_product)
+end
+
+def first_product
+<%- if cross_platform? -%>
+  { ios: { accessibility_id: 'product-item-1' },
+    android: { accessibility_id: 'product-item-1' } }
+<%- else -%>
+  { accessibility_id: 'product-item-1' }
+<%- end -%>
+end
+<%- else -%>
+def login(username, password)
+  send_keys(username_field, username)
+  send_keys(password_field, password)
+  click(login_button)
+end
+
+def username_field
+  { id: 'loginFrm_loginname' }
+end
+<%- end -%>
+```
+
+<%- if mobile? -%>
+An element method returns a **locator**: a Ruby hash (a key and a value in curly braces) that tells Appium how to
+find the element. `{ accessibility_id: 'product-item-1' }` means "the element whose accessibility id is
+`product-item-1`". `xpath`, `id` and `class_name` work too.
+<%- if cross_platform? -%>
+
+Because this project runs on both iOS and Android, a locator can name one for each: `{ ios: { … }, android: { … } }`.
+The wait helper picks the one for the device the test runs on.
+<%- end -%>
+
+The action, `tap(first_product)`, comes from the wait helper: it waits until the product is ready, then taps it.
+<%- else -%>
+An element method returns a **locator**: a Ruby hash (a key and a value in curly braces) that tells Selenium how to
+find the element. `{ id: 'loginFrm_loginname' }` means "the element whose id is `loginFrm_loginname`". `css`,
+`xpath`, `name`, `class` and `link_text` work too.
+
+The actions, `send_keys` and `click`, come from the wait helper: each one waits until the element is ready, then
+types or clicks.
+
+A **component** is a part of the page that has its own methods. `page.rb` finds the welcome message and hands it to
+the `Header` component:
+
+```ruby
+def header
+  Header.new(find_element(css: '.welcome-msg'))
+end
+```
+
+`Header#customer_name` then reads its text, so a test can write `account_page.header.customer_name`.
+<%- end -%>
+
+### The wait helper and RaiderElement
+
+<%= mobile? ? 'Apps' : 'Pages' %> load at their own speed, so a test that acts too early fails. The wait helper,
+`helpers/wait_helper.rb`, waits for an element to be ready before it acts. It checks every 0.1 seconds, for up to
+`timeout` seconds. If the element is still not ready, the test fails and says what it saw last:
+
+```
+<%- if mobile? -%>
+Waited 10s for {accessibility_id: "product-item-1"} to be visible, enabled and stable; last seen: not found
+<%- else -%>
+Waited 10s for {id: "loginFrm_loginname"} to be visible and enabled; last seen: present but not visible
+<%- end -%>
+```
+
+You can use its methods in every page and in every <%= rspec? ? 'test' : 'step definition' %>:
+
+| Method | Waits until the element is | Then |
+|--------|----------------------------|------|
+| `find_element(locator)` | present and visible (`visible: false` skips visible) | returns it as a RaiderElement |
+| `find_elements(locator)` | present, at least one | returns a list of RaiderElements, or `[]` if none showed up |
+<%- if mobile? -%>
+| `click(locator)`, `tap(locator)` | visible, enabled and still | taps it (`tap` and `click` do the same) |
+| `send_keys(locator, 'text')` | visible and enabled | types the text |
+| `clear(locator)` | visible and enabled | empties the field |
+| `swipe('left', locator)` | visible | swipes on it: `'up'`, `'down'`, `'left'` or `'right'` |
+| `scroll('down', locator)` | visible | scrolls inside it |
+| `scroll_to(locator)` | visible, scrolling down up to 10 times | returns it as a RaiderElement |
+<%- else -%>
+| `click(locator)` | visible, enabled and still | clicks it |
+| `send_keys(locator, 'text')` | visible and enabled | types the text |
+| `clear(locator)` | visible and enabled | empties the field |
+| `submit(locator)` | visible and enabled | submits its form |
+| `select_by(locator, :text, 'Blue')` | visible and enabled | picks a dropdown option by `:text`, `:value` or `:index` |
+| `hover(locator)` | visible and still | moves the mouse over it |
+| `drag_and_drop(source, target)` | source visible, enabled and still; target visible | drags the source onto the target |
+| `scroll_into_view(locator)` | present | scrolls the page to it |
+<%- end -%>
+| `text(locator)`, `attribute(locator, 'name')` | present | returns its text or the attribute's value |
+| `displayed?(locator)`, `enabled?(locator)`, `selected?(locator)` | present | returns `true` or `false` |
+| `eventually { … }` | (see below) | retries the block until it passes |
+
+Good to know:
+
+<%- if mobile? -%>
+- Write the locator with or without braces: `tap(accessibility_id: 'login')` and `tap({ accessibility_id: 'login' })`
+  are the same. When a method takes more than the locator, put the locator in braces:
+  `send_keys({ accessibility_id: 'email' }, 'me@example.com')`, `swipe('left', { accessibility_id: 'card' })`.
+<%- else -%>
+- Write the locator with or without braces: `click(id: 'login')` and `click({ id: 'login' })` are the same. When a
+  method takes more than the locator, put the locator in braces: `send_keys({ id: 'email' }, 'me@example.com')`.
+<%- end -%>
+- `timeout:` changes the wait for one call, in seconds: `<%= mobile? ? "tap({ accessibility_id: 'slow-button' }, timeout: 30)" : "click({ id: 'slow-button' }, timeout: 30)" %>`.
+- "Still" (`stable` in error messages) means the element was in the same place on two checks in a row, 0.1 seconds
+  apart, so it is not in the middle of an animation. That is why <%= mobile? ? '`click` and `tap`' : '`click`, `hover` and `drag_and_drop`' %> need at least two checks, and `timeout: 0` never passes for them.
+- `text`, `displayed?` and the other readers fail when the element never shows up. To check that something is
+  **not** on the <%= mobile? ? 'screen' : 'page' %>, ask for the list without waiting and check that it is empty:
+
+  ```ruby
+  eventually { expect(find_elements(<%= mobile? ? "accessibility_id: 'error'" : "css: '.error'" %>, timeout: 0)).to be_empty }
+  ```
+<%- if mobile? -%>
+- `swipe` and `scroll` with a locator wait for that element to be visible and act on it. Without a locator
+  (`swipe('up')`) they act on the whole screen and return `nil`.
+- `scroll_to(locator)` checks for the element, scrolls once if it is not visible, and checks again, up to
+  `max_scrolls` times (10), then fails. Change the direction with `direction: 'up'`. An element that appears late
+  near the top can be scrolled past, so first wait for something on the screen, for example with `find_element`.
+- `tap` with a block and no locator (`page.tap { |p| … }`) is still Ruby's own `tap`, which passes the object to the
+  block.
+- `hide_keyboard`, `back` and the other Appium commands are on `driver`, and do not wait.
+<%- end -%>
+
+`find_element` returns a **RaiderElement**: the element, plus the same waiting methods without the locator. So
+calls chain, and each step waits:
+
+```ruby
+<%- if mobile? -%>
+find_element(accessibility_id: 'list').find_element(accessibility_id: 'row').tap
+find_element(accessibility_id: 'card').swipe('left')
+<%- else -%>
+find_element(css: '.form').find_element(id: 'email').send_keys('me@example.com')
+<%- end -%>
+```
+
+A `find_element` on a RaiderElement searches only inside it. If the <%= mobile? ? 'app' : 'page' %> redraws the element, the RaiderElement
+finds it again by its locator. Any other <%= mobile? ? 'Appium' : 'Selenium' %> method (`tag_name`, `rect`, `location`, …) goes straight to the
+element, without waiting.
+
+A RaiderElement is not a <%= mobile? ? 'raw Appium' : 'Selenium' %> element, so the <%= mobile? ? 'Appium' : 'Selenium' %> calls that check what they are given need
+the real one, which `.native` returns:
+
+```ruby
+<%- if mobile? -%>
+driver.action.click(find_element(accessibility_id: 'card').native).perform
+<%- else -%>
+driver.switch_to.frame(find_element(css: 'iframe').native)
+Selenium::WebDriver::Support::Select.new(find_element(id: 'color').native)
+driver.action.move_to(find_element(id: 'menu').native).perform
+driver.execute_script('arguments[0].click()', find_element(id: 'go').native)
+<%- end -%>
+```
+<%- if mobile? -%>
+
+Elements you pass to `execute_script` need `.native` too.
+<%- end -%>
+
+### eventually
+
+`eventually { … }` runs the block again and again until it passes, or until `timeout` seconds have gone by. It
+retries a failed `expect`, an element that was not found, and an element that went stale (was redrawn). It returns
+what the block returns, and `eventually(timeout: 30) { … }` waits longer.
+
+Use it for checks on something that changes after an action. Before, the check runs once, and fails if the
+<%= mobile? ? 'screen' : 'page' %> has not updated yet:
+
+```ruby
+<%- if mobile? -%>
+expect(pdp_page.add_to_cart_text).to eq 'Add to Cart'
+<%- else -%>
+expect(account_page.header.customer_name).to eq "Welcome back #{user['name']}"
+<%- end -%>
+```
+
+After, it is retried until the text matches:
+
+```ruby
+<%- if mobile? -%>
+eventually { expect(pdp_page.add_to_cart_text).to eq 'Add to Cart' }
+<%- else -%>
+eventually { expect(account_page.header.customer_name).to eq "Welcome back #{user['name']}" }
+<%- end -%>
+```
+
+If it still fails at the end, the error starts with `(still failing after 10s)`, followed by the last failure. The
+waits inside the block share its time limit, so the whole block never takes longer than `timeout`.
+
+### Running the tests
+
+<%- if mobile? -%>
+Start Appium and a simulator or emulator first (see "Setting up Appium" below). Then:
+<%- else -%>
+Install the gems once with `bundle install`. Then:
+<%- end -%>
+
+```bash
+<%- if rspec? -%>
+bundle exec rspec                                 # every test
+bundle exec rspec spec/<%= mobile? ? 'pdp_page_spec.rb' : 'login_page_spec.rb' %>          # one file
+<%- else -%>
+bundle exec cucumber                              # every scenario
+bundle exec cucumber features/<%= mobile? ? 'home.feature' : 'login.feature' %>         # one feature
+<%- end -%>
+<%- unless mobile? -%>
+HEADLESS=true bundle exec <%= test_cmd %>                   # without a browser window
+<%- end -%>
+```
+
+<%- if mobile? -%>
+- To run tests in parallel, each process needs its own device or simulator. This project does not set that up, so
+  run the tests one at a time unless you add it.
+<%- else -%>
+- In parallel, with the `parallel_tests` gem in the Gemfile: `bundle exec <%= rspec? ? 'parallel_rspec spec/' : 'parallel_cucumber features/' %>`. Each process opens its own
+  browser.
+<%- end -%>
+<%- if rspec? -%>
+- `RETRY_COUNT=2 bundle exec rspec` runs each test up to 2 times, so a failing test gets one more try before it
+  counts as failed.
+<%- else -%>
+- To run a failing scenario again before it counts as failed, change `--retry 0` in `cucumber.yml` to, for
+  example, `--retry 2`.
+<%- end -%>
+
+### Running in CI
+
+<%- if azure? && mobile? -%>
+There is no Azure pipeline for mobile projects yet; see [CI](#ci).
+<%- elsif azure? -%>
+`azure-pipelines.yml` runs the suite headless on Azure Pipelines; see [Azure Pipelines](#azure-pipelines) to set it up.
+<%- elsif mobile? -%>
+`.github/workflows/appium_pipeline.yml` runs the suite on GitHub Actions on every push to `main` or `master` and on
+every pull request. It downloads the test app and starts a simulator or emulator and Appium.
+<%- else -%>
+`.github/workflows/test_pipeline.yml` runs the suite headless on GitHub Actions on every push to `main` or `master`
+and on every pull request, and uploads `raider-results/`.
+<%- end -%>
+
+Every run writes a report; see [Reporting](#reporting).
+<%- if web? -%>
+To log in once and reuse the session across tests, see [Reusing the login](#reusing-the-login).
+<%- end -%>
+<%- if mobile? -%>
+
+### Setting up Appium
+
+1. Install Appium and its driver: `npm install -g appium`, then
+   `appium driver install <%= android? ? 'uiautomator2' : 'xcuitest' %>`<%= cross_platform? ? ' and `appium driver install uiautomator2`' : '' %>.
+2. Download the example [app](https://github.com/RaiderHQ/raider_test_app) and put it in the project folder.
+   `app` in `config/capabilities.yml` is its path<%= cross_platform? ? ' (`RaiderTestApp.app` for iOS, `app-release.apk` for Android)' : (ios? ? ' (`RaiderTestApp.app`)' : ' (`app-release.apk`)') %>.
+3. Start a<%= android? ? 'n Android emulator' : (ios? ? 'n iOS simulator' : ' simulator or an emulator') %> that matches `deviceName` and `platformVersion`.
+4. Start the Appium server with `raider u start_appium`, and keep it running while the tests run.
+<%- end -%>
+
+### Removing the wait helper
+
+The wait helper is ordinary code in your project, so you can take it out. To do that:
+
+1. Delete `helpers/wait_helper.rb` and `helpers/raider_element.rb`.
+2. Remove `include WaitHelper` from `page_objects/abstract/page.rb`, <%= rspec? ? '`config.include(WaitHelper)` from `helpers/spec_helper.rb`' : '`World(WaitHelper)` from `features/support/world.rb`' %>, and the
+   `require_relative` lines that load `wait_helper`.
+3. Replace the calls:
+   - `find_element(loc)` with `driver.find_element(**loc)`;
+   - `click(loc)` and `send_keys(loc, …)` with `driver.find_element(**loc).click` and `.send_keys(…)`;
+   - `eventually { … }` with `Selenium::WebDriver::Wait.new(timeout: 10).until { … }`, or a plain `expect`.
+<%- if cross_platform? -%>
+   - Per-OS locators (`{ ios: { … }, android: { … } }`) with `element(ios: { … }, android: { … })` from
+     `helpers/appium_helper.rb`.
+<%- end -%>
+<%- if mobile? -%>
+4. Optionally turn on Appium's implicit wait, so plain lookups wait for the element to be present: in
+   `configure_driver` in `helpers/driver_helper.rb`, pass `appium_lib: { wait: 10 }` next to `caps:` in
+   `Appium::Driver.new`.
+<%- else -%>
+4. Optionally put back an implicit wait, `driver.manage.timeouts.implicit_wait = 10`, in `create_driver` in
+   `helpers/driver_helper.rb`, so plain lookups wait for the element to be present.
+<%- end -%>
+5. Scaffolding (`raider g page`, `raider g spec` and the others) then writes plain `driver.find_element` examples on
+   its own, because it checks for `helpers/wait_helper.rb`.
+
+<%- end -%>
 <%- if web? -%>
 ## Reusing the login
 

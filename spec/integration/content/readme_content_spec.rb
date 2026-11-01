@@ -141,3 +141,67 @@ describe 'Generated Readme content' do
     end
   end
 end
+
+describe 'Generated Readme: How the framework works' do
+  def section_of(readme)
+    readme[/^## How the framework works\n.*?(?=^## )/m]
+  end
+
+  FRAMEWORKS.each do |framework|
+    context "with #{framework} and selenium" do
+      subject(:readme) { read_generated("#{framework}_selenium", 'Readme.md') }
+
+      it 'sits between Getting Started and Reusing the login' do
+        works = readme.index("\n## How the framework works\n")
+        expect(works).not_to be_nil
+        expect(readme.index("\n## Getting Started\n")).to be < works
+        expect(readme.index("\n## Reusing the login\n")).to be > works
+      end
+
+      it 'covers the web wait helper, chaining, .native, absence checks and how to remove it' do
+        section = section_of(readme)
+        expect(section).to include('### Removing the wait helper', '.native',
+                                   "find_element(css: '.form').find_element(id: 'email')",
+                                   'select_by', 'hover', 'drag_and_drop', 'eventually', 'timeout: 0',
+                                   'find_elements', 'config/config.yml', '[Reporting](#reporting)',
+                                   '[Reusing the login](#reusing-the-login)', 'parallel_tests', 'HEADLESS',
+                                   framework == 'rspec' ? 'RETRY_COUNT' : '--retry 2')
+        expect(section).not_to include('scroll_to', 'swipe')
+      end
+
+      it 'lists the five steps to remove the wait helper' do
+        removal = section_of(readme)[/^### Removing the wait helper\n.*/m]
+        expect(removal).to include('helpers/wait_helper.rb', 'helpers/raider_element.rb', 'include WaitHelper',
+                                   'driver.find_element(**', 'Selenium::WebDriver::Wait.new', 'implicit_wait',
+                                   'raider g')
+        expect(removal.scan(/^\d\. /).size).to eq(5)
+      end
+    end
+
+    %w[ios android cross_platform].each do |automation|
+      context "with #{framework} and #{automation}" do
+        subject(:readme) { read_generated("#{framework}_#{automation}", 'Readme.md') }
+
+        it 'sits between Getting Started and Reporting' do
+          works = readme.index("\n## How the framework works\n")
+          expect(works).not_to be_nil
+          expect(readme.index("\n## Getting Started\n")).to be < works
+          expect(readme.index("\n## Reporting\n")).to be > works
+        end
+
+        it 'covers the mobile method set, per-OS locators, Appium setup and how to remove the wait helper' do
+          section = section_of(readme)
+          expect(section).to include('swipe', 'scroll_to', 'tap', 'capabilities.yml', 'raider u start_appium',
+                                     '### Removing the wait helper', '.native', '[Reporting](#reporting)',
+                                     'timeout: 15')
+          expect(section).not_to include('select_by', 'hover', 'drag_and_drop', 'Reusing the login')
+          expect(section).to include('ios: {') if automation == 'cross_platform'
+        end
+      end
+    end
+
+    it "has no such section for #{framework} and watir" do
+      expect(read_generated("#{framework}_watir", 'Readme.md')).not_to include('How the framework works')
+    end
+  end
+end

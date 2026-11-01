@@ -24,7 +24,7 @@ class Page
   # Components
 
   def header
-    Header.new(driver.find_element(css: '.welcome-msg'))
+    Header.new(find_element(css: '.welcome-msg'))
   end
   <%- elsif watir? -%>
   # Components

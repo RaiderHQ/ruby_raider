@@ -1,8 +1,6 @@
-<%- if ios? -%>
-driver.find_element(accessibility_id: 'product-item-1')
-<%- elsif android? -%>
-driver.find_element(accessibility_id: 'product-item-1')
+<%- if cross_platform? -%>
+{ ios: { accessibility_id: 'product-item-1' },
+      android: { accessibility_id: 'product-item-1' } }
 <%- else -%>
-element(ios: { accessibility_id: 'product-item-1' },
-            android: { accessibility_id: 'product-item-1' })
+{ accessibility_id: 'product-item-1' }
 <%- end -%>

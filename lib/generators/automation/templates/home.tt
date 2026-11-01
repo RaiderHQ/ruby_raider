@@ -3,11 +3,10 @@
 require_relative '../abstract/page'
 
 class Home < Page
-
   # Actions
 
   def go_to_product_detail
-    driver.wait { first_product }.click
+    tap(first_product)
   end
 
   private

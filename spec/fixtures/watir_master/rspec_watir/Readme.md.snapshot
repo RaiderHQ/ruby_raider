@@ -1,0 +1,172 @@
+# Ruby Raider
+
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
+   <a href="https://github.com/RubyRaider/ruby_raider">
+   <img src="https://www.ruby-raider.com/assets/icon-DYY74ofR.png" alt="Logo" style="width:200px;">
+   </a>
+   <p align="center">
+      <a href="https://github.com/RubyRaider/ruby_raider#getting-started"><strong>Explore the docs</strong></a>
+      <br />
+      <br />
+      <a href="https://rubygems.org/gems/ruby_raider">Rubygems</a>
+      ·
+      <a href="https://github.com/RubyRaider/ruby_raider/issues">Report Bug</a>
+      ·
+      <a href="https://github.com/RubyRaider/ruby_raider/issues">Request Feature</a>
+   </p>
+   <p align="center"> For more information and updates on releases, see <a href="https://ruby-raider.com">https://ruby-raider.com</a></p>
+</div>
+
+## What is Ruby Raider?
+
+Ruby Raider is a generator and scaffolding gem to make UI test automation easier.
+
+### Supported Frameworks
+
+| Web Testing Framework | Mobile Testing Framework           |
+|-----------------------|------------------------------------|
+| Cucumber and Selenium | Cucumber and Appium for iOS        |
+| RSpec and Selenium    | RSpec and Appium for iOS           |
+| Cucumber and Watir    | Cucumber and Appium for Android    |
+| RSpec and Watir       | RSpec and Appium for Android       |
+|                       | Cucumber and Appium Cross-platform |
+|                       | RSpec and Appium Cross-platform    |
+
+**Optional add-on for web projects:**
+- **Accessibility testing (axe)**: `--accessibility` flag
+
+***The web tests run against the [Raider Test Store](https://raider-test-site.onrender.com/).***
+
+***To run Appium tests, download the example [app](https://github.com/RaiderHQ/raider_test_app) and start the server:***
+
+```bash
+raider u start_appium
+```
+
+This works on all platforms (Mac OS, Linux and Windows).
+
+## Getting Started
+
+```bash
+gem install ruby_raider
+raider new [name_of_project]
+```
+
+Or with parameters:
+
+```bash
+raider new [name_of_project] -p framework:[framework] automation:[automation_type]
+```
+
+### Commands
+
+```
+raider generate         # Scaffolding commands
+raider utility          # Utility commands
+raider new [NAME]       # Create new project
+raider version          # Show version
+raider help [COMMAND]   # Describe commands
+```
+
+Shortcuts: `g` (generate), `n` (new), `u` (utility), `v` (version)
+
+### Scaffolding
+
+```
+raider g page [NAME]      # Create page object
+raider g spec [NAME]      # Create RSpec test
+raider g feature [NAME]   # Create Cucumber feature
+raider g steps [NAME]     # Create step definitions
+raider g scaffold [NAME]  # Create page + test + steps
+```
+
+## Reusing the login
+
+Tag an example `:logged_in` (RSpec) or a scenario `@logged_in` (Cucumber) and the suite logs in once, saves the
+session, and restores it for the next tagged example or run instead of filling in the login form again. The generated
+account example shows it. If the saved session no longer works, the real login runs again and the state is saved anew.
+
+For another role, call it yourself with its own name:
+
+```ruby
+SessionState.new(driver, name: 'admin').reuse(valid: -> { dashboard.tap(&:visit).admin? }) do
+  # the real login for the admin
+end
+```
+
+With Watir, pass `browser.driver`, the Selenium driver underneath the browser.
+
+- `login_state: max_age:` in `config/config.yml` is how many seconds a saved login stays valid (default 3600).
+- `RAIDER_LOGIN_STATE=off` always does the real login and saves nothing; `RAIDER_LOGIN_STATE=refresh` ignores the saved
+  file, logs in and saves again.
+- The state lives in `.raider/auth/` and is git-ignored. It holds live session tokens, so it must not be committed,
+  cached or uploaded as a CI artifact. Nothing in it is ever printed.
+
+## Reporting
+
+Every run writes machine-readable results to `raider-results/` (including `run.json`) and a browsable report,
+`raider-results/index.html`. Open it in a browser after a run; `bundle exec raider-reporter report` rebuilds it.
+
+To upload runs to Raider, set these environment variables before running the suite.
+`RAIDER_TOKEN` and `RAIDER_ENDPOINT` come from your Raider Hideout server (its setup page, or `bin/rails hideout:setup` /
+`hideout:token`):
+
+```bash
+export RAIDER_TOKEN=your-token
+export RAIDER_ENDPOINT=https://hideout.example.com
+```
+
+Without `RAIDER_TOKEN`, nothing is uploaded and the suite output is unchanged. Failure screenshots are attached to the
+report and to Raider. See the [raider_reporter README](https://github.com/RaiderHQ/raider_reporter) for details.
+
+### Video replay
+
+Every test is recorded, and the video is kept only for failing tests (on the last retry attempt). It is attached
+to the report as `video` and saved under `raider-results/attachments/`, next to the failure screenshot.
+The video is a `video.webm` built from page screenshots with ffmpeg.
+
+- Video is on by default: `video:` in `config/config.yml` (`enabled: true`, `fps: 5`, `max_width: 1280`).
+- Turn it off for one run with `VIDEO=off bundle exec rspec`, or for the project with
+  `raider u video off` (`raider u video on` turns it back on).
+- ffmpeg is downloaded on first use, checked against a pinned SHA-256 and cached in `~/.cache/raider`
+  (`%LOCALAPPDATA%\raider` on Windows). `raider u video install` downloads it ahead of time (CI does this before the
+  tests and caches the folder), and `raider u video status` prints the binary in use.
+- `RAIDER_FFMPEG_PATH` uses your own ffmpeg (it needs libvpx) instead of the download, and `RAIDER_CACHE_DIR` moves
+  the cache.
+- The RaiderHQ `ffmpeg-7.1` release that the download comes from is not published yet. Until it is, set
+  `RAIDER_FFMPEG_PATH` to get videos; without it the suite runs as usual and prints one `[video]` line.
+- If ffmpeg is missing or recording fails, the suite still runs and its exit code is unchanged; you get one `[video]`
+  line on stderr and no video.
+- Known limits: a frame is taken after each page load, click and text change, plus one at the end of a failing test,
+  so changes the page makes on its own between actions show up in the next frame. There is one recorded driver per
+  process.
+
+### Quarantine
+
+CI runs the suite through `bundle exec raider-reporter exec -- …` with `RAIDER_QUARANTINE` set. Tests quarantined in
+Raider still run and are still reported (as `quarantined`), and a build whose only failures are quarantined stays green.
+Local runs keep quarantine off. To turn it off in CI, remove `RAIDER_QUARANTINE` from the pipeline.
+
+### Quality gate
+
+The `raider-gate` CI job runs `bundle exec raider-reporter gate` after the tests and
+fails the pipeline when the Raider quality gate fails. It is off until you turn it on:
+
+- set the CI variable `RAIDER_GATE=1` (a repository variable under Settings → Secrets and variables → Actions → Variables);
+- turn on rules under the project's Gate page in Raider: a minimum pass rate, no new failures against the default
+  branch, no new flaky tests;
+- optionally require the `raider/gate` check in branch protection.
+
+`raider-reporter gate` exits 1 when the gate fails, naming the failed rules, and 2 when it gets no verdict (timeout,
+Raider unreachable, token rejected, build not found). `RAIDER_GATE_TIMEOUT` sets how long it waits, in seconds
+(default 600). The job stays off by default because a project without `RAIDER_TOKEN`, or a pull request from a fork,
+would exit 2 on every run.
+
+Parallel test jobs that upload to one build must each set `RAIDER_SHARD_TOTAL` (the number of jobs) and
+`RAIDER_SHARD_INDEX` (1 to that number), so the gate waits for all of them instead of judging the first one to finish.
+
+### Sponsors
+
+This project is tested with BrowserStack.
