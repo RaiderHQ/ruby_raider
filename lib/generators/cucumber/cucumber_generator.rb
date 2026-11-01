@@ -53,6 +53,6 @@ class CucumberGenerator < Generator
   end
 
   def template_name
-    @template_name ||= (@_initializer.first & %w[android ios cross_platform]).empty? ? 'login' : 'home'
+    @template_name ||= mobile? ? 'home' : 'login'
   end
 end

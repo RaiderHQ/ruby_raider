@@ -52,10 +52,17 @@ module RubyRaider
     map 'u' => 'utility'
 
     no_tasks do
-      # -p values arrive as strings; only examples:false turns the example tests off
+      # -p values arrive as strings; examples must be true or false, in any case
       def generate_from_parameters(params)
-        params[:examples] = params[:examples].to_s.downcase != 'false' if params.key?(:examples)
+        params[:examples] = parse_examples(params[:examples]) if params.key?(:examples)
         InvokeGenerators.generate_framework(params)
+      end
+
+      def parse_examples(value)
+        normalised = value.to_s.downcase
+        return normalised == 'true' if %w[true false].include?(normalised)
+
+        raise Thor::Error, "Invalid examples #{value.to_s.inspect}. Allowed values: true, false"
       end
 
       def merge_flags(params)

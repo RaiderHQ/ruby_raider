@@ -29,5 +29,7 @@ class Generator < Thor::Group
 
   private
 
+  def options_after_name: () -> Array[untyped]
+
   def _initializer: () -> Array[untyped]
 end

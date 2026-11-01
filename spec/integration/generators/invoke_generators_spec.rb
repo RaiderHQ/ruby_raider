@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'fileutils'
+require 'tmpdir'
 require 'open3'
 require_relative '../spec_helper'
 
@@ -118,5 +119,64 @@ describe 'Projects named like a generator option' do
     expect(File).not_to exist('selenium/helpers/wait_helper.rb')
     expect(File.read('selenium/page_objects/abstract/page.rb')).to include('browser.element')
     expect(File.read('selenium/page_objects/abstract/page.rb')).not_to include('find_element')
+  end
+end
+
+describe 'Option-named projects generate what a neutral name generates' do
+  option_names = %w[ios android cucumber rspec cross_platform axe_addon selenium watir no_examples azure]
+  option_sets = [
+    { automation: 'selenium', framework: 'rspec' },
+    { automation: 'selenium', framework: 'cucumber', accessibility: true },
+    { automation: 'selenium', framework: 'rspec', examples: false, ci: 'azure' },
+    { automation: 'watir', framework: 'cucumber' },
+    { automation: 'ios', framework: 'rspec' },
+    { automation: 'android', framework: 'cucumber' },
+    { automation: 'cross_platform', framework: 'rspec' }
+  ].freeze
+
+  def quietly
+    result = nil
+    expect { result = yield }.to output.to_stdout
+    result
+  end
+
+  def snapshot(name, options)
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        InvokeGenerators.generate_framework(options.merge(name:))
+        Dir.glob("#{name}/**/*", File::FNM_DOTMATCH).select { |f| File.file?(f) }
+           .to_h { |f| [f.delete_prefix("#{name}/"), File.read(f)] }
+      end
+    end
+  end
+
+  option_sets.each do |options|
+    context "with #{options}" do
+      let(:neutral) { quietly { snapshot('demo', options) } }
+
+      option_names.each do |name|
+        it "generates the same files for a project named #{name}" do
+          actual = quietly { snapshot(name, options) }
+          expect(actual.keys.sort).to eq(neutral.keys.sort)
+          expect(actual).to eq(neutral)
+        end
+      end
+    end
+  end
+end
+
+describe 'raider new -p examples: validation' do
+  after { FileUtils.rm_rf(%w[bad_examples]) }
+
+  let(:root) { File.expand_path('../../..', __dir__) }
+
+  it 'rejects an unknown value, names the allowed values and generates nothing' do
+    Dir.mktmpdir do |dir|
+      _out, err, status = Open3.capture3('ruby', "#{root}/bin/raider", 'new', 'x', '-p',
+                                         'framework:rspec', 'automation:selenium', 'examples:no', chdir: dir)
+      expect(status.exitstatus).to eq(1)
+      expect(err).to include('Invalid examples "no". Allowed values: true, false')
+      expect(File).not_to exist(File.join(dir, 'x'))
+    end
   end
 end

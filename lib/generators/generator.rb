@@ -23,37 +23,36 @@ class Generator < Thor::Group
   end
 
   def cucumber?
-    args.include?('cucumber')
+    framework == 'cucumber'
   end
 
   # The framework is cross platform when it supports Android and iOS
   def cross_platform?
-    args.include?('cross_platform')
+    automation == 'cross_platform'
   end
 
   def mobile?
-    (args & %w[android ios cross_platform]).count.positive?
+    %w[android ios cross_platform].include?(automation)
   end
 
   def single_platform?
-    (args & %w[android ios]).count.positive?
+    %w[android ios].include?(automation)
   end
 
   def ios?
-    args.include?('ios')
+    automation == 'ios'
   end
 
   def android?
-    args.include?('android')
+    automation == 'android'
   end
 
   def rspec?
-    args.include?('rspec')
+    framework == 'rspec'
   end
 
-  # Only the options after automation, framework and name, so a project named "azure" is not Azure CI
   def azure?
-    args.drop(3).include?('azure')
+    options_after_name.include?('azure')
   end
 
   def github_ci?
@@ -76,7 +75,7 @@ class Generator < Thor::Group
 
   # False for `raider new -p examples:false`: an empty skeleton without the example pages, tests and wiring
   def examples?
-    !args.drop(3).include?('no_examples')
+    !options_after_name.include?('no_examples')
   end
 
   def web?
@@ -84,7 +83,7 @@ class Generator < Thor::Group
   end
 
   def axe_addon?
-    args.include?('axe_addon')
+    options_after_name.include?('axe_addon')
   end
 
   def selenium_based?
@@ -97,6 +96,11 @@ class Generator < Thor::Group
   end
 
   private
+
+  # Option flags only: everything after automation, framework and name
+  def options_after_name
+    args.drop(3)
+  end
 
   def _initializer
     @_initializer ||= super

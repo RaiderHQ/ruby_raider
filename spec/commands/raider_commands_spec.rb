@@ -33,7 +33,31 @@ RSpec.describe RubyRaider::Raider do # rubocop:disable RSpec/FilePath
         expect(InvokeGenerators).to have_received(:generate_framework).with(hash_excluding(:examples))
       end
 
-      it 'keeps the examples for any value other than false' do
+      it 'accepts examples:FALSE in any case as false' do
+        allow(InvokeGenerators).to receive(:generate_framework)
+
+        described_class.new.invoke(:new, nil, %w[my_project -p framework:rspec automation:selenium examples:FALSE])
+
+        expect(InvokeGenerators).to have_received(:generate_framework).with(hash_including(examples: false))
+      end
+
+      it 'accepts examples:True in any case as true' do
+        allow(InvokeGenerators).to receive(:generate_framework)
+
+        described_class.new.invoke(:new, nil, %w[my_project -p framework:rspec automation:selenium examples:True])
+
+        expect(InvokeGenerators).to have_received(:generate_framework).with(hash_including(examples: true))
+      end
+
+      it 'rejects any other examples value before generating' do
+        allow(InvokeGenerators).to receive(:generate_framework)
+
+        expect { described_class.new.invoke(:new, nil, %w[my_project -p framework:rspec automation:selenium examples:no]) }
+          .to raise_error(Thor::Error, 'Invalid examples "no". Allowed values: true, false')
+        expect(InvokeGenerators).not_to have_received(:generate_framework)
+      end
+
+      it 'keeps the examples for true' do
         allow(InvokeGenerators).to receive(:generate_framework)
 
         described_class.new.invoke(:new, nil, %w[my_project -p framework:rspec automation:selenium examples:true])
