@@ -34,30 +34,34 @@ describe 'Generated projects pass their own RuboCop' do
   end
 
   def lint(dir)
-    report = capture_rubocop_json(['--config', File.join(dir, '.rubocop.yml'), '--cache', 'false',
+    report, exit_code = capture_rubocop_json(['--config', File.join(dir, '.rubocop.yml'), '--cache', 'false',
                                    '--format', 'json', dir])
-    report.fetch('files').flat_map do |file|
+    offenses = report.fetch('files').flat_map do |file|
       path = file.fetch('path').delete_prefix("#{dir}/")
       file.fetch('offenses').map do |offense|
         "#{path}:#{offense.dig('location', 'line')}: #{offense.fetch('cop_name')}: #{offense.fetch('message')}"
       end
     end
+    { offenses: offenses, inspected: report.fetch('summary').fetch('inspected_file_count'), exit_code: exit_code }
   end
 
   def capture_rubocop_json(args)
     original = $stdout
     $stdout = StringIO.new
-    RuboCop::CLI.new.run(args)
-    JSON.parse($stdout.string)
+    exit_code = RuboCop::CLI.new.run(args)
+    [JSON.parse($stdout.string), exit_code]
   ensure
     $stdout = original
   end
 
   def expect_no_offenses(project_name)
     expect(File).to exist(File.join(project_name, '.rubocop.yml'))
-    rubocop_report(project_name) do |offenses, target|
+    rubocop_report(project_name) do |summary, target|
+      offenses = summary.fetch(:offenses)
       expect(target).to eq(RuboCop::TargetRuby::DEFAULT_VERSION)
+      expect(summary.fetch(:inspected)).to be_positive, "#{project_name}: RuboCop inspected no files"
       expect(offenses).to be_empty, "#{project_name} has #{offenses.size} RuboCop offenses:\n#{offenses.join("\n")}"
+      expect(summary.fetch(:exit_code)).to eq(0)
     end
   end
 
