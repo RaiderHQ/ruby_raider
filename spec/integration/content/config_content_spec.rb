@@ -111,6 +111,23 @@ describe 'Config file content' do
     end
   end
 
+  # appium_lib connects to http://127.0.0.1:4723 and ignores a url capability, so none is generated.
+  %w[rspec cucumber].product(%w[android ios cross_platform]).each do |framework, automation|
+    it "has no unused url capability or /wd/hub path in #{framework} #{automation} capabilities" do
+      caps = read_generated("#{framework}_#{automation}", 'config/capabilities.yml')
+      local = caps.split(/^browserstack:/).first
+      expect(local).not_to match(/^\s*url:/)
+      expect(local).not_to include('/wd/hub')
+    end
+
+    it "parses as YAML, BrowserStack block included, in #{framework} #{automation} capabilities" do
+      caps = YAML.safe_load(read_generated("#{framework}_#{automation}", 'config/capabilities.yml'))
+      browserstack = caps.fetch('browserstack')
+      expect(browserstack).to have_key('app')
+      expect(browserstack['app'].to_s).not_to start_with('app:')
+    end
+  end
+
   %w[android ios cross_platform].each do |automation|
     it "has no login_state in the #{automation} config" do
       Dir.glob(File.join("#{FrameworkIndex::RSPEC}_#{automation}", 'config', '*.yml')).each do |file|

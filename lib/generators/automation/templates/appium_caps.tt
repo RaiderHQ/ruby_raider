@@ -18,14 +18,13 @@ browserstack:
   platformName: Android
   os_version: '9.0'
   deviceName: Google Pixel 3
-  app: app: <%= ENV['APP_URL'] %>
+  app: <%= ENV['APP_URL'] %>
   browserstack.user: <%= ENV['BROWSERSTACK_USER'] %>
   browserstack.key: <%= ENV['BROWSERSTACK_KEY'] %>
   project: 'RaiderTestApp'
   name: 'RaiderTestApp-Android'
 <% elsif ios? %>platformName: iOS
 appium:options:
-  url: http://localhost:4723/wd/hub
   platformVersion: '17.0'
   deviceName: iPhone 15
   automationName: XCUITest
@@ -43,7 +42,6 @@ browserstack:
   name: 'RaiderTestApp-IOS'
 <% elsif android? %>platformName: Android
 appium:options:
-  url: http://localhost:4723/wd/hub
   platformVersion: '14'
   automationName: UiAutomator2
   deviceName: Pixel 8 API 34
@@ -53,7 +51,7 @@ browserstack:
   platformName: Android
   os_version: '9.0'
   deviceName: Google Pixel 3
-  app: app: <%= ENV['APP_URL'] %>
+  app: <%= ENV['APP_URL'] %>
   browserstack.user: <%= ENV['BROWSERSTACK_USER'] %>
   browserstack.key: <%= ENV['BROWSERSTACK_KEY'] %>
   project: 'RaiderTestApp'

@@ -90,7 +90,7 @@ class UtilityCommands < Thor
 
   desc 'start_appium', 'It starts the appium server'
   def start_appium
-    system 'appium  --base-path /wd/hub'
+    system 'appium'
   end
 
   desc 'desktop', 'Downloads the Raider Desktop GUI application'

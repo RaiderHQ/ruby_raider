@@ -206,8 +206,8 @@ describe 'Generated Readme: How the framework works' do
           section = section_of(readme)
           expect(section).to include('swipe', 'scroll_to', 'tap', 'capabilities.yml', 'raider u start_appium',
                                      '### Removing the wait helper', '.native', '[Reporting](#reporting)',
-                                     'timeout: 15')
-          expect(section).not_to include('select_by', 'hover', 'drag_and_drop', 'Reusing the login')
+                                     'timeout: 15', 'http://127.0.0.1:4723')
+          expect(section).not_to include('select_by', 'hover', 'drag_and_drop', 'Reusing the login', '/wd/hub')
           expect(section).to include('ios: {') if automation == 'cross_platform'
         end
 
