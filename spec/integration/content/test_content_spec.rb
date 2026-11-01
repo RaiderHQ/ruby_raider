@@ -173,3 +173,16 @@ describe 'Test file content' do
     include_examples 'logged in scenario', name
   end
 end
+
+describe 'Cucumber world WaitHelper wiring' do
+  %w[selenium ios android cross_platform].each do |automation|
+    it "makes WaitHelper available to steps in #{automation}" do
+      world = read_generated("cucumber_#{automation}", 'features/support/world.rb')
+      expect(world).to include("require_relative '../../helpers/wait_helper'", 'World(WaitHelper)')
+    end
+  end
+
+  it 'leaves the watir world without WaitHelper' do
+    expect(read_generated('cucumber_watir', 'features/support/world.rb')).not_to include('WaitHelper')
+  end
+end

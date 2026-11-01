@@ -68,6 +68,11 @@ class Generator < Thor::Group
     args.include?('watir')
   end
 
+  # Selenium and Appium projects get the auto-waiting WaitHelper; Watir keeps its own waits
+  def wait_helper?
+    !watir?
+  end
+
   def web?
     (args & %w[selenium watir]).count.positive?
   end

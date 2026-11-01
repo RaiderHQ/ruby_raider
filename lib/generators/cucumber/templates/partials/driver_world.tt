@@ -1,9 +1,16 @@
 require_relative '../../helpers/driver_helper'
+<%- if wait_helper? -%>
+require_relative '../../helpers/wait_helper'
+<%- end -%>
 <%- if selenium_based? -%>
 require_relative '../../models/user_factory'
 
 World(DriverHelper)
+World(WaitHelper)
 <%- else -%>
 
 World(DriverHelper)
+<%- if wait_helper? -%>
+World(WaitHelper)
+<%- end -%>
 <%- end -%>

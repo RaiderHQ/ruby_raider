@@ -5,7 +5,6 @@
     listener = VideoHelper.listener
     arguments[:listener] = listener if listener
     driver = Selenium::WebDriver.for(browser.to_sym, **arguments)
-    driver.manage.timeouts.implicit_wait = @config.fetch('timeout', 10)
     driver
   end
 

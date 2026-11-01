@@ -119,3 +119,30 @@ describe 'Config file content' do
     end
   end
 end
+
+describe 'Config timeout wiring' do
+  %w[rspec cucumber].each do |framework|
+    # Single-platform Appium projects have no config.yml; WaitHelper falls back to its default of 10.
+    %w[selenium cross_platform].each do |automation|
+      it "sets timeout 10 in #{framework} #{automation}" do
+        config = YAML.safe_load(read_generated("#{framework}_#{automation}", 'config/config.yml'), permitted_classes: [Symbol])
+        expect(config['timeout']).to eq(10)
+      end
+    end
+  end
+
+  it 'describes the selenium timeout as an action and eventually wait' do
+    expect(read_generated('rspec_selenium', 'config/config.yml'))
+      .to include('# seconds that actions and eventually wait before failing')
+  end
+
+  it 'describes the mobile timeout as an action and eventually wait' do
+    expect(read_generated('rspec_cross_platform', 'config/config.yml'))
+      .to include('timeout: 10 # seconds that actions and eventually wait before failing')
+  end
+
+  it 'leaves the watir timeout comment unchanged' do
+    expect(read_generated('rspec_watir', 'config/config.yml'))
+      .to include('timeout: 10 # seconds — used for implicit waits and max wait time')
+  end
+end

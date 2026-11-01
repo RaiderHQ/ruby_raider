@@ -19,6 +19,7 @@ class Generator < Thor::Group
   def github_ci?: () -> bool
   def selenium?: () -> bool
   def watir?: () -> bool
+  def wait_helper?: () -> bool
   def web?: () -> bool
   def selenium_based?: () -> bool
 

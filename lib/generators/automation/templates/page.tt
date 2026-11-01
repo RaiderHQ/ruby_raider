@@ -1,10 +1,16 @@
 <%- if web? -%>
 require_relative '../components/header'
 <%- end -%>
+<%- if wait_helper? -%>
+require_relative '../../helpers/wait_helper'
+<%- end -%>
 
 class Page
 <%- if cross_platform? -%>
   include AppiumHelper
+<%- end -%>
+<%- if wait_helper? -%>
+  include WaitHelper
 <%- end -%>
 <%=- partial('initialize_selector', trim: false) -%>
 <%=- partial('visit_method', trim: false) -%>

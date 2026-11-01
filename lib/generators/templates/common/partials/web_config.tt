@@ -1,6 +1,6 @@
 browser: chrome
 url: 'https://raider-test-site.onrender.com/'
-timeout: 10 # seconds — used for implicit waits and max wait time
+timeout: 10 # <%= wait_helper? ? 'seconds that actions and eventually wait before failing' : 'seconds — used for implicit waits and max wait time' %>
 viewport:
   width: 1920
   height: 1080

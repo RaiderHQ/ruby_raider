@@ -398,3 +398,38 @@ describe 'Helper file content' do
     end
   end
 end
+
+describe 'Auto-waiting helper wiring' do
+  %w[selenium ios android cross_platform].each do |automation|
+    context "with rspec and #{automation}" do
+      it 'includes WaitHelper in the spec helper' do
+        helper = read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'helpers/spec_helper.rb')
+        expect(helper).to include("require_relative 'wait_helper'", 'config.include(WaitHelper)')
+      end
+    end
+  end
+
+  %w[ios android cross_platform].each do |automation|
+    %w[rspec cucumber].each do |framework|
+      it "does not pass a wait to appium_lib in #{framework} #{automation}" do
+        driver = read_generated("#{framework}_#{automation}", 'helpers/driver_helper.rb')
+        expect(driver).not_to match(/\bwait:/)
+      end
+    end
+  end
+
+  %w[rspec cucumber].each do |framework|
+    it "leaves no implicit wait in #{framework} selenium" do
+      driver = read_generated("#{framework}_selenium", 'helpers/driver_helper.rb')
+      expect(driver).not_to include('implicit_wait')
+    end
+
+    it "keeps Watir untouched in #{framework} watir" do
+      project = "#{framework}_watir"
+      expect(File.exist?(File.join(project, 'helpers/wait_helper.rb'))).to be(false)
+      expect(read_generated(project, 'helpers/browser_helper.rb')).to include('Watir.default_timeout')
+      files = Dir.glob(File.join(project, '**/*.rb')).map { |f| File.read(f) }
+      expect(files.grep(/WaitHelper/)).to be_empty
+    end
+  end
+end

@@ -167,3 +167,18 @@ describe 'Page object content' do
     include_examples 'watir abstract page', name
   end
 end
+
+describe 'Page WaitHelper wiring' do
+  %w[rspec cucumber].each do |framework|
+    %w[selenium ios android cross_platform].each do |automation|
+      it "includes WaitHelper in #{framework} #{automation}" do
+        page = read_generated("#{framework}_#{automation}", 'page_objects/abstract/page.rb')
+        expect(page).to include("require_relative '../../helpers/wait_helper'", 'include WaitHelper')
+      end
+    end
+
+    it "does not include WaitHelper in #{framework} watir" do
+      expect(read_generated("#{framework}_watir", 'page_objects/abstract/page.rb')).not_to include('WaitHelper')
+    end
+  end
+end

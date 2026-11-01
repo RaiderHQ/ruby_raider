@@ -13,6 +13,9 @@ require_relative 'browser_helper'
 require_relative 'driver_helper'
 <%- end -%>
 require_relative 'video_helper'
+<%- if wait_helper? -%>
+require_relative 'wait_helper'
+<%- end -%>
 <%- if web? -%>
 require_relative 'session_state'
 require_relative '../models/model_factory'
@@ -31,6 +34,9 @@ module SpecHelper
     config.include(BrowserHelper)
     <%- else -%>
     config.include(DriverHelper)
+    <%- end -%>
+    <%- if wait_helper? -%>
+    config.include(WaitHelper)
     <%- end -%>
     <%- if mobile? -%>
     config.before(:each) do

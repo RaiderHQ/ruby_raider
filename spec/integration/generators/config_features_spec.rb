@@ -35,9 +35,9 @@ describe 'Config features for generated projects' do
       expect(config['driver_options']).to be_nil
     end
 
-    it 'generates driver_helper with timeout from config' do
+    it 'generates driver_helper without an implicit wait' do
       helper = File.read('config_selenium_test/helpers/driver_helper.rb')
-      expect(helper).to include("config.fetch('timeout', 10)")
+      expect(helper).not_to include('implicit_wait')
     end
 
     it 'generates spec_helper with viewport-aware window setup' do

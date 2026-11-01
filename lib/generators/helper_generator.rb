@@ -44,7 +44,7 @@ class HelpersGenerator < Generator
   end
 
   def generate_wait_helper
-    return if watir?
+    return unless wait_helper?
 
     template('helpers/wait_helper.tt', "#{name}/helpers/wait_helper.rb")
     template('helpers/raider_element.tt', "#{name}/helpers/raider_element.rb")
