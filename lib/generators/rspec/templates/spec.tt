@@ -74,7 +74,6 @@ require_relative '../page_objects/pages/pdp'
 
 class PdpSpec
   describe 'PDP' do
-
     let(:home_page) { Home.new(driver) }
     let(:pdp_page) { Pdp.new(driver) }
 

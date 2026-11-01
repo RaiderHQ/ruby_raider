@@ -1,19 +1,17 @@
+# frozen_string_literal: true
+
 require_relative '../components/header'
 
 class Page
-
   attr_reader :browser
 
   def initialize(browser)
     @browser = browser
   end
 
-
   def visit(*page)
     @browser.goto full_url(page.first)
   end
-
-
 
   def full_url(*page)
     "#{base_url}#{url(*page)}"

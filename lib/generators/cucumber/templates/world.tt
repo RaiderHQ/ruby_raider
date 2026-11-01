@@ -1,9 +1,7 @@
-<%- unless watir? -%>
 # frozen_string_literal: true
 
-<%- end -%>
 <%- if watir? -%>
-<%=- partial('watir_world', strip: true) -%>
+<%= partial('watir_world', strip: true) %>
 <%- else -%>
-<%=- partial('driver_world', strip: true) -%>
+<%= partial('driver_world', strip: true) %>
 <%- end -%>

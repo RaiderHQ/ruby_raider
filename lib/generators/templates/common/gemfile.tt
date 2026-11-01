@@ -1,32 +1,32 @@
 source 'https://rubygems.org'
 
 gem 'activesupport'
-<% if mobile? %>
-gem 'appium_lib'
+<%- if mobile? -%>
 gem 'appium_console'
-<% end %>
+gem 'appium_lib'
+<%- end -%>
 <%- if axe_addon? -%>
 gem 'axe-core-rspec'
 gem 'axe-core-selenium'
 <%- end -%>
+<%- if cucumber? -%>
+gem 'cucumber'
+<%- end -%>
 gem 'parallel_split_test'
 gem 'parallel_tests'
+gem 'raider_reporter', '~> 0.10'
 gem 'rake'
 gem 'reek'
-gem 'raider_reporter', '~> 0.10'
+gem 'rspec'
 <%- if rspec? -%>
 gem 'rspec-retry'
-<%- end -%>
-gem '<%= framework %>'
-<%- if cucumber? -%>
-gem 'rspec'
 <%- end -%>
 gem 'rubocop'
 <%- if rspec? -%>
 gem 'rubocop-rspec'
 <%- end -%>
 gem 'ruby_raider', '<%= ruby_raider_version_requirement %>'
-<%- if selenium_based? %>
+<%- if selenium_based? -%>
 gem 'selenium-webdriver'
 <%- end -%>
 <%- if watir? -%>

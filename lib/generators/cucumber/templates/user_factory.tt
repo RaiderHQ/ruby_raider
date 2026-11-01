@@ -1,7 +1,5 @@
-<%- unless watir? -%>
 # frozen_string_literal: true
 
-<%- end -%>
 require_relative 'model_factory'
 
 class UserFactory < ModelFactory

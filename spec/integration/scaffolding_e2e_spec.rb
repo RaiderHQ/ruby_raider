@@ -4,13 +4,9 @@ require 'fileutils'
 require 'pathname'
 require_relative '../../lib/commands/scaffolding_commands'
 require_relative '../../lib/scaffolding/scaffolding'
+require_relative 'frozen_string_literal_matcher'
 
 # Custom matchers (defined inline to avoid pulling in integration spec_helper)
-RSpec::Matchers.define :have_frozen_string_literal do
-  match { |content| content.include?('# frozen_string_literal: true') }
-  failure_message { 'expected file to contain frozen_string_literal magic comment' }
-end
-
 RSpec::Matchers.define :have_valid_ruby_syntax do
   match do |content|
     RubyVM::InstructionSequence.compile(content)

@@ -1,7 +1,5 @@
-<%- unless watir? -%>
 # frozen_string_literal: true
 
-<%- end -%>
 <%- if web? && examples? -%>
 require_relative '../components/header'
 <%- end -%>
@@ -16,9 +14,12 @@ class Page
 <%- if wait_helper? -%>
   include WaitHelper
 <%- end -%>
-<%=- partial('initialize_selector', trim: false) -%>
-<%=- partial('visit_method', trim: false) -%>
-<%=- partial('url_methods', trim: false) -%>
+<%- if cross_platform? || wait_helper? -%>
+
+<%- end -%>
+<%= partial('initialize_selector') -%>
+<%= partial('visit_method') -%>
+<%= partial('url_methods') -%>
 
   def to_s
     self.class.to_s.sub('Page', ' Page')

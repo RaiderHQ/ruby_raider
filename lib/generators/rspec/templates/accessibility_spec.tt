@@ -4,18 +4,18 @@ require_relative '../helpers/spec_helper'
 
 describe 'Accessibility' do
   before do
-    <% if watir? -%>
-browser.goto 'https://raider-test-site.onrender.com/'
-    <% else -%>
-driver.get 'https://raider-test-site.onrender.com/'
-    <% end -%>
+<%- if watir? -%>
+    browser.goto 'https://raider-test-site.onrender.com/'
+<%- else -%>
+    driver.get 'https://raider-test-site.onrender.com/'
+<%- end -%>
   end
 
   it 'has no accessibility violations on the page' do
-    <% if watir? -%>
-expect(browser.driver).to be_axe_clean
-    <% else -%>
-expect(driver).to be_axe_clean
-    <% end -%>
+<%- if watir? -%>
+    expect(browser.driver).to be_axe_clean
+<%- else -%>
+    expect(driver).to be_axe_clean
+<%- end -%>
   end
 end

@@ -265,10 +265,29 @@ describe 'End-to-End Project Generation and Execution' do
     FileUtils.rm_f(File.join(project, 'features/step_definitions/reporter_failure_steps.rb'))
   end
 
+  # Runs the project's own RuboCop with the gems its bundle resolved (newer than this gem's dev bundle).
+  # It runs from a copy outside this repo, as a user's project would: inside it RuboCop would also read
+  # this repo's .rubocop.yml, gemspec and .ruby-version.
+  def expect_project_rubocop_clean(project)
+    skip 'Bundle install failed' unless bundle_install(project)
+
+    Dir.mktmpdir('raider_rubocop') do |tmp|
+      copy = File.join(tmp, project)
+      FileUtils.cp_r(project, copy)
+      puts run_in_project(copy, 'bundle exec rubocop -V', timeout: 60)[:stdout]
+      result = run_in_project(copy, 'bundle exec rubocop --cache false', timeout: 180)
+      expect(result[:exit_code]).to eq(0), "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
+    end
+  end
+
   # Test Web Frameworks (these can run without external services)
   context 'Web Automation Frameworks' do
     describe 'Selenium + RSpec' do
       include_examples 'executable rspec project', 'rspec_selenium'
+
+      it 'passes its own RuboCop with its bundled gems', :slow do
+        expect_project_rubocop_clean('rspec_selenium')
+      end
 
       it 'saves the login once and reuses it', :aggregate_failures, :slow do
         skip 'Bundle install failed' unless bundle_install('rspec_selenium')
@@ -300,6 +319,10 @@ describe 'End-to-End Project Generation and Execution' do
 
     describe 'Selenium + Cucumber' do
       include_examples 'executable cucumber project', 'cucumber_selenium'
+
+      it 'passes its own RuboCop with its bundled gems', :slow do
+        expect_project_rubocop_clean('cucumber_selenium')
+      end
     end
 
     describe 'Watir + Cucumber' do

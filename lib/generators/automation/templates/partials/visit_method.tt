@@ -1,11 +1,11 @@
-<% if web? %>
-<% if selenium_based? %>
+<%- if selenium_based? -%>
+
   def visit(*page)
     @driver.navigate.to full_url(page.first)
   end
-<% else %>
+<%- elsif watir? -%>
+
   def visit(*page)
     @browser.goto full_url(page.first)
   end
-<% end %>
-<% end %>
+<%- end -%>
