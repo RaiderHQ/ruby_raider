@@ -1,26 +1,8 @@
 # frozen_string_literal: true
 
-require 'erb'
-require 'rspec/expectations'
-require 'selenium-webdriver'
-require 'tmpdir'
-require 'yaml'
+require_relative 'wait_helper_support'
 
-module WaitHelperSpec
-  TEMPLATES = File.expand_path('../../../lib/generators/templates/helpers', __dir__)
-
-  # Renders both templates into one temp dir, so wait_helper.rb's require_relative finds raider_element.rb.
-  def self.load_templates
-    Dir.mktmpdir('raider_tt') do |dir|
-      %w[raider_element wait_helper].each do |name|
-        source = File.read(File.join(TEMPLATES, "#{name}.tt"))
-        File.write(File.join(dir, "#{name}.rb"), ERB.new(source, trim_mode: '-').result)
-      end
-      load File.join(dir, 'wait_helper.rb')
-    end
-  end
-end
-WaitHelperSpec.load_templates
+WaitHelperSpec.load_templates(mobile: false)
 
 module WaitHelperSpec
   class Page
@@ -30,116 +12,6 @@ module WaitHelperSpec
 
     def initialize(driver)
       @driver = driver
-    end
-  end
-
-  # Scripted lookups shared by the fake driver and fake elements. Each locator answers from its
-  # queue, one answer per call, repeating the last: nil is "no such element", an error class is raised.
-  module Finder
-    def script(locator, *answers)
-      @fake[:one][locator] = answers
-      self
-    end
-
-    def script_many(locator, *answers)
-      @fake[:many][locator] = answers
-      self
-    end
-
-    def finds = @fake[:finds]
-
-    def find_element(**locator)
-      finds << locator
-      answer = next_answer(:one, locator, nil)
-      raise answer if answer.is_a?(Class)
-      raise Selenium::WebDriver::Error::NoSuchElementError, 'no such element' unless answer
-
-      answer
-    end
-
-    def find_elements(**locator)
-      finds << locator
-      next_answer(:many, locator, [])
-    end
-
-    private
-
-    def next_answer(kind, locator, default)
-      queue = @fake[kind].fetch(locator) { [default] }
-      queue.size > 1 ? queue.shift : queue.first
-    end
-  end
-
-  # Records driver.action chains into the driver's log.
-  class FakeActions
-    def initialize(log)
-      @log = log
-    end
-
-    %i[move_to scroll_to drag_and_drop perform].each do |step|
-      define_method(step) do |*elements|
-        @log << [step, *elements]
-        self
-      end
-    end
-  end
-
-  class FakeDriver
-    include Finder
-
-    def initialize(device: :ios)
-      @fake = { one: {}, many: {}, finds: [], actions: [], device: }
-    end
-
-    def appium_device = @fake[:device]
-    def actions = @fake[:actions]
-    def action = FakeActions.new(actions)
-  end
-
-  class FakeElement
-    include Finder
-
-    STALE = Selenium::WebDriver::Error::StaleElementReferenceError
-
-    def initialize(**state)
-      @fake = { one: {}, many: {}, finds: [] }
-      @state = { displayed: true, enabled: true, selected: false, rects: [[0, 0, 10, 10]], text: 'hi',
-                 attributes: {}, tag_name: 'div', errors: [], log: [], stale: false }.merge(state)
-    end
-
-    def log = @state[:log]
-    def go_stale = @state[:stale] = true
-    def go_hidden = @state[:displayed] = false
-    def displayed? = live(@state[:displayed])
-    def enabled? = live(@state[:enabled])
-    def selected? = live(@state[:selected])
-    def text = live(@state[:text])
-    def tag_name = live(@state[:tag_name])
-    def attribute(name) = live(@state[:attributes][name])
-    def dom_attribute(name) = live(@state[:attributes][name.to_s])
-    def property(name) = live(@state[name.to_sym])
-
-    def rect
-      rects = @state[:rects]
-      live(rects.size > 1 ? rects.shift : rects.first)
-    end
-
-    %i[click clear submit send_keys].each do |action|
-      define_method(action) do |*keys|
-        live(nil)
-        error = @state[:errors].shift
-        raise error if error
-
-        log << [action, *keys]
-      end
-    end
-
-    private
-
-    def live(value)
-      raise STALE, 'stale element reference' if @state[:stale]
-
-      value
     end
   end
 

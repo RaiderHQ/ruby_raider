@@ -1,11 +1,21 @@
 # frozen_string_literal: true
 
+<%- if mobile? -%>
+# An element found through WaitHelper. It has the same waiting methods as the
+# mixin, minus the locator, so calls chain:
+#   find_element(accessibility_id: 'list').find_element(accessibility_id: 'row').tap
+#   find_element(accessibility_id: 'card').swipe('left')
+# Everything else (tag_name, rect, location, ...) goes to the raw Appium
+# element without waiting. APIs that type-check their argument
+# (driver.action, execute_script) need .native.
+<%- else -%>
 # An element found through WaitHelper. It has the same waiting methods as the
 # mixin, minus the locator, so calls chain:
 #   find_element(css: '.form').find_element(id: 'email').send_keys('a')
 # Everything else (tag_name, rect, property, ...) goes to the raw Selenium
 # element without waiting. Selenium APIs that type-check their argument
 # (switch_to.frame, Support::Select, driver.action, execute_script) need .native.
+<%- end -%>
 class RaiderElement
   def initialize(driver, lookup)
     @driver = driver
@@ -24,12 +34,22 @@ class RaiderElement
     waiter(timeout).find_elements(child(locator, by))
   end
 
+<%- if mobile? -%>
+  # tap is Appium's word for click.
+  { click: :click, tap: :click, clear: :clear }.each do |action, command|
+    define_method(action) do |timeout: nil|
+      perform(action, timeout) { |element| element.public_send(command) }
+      self
+    end
+  end
+<%- else -%>
   %i[click clear submit].each do |action|
     define_method(action) do |timeout: nil|
       perform(action, timeout) { |element| element.public_send(action) }
       self
     end
   end
+<%- end -%>
 
   %i[text displayed? enabled? selected?].each do |reader|
     define_method(reader) do |timeout: nil|
@@ -42,15 +62,34 @@ class RaiderElement
     self
   end
 
+<%- unless mobile? -%>
   def select_by(how, what, timeout: nil)
     perform(:select_by, timeout) { |element| Selenium::WebDriver::Support::Select.new(element).select_by(how, what) }
     self
   end
 
+<%- end -%>
   def attribute(name, timeout: nil)
     perform(:attribute, timeout) { |element| element.attribute(name) }
   end
 
+<%- if mobile? -%>
+  # direction: 'up', 'down', 'left' or 'right'.
+  %i[swipe scroll].each do |kind|
+    define_method(kind) do |direction, timeout: nil|
+      gesture = WaitHelper::Gesture.new(@driver, kind, direction)
+      perform(kind, timeout) { |element| gesture.perform(element) }
+      self
+    end
+  end
+
+  # Scrolls the screen until this element is visible, up to max_scrolls times.
+  def scroll_to(direction: 'down', max_scrolls: 10, timeout: nil)
+    scroller = WaitHelper::Scroller.new(WaitHelper::Gesture.new(@driver, :scroll, direction), max_scrolls)
+    waiter(timeout).perform_action(:scroll_to, @lookup, WaitHelper::Waiter::CHECKS[:scroll_to], between: scroller) { nil }
+    self
+  end
+<%- else -%>
   def hover(timeout: nil)
     perform(:hover, timeout) { |element| @driver.action.move_to(element).perform }
     self
@@ -70,6 +109,7 @@ class RaiderElement
     end
     self
   end
+<%- end -%>
 
   def ==(other)
     native == (other.is_a?(RaiderElement) ? other.native : other)

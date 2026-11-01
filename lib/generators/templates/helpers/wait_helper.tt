@@ -4,12 +4,23 @@ require 'selenium-webdriver'
 require 'yaml'
 require_relative 'raider_element'
 
+<%- if mobile? -%>
+# Waits before it acts. Each method takes a locator ({ accessibility_id: 'name' },
+# with or without braces, or { ios: {...}, android: {...} }), a RaiderElement or a
+# raw element, polls every 0.1s until the element is ready, then acts on it:
+#   tap({ accessibility_id: 'login' })
+#   send_keys({ accessibility_id: 'user' }, 'admin')
+#   swipe('left', { accessibility_id: 'card' })
+#   scroll_to({ accessibility_id: 'footer' })
+#   eventually { expect(text(accessibility_id: 'welcome')).to eq('Hi') }
+<%- else -%>
 # Waits before it acts. Each method takes a locator ({ id: 'name' }, with or
 # without braces), a RaiderElement or a raw element, polls every 0.1s until the
 # element is ready, then calls the Selenium method of the same name:
 #   click({ id: 'login' })
 #   send_keys({ id: 'user' }, 'admin')
 #   eventually { expect(text(css: '.welcome')).to eq('Hi') }
+<%- end -%>
 # The wait is config/config.yml `timeout` seconds, or `timeout:` for one call.
 module WaitHelper
   class TimeoutError < Selenium::WebDriver::Error::TimeoutError; end
@@ -28,6 +39,19 @@ module WaitHelper
     RaiderElement.new(driver, Lookup.for(driver, locator, by))
   end
 
+<%- if mobile? -%>
+  # Swipes or scrolls the element, or the whole screen without a locator.
+  def self.gesture(driver, kind, direction, locator, timeout)
+    return element(driver, locator).public_send(kind, direction, timeout: timeout) if locator
+
+    gesture = Gesture.new(driver, kind, direction)
+    Waiter.new(driver, timeout: timeout).perform_action(kind, Lookup.screen(driver), Waiter::PRESENT) do
+      gesture.perform(nil)
+    end
+    nil
+  end
+
+<%- end -%>
   def find_element(locator = nil, visible: true, timeout: nil, **by)
     Waiter.new(driver, timeout: timeout).find_element(Lookup.for(driver, locator, by), visible)
   end
@@ -36,7 +60,12 @@ module WaitHelper
     Waiter.new(driver, timeout: timeout).find_elements(Lookup.for(driver, locator, by))
   end
 
+<%- if mobile? -%>
+  # tap is Appium's word for click; both wait the same way.
+  %i[click tap clear text displayed? enabled? selected?].each do |action|
+<%- else -%>
   %i[click clear submit hover scroll_into_view text displayed? enabled? selected?].each do |action|
+<%- end -%>
     define_method(action) do |locator = nil, timeout: nil, **by|
       WaitHelper.element(driver, locator, by).public_send(action, timeout: timeout)
     end
@@ -46,17 +75,35 @@ module WaitHelper
     WaitHelper.element(driver, locator).send_keys(*keys, timeout: timeout)
   end
 
+<%- unless mobile? -%>
   def select_by(locator, how, what, timeout: nil)
     WaitHelper.element(driver, locator).select_by(how, what, timeout: timeout)
   end
 
+<%- end -%>
   def attribute(locator, name, timeout: nil)
     WaitHelper.element(driver, locator).attribute(name, timeout: timeout)
   end
 
+<%- if mobile? -%>
+  # direction: 'up', 'down', 'left' or 'right'.
+  def swipe(direction, locator = nil, timeout: nil)
+    WaitHelper.gesture(driver, :swipe, direction, locator, timeout)
+  end
+
+  def scroll(direction, locator = nil, timeout: nil)
+    WaitHelper.gesture(driver, :scroll, direction, locator, timeout)
+  end
+
+  # Scrolls the screen until the element is visible, then returns its RaiderElement.
+  def scroll_to(locator, direction: 'down', max_scrolls: 10, timeout: nil)
+    WaitHelper.element(driver, locator).scroll_to(direction: direction, max_scrolls: max_scrolls, timeout: timeout)
+  end
+<%- else -%>
   def drag_and_drop(source, target, timeout: nil)
     WaitHelper.element(driver, source).drag_and_drop(target, timeout: timeout)
   end
+<%- end -%>
 
   def eventually(timeout: nil, &block)
     Waiter.new(nil, timeout: timeout).eventually(&block)
@@ -82,6 +129,13 @@ module WaitHelper
 
       new(scope, locator: normalize(driver, given))
     end
+<%- if mobile? -%>
+
+    # No locator and no element: a whole-screen gesture, which locates nothing.
+    def self.screen(driver)
+      new(driver)
+    end
+<%- end -%>
 
     def self.normalize(driver, given)
       locator = symbolize(given)
@@ -120,7 +174,7 @@ module WaitHelper
     def locate
       return find_all if @many
 
-      return @element if @element
+      return @element if @element || !@locator
 
       @element = @last_found = context.find_element(**@locator)
     end
@@ -164,6 +218,16 @@ module WaitHelper
     DEADLINE_KEY = :raider_wait_deadline
     VISIBLE_ENABLED = %i[visible enabled].freeze
     PRESENT = [].freeze
+<%- if mobile? -%>
+    CLICK = %i[visible enabled stable].freeze
+    VISIBLE = %i[visible].freeze
+    CHECKS = {
+      click: CLICK, tap: CLICK,
+      send_keys: VISIBLE_ENABLED, clear: VISIBLE_ENABLED,
+      swipe: VISIBLE, scroll: VISIBLE, scroll_to: VISIBLE,
+      text: PRESENT, attribute: PRESENT, displayed?: PRESENT, enabled?: PRESENT, selected?: PRESENT
+    }.freeze
+<%- else -%>
     CHECKS = {
       click: %i[visible enabled stable].freeze,
       send_keys: VISIBLE_ENABLED, clear: VISIBLE_ENABLED, submit: VISIBLE_ENABLED, select_by: VISIBLE_ENABLED,
@@ -172,6 +236,7 @@ module WaitHelper
       scroll_into_view: PRESENT, text: PRESENT, attribute: PRESENT,
       displayed?: PRESENT, enabled?: PRESENT, selected?: PRESENT
     }.freeze
+<%- end -%>
     TARGET_CHECKS = %i[visible].freeze
     STALE = 'stale element'
     RETRIED = [Selenium::WebDriver::Error::StaleElementReferenceError,
@@ -199,7 +264,9 @@ module WaitHelper
 
     # checks: a subset of %i[visible enabled stable]; present is always checked.
     # target: a second Lookup (the drop target) that must be visible in the same poll.
-    def perform_action(action, locator, checks, target: nil)
+    # between: called after each poll that was not ready (scroll_to scrolls there); once it
+    # returns false the wait stops, and the timeout message ends with its to_s.
+    def perform_action(action, locator, checks, target: nil, between: nil)
       lookup = locator.is_a?(Lookup) ? locator : Lookup.for(@driver, locator, {})
       within_deadline do |deadline, waited|
         loop do
@@ -212,7 +279,10 @@ module WaitHelper
           end
           lookup.reset(stale: seen == STALE)
           target&.reset
-          raise TimeoutError, timeout_message(lookup, checks, seen, waited), backtrace if now >= deadline
+          if now >= deadline || (between && !between.call)
+            seen = [seen, between].compact.join(' ')
+            raise TimeoutError, timeout_message(lookup, checks, seen, [waited, waited + now - deadline].min), backtrace
+          end
 
           pause(deadline)
         end
@@ -309,4 +379,66 @@ module WaitHelper
       Process.clock_gettime(Process::CLOCK_MONOTONIC)
     end
   end
+<%- if mobile? -%>
+
+  # A swipe or scroll through the platform's own mobile: command, as appium_lib issues them.
+  class Gesture
+    DIRECTIONS = %w[up down left right].freeze
+    COMMANDS = {
+      ios: { swipe: 'mobile: swipe', scroll: 'mobile: scroll' }.freeze,
+      android: { swipe: 'mobile: swipeGesture', scroll: 'mobile: scrollGesture' }.freeze
+    }.freeze
+    PERCENT = 0.75
+
+    def initialize(driver, kind, direction)
+      @driver = driver
+      @device = driver.appium_device.to_s.downcase.to_sym
+      @command = COMMANDS.dig(@device, kind)
+      raise NotImplementedError, "#{kind} has no gesture for #{driver.appium_device.inspect}; only :ios and :android" unless @command
+
+      @direction = direction.to_s
+      raise ArgumentError, "direction must be up, down, left or right; got #{direction.inspect}" unless DIRECTIONS.include?(@direction)
+    end
+
+    # element: the raw element to act on, or nil for the whole screen.
+    def perform(element)
+      @driver.execute_script(@command, arguments(element))
+    end
+
+    private
+
+    def arguments(element)
+      return { direction: @direction, element: element&.id }.compact if @device == :ios
+
+      area = element ? { elementId: element.id } : screen
+      area.merge(direction: @direction, percent: PERCENT)
+    end
+
+    def screen
+      rect = @driver.window_rect
+      { left: rect.x, top: rect.y, width: rect.width, height: rect.height }
+    end
+  end
+
+  # Scrolls the screen once per call, between scroll_to's polls, up to max_scrolls times.
+  class Scroller
+    def initialize(gesture, max_scrolls)
+      @gesture = gesture
+      @max_scrolls = max_scrolls
+      @scrolls = 0
+    end
+
+    # False once every scroll is used up.
+    def call
+      return false if @scrolls >= @max_scrolls
+
+      @gesture.perform(nil)
+      @scrolls += 1
+    end
+
+    def to_s
+      "after #{@scrolls} scrolls"
+    end
+  end
+<%- end -%>
 end

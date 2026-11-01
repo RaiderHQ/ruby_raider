@@ -43,5 +43,26 @@ describe 'Ruby syntax validation' do
         end
       end
     end
+
+    # Mobile projects get the mobile branch of the wait helper templates.
+    %w[android ios cross_platform].each do |automation|
+      context "with #{framework} and #{automation}" do
+        project_name = "#{framework}_#{automation}"
+
+        %w[helpers/wait_helper.rb helpers/raider_element.rb].each do |relative|
+          it "#{relative} is generated as valid Ruby with frozen_string_literal" do
+            content = File.read(File.join(project_name, relative))
+            expect(content).to have_valid_ruby_syntax
+            expect(content).to have_frozen_string_literal
+          end
+        end
+
+        it 'helpers/wait_helper.rb has the mobile gestures and no web-only methods' do
+          content = File.read(File.join(project_name, 'helpers/wait_helper.rb'))
+          expect(content).to include("'mobile: swipeGesture'").and include('def scroll_to(')
+          expect(content).not_to include('def drag_and_drop(')
+        end
+      end
+    end
   end
 end
