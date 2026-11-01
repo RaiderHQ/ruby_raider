@@ -308,6 +308,19 @@ describe 'Generated TraceHelper' do
       expect(Zip::File.open(path) { |zip| zip.entries.map { |entry| zip.read(entry.name) }.join }).not_to include('hunter2')
     end
 
+    it 'keeps a masked value out of later snapshots after the page switches the field to type=text' do
+      element_script(field, secret: true)
+      allow(driver).to receive(:page_source).and_return('<html><body><input type="text" name="pw" value="hunter2"></body></html>')
+      recorder = started_recorder
+      act(recorder, :send_keys, 'pw', args: ['hunter2'], element: field)
+      act(recorder, :click, 'show-password', element: field)
+      path = recorder.stop(keep: true, test: failed_test)
+
+      expect(TraceFormatChecker.problems(path)).to eq([])
+      expect(snapshot_of(path, 2)).to include('<input type="text" name="pw" value="">')
+      expect(Zip::File.open(path) { |zip| zip.entries.map { |entry| zip.read(entry.name) } }).to all(satisfy { |bytes| !bytes.include?('hunter2') })
+    end
+
     it 'masks a type=text field whose autocomplete contains password' do
       element_script(field, secret: true)
       clean = TraceHelper::Snapshot.sanitize(
@@ -324,12 +337,17 @@ describe 'Generated TraceHelper' do
 
       it 'masks a value equal to a RAIDER_SECRET_* env value typed into a plain field' do
         element_script(field, secret: false, label: 'Notes')
+        allow(driver).to receive(:page_source).and_return('<html><body><input type="text" name="notes" value="pa55word"></body></html>')
         recorder = started_recorder
         act(recorder, :send_keys, 'notes', args: ['pa55word'], element: field)
         act(recorder, :send_keys, 'notes', args: ['pa55word', :enter], element: field)
-        steps = kept(recorder)['steps']
+        path = recorder.stop(keep: true, test: failed_test)
+        steps = TraceFormatChecker.read(path).first['steps']
 
+        expect(TraceFormatChecker.problems(path)).to eq([])
         expect(steps.map { |step| step.values_at('value', 'secret') }).to eq([[nil, true], [nil, true]])
+        expect(snapshot_of(path, 1)).to include('<input type="text" name="notes" value="">')
+        expect(Zip::File.open(path) { |zip| zip.entries.map { |entry| zip.read(entry.name) } }).to all(satisfy { |bytes| !bytes.include?('pa55word') })
       end
     end
 

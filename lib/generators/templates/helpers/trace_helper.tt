@@ -136,7 +136,7 @@ module TraceHelper
   # element is the format's { tag, label, role }; secret is true, false, or nil while the field is unknown.
   Step = Struct.new(:seq, :parent, :kind, :action, :locator, :url, :page_title, :started_at, :clock, :duration_ms,
                     :waited_ms, :retries, :status, :error, :source, :rect, :screenshot, :snapshot, :element,
-                    :value, :secret, keyword_init: true) do
+                    :value, :secret, :typed_strings, keyword_init: true) do
     def finish(status, error)
       self.status = status.to_s
       self.error = error
@@ -214,6 +214,7 @@ module TraceHelper
         step.finish(status, error)
         step.waited_ms = waited_ms
         step.retries = retries
+        remember_secret(step)
         capture_step_media(step) if MEDIA_ACTIONS.include?(step.action)
         nil
       end
@@ -279,7 +280,7 @@ module TraceHelper
       step.snapshot = media(step, 'snapshot') do
         raise page[:error] unless page[:html]
 
-        [Snapshot.sanitize(page[:html], css: page[:css], skipped: page[:skipped_sheets]), 'html']
+        [Snapshot.sanitize(page[:html], css: page[:css], skipped: page[:skipped_sheets], secrets: @secrets), 'html']
       end
       nil
     end
@@ -314,6 +315,7 @@ module TraceHelper
       @groups = []
       @events = []
       @seq = 0
+      @secrets = []
       @page = { url: nil, page_title: nil }
       @truncated = { steps: 0, screenshots: 0, snapshots: 0, network: 0, console: 0 }
       @capabilities = { network: false, console: false, screenshots: true, snapshots: true }
@@ -368,8 +370,16 @@ module TraceHelper
     def typed(step, args)
       shown = step.action == 'select_by' ? args.last.to_s : args.flatten.map { |key| key_name(key) }.join
       step.value = shown
-      strings = args.flatten.grep(String)
-      step.secret = true if [shown, *strings].any? { |each_value| TraceHelper.secret_value?(each_value) }
+      step.typed_strings = [shown, *args.flatten.grep(String)].reject(&:empty?).uniq
+      step.secret = true if step.typed_strings.any? { |each_value| TraceHelper.secret_value?(each_value) }
+    end
+
+    # What a masked step typed, so this test's later snapshots blank it too (a show-password
+    # toggle makes the field type=text, but its value is still the secret).
+    def remember_secret(step)
+      return unless TYPED_ACTIONS.include?(step.action) && step.typed[:secret]
+
+      @secrets |= step.typed_strings.to_a
     end
 
     def key_name(key)
@@ -751,7 +761,9 @@ module TraceHelper
     # secret inputs. With css (Page.capture's), one <style> holding it replaces every stylesheet
     # link and <style>. <html> gets data-raider-skipped-sheets: the sheets that could not be read.
     # Never adds a <base>: a viewer must not fetch from the site under test.
-    def self.sanitize(html, css:, skipped: 0)
+    # secrets: values the recorder masked in this test; a value attribute equal to one, or to a
+    # RAIDER_SECRET_* value, is blanked whatever the field's type is now.
+    def self.sanitize(html, css:, skipped: 0, secrets: [])
       html = html.to_s.gsub(SCRIPT, '')
       html = html.gsub(STYLE, '') if css
       links = 0
@@ -760,7 +772,7 @@ module TraceHelper
         attributes = tag[2].to_enum(:scan, ATTRIBUTE).map { Regexp.last_match }
         next '' if removed?(tag[1].downcase, attributes) { links += 1 }
 
-        clean(tag[0], tag[1], attributes)
+        clean(tag[0], tag[1], attributes, secrets)
       end
       html = counted(html, css ? skipped : links)
       css ? with_style(html, css) : html
@@ -776,13 +788,23 @@ module TraceHelper
       true
     end
 
-    def self.clean(original, name, attributes)
-      secret = name.casecmp?('input') && secret?(attributes)
+    def self.clean(original, name, attributes, secrets)
+      field = name.casecmp?('input') && secret?(attributes)
       kept = attributes.reject { |attribute| unsafe?(attribute) }
-      return original if kept.size == attributes.size && !secret
+      parts = kept.map { |attribute| blank?(attribute, field, secrets) ? 'value=""' : attribute[0] }
+      return original if parts == attributes.map { |attribute| attribute[0] }
 
-      parts = kept.map { |attribute| secret && attribute[1].casecmp?('value') ? 'value=""' : attribute[0] }
       rebuilt(original, name, parts)
+    end
+
+    # A value attribute of a secret field, or one holding a secret value.
+    def self.blank?(attribute, field, secrets)
+      return false unless attribute[1].casecmp?('value')
+
+      value = attribute_value(attribute)
+      return false if value.empty?
+
+      field || secrets.include?(value) || TraceHelper.secret_value?(value)
     end
 
     def self.rebuilt(original, name, parts)
