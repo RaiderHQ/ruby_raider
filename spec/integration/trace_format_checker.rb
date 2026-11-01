@@ -83,6 +83,7 @@ module TraceFormatChecker
     problems << "#{where}.parent_index #{parent} is not an earlier step" if parent && !parent.between?(1, position)
     problems.concat(error_rules(where, step))
     problems.concat(locator_rules(where, step['locator']))
+    problems.concat(typed_rules(where, step))
     problems.concat(media_rules(where, step, names))
   end
 
@@ -104,6 +105,19 @@ module TraceFormatChecker
       strategy = one['strategy']
       "#{where}.locator strategy #{strategy.inspect} is not canonical" unless STRATEGIES.include?(strategy)
     end
+  end
+
+  # value and secret exist only on send_keys and select_by; a secret value is null.
+  # element, when present, is { tag, label?, role? } on an action step.
+  def self.typed_rules(where, step)
+    problems = []
+    typed = %w[send_keys select_by].include?(step['action'])
+    problems << "#{where} has value/secret but is not send_keys or select_by" if !typed && (step.key?('value') || step.key?('secret'))
+    problems << "#{where} is #{step['action']} without value and secret" if typed && !(step.key?('value') && step.key?('secret'))
+    problems << "#{where}.secret is true but value is not null" if step['secret'] == true && !step['value'].nil?
+    element = step['element']
+    problems << "#{where}.element is not an action step's { tag, label?, role? }" if step.key?('element') && !(element.is_a?(Hash) && element['tag'].is_a?(String) && step['kind'] == 'action')
+    problems
   end
 
   def self.media_rules(where, step, names)

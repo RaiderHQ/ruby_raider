@@ -327,11 +327,12 @@ module WaitHelper
     # target: a second Lookup (the drop target) that must be visible in the same poll.
     # between: called after each poll that was not ready (scroll_to scrolls there); once it
     # returns false the wait stops, and the timeout message ends with its to_s.
-    def perform_action(action, locator, checks, target: nil, between: nil, &block)
+    # args: what the action acts with (send_keys' keys, select_by's how and what), for the observer.
+    def perform_action(action, locator, checks, target: nil, between: nil, args: nil, &block)
       lookup = locator.is_a?(Lookup) ? locator : Lookup.for(@driver, locator, {})
       return poll(action, lookup, checks, target, between, nil, &block) unless WaitHelper.observer
 
-      observed(action, lookup) { |run| poll(action, lookup, checks, target, between, run, &block) }
+      observed(action, lookup, args) { |run| poll(action, lookup, checks, target, between, run, &block) }
     end
 
     # Retries the block until it passes. Calls inside it share its deadline (see deadline_and_wait).
@@ -352,13 +353,13 @@ module WaitHelper
 
     private
 
-    # Tells the observer an action started and how it ended. The block gets a run
-    # hash that poll fills with the retries it took and the ready element.
-    def observed(action, lookup)
-      run = { retries: 0, element: nil }
-      token = WaitHelper.report(:action_started) do
+    # Tells the observer an action started, when its element is ready and how it ended. The
+    # block gets a run hash that poll fills with the retries it took and the ready element.
+    def observed(action, lookup, args)
+      run = { retries: 0, element: nil, token: nil }
+      token = run[:token] = WaitHelper.report(:action_started) do
         { action: action, locator: lookup.trace_locator, within: lookup.trace_within,
-          source: Observation.source, label: Observation.label }
+          source: Observation.source, label: Observation.label, args: args }
       end
       started = now
       begin
@@ -385,7 +386,7 @@ module WaitHelper
         seen = catch(:not_ready) do
           elements = [ready(lookup, checks)]
           elements << ready(target, TARGET_CHECKS, 'drop target ') if target
-          run[:element] = elements.first if run
+          ready_to_act(run, elements.first) if run
           return yield(*elements)
         rescue *RETRIED => e
           retry_reason(lookup, e, action)
@@ -400,6 +401,13 @@ module WaitHelper
         run[:retries] += 1 if run
         pause(deadline)
       end
+    end
+
+    # Keeps the ready element and tells the observer, just before the action runs on it.
+    def ready_to_act(run, element)
+      run[:element] = element
+      token = run[:token]
+      WaitHelper.report(:action_ready, token, element: element) if token
     end
 
     def retry_block(run)

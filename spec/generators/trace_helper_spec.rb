@@ -50,11 +50,28 @@ describe 'Generated TraceHelper' do
     TraceHelper.recorder_for(driver, **lambdas).tap(&:start)
   end
 
-  # What WaitHelper reports for one action.
-  def act(recorder, action, selector, status: :passed, error: nil, label: nil, within: [])
+  # What WaitHelper reports for one action. With an element, it was found ready (action_ready).
+  def act(recorder, action, selector, status: :passed, error: nil, label: nil, within: [], args: nil, element: nil)
     token = recorder.action_started(action: action, locator: { strategy: 'id', selector: selector }, within: within,
-                                    source: source, label: label)
-    recorder.action_finished(token, status: status, waited_ms: 95, retries: 1, error: error, element: nil)
+                                    source: source, label: label, args: args)
+    recorder.action_ready(token, element: element) if element
+    recorder.action_finished(token, status: status, waited_ms: 95, retries: 1, error: error, element: element)
+  end
+
+  # What Page.capture's script answers: the inlined CSS, the sheets it could not read and the title.
+  def page_script(css: '', skipped: 0, title: 'Login')
+    allow(driver).to receive(:execute_script).with(/styleSheets/).and_return('css' => css, 'skipped' => skipped, 'title' => title)
+  end
+
+  # What Page.element_info's script answers for one element.
+  def element_script(element, secret: false, tag: 'input', label: 'Password', role: 'textbox')
+    info = { 'rect' => { 'x' => 640, 'y' => 312, 'width' => 320, 'height' => 40 }, 'tag' => tag, 'label' => label,
+             'role' => role, 'secret' => secret }
+    allow(driver).to receive(:execute_script).with(/getBoundingClientRect/, element).and_return(info)
+  end
+
+  def snapshot_of(path, index)
+    Zip::File.open(path) { |zip| zip.read(format('steps/%04d.html', index)) }
   end
 
   def kept(recorder, test = failed_test)
@@ -214,6 +231,144 @@ describe 'Generated TraceHelper' do
     expect(TraceHelper.enabled?).to be(true)
   end
 
+  describe 'snapshots' do
+    def sanitize(page, css: '', skipped: 0)
+      TraceHelper::Snapshot.sanitize(page, css: css, skipped: skipped)
+    end
+
+    it 'strips script, on* handlers, javascript: urls, base and meta refresh' do
+      page = <<~HTML
+        <html><head><base href="https://example.test/"><meta http-equiv="Refresh" content="0;url=/x"><meta charset="utf-8">
+        <script src="/app.js"></script><SCRIPT type="module">alert("<p>")</SCRIPT></head>
+        <body onload="go()"><a href=" javascript:alert(1)" class="x">a</a><img src='JavaScript:evil()' alt="i">
+        <a href="/ok" onclick='x()'>ok</a><button onClick=go type="button">b</button><p title="a > b">t</p></body></html>
+      HTML
+      clean = sanitize(page)
+
+      expect(clean).not_to match(/script|onload|onclick|javascript:|<base|refresh/i)
+      expect(clean).to include('<meta charset="utf-8">', '<a class="x">a</a>', '<img alt="i">', '<a href="/ok">ok</a>',
+                               '<button type="button">b</button>', '<p title="a > b">t</p>', '<body>')
+    end
+
+    it 'inlines the page CSS in place of stylesheet links and counts skipped cross-origin sheets' do
+      page_script(css: "body { color: red; }\np::after { content: \"</style>\"; }", skipped: 2)
+      allow(driver).to receive(:page_source).and_return(<<~HTML)
+        <html lang="en"><head><link rel="stylesheet" href="/a.css"><link href="https://cdn.test/b.css" REL='Stylesheet'>
+        <style>p { margin: 0; }</style><link rel="icon" href="/favicon.ico"></head><body><p>hi</p></body></html>
+      HTML
+      recorder = started_recorder
+      recorder.navigated('https://example.test/login')
+      path = recorder.stop(keep: true, test: failed_test)
+      snapshot = snapshot_of(path, 1)
+
+      expect(TraceFormatChecker.problems(path)).to eq([])
+
+      expect(snapshot.scan(/<style/i).size).to eq(1)
+      expect(snapshot).to include('<html lang="en" data-raider-skipped-sheets="2">', 'body { color: red; }',
+                                  'content: "<\\/style>"', '<link rel="icon" href="/favicon.ico">', '<p>hi</p>')
+      expect(snapshot).not_to match(/stylesheet|margin: 0/i)
+    end
+
+    it 'adds no base element' do
+      clean = sanitize('<html><head><title>t</title></head><body><a href="/x">x</a></body></html>', css: 'a { color: red; }')
+
+      expect(clean).not_to match(/<base/i)
+      expect(clean).to include('<html data-raider-skipped-sheets="0">', '<style>a { color: red; }</style></head>')
+    end
+  end
+
+  describe 'typed values and element info' do
+    let(:field) { double('field') }
+
+    before { page_script }
+
+    def typed_step(recorder, args, action: :send_keys)
+      act(recorder, action, 'field', args: args, element: field)
+      kept(recorder)['steps'].last
+    end
+
+    it 'masks a password field: value null, secret true, and a blank value attribute in the snapshot' do
+      element_script(field, secret: true)
+      allow(driver).to receive(:page_source).and_return('<html><body><input type="password" name="pw" value="hunter2"></body></html>')
+      recorder = started_recorder
+      act(recorder, :send_keys, 'pw', args: ['hunter2'], element: field)
+      path = recorder.stop(keep: true, test: failed_test)
+      step = TraceFormatChecker.read(path).first['steps'].last
+
+      expect(TraceFormatChecker.problems(path)).to eq([])
+      expect(step).to include('value' => nil, 'secret' => true)
+      expect(snapshot_of(path, 1)).to include('<input type="password" name="pw" value="">')
+      expect(Zip::File.open(path) { |zip| zip.entries.map { |entry| zip.read(entry.name) }.join }).not_to include('hunter2')
+    end
+
+    it 'masks a type=text field whose autocomplete contains password' do
+      element_script(field, secret: true)
+      clean = TraceHelper::Snapshot.sanitize(
+        "<input value='s3cret' AUTOCOMPLETE=\"New-Password\" type=text><input value=keep type=text autocomplete=username>",
+        css: nil, skipped: 0
+      )
+
+      expect(typed_step(started_recorder, ['s3cret'])).to include('value' => nil, 'secret' => true)
+      expect(clean).to eq('<input value="" AUTOCOMPLETE="New-Password" type=text><input value=keep type=text autocomplete=username>')
+    end
+
+    context 'with a RAIDER_SECRET_* value set' do
+      let(:env) { { 'RAIDER_SECRET_ADMIN' => 'pa55word' } }
+
+      it 'masks a value equal to a RAIDER_SECRET_* env value typed into a plain field' do
+        element_script(field, secret: false, label: 'Notes')
+        recorder = started_recorder
+        act(recorder, :send_keys, 'notes', args: ['pa55word'], element: field)
+        act(recorder, :send_keys, 'notes', args: ['pa55word', :enter], element: field)
+        steps = kept(recorder)['steps']
+
+        expect(steps.map { |step| step.values_at('value', 'secret') }).to eq([[nil, true], [nil, true]])
+      end
+    end
+
+    it 'keeps other typed values as typed' do
+      element_script(field, secret: false)
+      recorder = started_recorder
+      act(recorder, :send_keys, 'user', args: ['admin', :enter], element: field)
+      act(recorder, :select_by, 'colour', args: [:text, 'Blue'], element: field)
+      act(recorder, :click, 'go', element: field)
+      steps = kept(recorder)['steps']
+
+      expect(steps.map { |step| step.values_at('value', 'secret') }).to eq([['admin{enter}', false], ['Blue', false], [nil, nil]])
+      expect(steps.last.keys).not_to include('value', 'secret')
+    end
+
+    it 'records rect, element tag, label and role from element_info' do
+      element_script(field, tag: 'button', label: 'Log in', role: 'button')
+      recorder = started_recorder
+      act(recorder, :click, 'go', element: field)
+      act(recorder, :text, 'go', element: field)
+      steps = kept(recorder)['steps']
+
+      expect(steps.first).to include('rect' => { 'x' => 640, 'y' => 312, 'width' => 320, 'height' => 40 },
+                                     'element' => { 'tag' => 'button', 'label' => 'Log in', 'role' => 'button' })
+      expect(steps.first.keys.first(8)).to eq(%w[index parent_index kind action locator element url page_title])
+      expect(steps.last).to include('rect' => nil)
+      expect(steps.last.keys).not_to include('element')
+      expect(driver).to have_received(:execute_script).with(/getBoundingClientRect/, field).once
+    end
+
+    it 'skips the screenshot while an alert is open' do
+      alert = { open: true }
+      stub_const('VideoHelper', Module.new { define_singleton_method(:alert_open?) { |_driver| alert[:open] } })
+      shots = []
+      recorder = started_recorder(screenshot: ->(_driver) { shots << :shot && [png, 'png'] })
+      act(recorder, :click, 'go', element: field)
+      alert[:open] = false
+      act(recorder, :click, 'ok', element: field)
+      steps = kept(recorder)['steps']
+
+      expect(steps.map { |step| step.values_at('screenshot', 'snapshot') }).to eq([[nil, nil], ['steps/0002.png', 'steps/0002.html']])
+      expect(shots).to eq([:shot])
+      expect(driver).to have_received(:page_source).once
+    end
+  end
+
   describe 'size cap' do
     let(:shot_bytes) { 4000 }
 
@@ -350,7 +505,7 @@ describe 'Generated TraceHelper' do
       expect(methods).to eq('trace.json' => Zip::Entry::DEFLATED, 'steps/0001.png' => Zip::Entry::STORED,
                             'steps/0001.html' => Zip::Entry::DEFLATED)
       expect(zip.read('steps/0001.png')).to eq(png)
-      expect(zip.read('steps/0001.html')).to eq(html)
+      expect(zip.read('steps/0001.html')).to eq(html.sub('<html>', '<html data-raider-skipped-sheets="0">'))
     end
   end
 

@@ -19,6 +19,9 @@ module TraceHelper
   PRODUCER = { name: 'ruby_raider', version: '<%= ruby_raider_version %>' }.freeze
   # Only these get a screenshot and a snapshot; query actions cost almost nothing.
   MEDIA_ACTIONS = %w[navigate click send_keys clear submit select_by hover drag_and_drop scroll_into_view].freeze
+  # Only these record what was typed or selected, as value (null when secret).
+  TYPED_ACTIONS = %w[send_keys select_by].freeze
+  SECRET_ENV_PREFIX = 'RAIDER_SECRET_'
 
   @disabled = false
   @warned = false
@@ -97,6 +100,11 @@ module TraceHelper
       error && { class: error.class.name, message: error.message }
     end
 
+    # True when a typed value equals a RAIDER_SECRET_* environment value.
+    def secret_value?(value)
+      ENV.any? { |name, secret| name.start_with?(SECRET_ENV_PREFIX) && !secret.to_s.empty? && secret == value }
+    end
+
     private
 
     def null_recorder
@@ -125,9 +133,10 @@ module TraceHelper
 
   # One step of the timeline. parent is the enclosing group Step; the index is given
   # when the trace is written, after max_steps and eventually have dropped steps.
+  # element is the format's { tag, label, role }; secret is true, false, or nil while the field is unknown.
   Step = Struct.new(:seq, :parent, :kind, :action, :locator, :url, :page_title, :started_at, :clock, :duration_ms,
                     :waited_ms, :retries, :status, :error, :source, :rect, :screenshot, :snapshot, :element,
-                    keyword_init: true) do
+                    :value, :secret, keyword_init: true) do
     def finish(status, error)
       self.status = status.to_s
       self.error = error
@@ -141,10 +150,18 @@ module TraceHelper
     end
 
     def as_json(index, parent_index, media)
-      { index: index, parent_index: parent_index, kind: kind, action: action, locator: locator, url: url,
-        page_title: page_title, started_at: started_at, duration_ms: duration_ms.to_i, waited_ms: waited_ms.to_i,
-        retries: retries.to_i, status: status, error: TraceHelper.error_json(error), source: source, rect: rect,
-        screenshot: media[:screenshots], snapshot: media[:snapshots] }
+      json = { index: index, parent_index: parent_index, kind: kind, action: action, locator: locator }
+      json[:element] = element if element
+      json.update(typed) if TYPED_ACTIONS.include?(action)
+      json.update(url: url, page_title: page_title, started_at: started_at, duration_ms: duration_ms.to_i,
+                  waited_ms: waited_ms.to_i, retries: retries.to_i, status: status, error: TraceHelper.error_json(error),
+                  source: source, rect: rect, screenshot: media[:screenshots], snapshot: media[:snapshots])
+    end
+
+    # A field whose secrecy could not be read (it was never ready, or its script failed) is masked too.
+    def typed
+      masked = secret != false
+      { value: masked ? nil : value, secret: masked }
     end
   end
 
@@ -174,19 +191,29 @@ module TraceHelper
       discard
     end
 
-    # Returns the step as the token WaitHelper hands back.
-    def action_started(action:, locator:, within:, source:, label:)
+    # Returns the step as the token WaitHelper hands back. args: send_keys' keys or select_by's how and what.
+    def action_started(action:, locator:, within:, source:, label:, args: nil)
       record('action') do
-        add(kind: 'action', action: action.to_s, locator: trace_locator(locator, within, label), source: source)
+        step = add(kind: 'action', action: action.to_s, locator: trace_locator(locator, within, label), source: source)
+        typed(step, Array(args)) if TYPED_ACTIONS.include?(step.action)
+        step
       end
     end
 
-    def action_finished(step, status:, waited_ms:, retries:, error:, element:)
+    # The element is ready and the action is about to run: its rect, what it is, and whether it is secret.
+    # Query actions skip it, to stay cheap.
+    def action_ready(step, element:)
+      record('action') do
+        element_info(step, element) if element && MEDIA_ACTIONS.include?(step.action)
+        nil
+      end
+    end
+
+    def action_finished(step, status:, waited_ms:, retries:, error:, **)
       record('action') do
         step.finish(status, error)
         step.waited_ms = waited_ms
         step.retries = retries
-        step.element = element
         capture_step_media(step) if MEDIA_ACTIONS.include?(step.action)
         nil
       end
@@ -240,12 +267,20 @@ module TraceHelper
       record('console') { event(:console, hash) }
     end
 
-    # The screenshot and the page HTML after a step, and the page it ended on.
-    # One that fails is left out (null in the trace); the step is still kept.
+    # The screenshot and the sanitised page HTML after a step, and the page it ended on.
+    # One that fails is left out (null in the trace); the step is still kept. While an
+    # alert is open nothing is read: any page command would dismiss it.
     def capture_step_media(step)
-      read_page(step)
+      return nil if alert_open?
+
+      page = Page.capture(@driver, @snapshot)
+      read_page(step, page)
       step.screenshot = media(step, 'screenshot') { @screenshot.call(@driver) }
-      step.snapshot = media(step, 'snapshot') { [@snapshot.call(@driver), 'html'] }
+      step.snapshot = media(step, 'snapshot') do
+        raise page[:error] unless page[:html]
+
+        [Snapshot.sanitize(page[:html], css: page[:css], skipped: page[:skipped_sheets]), 'html']
+      end
       nil
     end
 
@@ -329,13 +364,41 @@ module TraceHelper
       WaitHelper::Observation.source if defined?(WaitHelper::Observation)
     end
 
-    # A step whose page cannot be read keeps the URL it started with.
-    def read_page(step)
-      @page = { url: @driver.current_url, page_title: @driver.title }
+    # The value as typed: strings as they are, keys such as :enter as {enter}; select_by's what.
+    def typed(step, args)
+      shown = step.action == 'select_by' ? args.last.to_s : args.flatten.map { |key| key_name(key) }.join
+      step.value = shown
+      strings = args.flatten.grep(String)
+      step.secret = true if [shown, *strings].any? { |each_value| TraceHelper.secret_value?(each_value) }
+    end
+
+    def key_name(key)
+      key.is_a?(Symbol) ? "{#{key}}" : key.to_s
+    end
+
+    def element_info(step, element)
+      info = Page.element_info(@driver, element)
+      return unless info
+
+      step.rect = info[:rect]
+      step.element = info[:element]
+      step.secret = info[:secret] || step.secret || false unless info[:secret].nil?
+    end
+
+    # VideoHelper's check, called rather than copied; without the video helper there is no check.
+    def alert_open?
+      return false unless defined?(VideoHelper) && VideoHelper.respond_to?(:alert_open?)
+
+      VideoHelper.alert_open?(@driver) == true
+    rescue StandardError
+      false
+    end
+
+    # A step whose page cannot be read keeps the URL and title it started with.
+    def read_page(step, page)
+      @page = { url: page[:url] || @page[:url], page_title: page[:page_title] || @page[:page_title] }
       step.url = @page[:url]
       step.page_title = @page[:page_title]
-    rescue StandardError
-      nil
     end
 
     def media(step, kind)
@@ -590,6 +653,167 @@ module TraceHelper
 
     def cleanup
       nil
+    end
+  end
+end
+
+# What a step reads from the page, and the snapshot made of its HTML. Kept apart from the
+# recorder above. Every script is guarded: one that fails leaves its fields nil.
+module TraceHelper
+  # Reads the page through the driver, one execute_script per call.
+  module Page
+    # The cssText of every enabled sheet in document order, @import and media kept; a
+    # sheet whose rules cannot be read (cross-origin) is skipped and counted. ES5 only.
+    STYLES = <<~'JS'
+      var skipped = 0;
+      function read(sheet) {
+        var rules = null, parts = [], media = sheet.media && sheet.media.mediaText;
+        try { rules = sheet.cssRules; } catch (e) { rules = null; }
+        if (!rules) { skipped += 1; return ''; }
+        for (var i = 0; i < rules.length; i += 1) {
+          parts.push(rules[i].styleSheet ? read(rules[i].styleSheet) : rules[i].cssText);
+        }
+        var text = parts.join('\n');
+        return media && media !== 'all' ? '@media ' + media + ' {\n' + text + '\n}' : text;
+      }
+      var css = [];
+      for (var i = 0; i < document.styleSheets.length; i += 1) {
+        if (!document.styleSheets[i].disabled) { css.push(read(document.styleSheets[i])); }
+      }
+      return { css: css.join('\n'), skipped: skipped, title: document.title };
+    JS
+    # The element's viewport rect and what a person would call it. ES5 only.
+    ELEMENT = <<~'JS'
+      var el = arguments[0], box = el.getBoundingClientRect(), tag = el.tagName.toLowerCase();
+      var type = (el.getAttribute('type') || '').toLowerCase();
+      var text = (el.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+      var roles = { button: 'button', textarea: 'textbox', select: 'combobox' };
+      var role = el.getAttribute('role') || roles[tag] || null;
+      if (!role && tag === 'a' && el.hasAttribute('href')) { role = 'link'; }
+      if (!role && tag === 'input') {
+        if (type === 'checkbox') { role = 'checkbox'; }
+        else if (['button', 'submit', 'reset', 'image'].indexOf(type) >= 0) { role = 'button'; }
+        else if (['', 'text', 'email', 'password', 'search', 'tel', 'url'].indexOf(type) >= 0) { role = 'textbox'; }
+      }
+      var autocomplete = (el.getAttribute('autocomplete') || '').toLowerCase();
+      return { rect: { x: box.x, y: box.y, width: box.width, height: box.height }, tag: tag,
+               label: text || el.getAttribute('aria-label') || el.getAttribute('placeholder') || null, role: role,
+               secret: type === 'password' || autocomplete.indexOf('password') >= 0 };
+    JS
+
+    # { html:, css:, skipped_sheets:, page_title:, url: }, plus error: when the HTML could not be read.
+    # source reads the HTML (the recorder's snapshot lambda, page_source by default).
+    def self.capture(driver, source = :page_source.to_proc)
+      styles = script(driver, STYLES) || {}
+      page = { css: styles['css'], skipped_sheets: styles['skipped'].to_i,
+               page_title: styles['title'] || read { driver.title }, url: read { driver.current_url } }
+      page.merge(html: source.call(driver))
+    rescue StandardError => e
+      (page || {}).merge(html: nil, error: e)
+    end
+
+    # { rect:, element: { tag:, label:, role: }, secret: }, or nil when the script fails.
+    def self.element_info(driver, element)
+      info = script(driver, ELEMENT, element)
+      return unless info
+
+      { rect: info['rect'], element: { tag: info['tag'], label: info['label'], role: info['role'] }.compact,
+        secret: info['secret'] }
+    end
+
+    # The script's Hash, or nil when it raised or answered something else.
+    def self.script(driver, source, *args)
+      result = driver.execute_script(source, *args)
+      result.is_a?(Hash) ? result : nil
+    rescue StandardError
+      nil
+    end
+
+    def self.read
+      yield
+    rescue StandardError
+      nil
+    end
+  end
+
+  # Makes page HTML safe to keep and to open offline. Scans the HTML string (no parser in a
+  # generated project); viewers sanitise again, so the aim is that real pages come out right.
+  module Snapshot
+    SCRIPT = %r{<script\b[^>]*>.*?</script\s*>|</?script\b[^>]*>}mi.freeze
+    STYLE = %r{<style\b[^>]*>.*?</style\s*>}mi.freeze
+    # A start tag, its attributes allowed to hold a quoted '>'.
+    TAG = /<([a-zA-Z][\w:.-]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/.freeze
+    ATTRIBUTE = %r{([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?}.freeze
+    URL_ATTRIBUTES = %w[href src action formaction xlink:href].freeze
+    SKIPPED_ATTRIBUTE = 'data-raider-skipped-sheets'
+
+    # Removes scripts, on* handlers, javascript: URLs, <base> and meta refresh; blanks the value of
+    # secret inputs. With css (Page.capture's), one <style> holding it replaces every stylesheet
+    # link and <style>. <html> gets data-raider-skipped-sheets: the sheets that could not be read.
+    # Never adds a <base>: a viewer must not fetch from the site under test.
+    def self.sanitize(html, css:, skipped: 0)
+      html = html.to_s.gsub(SCRIPT, '')
+      html = html.gsub(STYLE, '') if css
+      links = 0
+      html = html.gsub(TAG) do
+        tag = Regexp.last_match
+        attributes = tag[2].to_enum(:scan, ATTRIBUTE).map { Regexp.last_match }
+        next '' if removed?(tag[1].downcase, attributes) { links += 1 }
+
+        clean(tag[0], tag[1], attributes, css ? skipped : links)
+      end
+      css ? with_style(html, css) : html
+    end
+
+    # A <base>, a meta refresh or a stylesheet link (which yields, to be counted).
+    def self.removed?(tag, attributes)
+      return true if tag == 'base'
+      return value(attributes, 'http-equiv').casecmp?('refresh') if tag == 'meta'
+      return false unless tag == 'link' && value(attributes, 'rel').downcase.split.include?('stylesheet')
+
+      yield
+      true
+    end
+
+    def self.clean(original, name, attributes, skipped)
+      tag = name.downcase
+      secret = tag == 'input' && secret?(attributes)
+      kept = attributes.reject { |attribute| unsafe?(attribute) || (tag == 'html' && attribute[1].casecmp?(SKIPPED_ATTRIBUTE)) }
+      return original if kept.size == attributes.size && !secret && tag != 'html'
+
+      parts = kept.map { |attribute| secret && attribute[1].casecmp?('value') ? 'value=""' : attribute[0] }
+      parts << %(#{SKIPPED_ATTRIBUTE}="#{skipped.to_i}") if tag == 'html'
+      slash = original.match?(%r{/\s*>\z}) ? ' /' : ''
+      "<#{[name, *parts].join(' ')}#{slash}>"
+    end
+
+    def self.unsafe?(attribute)
+      name = attribute[1].downcase
+      return true if name.start_with?('on')
+
+      URL_ATTRIBUTES.include?(name) && attribute_value(attribute).gsub(/[\x00-\x20]/, '').match?(/\Ajavascript:/i)
+    end
+
+    def self.secret?(attributes)
+      value(attributes, 'type').casecmp?('password') || value(attributes, 'autocomplete').downcase.include?('password')
+    end
+
+    def self.value(attributes, name)
+      attribute = attributes.find { |each_attribute| each_attribute[1].casecmp?(name) }
+      attribute ? attribute_value(attribute) : ''
+    end
+
+    def self.attribute_value(attribute)
+      attribute[2] || attribute[3] || attribute[4] || ''
+    end
+
+    # One <style> at the end of <head>, or after <html> when there is no head.
+    def self.with_style(html, css)
+      style = "<style>#{css.gsub(%r{</(style)}i) { "<\\/#{Regexp.last_match(1)}" }}</style>"
+      return html.sub(%r{</head\s*>}i) { "#{style}#{Regexp.last_match(0)}" } if html.match?(%r{</head\s*>}i)
+      return html.sub(/<html\b(?:[^>"']|"[^"]*"|'[^']*')*>/i) { "#{Regexp.last_match(0)}#{style}" } if html.match?(/<html\b/i)
+
+      style + html
     end
   end
 end

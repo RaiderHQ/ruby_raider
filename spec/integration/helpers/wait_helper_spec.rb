@@ -487,7 +487,7 @@ describe 'WaitHelper' do
           end
         end
 
-        %i[action_finished group_retried group_finished].each do |hook|
+        %i[action_ready action_finished group_retried group_finished].each do |hook|
           define_method(hook) do |token, **details|
             @calls << [hook, token, details]
           end
@@ -511,12 +511,39 @@ describe 'WaitHelper' do
       line = __LINE__ + 1
       page.click({ id: 'go' }, timeout: 1)
 
-      expect(observer.calls.first(2).map(&:first)).to eq(%i[action_started action_finished])
+      expect(observer.calls.map(&:first)).to eq(%i[action_started action_ready action_finished])
       expect(started.first).to include(action: :click, locator: { strategy: 'id', selector: 'go' }, within: [], label: nil,
                                        source: { file: Pathname(__FILE__).relative_path_from(Dir.pwd).to_s, line: line })
-      expect(observer.calls[1][1]).to eq(0)
+      expect(observer.calls[2][1]).to eq(0)
       expect(finished.first).to include(status: :passed, retries: 2, error: nil, element: button)
       expect(finished.first[:waited_ms]).to be_between(50, 500)
+    end
+
+    it 'reports the keys of send_keys and how and what of select_by as args, and nil args for other actions' do
+      driver.script({ id: 'user' }, element)
+      driver.script({ id: 'colour' }, WaitHelperSpec::FakeSelect.new)
+      page.send_keys({ id: 'user' }, 'admin', :enter, timeout: 1)
+      page.select_by({ id: 'colour' }, :text, 'Blue', timeout: 1)
+      page.click({ id: 'user' }, timeout: 1)
+
+      expect(started.map { |event| event.values_at(:action, :args) })
+        .to eq([[:send_keys, ['admin', :enter]], [:select_by, [:text, 'Blue']], [:click, nil]])
+    end
+
+    it 'reports action_ready with the ready element before the action block runs' do
+      field = element
+      driver.script({ id: 'user' }, nil, field)
+      log_when_ready = []
+      allow(observer).to receive(:action_ready).and_wrap_original do |original, token, **details|
+        log_when_ready << details[:element].log.dup
+        original.call(token, **details)
+      end
+      page.send_keys({ id: 'user' }, 'admin', timeout: 1)
+
+      expect(observer.calls.map(&:first)).to eq(%i[action_started action_ready action_finished])
+      expect(observer.calls[1]).to eq([:action_ready, 0, { element: field }])
+      expect(log_when_ready).to eq([[]])
+      expect(field.log).to eq([[:send_keys, 'admin']])
     end
 
     it 'reports a chained find with within, outermost first' do
