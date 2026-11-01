@@ -35,10 +35,12 @@ module WaitHelper
 
     # Calls the observer's hook, or returns nil without one. A broken observer must
     # never fail a test: it is warned about once and removed.
+    # A block builds the details, so computing them is covered by the same rescue.
     def report(hook, *args, **details)
       current = observer
       return unless current
 
+      details = yield if block_given?
       current.public_send(hook, *args, **details)
     rescue StandardError => e
       warn "[trace] observer stopped: #{e.class}: #{e.message}"
@@ -336,7 +338,7 @@ module WaitHelper
     def eventually(&block)
       return retry_block(nil, &block) unless WaitHelper.observer
 
-      token = WaitHelper.report(:group_started, action: :eventually, source: Observation.source)
+      token = WaitHelper.report(:group_started) { { action: :eventually, source: Observation.source } }
       run = { retries: 0 }
       begin
         result = retry_block(run, &block)
@@ -353,11 +355,12 @@ module WaitHelper
     # Tells the observer an action started and how it ended. The block gets a run
     # hash that poll fills with the retries it took and the ready element.
     def observed(action, lookup)
-      started = now
       run = { retries: 0, element: nil }
-      token = WaitHelper.report(:action_started, action: action, locator: lookup.trace_locator,
-                                                 within: lookup.trace_within, source: Observation.source,
-                                                 label: Observation.label)
+      token = WaitHelper.report(:action_started) do
+        { action: action, locator: lookup.trace_locator, within: lookup.trace_within,
+          source: Observation.source, label: Observation.label }
+      end
+      started = now
       begin
         result = yield(run)
         finished(token, :passed, started, run, nil)
@@ -509,7 +512,7 @@ module WaitHelper
 
     # The method name of the nearest calling frame in a page_objects/ directory, or nil.
     def self.label
-      caller_locations.find { |location| location.path.include?(PAGE_OBJECTS) }&.base_label
+      caller_locations.find { |location| (location.absolute_path || location.path).include?(PAGE_OBJECTS) }&.base_label
     end
 
     def self.project?(path)

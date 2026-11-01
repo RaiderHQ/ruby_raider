@@ -576,6 +576,16 @@ describe 'WaitHelper' do
       expect(started.first[:source][:file]).to end_with('page_objects/login.rb')
     end
 
+    it 'drops the observer, warns once, and still clicks when working out the source raises' do
+      button = element
+      driver.script({ id: 'go' }, button)
+      allow(Dir).to receive(:pwd).and_raise(Errno::ENOENT)
+
+      expect { 2.times { page.click({ id: 'go' }, timeout: 1) } }.to output(/\A\[trace\] observer stopped: Errno::ENOENT.*\n\z/).to_stderr
+      expect(button.log).to eq([%i[click]] * 2)
+      expect(WaitHelper.observer).to be_nil
+    end
+
     it 'drops an observer that raises, warns once, and still clicks' do
       allow(observer).to receive(:action_started).and_raise('boom')
       button = element
