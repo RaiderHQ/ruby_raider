@@ -35,7 +35,7 @@ describe 'Generated projects pass their own RuboCop' do
 
   def lint(dir)
     report, exit_code = capture_rubocop_json(['--config', File.join(dir, '.rubocop.yml'), '--cache', 'false',
-                                   '--format', 'json', dir])
+                                              '--format', 'json', dir])
     offenses = report.fetch('files').flat_map do |file|
       path = file.fetch('path').delete_prefix("#{dir}/")
       file.fetch('offenses').map do |offense|
