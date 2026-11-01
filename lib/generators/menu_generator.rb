@@ -77,10 +77,7 @@ class MenuGenerator
     end
   end
 
-  # Watir templates are frozen, so Watir projects always get the example tests and skip this question
   def select_examples(framework, automation_type)
-    return select_accessibility(framework, automation_type, examples: true) if automation_type == 'watir'
-
     prompt.select('Do you want example tests?') do |menu|
       menu.choice :Yes, -> { select_accessibility(framework, automation_type, examples: true) }
       menu.choice :No, -> { select_accessibility(framework, automation_type, examples: false) }
@@ -151,6 +148,5 @@ class MenuGenerator
   def automation_options(menu)
     menu.choice :Selenium, -> { choose_test_framework('selenium') }
     menu.choice :Appium, -> { choose_test_framework('appium') }
-    menu.choice :Watir, -> { choose_test_framework('watir') }
   end
 end

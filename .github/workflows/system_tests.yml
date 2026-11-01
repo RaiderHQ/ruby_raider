@@ -39,7 +39,7 @@ jobs:
         run: bundle exec rspec spec/system/selenium_spec.rb --format documentation
 
   watir:
-    name: Watir frameworks
+    name: Watir frameworks (deprecated)
     needs: setup
     runs-on: ubuntu-latest
     steps:

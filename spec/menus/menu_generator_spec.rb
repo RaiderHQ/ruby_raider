@@ -21,8 +21,9 @@ RSpec.describe MenuGenerator do
 
       expect(menu).to have_received(:choice).with(:Selenium, anything)
       expect(menu).to have_received(:choice).with(:Appium, anything)
-      expect(menu).to have_received(:choice).with(:Watir, anything)
       expect(menu).to have_received(:choice).with(:Quit, anything)
+      expect(menu).not_to have_received(:choice).with(:Watir, anything)
+      expect(menu).to have_received(:choice).exactly(3).times
     end
   end
 
@@ -265,16 +266,6 @@ RSpec.describe MenuGenerator do
       expect(menu_generator).to have_received(:generate_framework).with(
         hash_including(automation: 'ios', framework: 'cucumber', examples: false)
       )
-    end
-
-    it 'is skipped for watir, which always gets the examples' do
-      allow(prompt).to receive(:select)
-      allow(menu_generator).to receive(:select_accessibility)
-
-      menu_generator.send(:select_examples, 'Rspec', 'watir')
-
-      expect(prompt).not_to have_received(:select).with('Do you want example tests?')
-      expect(menu_generator).to have_received(:select_accessibility).with('Rspec', 'watir', examples: true)
     end
   end
 end

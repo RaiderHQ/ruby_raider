@@ -33,10 +33,12 @@ Ruby Raider is a CLI gem for scaffolding and generating UI test automation frame
 
 ### Web Testing
 
-| Test Framework | Selenium | Watir |
-|----------------|----------|-------|
-| RSpec          | ✅       | ✅    |
-| Cucumber       | ✅       | ✅    |
+| Test Framework | Selenium | Watir (deprecated) |
+|----------------|----------|--------------------|
+| RSpec          | ✅       | ✅                 |
+| Cucumber       | ✅       | ✅                 |
+
+Watir is deprecated and will be removed in the next major version of ruby_raider (4.0); new projects should use Selenium. It is no longer offered in the interactive menu and is available only through `-p automation:watir` until 4.0. See [Migrating from Watir](#migrating-from-watir).
 
 ### Mobile Testing (Appium)
 
@@ -61,6 +63,8 @@ Every generated project comes with:
 - **Page Object Model** — Base page and component classes with example pages
 - **Test examples** — Working login tests against the [Raider Test Store](https://raider-test-site.onrender.com/)
 - **Raider reporting** — RSpec and Cucumber projects include [raider_reporter](https://github.com/RaiderHQ/raider_reporter), which writes results to `raider-results/` and uploads runs to your Raider Hideout server when `RAIDER_TOKEN` and `RAIDER_ENDPOINT` are set; generated CI runs the suite through `raider-reporter exec` with `RAIDER_QUARANTINE`, so quarantined tests do not fail the build; an opt-in `raider-gate` job (`RAIDER_GATE=1`) fails CI when the Raider quality gate fails
+- **Waiting** — generated Selenium and Appium projects wait for elements by themselves (`WaitHelper` and `RaiderElement`): `click`, `send_keys`, `text` and the rest poll until the element is ready, and `eventually { … }` retries assertions, so there is no implicit wait and no `sleep`; `timeout` in `config.yml` sets how long to wait
+- **Example tests or a skeleton (`examples:false`)** — start from the working login examples, or pass `examples:false` for an empty skeleton with the helpers, config, CI and README (see [Getting Started](#getting-started))
 - **Login reuse** — generated web projects (Selenium or Watir) log in once and restore the saved session for examples tagged `:logged_in` (RSpec) or `@logged_in` (Cucumber); `RAIDER_LOGIN_STATE=off|refresh` and `login_state: max_age:` control it, and the state stays in git-ignored `.raider/auth/`
 - **Failure video replay** — Every test is recorded and the video is kept only for failing tests, attached to the report as `video` (WebM from page screenshots for Selenium and Watir, Appium's own MP4 for mobile, which needs `ffmpeg` on the Appium server host for iOS and for Android recordings over 180 s). Turn it off per run with `VIDEO=off`, or per project with `raider u video off`; ffmpeg is downloaded once, SHA-256 checked and cached in `~/.cache/raider`. The RaiderHQ `ffmpeg-7.1` build that the download uses is not published yet, so for now set `RAIDER_FFMPEG_PATH` to an ffmpeg with libvpx to get web videos
 - **GitHub Actions CI** — Ready-to-use test pipeline that caches ffmpeg for failure videos
@@ -125,6 +129,28 @@ raider new my_project -p framework:rspec automation:selenium examples:false
 ```
 
 The skeleton keeps the helpers, config, CI and README, and its empty suite passes; grow it with `raider g`. Watir projects always include the examples.
+
+## Migrating from Watir
+
+Watir is deprecated; to move a Watir project to Selenium, generate a Selenium project and port your pages. The common mappings:
+
+| Watir | Selenium project (waiting layer) |
+|-------|----------------------------------|
+| `browser.goto(url)` | `driver.navigate.to(url)` |
+| `browser.text_field(id: 'x').set(v)` | `clear({ id: 'x' })` and `send_keys({ id: 'x' }, v)` |
+| `browser.button(id: 'x').click` | `click({ id: 'x' })` |
+| `Watir.default_timeout = n` | `timeout: n` in `config/config.yml` |
+
+## Adopting waiting in an existing project
+
+Gem upgrades do not rewrite generated code, so existing projects keep their implicit wait until you opt in:
+
+1. Copy `helpers/wait_helper.rb` from a freshly generated project.
+2. Include it in `Page`, the spec helper, or the World.
+3. Remove the `implicit_wait` line.
+4. Move flaky spots to `click`, `send_keys` and `eventually` first.
+
+Keep in mind that keeping the implicit wait while using the layer makes every `find` miss cost up to `timeout` seconds per poll cycle, so remove it once you have moved over.
 
 ## Commands
 

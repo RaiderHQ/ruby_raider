@@ -11,6 +11,9 @@ module InvokeGenerators
   FRAMEWORKS = %w[rspec cucumber].freeze
   AUTOMATIONS = %w[selenium watir ios android cross_platform].freeze
 
+  WATIR_NOTICE = 'Watir is deprecated and will be removed in the next major version of ruby_raider; ' \
+                 'new projects should use Selenium.'.freeze
+
   module_function
 
   def generate_framework(structure = {})
@@ -33,6 +36,7 @@ module InvokeGenerators
                        })
     end
     print_mobile_azure_notice(structure)
+    print_watir_notice(structure)
     print_watir_examples_notice(structure)
   end
 
@@ -59,6 +63,12 @@ module InvokeGenerators
     return unless structure[:ci].to_s == 'azure' && mobile_automation?(structure[:automation])
 
     puts 'Azure Pipelines template for mobile projects is not available yet; see the README.'
+  end
+
+  def print_watir_notice(structure)
+    return unless structure[:automation] == 'watir'
+
+    puts WATIR_NOTICE
   end
 
   def add_generator(generators, *gens)

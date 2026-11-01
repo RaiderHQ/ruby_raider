@@ -19,6 +19,8 @@
    <p align="center"> For more information and updates on releases, see <a href="https://ruby-raider.com">https://ruby-raider.com</a></p>
 </div>
 
+> **Deprecated:** Watir is deprecated and will be removed in the next major version of ruby_raider; new projects should use Selenium. Watir is only available through `-p automation:watir`. See [Migrating from Watir](https://github.com/RaiderHQ/ruby_raider#migrating-from-watir).
+
 ## What is Ruby Raider?
 
 Ruby Raider is a generator and scaffolding gem to make UI test automation easier.

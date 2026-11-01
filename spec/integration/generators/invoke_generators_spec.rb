@@ -64,6 +64,31 @@ describe InvokeGenerators do
     end
   end
 
+  context 'with the Watir deprecation notice' do
+    let(:notice) do
+      'Watir is deprecated and will be removed in the next major version of ruby_raider; new projects should use Selenium.'
+    end
+
+    it 'prints it for watir' do
+      expect { described_class.generate_framework(framework: 'rspec', automation: 'watir', name: 'case_dep') }
+        .to output(/#{Regexp.escape(notice)}/).to_stdout
+    end
+
+    it 'does not print it for selenium' do
+      expect { described_class.generate_framework(framework: 'rspec', automation: 'selenium', name: 'case_nodep') }
+        .not_to output(/Watir is deprecated/).to_stdout
+    end
+
+    it 'still prints it for raider new with automation:watir' do
+      root = File.expand_path('../../..', __dir__)
+      out, status = Open3.capture2e('ruby', "#{root}/bin/raider", 'new', 'case_cli_watir', '-p',
+                                    'framework:rspec', 'automation:watir')
+      expect(status.success?).to be(true)
+      expect(out).to include(notice)
+      expect(File).to exist('case_cli_watir/.rspec')
+    end
+  end
+
   context 'with examples false for watir' do
     it 'says the examples are kept' do
       expect { described_class.generate_framework(framework: 'rspec', automation: 'watir', name: 'case_watir', examples: false) }

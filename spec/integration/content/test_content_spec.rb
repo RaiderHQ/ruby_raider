@@ -214,6 +214,8 @@ end
 
 # The Watir output must stay as master generated it (1274a66); the snapshots in
 # spec/fixtures/watir_master were generated from that commit's lib.
+# To regenerate: `git archive 1274a66 lib` into a scratch dir, generate rspec and cucumber Watir projects there,
+# then apply only the Readme deprecation-line delta (the `> **Deprecated:**` line under the heading block).
 describe 'Watir example output' do
   snapshots = File.expand_path('../../fixtures/watir_master', __dir__)
 

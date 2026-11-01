@@ -200,6 +200,13 @@ describe 'Generated Readme: How the framework works' do
       end
     end
 
+    it "marks the #{framework} watir Readme as deprecated and not the selenium one" do
+      watir = read_generated("#{framework}_watir", 'Readme.md')
+      expect(watir).to include('> **Deprecated:** Watir is deprecated', 'only available through `-p automation:watir`',
+                               'https://github.com/RaiderHQ/ruby_raider#migrating-from-watir')
+      expect(read_generated("#{framework}_selenium", 'Readme.md')).not_to include('**Deprecated:**')
+    end
+
     it "has no such section for #{framework} and watir" do
       expect(read_generated("#{framework}_watir", 'Readme.md')).not_to include('How the framework works')
     end
