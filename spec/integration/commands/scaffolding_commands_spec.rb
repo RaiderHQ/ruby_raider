@@ -128,7 +128,7 @@ describe ScaffoldingCommands do
 
     it 'shows the waiting example in a component when the project has the wait helper' do
       scaffold_in_project('selenium-webdriver', :component, wait_helper: true)
-      expect(File.read("#{tmp_dir}/page_objects/components/foo.rb")).to include("click({ css: '.selector' })")
+      expect(File.read("#{tmp_dir}/page_objects/components/foo.rb")).to include("component.find_element(css: '.selector').click")
     end
 
     it 'keeps the driver example in a component without the wait helper' do
