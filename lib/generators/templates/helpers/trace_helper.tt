@@ -289,23 +289,27 @@ module TraceHelper
 
     # A request whose response is still to come: network_completed finishes it by its BiDi
     # request id. at: the event's epoch milliseconds, for duration_ms.
+    # Each BiDi event runs on its own thread, so a completion can come first; it is then kept
+    # until its start arrives.
     def network_started(request, hash, at: nil)
       record('network') do
         entry = event(:network, hash)
-        @lock.synchronize { @requests[request] = [entry, at] }
+        early = @lock.synchronize do
+          @requests[request] = [entry, at]
+          @early.delete(request)
+        end
+        network_completed(request, *early) if early
         nil
       end
     end
 
     # Merges fields into the entry started for request; a redirect's next hop starts a new one.
-    # A request this test did not see start is ignored.
-    def network_completed(request, fields, at: nil)
+    def network_completed(request, fields, at = nil)
       record('network') do
-        entry, started = @lock.synchronize { @requests.delete(request) }
-        next nil unless entry
-
-        fields = fields.merge(duration_ms: (at - started).round) if at.is_a?(Numeric) && started.is_a?(Numeric)
-        @lock.synchronize { entry.update(fields.transform_keys(&:to_s)) }
+        entry, started = @lock.synchronize do
+          @requests.delete(request).tap { |found| @early[request] = [fields, at] unless found }
+        end
+        complete(entry, fields, at, started) if entry
         nil
       end
     end
@@ -366,6 +370,7 @@ module TraceHelper
       @lock.synchronize do
         @events = []
         @requests = {}
+        @early = {}
       end
       @bidi = false
       @seq = 0
@@ -379,11 +384,11 @@ module TraceHelper
 
     # Network and console come over BiDi; without it the trace still has its steps and media.
     def connect_bidi
-      name = @meta[:browser][:name]
+      name = @meta[:browser][:name].to_s
       if TraceHelper.bidi?(name)
         @bidi = Bidi.attach(@driver, self)
       else
-        TraceHelper.warn_once("network and console not captured: #{name || 'this browser'} has no WebDriver BiDi")
+        TraceHelper.warn_once("network and console not captured: #{name.empty? ? 'this browser' : name} has no WebDriver BiDi")
       end
       @capabilities[:network] = @capabilities[:console] = @bidi
     end
@@ -411,6 +416,11 @@ module TraceHelper
     def drop_oldest_step
       delete_media(@steps.shift)
       @truncated[:steps] += 1
+    end
+
+    def complete(entry, fields, finished, started)
+      fields = fields.merge(duration_ms: (finished - started).round) if finished.is_a?(Numeric) && started.is_a?(Numeric)
+      @lock.synchronize { entry.update(fields.transform_keys(&:to_s)) }
     end
 
     # Returns the stored entry, which network_completed may still fill in.
@@ -725,7 +735,7 @@ module TraceHelper
       nil
     end
 
-    def network_completed(_request, _fields, **)
+    def network_completed(_request, _fields, _at = nil)
       nil
     end
 
@@ -1003,11 +1013,11 @@ module TraceHelper
       recorder.network_completed(params.dig('request', 'request'),
                                  { status: response['status'], mime_type: response['mimeType'],
                                    bytes: response['bytesReceived'] || response['encodedDataLength'] },
-                                 at: params['timestamp'])
+                                 params['timestamp'])
     end
 
     def self.fetch_error(recorder, params)
-      recorder.network_completed(params.dig('request', 'request'), { error: params['errorText'] }, at: params['timestamp'])
+      recorder.network_completed(params.dig('request', 'request'), { error: params['errorText'] }, params['timestamp'])
     end
 
     def self.log_entry(recorder, params)

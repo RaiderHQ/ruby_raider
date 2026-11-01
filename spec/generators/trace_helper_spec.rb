@@ -644,6 +644,19 @@ describe 'Generated TraceHelper' do
       expect(Zip::File.open(path) { |zip| zip.read('trace.json') }).not_to include('hush')
     end
 
+    it 'completes a network entry whose responseCompleted thread ran before its beforeRequestSent' do
+      recorder = started_recorder
+      bidi.emit('network.responseCompleted', 'request' => { 'request' => 'r1' }, 'timestamp' => started_ms + 40,
+                                             'response' => { 'status' => 304, 'mimeType' => 'text/css', 'bytesReceived' => 0 })
+      request_sent('r1', 'GET', 'https://example.test/app.css', started_ms)
+
+      expect(kept(recorder)['network']).to eq(
+        [{ 'step_index' => 1, 'method' => 'GET', 'url' => 'https://example.test/app.css', 'status' => 304,
+           'mime_type' => 'text/css', 'started_at' => '2026-11-01T21:30:00.020Z', 'duration_ms' => 40, 'bytes' => 0,
+           'error' => nil }]
+      )
+    end
+
     it 'maps log.entryAdded into a console entry with level, text, source, at' do
       recorder = started_recorder
       recorder.navigated('https://example.test/login')
