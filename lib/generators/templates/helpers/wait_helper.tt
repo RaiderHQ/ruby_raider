@@ -507,10 +507,11 @@ module WaitHelper
   # Where an action was called from, for the observer.
   module Observation
     PAGE_OBJECTS = '/page_objects/'
-    # By their given and their real path (a symlinked directory differs).
-    HELPER_FILES = Waiter::HELPER_FILES.flat_map { |file| [file, File.realpath(file)] }.freeze
+    # helpers/ by its given and its real path (__dir__ is the real one): the wait, trace and
+    # driver helpers are never the line that called an action or a navigation.
+    HELPER_DIRS = [File.dirname(__FILE__), __dir__].uniq.map { |dir| File.join(dir, '') }.freeze
 
-    # The first frame outside the helper files, Ruby and gems, as { file:, line: } (file relative
+    # The first frame outside helpers/, Ruby and gems, as { file:, line: } (file relative
     # to the working directory when inside it), or nil.
     def self.source
       frame = caller_locations.find { |location| project?(location.absolute_path || location.path) }
@@ -525,7 +526,7 @@ module WaitHelper
     end
 
     def self.project?(path)
-      return false if path.start_with?('<internal:') || HELPER_FILES.include?(path)
+      return false if path.start_with?('<internal:') || HELPER_DIRS.any? { |dir| path.start_with?(dir) }
 
       library_paths.none? { |root| path.start_with?(root) }
     end

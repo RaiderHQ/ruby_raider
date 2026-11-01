@@ -572,6 +572,15 @@ describe 'WaitHelper' do
       expect(started.map { |event| event[:locator][:strategy] }).to eq(aliases.values)
     end
 
+    it 'never takes the source from a file in helpers/, such as the trace helper' do
+      # The given path of wait_helper.rb, and the real path of raider_element.rb (via __dir__).
+      given, real = WaitHelper::Waiter::HELPER_FILES.map { |file| File.dirname(file) }
+
+      expect(WaitHelper::Observation.project?(File.join(given, 'trace_helper.rb'))).to be(false)
+      expect(WaitHelper::Observation.project?(File.join(real, 'driver_helper.rb'))).to be(false)
+      expect(WaitHelper::Observation.project?(File.expand_path('spec/login_spec.rb'))).to be(true)
+    end
+
     it 'labels an action by the nearest page_objects method' do
       Dir.mktmpdir do |dir|
         FileUtils.mkdir_p(File.join(dir, 'page_objects'))
