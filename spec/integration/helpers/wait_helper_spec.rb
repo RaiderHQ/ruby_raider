@@ -109,6 +109,7 @@ module WaitHelperSpec
 
     def log = @state[:log]
     def go_stale = @state[:stale] = true
+    def go_hidden = @state[:displayed] = false
     def displayed? = live(@state[:displayed])
     def enabled? = live(@state[:enabled])
     def selected? = live(@state[:selected])
@@ -418,6 +419,16 @@ describe 'WaitHelper' do
       first.go_stale
       wrapper.click(timeout: 1)
       expect([first.log, second.log, wrapper.native]).to eq([[], [[:click]], second])
+    end
+
+    it 'keeps its element after a timed-out action' do
+      raw = element(tag_name: 'a')
+      driver.script({ id: 'x' }, raw, nil)
+      wrapper = page.find_element(id: 'x')
+      hash = wrapper.hash
+      raw.go_hidden
+      expect { wrapper.click(timeout: 0.2) }.to raise_error(WaitHelper::TimeoutError)
+      expect([wrapper.native, wrapper.tag_name, wrapper == raw, wrapper.hash]).to eq([raw, 'a', true, hash])
     end
 
     it 'heals a chain when the parent was re-rendered' do

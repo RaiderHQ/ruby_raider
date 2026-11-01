@@ -31,6 +31,8 @@ describe 'Ruby syntax validation' do
                              else
                                %w[features/support/env.rb features/step_definitions/login_steps.rb]
                              end
+        # The glob above runs at load time, before the projects exist, so new helpers are listed here.
+        login_reuse_files += %w[helpers/wait_helper.rb helpers/raider_element.rb] if automation == 'selenium'
 
         login_reuse_files.each do |relative|
           it "#{relative} is generated as valid Ruby with frozen_string_literal" do

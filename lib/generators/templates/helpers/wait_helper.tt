@@ -70,7 +70,7 @@ module WaitHelper
                   "pass its locator (for example { id: 'name' }) instead"
     MEMBER_HINT = 'it came from find_elements, which keeps no locator per element; call find_elements again to re-query'
 
-    attr_reader :element, :hint
+    attr_reader :hint
 
     def self.for(driver, locator, by, scope: driver)
       raise ArgumentError, 'pass the locator in braces or as keywords, not both' if locator && !by.empty?
@@ -102,8 +102,15 @@ module WaitHelper
       @scope = scope
       @locator = locator
       @element = element
+      @last_found = element
       @hint = hint
       @many = many
+    end
+
+    # The last element found. A reset only drops the re-find cache, so a wrapper
+    # keeps its element (and its == and hash) after a timed-out wait.
+    def element
+      @element || @last_found
     end
 
     def many
@@ -115,7 +122,7 @@ module WaitHelper
 
       return @element if @element
 
-      @element = context.find_element(**@locator)
+      @element = @last_found = context.find_element(**@locator)
     end
 
     # A stale element may mean its parent was re-rendered too, so stale resets the chain.
