@@ -118,6 +118,14 @@ raider new my_project -p framework:rspec automation:selenium ci:azure
 Azure Pipelines for mobile (Appium) projects is not available yet: with `ci:azure` no pipeline file is generated and a notice is printed.
 Azure Repos ignores `pr:` triggers, so add the pipeline as a Build validation branch policy to get pull request builds.
 
+Generate an empty skeleton, without the example pages and tests (the menu asks `Do you want example tests?`):
+
+```bash
+raider new my_project -p framework:rspec automation:selenium examples:false
+```
+
+The skeleton keeps the helpers, config, CI and README, and its empty suite passes; grow it with `raider g`. Watir projects always include the examples.
+
 ## Commands
 
 ###### Anything between square brackets ([...]) is where your input goes

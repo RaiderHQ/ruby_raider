@@ -204,4 +204,35 @@ describe 'Generated Readme: How the framework works' do
       expect(read_generated("#{framework}_watir", 'Readme.md')).not_to include('How the framework works')
     end
   end
+
+  describe 'without example tests' do
+    %w[rspec cucumber].product(%w[selenium ios cross_platform]).each do |framework, automation|
+      context "with #{framework} and #{automation}" do
+        subject(:readme) { read_generated(ensure_project(framework:, automation:, examples: false), 'Readme.md') }
+
+        it 'still explains how the framework works' do
+          expect(readme).to include('## How the framework works', '### The wait helper and RaiderElement')
+        end
+
+        it 'points at no example file' do
+          expect(readme).not_to match(/login\.rb|account\.rb|header\.rb|home\.rb|pdp\.rb|users\.yml|model_factory|
+                                       user_factory|login_page_spec|pdp_page_spec|login\.feature|home\.feature|
+                                       login_steps|home_steps|account\ example|files\ in\ this\ project/x)
+        end
+
+        it 'says it has no example tests and how it grows with scaffolding' do
+          expect(readme).to include('generated without example tests', 'raider g scaffold checkout')
+        end
+      end
+    end
+
+    %w[rspec cucumber].each do |framework|
+      it "shows how to add the login hook for the project's own login page in #{framework}" do
+        readme = read_generated(ensure_project(framework:, automation: 'selenium', examples: false), 'Readme.md')
+        section = readme[/^## Reusing the login\n.*?(?=^## )/m]
+        hook = framework == 'rspec' ? 'config.before(:each, :logged_in) do' : "Before('@logged_in') do"
+        expect(section).to include(hook, 'SessionState.new(driver).reuse(')
+      end
+    end
+  end
 end

@@ -9,9 +9,11 @@ require 'tmpdir'
 require 'yaml'
 require_relative '../../helpers/video_helper'
 require_relative '../../helpers/session_state'
+<%- if examples? -%>
 require_relative '../../models/user_factory'
 require_relative '../../page_objects/pages/account'
 require_relative '../../page_objects/pages/login'
+<%- end -%>
 
 Before do
   viewport = YAML.load_file('config/config.yml')['viewport']
@@ -24,6 +26,7 @@ Before do
   @video_recorder.start
 end
 
+<%- if examples? -%>
 Before('@logged_in') do
   user = UserFactory.for('registered user')
   account = Account.new(driver)
@@ -36,6 +39,7 @@ Before('@logged_in') do
   end
 end
 
+<%- end -%>
 After do |scenario|
   video_path = @video_recorder&.stop(keep: scenario.failed?)
   RaiderReporter.attach('video', video_path, type: :webm) if video_path

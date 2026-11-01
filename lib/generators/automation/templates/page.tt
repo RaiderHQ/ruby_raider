@@ -1,4 +1,4 @@
-<%- if web? -%>
+<%- if web? && examples? -%>
 require_relative '../components/header'
 <%- end -%>
 <%- if wait_helper? -%>
@@ -20,7 +20,7 @@ class Page
     self.class.to_s.sub('Page', ' Page')
   end
 
-  <%- if selenium_based? -%>
+  <%- if selenium_based? && examples? -%>
   # Components
 
   def header

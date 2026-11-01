@@ -143,4 +143,22 @@ describe HelpersGenerator do
     include_examples 'creates cucumber helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates cross platform helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
   end
+
+  describe 'without example tests' do
+    %w[rspec cucumber].product(%w[selenium ios cross_platform]).each do |framework, automation|
+      context "with #{framework} and #{automation}" do
+        let(:name) { ensure_project(framework:, automation:, examples: false) }
+
+        it 'creates the wait helper and RaiderElement' do
+          expect(File).to exist("#{name}/helpers/wait_helper.rb")
+          expect(File).to exist("#{name}/helpers/raider_element.rb")
+        end
+      end
+    end
+
+    it 'keeps the session state for web' do
+      name = ensure_project(framework: 'rspec', automation: 'selenium', examples: false)
+      expect(File).to exist("#{name}/helpers/session_state.rb")
+    end
+  end
 end

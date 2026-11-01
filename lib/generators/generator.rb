@@ -73,6 +73,11 @@ class Generator < Thor::Group
     !watir?
   end
 
+  # False for `raider new -p examples:false`: an empty skeleton without the example pages, tests and wiring
+  def examples?
+    !args.include?('no_examples')
+  end
+
   def web?
     (args & %w[selenium watir]).count.positive?
   end

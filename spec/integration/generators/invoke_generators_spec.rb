@@ -49,4 +49,25 @@ describe InvokeGenerators do
       expect(File).not_to exist('case_bad_ci')
     end
   end
+
+  describe '.collect_flags' do
+    it 'adds no_examples when examples is false' do
+      expect(described_class.collect_flags(automation: 'selenium', examples: false)).to include('no_examples')
+    end
+
+    it 'keeps the examples by default' do
+      expect(described_class.collect_flags(automation: 'selenium')).not_to include('no_examples')
+    end
+
+    it 'keeps the examples for watir, whose templates are frozen' do
+      expect(described_class.collect_flags(automation: 'watir', examples: false)).not_to include('no_examples')
+    end
+  end
+
+  context 'with examples false for watir' do
+    it 'says the examples are kept' do
+      expect { described_class.generate_framework(framework: 'rspec', automation: 'watir', name: 'case_watir', examples: false) }
+        .to output(/Watir projects always include the example tests/).to_stdout
+    end
+  end
 end

@@ -432,4 +432,42 @@ describe 'Auto-waiting helper wiring' do
       expect(files.grep(/WaitHelper/)).to be_empty
     end
   end
+
+  describe 'without example tests' do
+    %w[selenium ios cross_platform].each do |automation|
+      context "with rspec and #{automation}" do
+        subject(:helper) { read_generated(ensure_project(framework: 'rspec', automation:, examples: false), 'helpers/spec_helper.rb') }
+
+        it 'names no example class or hook' do
+          expect(helper).not_to match(/Login|Account|logged_in|model_factory/)
+        end
+
+        it 'has valid Ruby syntax' do
+          expect(helper).to have_valid_ruby_syntax
+        end
+      end
+
+      context "with cucumber and #{automation}" do
+        let(:name) { ensure_project(framework: 'cucumber', automation:, examples: false) }
+
+        it 'names no example class or hook in the env and the World' do
+          %w[env.rb world.rb].each do |file|
+            expect(read_generated(name, "features/support/#{file}")).not_to match(/Login|Account|logged_in|factory/)
+          end
+        end
+
+        it 'has a valid env and World' do
+          %w[env.rb world.rb].each do |file|
+            expect(read_generated(name, "features/support/#{file}")).to have_valid_ruby_syntax
+          end
+        end
+      end
+    end
+
+    it 'keeps the session state require in the selenium rspec spec helper' do
+      helper = read_generated(ensure_project(framework: 'rspec', automation: 'selenium', examples: false),
+                              'helpers/spec_helper.rb')
+      expect(helper).to include("require_relative 'session_state'")
+    end
+  end
 end

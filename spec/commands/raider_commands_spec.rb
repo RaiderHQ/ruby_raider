@@ -16,6 +16,30 @@ RSpec.describe RubyRaider::Raider do # rubocop:disable RSpec/FilePath
           hash_including(framework: 'rspec', automation: 'selenium', name: 'my_project')
         )
       end
+
+      it 'passes examples:false through as false' do
+        allow(InvokeGenerators).to receive(:generate_framework)
+
+        described_class.new.invoke(:new, nil, %w[my_project -p framework:rspec automation:selenium examples:false])
+
+        expect(InvokeGenerators).to have_received(:generate_framework).with(hash_including(examples: false))
+      end
+
+      it 'keeps the examples by default' do
+        allow(InvokeGenerators).to receive(:generate_framework)
+
+        described_class.new.invoke(:new, nil, %w[my_project -p framework:rspec automation:selenium])
+
+        expect(InvokeGenerators).to have_received(:generate_framework).with(hash_excluding(:examples))
+      end
+
+      it 'keeps the examples for any value other than false' do
+        allow(InvokeGenerators).to receive(:generate_framework)
+
+        described_class.new.invoke(:new, nil, %w[my_project -p framework:rspec automation:selenium examples:true])
+
+        expect(InvokeGenerators).to have_received(:generate_framework).with(hash_including(examples: true))
+      end
     end
 
     context 'without parameters' do

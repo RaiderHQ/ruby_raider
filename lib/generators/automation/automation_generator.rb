@@ -4,29 +4,34 @@ require_relative '../generator'
 
 class AutomationGenerator < Generator
   def generate_automation_files
-    if mobile?
-      generate_appium_settings
-      generate_home_page
-      generate_pdp_page
-    else
-      generate_components
-      generate_model_files
-      generate_pages
-    end
-
+    generate_appium_settings if mobile?
+    generate_abstract_component unless mobile?
+    examples? ? generate_examples : generate_empty_folders
     generate_abstract_page
   end
 
   private
 
+  def generate_examples
+    if mobile?
+      generate_home_page
+      generate_pdp_page
+    else
+      generate_header_component
+      generate_model_files
+      generate_pages
+    end
+  end
+
+  # A skeleton keeps the folders for the pages and components it will grow with `raider g`
+  def generate_empty_folders
+    create_file("#{name}/page_objects/pages/.keep", '')
+    create_file("#{name}/page_objects/components/.keep", '') unless mobile?
+  end
+
   def generate_pages
     generate_login_page
     generate_account_page
-  end
-
-  def generate_components
-    generate_abstract_component
-    generate_header_component
   end
 
   def generate_model_files

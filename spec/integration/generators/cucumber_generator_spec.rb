@@ -61,4 +61,40 @@ describe CucumberGenerator do
     include_examples 'creates cucumber files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}", 'login'
     include_examples 'creates factories for web projects', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}", 'login'
   end
+
+  describe 'without example tests' do
+    %w[selenium ios cross_platform].each do |automation|
+      context "with cucumber and #{automation}" do
+        let(:name) { ensure_project(framework: 'cucumber', automation:, examples: false) }
+
+        it 'creates no feature files' do
+          expect(Dir.glob("#{name}/features/**/*.feature")).to be_empty
+        end
+
+        it 'keeps an empty step_definitions folder' do
+          expect(Dir.children("#{name}/features/step_definitions")).to eq(['.keep'])
+        end
+
+        it 'creates the support files' do
+          expect(Dir.children("#{name}/features/support")).to contain_exactly('env.rb', 'world.rb')
+        end
+
+        it 'creates the cucumber.yml file' do
+          expect(File).to exist("#{name}/cucumber.yml")
+        end
+
+        it 'creates no user factory' do
+          expect(File).not_to exist("#{name}/models/user_factory.rb")
+        end
+      end
+    end
+
+    it 'creates no accessibility example' do
+      InvokeGenerators.generate_framework(framework: 'cucumber', automation: 'selenium', name: 'skeleton_axe_cucumber',
+                                          examples: false, accessibility: true)
+      expect(Dir.glob('skeleton_axe_cucumber/features/**/accessibility*')).to be_empty
+    ensure
+      FileUtils.rm_rf('skeleton_axe_cucumber')
+    end
+  end
 end

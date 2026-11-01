@@ -87,7 +87,16 @@ raider g scaffold [NAME]  # Create page + test + steps
 ## How the framework works
 
 This section walks through the project: where things live, how a test finds an element and acts on it, and how to
+<%- if examples? -%>
 run the tests. Most examples come from the files in this project.
+<%- else -%>
+run the tests.
+
+This project was generated without example tests, so its <%= mobile? ? 'pages' : 'pages, components' %> and tests folders are empty.
+Grow it with the scaffolding commands above: `raider g scaffold checkout` writes a `Checkout` page and its
+<%= rspec? ? 'spec' : 'feature and steps' %>, and `raider g page`<%= rspec? ? ' and `raider g spec`' : ', `raider g feature` and `raider g steps`' %> write one file at a time. The code examples
+below show what goes in them.
+<%- end -%>
 
 Two Ruby words you will see below: a **class** is a named group of methods, and a **method** is what other
 languages call a function (it starts with `def` and ends with `end`).
@@ -98,24 +107,43 @@ languages call a function (it starts with `def` and ends with `end`).
 <%- if mobile? -%>
   `capabilities.yml` describes the device and the app<%= cross_platform? ? ', and `config.yml` holds the other settings' : '' %>.
   See "Settings" below.
+<%- if examples? -%>
 - `page_objects/pages/`: one class per screen of the app. `home.rb` is the product list and `pdp.rb` the product
   details page. A page holds the locators of its elements and the actions a test can do on that screen.
+<%- else -%>
+- `page_objects/pages/`: one class per screen of the app, empty for now. A page holds the locators of its elements
+  and the actions a test can do on that screen.
+<%- end -%>
 - `page_objects/abstract/`: `page.rb`, the base class every page builds on. It gives each page the wait helper.
 - `helpers/`: `driver_helper.rb` starts the Appium session, `wait_helper.rb` and `raider_element.rb` are the wait
   helper, and `video_helper.rb` records the screen<%= cross_platform? ? '. `appium_helper.rb` has `element(ios: …, android: …)`, a lookup that does not wait' : '' %>.
 <%- if rspec? -%>
   `spec_helper.rb` sets up RSpec: it starts the app before each test and closes it after.
+<%- if examples? -%>
 - `spec/`: the tests. `pdp_page_spec.rb` opens a product and checks its "Add to Cart" button.
 <%- else -%>
+- `spec/`: the tests, empty for now.
+<%- end -%>
+<%- elsif examples? -%>
 - `features/`: the tests. `home.feature` describes them in plain English, `step_definitions/home_steps.rb` holds the
   Ruby code behind each step, and `support/` starts the app (`env.rb`) and makes the helpers available to the steps
   (`world.rb`).
+<%- else -%>
+- `features/`: the tests, empty for now. A `.feature` file describes them in plain English, `step_definitions/` holds
+  the Ruby code behind each step, and `support/` starts the app (`env.rb`) and makes the helpers available to the
+  steps (`world.rb`).
 <%- end -%>
 <%- else -%>
   `config.yml` is described under "Settings" below.
+<%- if examples? -%>
 - `page_objects/pages/`: one class per page of the site. `login.rb` is the login page and `account.rb` the account
   page. A page holds the locators of its elements and the actions a test can do on that page.
 - `page_objects/components/`: parts that appear on many pages. `header.rb` reads the welcome message at the top.
+<%- else -%>
+- `page_objects/pages/`: one class per page of the site, empty for now. A page holds the locators of its elements
+  and the actions a test can do on that page.
+- `page_objects/components/`: parts that appear on many pages, such as a header, empty for now.
+<%- end -%>
 - `page_objects/abstract/`: `page.rb` and `component.rb`, the base classes every page and component builds on.
   `page.rb` gives each page the wait helper.
 - `helpers/`: `driver_helper.rb` starts the browser, `wait_helper.rb` and `raider_element.rb` are the wait helper,
@@ -123,13 +151,21 @@ languages call a function (it starts with `def` and ends with `end`).
 <%- if rspec? -%>
   `spec_helper.rb` sets up RSpec: it opens the browser before each test and closes it after.
 <%- end -%>
+<%- if examples? -%>
 - `models/`: test data. `data/users.yml` holds the users, and `model_factory.rb`<%= cucumber? ? ' and `user_factory.rb` load' : ' loads' %> them.
-<%- if rspec? -%>
+<%- end -%>
+<%- if rspec? && examples? -%>
 - `spec/`: the tests. `login_page_spec.rb` logs in with the right password and with a wrong one.
-<%- else -%>
+<%- elsif rspec? -%>
+- `spec/`: the tests, empty for now.
+<%- elsif examples? -%>
 - `features/`: the tests. `login.feature` describes them in plain English, `step_definitions/login_steps.rb` holds
   the Ruby code behind each step, and `support/` opens the browser (`env.rb`) and makes the helpers available to the
   steps (`world.rb`).
+<%- else -%>
+- `features/`: the tests, empty for now. A `.feature` file describes them in plain English, `step_definitions/`
+  holds the Ruby code behind each step, and `support/` opens the browser (`env.rb`) and makes the helpers available
+  to the steps (`world.rb`).
 <%- end -%>
 <%- end -%>
 <%- if azure? && !mobile? -%>
@@ -164,8 +200,12 @@ timeout: 15
 `config/config.yml`:
 
 - `browser`: the browser the tests run in, `chrome` or `firefox`.
+<%- if examples? -%>
 - `url`: the address of the site under test. Each page adds its own path to it (`Login` adds
   `index.php?rt=account/login`).
+<%- else -%>
+- `url`: the address of the site under test. Each page adds its own path to it. Change it to your site.
+<%- end -%>
 - `timeout`: how many seconds the wait helper waits for an element before the test fails (10).
 - `viewport`: the browser window's width and height.
 - `browser_arguments`: extra options passed to each browser when it starts.
@@ -178,7 +218,11 @@ timeout: 15
 ### Pages and components
 
 A page keeps two kinds of methods: **elements**, which say where something is, and **actions**, which do something
+<%- if examples? -%>
 with it. From `page_objects/pages/<%= mobile? ? 'home.rb' : 'login.rb' %>`:
+<%- else -%>
+with it. For example, on a <%= mobile? ? 'product list screen' : 'login page' %>:
+<%- end -%>
 
 ```ruby
 <%- if mobile? -%>
@@ -226,8 +270,13 @@ find the element. `{ id: 'loginFrm_loginname' }` means "the element whose id is 
 The actions, `send_keys` and `click`, come from the wait helper: each one waits until the element is ready, then
 types or clicks.
 
+<%- if examples? -%>
 A **component** is a part of the page that has its own methods. `page.rb` finds the welcome message and hands it to
 the `Header` component:
+<%- else -%>
+A **component** is a part of the page that has its own methods. It builds on `page_objects/abstract/component.rb`,
+and a page hands it the element it wraps. For a `Header` component in `page_objects/components/`:
+<%- end -%>
 
 ```ruby
 def header
@@ -384,10 +433,10 @@ Install the gems once with `bundle install`. Then:
 ```bash
 <%- if rspec? -%>
 bundle exec rspec                                 # every test
-bundle exec rspec spec/<%= mobile? ? 'pdp_page_spec.rb' : 'login_page_spec.rb' %>          # one file
+bundle exec rspec spec/<%= examples? ? (mobile? ? 'pdp_page_spec.rb' : 'login_page_spec.rb') : 'checkout_page_spec.rb' %>          # one file
 <%- else -%>
 bundle exec cucumber                              # every scenario
-bundle exec cucumber features/<%= mobile? ? 'home.feature' : 'login.feature' %>         # one feature
+bundle exec cucumber features/<%= examples? ? (mobile? ? 'home.feature' : 'login.feature') : 'checkout.feature' %>         # one feature
 <%- end -%>
 <%- unless mobile? -%>
 HEADLESS=true bundle exec <%= test_cmd %>                   # without a browser window
@@ -469,9 +518,43 @@ The wait helper is ordinary code in your project, so you can take it out. To do 
 <%- if web? -%>
 ## Reusing the login
 
+<%- if examples? -%>
 Tag an example `:logged_in` (RSpec) or a scenario `@logged_in` (Cucumber) and the suite logs in once, saves the
 session, and restores it for the next tagged example or run instead of filling in the login form again. The generated
 account example shows it. If the saved session no longer works, the real login runs again and the state is saved anew.
+<%- else -%>
+`helpers/session_state.rb` logs in once, saves the session, and restores it for the next test or run instead of
+filling in the login form again. If the saved session no longer works, the real login runs again and the state is
+saved anew.
+
+This project has no login page yet. Once you have one (`raider g page login`), add a hook so that every
+<%= rspec? ? 'example tagged `:logged_in`' : 'scenario tagged `@logged_in`' %> starts logged in. In `<%= rspec? ? 'helpers/spec_helper.rb' : 'features/support/env.rb' %>`, require your pages next to
+the other `require_relative` lines, then add the hook<%= rspec? ? ' inside `RSpec.configure`' : '' %>:
+
+```ruby
+<%- if rspec? -%>
+require_relative '../page_objects/pages/login'
+require_relative '../page_objects/pages/dashboard'
+
+config.before(:each, :logged_in) do
+<%- else -%>
+require_relative '../../page_objects/pages/login'
+require_relative '../../page_objects/pages/dashboard'
+
+Before('@logged_in') do
+<%- end -%>
+  dashboard = Dashboard.new(driver)
+  SessionState.new(driver).reuse(valid: -> { dashboard.tap(&:visit).logged_in? }) do
+    login = Login.new(driver)
+    login.visit
+    login.login(ENV.fetch('TEST_USER'), ENV.fetch('TEST_PASSWORD'))
+  end
+end
+```
+
+`Login` and `Dashboard` stand for your own pages: `valid:` checks that a restored session is still logged in (here a
+`logged_in?` method you write on the page), and the block does the real login.
+<%- end -%>
 
 For another role, call it yourself with its own name:
 

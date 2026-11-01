@@ -18,6 +18,8 @@ require_relative 'wait_helper'
 <%- end -%>
 <%- if web? -%>
 require_relative 'session_state'
+<%- end -%>
+<%- if web? && examples? -%>
 require_relative '../models/model_factory'
 require_relative '../page_objects/pages/login'
 require_relative '../page_objects/pages/account'
@@ -61,7 +63,7 @@ module SpecHelper
       @video_recorder = VideoHelper.recorder_for(<%= watir? ? 'browser' : 'driver' %>)
       @video_recorder.start
     end
-<%- if web? -%>
+<%- if web? && examples? -%>
 
     config.before(:each, :logged_in) do
       user = ModelFactory.for('users')['registered user']
