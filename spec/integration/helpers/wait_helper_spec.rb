@@ -248,6 +248,26 @@ describe 'WaitHelper' do
       expect { page.eventually(timeout: 1) { raise "boom #{tries += 1}" } }.to raise_error(RuntimeError, 'boom 1')
     end
 
+    it 'stretches a nested call without timeout: to what is left of its own deadline' do
+      allow(WaitHelper).to receive(:default_timeout).and_return(1)
+      driver.script({ css: '.x' }, *Array.new(15), element(text: 'y'))
+      tries = 0
+      started = clock
+      page.eventually(timeout: 3) do
+        tries += 1
+        expect(page.text(css: '.x')).to eq 'y'
+      end
+      expect([tries, clock - started]).to match([1, be_between(1.3, 2.9)])
+    end
+
+    it 'retries a nested timeout: per attempt and fails at its own deadline with the prefix' do
+      started = clock
+      expect { page.eventually(timeout: 1) { page.text({ css: '.never' }, timeout: 0.2) } }
+        .to raise_error(WaitHelper::TimeoutError, /\A\(still failing after 1s\)\nWaited [\d.]+s for \{css: "\.never"\}/)
+      expect(clock - started).to be_between(0.9, 1.4)
+      expect(driver.finds.size).to be > 5
+    end
+
     it 'caps a nested action at its own deadline' do
       started = clock
       expect { page.eventually(timeout: 0.5) { page.click({ id: 'never' }, timeout: 5) } }

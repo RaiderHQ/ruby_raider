@@ -399,8 +399,8 @@ Elements you pass to `execute_script` need `.native` too.
 ### eventually
 
 `eventually { … }` runs the block again and again until it passes, or until `timeout` seconds have gone by. It
-retries a failed `expect`, an element that was not found, and an element that went stale (was redrawn). It returns
-what the block returns, and `eventually(timeout: 30) { … }` waits longer.
+retries a failed `expect`, an element that was not found, an element that went stale (was redrawn), and
+a wait inside it that timed out. It returns what the block returns, and `eventually(timeout: 30) { … }` waits longer.
 
 Use it for checks on something that changes after an action. Before, the check runs once, and fails if the
 <%= mobile? ? 'screen' : 'page' %> has not updated yet:
@@ -423,8 +423,11 @@ eventually { expect(account_page.header.customer_name).to eq "Welcome back #{use
 <%- end -%>
 ```
 
-If it still fails at the end, the error starts with `(still failing after 10s)`, followed by the last failure. The
-waits inside the block share its time limit, so the whole block never takes longer than `timeout`.
+If it still fails at the end, the error starts with `(still failing after 10s)`, followed by the last failure, with
+its own error class. The waits inside the block share its time limit, so the whole block never takes longer than
+`timeout`. A wait without its own `timeout:` gets whatever is left of the block's time, so inside
+`eventually(timeout: 30) { … }` it can wait up to 30 seconds, not just the default. A wait with its own
+`timeout: 2` gets 2 seconds per try, and the block is tried again until its own time is up.
 
 ### Running the tests
 

@@ -269,7 +269,7 @@ module WaitHelper
 
     def initialize(driver, timeout: nil)
       @driver = driver
-      @timeout = timeout || WaitHelper.default_timeout
+      @timeout = timeout
       @last_rect = nil
     end
 
@@ -291,53 +291,55 @@ module WaitHelper
     # returns false the wait stops, and the timeout message ends with its to_s.
     def perform_action(action, locator, checks, target: nil, between: nil)
       lookup = locator.is_a?(Lookup) ? locator : Lookup.for(@driver, locator, {})
-      within_deadline do |deadline, waited|
-        loop do
-          seen = catch(:not_ready) do
-            elements = [ready(lookup, checks)]
-            elements << ready(target, TARGET_CHECKS, 'drop target ') if target
-            return yield(*elements)
-          rescue *RETRIED => e
-            retry_reason(lookup, e, action)
-          end
-          lookup.reset(stale: seen == STALE)
-          target&.reset
-          if now >= deadline || (between && !between.call)
-            seen = [seen, between].compact.join(' ')
-            raise TimeoutError, timeout_message(lookup, checks, seen, [waited, waited + now - deadline].min), backtrace
-          end
-
-          pause(deadline)
+      deadline, waited = deadline_and_wait
+      loop do
+        seen = catch(:not_ready) do
+          elements = [ready(lookup, checks)]
+          elements << ready(target, TARGET_CHECKS, 'drop target ') if target
+          return yield(*elements)
+        rescue *RETRIED => e
+          retry_reason(lookup, e, action)
         end
+        lookup.reset(stale: seen == STALE)
+        target&.reset
+        if now >= deadline || (between && !between.call)
+          seen = [seen, between].compact.join(' ')
+          raise TimeoutError, timeout_message(lookup, checks, seen, [waited, waited + now - deadline].min), backtrace
+        end
+
+        pause(deadline)
       end
     end
 
+    # Retries the block until it passes. Calls inside it share its deadline (see deadline_and_wait).
     def eventually
+      enclosing = Thread.current[DEADLINE_KEY]
       require 'rspec/expectations'
       retried = [RSpec::Expectations::ExpectationNotMetError, Selenium::WebDriver::Error::NoSuchElementError,
-                 Selenium::WebDriver::Error::StaleElementReferenceError]
-      within_deadline do |deadline, waited|
-        loop do
-          return yield
-        rescue *retried => e
-          raise e.exception("(still failing after #{seconds(waited)}s)\n#{e.message}") if now >= deadline
+                 Selenium::WebDriver::Error::StaleElementReferenceError, TimeoutError]
+      deadline, waited = deadline_and_wait
+      Thread.current[DEADLINE_KEY] = deadline
+      loop do
+        return yield
+      rescue *retried => e
+        raise e.exception("(still failing after #{seconds(waited)}s)\n#{e.message}") if now >= deadline
 
-          pause(deadline)
-        end
+        pause(deadline)
       end
+    ensure
+      Thread.current[DEADLINE_KEY] = enclosing
     end
 
     private
 
-    # An action inside eventually gets what is left of the enclosing deadline.
-    def within_deadline
-      enclosing = Thread.current[DEADLINE_KEY]
+    # Inside eventually, a call without timeout: waits for what is left of eventually's
+    # deadline; one with timeout: waits that long per attempt, never past eventually's deadline.
+    def deadline_and_wait
       started = now
-      deadline = [started + @timeout, enclosing].compact.min
-      Thread.current[DEADLINE_KEY] = deadline
-      yield deadline, deadline - started
-    ensure
-      Thread.current[DEADLINE_KEY] = enclosing
+      enclosing = Thread.current[DEADLINE_KEY]
+      own = started + (@timeout || WaitHelper.default_timeout) if @timeout || !enclosing
+      deadline = [own, enclosing].compact.min
+      [deadline, deadline - started]
     end
 
     def ready(lookup, checks, prefix = '')

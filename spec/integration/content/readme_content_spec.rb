@@ -169,6 +169,12 @@ describe 'Generated Readme: How the framework works' do
         expect(section).not_to include('scroll_to', 'swipe')
       end
 
+      it 'explains that the waits inside eventually stretch to its time and are retried' do
+        eventually = section_of(readme)[/^### eventually\n.*?(?=^### )/m]
+        expect(eventually).to include('a wait inside it that timed out', 'whatever is left of the block',
+                                      '`timeout: 2` gets 2 seconds per try', '(still failing after 10s)')
+      end
+
       it 'lists the five steps to remove the wait helper' do
         removal = section_of(readme)[/^### Removing the wait helper\n.*/m]
         expect(removal).to include('helpers/wait_helper.rb', 'helpers/raider_element.rb', 'include WaitHelper',
