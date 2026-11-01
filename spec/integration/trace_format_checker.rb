@@ -23,7 +23,7 @@ module TraceFormatChecker
       'index' => [Integer], 'parent_index' => [Integer, NilClass], 'kind' => [String], 'action' => [String],
       'locator' => [Hash, NilClass], 'url' => [String, NilClass], 'page_title' => [String, NilClass],
       'started_at' => [String], 'duration_ms' => [Integer], 'waited_ms' => [Integer], 'retries' => [Integer],
-      'status' => [String], 'error' => [String, NilClass], 'source' => [Hash, NilClass], 'rect' => [Hash, NilClass],
+      'status' => [String], 'error' => [Hash, NilClass], 'source' => [Hash, NilClass], 'rect' => [Hash, NilClass],
       'screenshot' => [String, NilClass], 'snapshot' => [String, NilClass]
     }.freeze
   }.freeze
@@ -39,6 +39,7 @@ module TraceFormatChecker
     trace, names = read(path)
     problems = names.grep_v(ENTRY_NAME).map { |name| "entry #{name.inspect} is not an allowed name" }
     problems.concat(identity(trace)).concat(typed('trace', trace, FIELDS[:top]))
+    problems.concat(error_rules('test', trace['test'])) if trace['test'].is_a?(Hash)
     return problems unless trace['steps'].is_a?(Array)
 
     problems.concat(steps(trace['steps'], names)).concat(events(trace))
@@ -80,8 +81,20 @@ module TraceFormatChecker
     problems << "#{where}.started_at #{step['started_at'].inspect} is not UTC ISO-8601 with ms" unless TIMESTAMP.match?(step['started_at'].to_s)
     parent = step['parent_index']
     problems << "#{where}.parent_index #{parent} is not an earlier step" if parent && !parent.between?(1, position)
+    problems.concat(error_rules(where, step))
     problems.concat(locator_rules(where, step['locator']))
     problems.concat(media_rules(where, step, names))
+  end
+
+  # error is null or { "class": String, "message": String }, on steps and on test.
+  def self.error_rules(where, holder)
+    return ["#{where} has no \"error\""] unless holder.key?('error')
+
+    error = holder['error']
+    return [] if error.nil?
+    return ["#{where}.error is #{error.inspect}, not null or an object"] unless error.is_a?(Hash)
+
+    %w[class message].filter_map { |key| "#{where}.error.#{key} is not a string" unless error[key].is_a?(String) }
   end
 
   def self.locator_rules(where, locator)

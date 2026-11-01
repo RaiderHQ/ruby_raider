@@ -93,7 +93,7 @@ describe 'Generated TraceHelper' do
     expect(trace).to include('format' => 'raider-trace', 'version' => 1,
                              'producer' => { 'name' => 'ruby_raider', 'version' => File.read(File.expand_path('../../lib/version', __dir__)).strip },
                              'test' => { 'identifier' => 'spec/login_page_spec.rb[1:1]', 'full_name' => 'Login page logs in',
-                                         'status' => 'failed', 'attempt' => 2 },
+                                         'status' => 'failed', 'attempt' => 2, 'error' => nil },
                              'browser' => { 'name' => 'chrome', 'version' => '131.0.6778.85' },
                              'viewport' => { 'width' => 1920, 'height' => 1080 }, 'device_pixel_ratio' => 2,
                              'capabilities' => { 'network' => false, 'console' => false, 'screenshots' => true, 'snapshots' => true },
@@ -148,18 +148,20 @@ describe 'Generated TraceHelper' do
 
     expect(steps.map { |step| step.values_at('index', 'parent_index', 'kind', 'action', 'status') })
       .to eq([[1, nil, 'group', 'eventually', 'passed'], [2, 1, 'action', 'click', 'passed'], [3, 1, 'action', 'text', 'passed']])
-    expect(steps.first).to include('retries' => 2, 'error' => 'RuntimeError: not yet 1', 'screenshot' => nil, 'snapshot' => nil)
+    expect(steps.first).to include('retries' => 2, 'error' => { 'class' => 'RuntimeError', 'message' => 'not yet 1' }, 'screenshot' => nil, 'snapshot' => nil)
   end
 
   it 'appends a failure step with the error when no traced step was running' do
     recorder = started_recorder
     recorder.navigated('https://example.test/login')
     act(recorder, :text, 'welcome')
-    steps = kept(recorder, failed_test.merge(error: RSpec::Expectations::ExpectationNotMetError.new('expected "Hi"')))['steps']
+    trace = kept(recorder, failed_test.merge(error: RSpec::Expectations::ExpectationNotMetError.new('expected "Hi"')))
+    steps = trace['steps']
+    error = { 'class' => 'RSpec::Expectations::ExpectationNotMetError', 'message' => 'expected "Hi"' }
 
+    expect(trace['test']['error']).to eq(error)
     expect(steps.size).to eq(3)
-    expect(steps.last).to include('index' => 3, 'kind' => 'failure', 'status' => 'failed', 'locator' => nil,
-                                  'error' => 'RSpec::Expectations::ExpectationNotMetError: expected "Hi"',
+    expect(steps.last).to include('index' => 3, 'kind' => 'failure', 'status' => 'failed', 'locator' => nil, 'error' => error,
                                   'screenshot' => 'steps/0003.png', 'snapshot' => 'steps/0003.html')
   end
 
@@ -170,7 +172,33 @@ describe 'Generated TraceHelper' do
     steps = kept(recorder, failed_test.merge(error: error))['steps']
 
     expect(steps.map { |step| step.values_at('kind', 'status', 'error') })
-      .to eq([['action', 'failed', 'RuntimeError: Waited 10s for {id: "go"} to be visible']])
+      .to eq([['action', 'failed', { 'class' => 'RuntimeError', 'message' => 'Waited 10s for {id: "go"} to be visible' }]])
+  end
+
+  it 'still gives the test error a step when the step that raised it was dropped by eventually' do
+    recorder = started_recorder
+    error = RuntimeError.new('not yet')
+    group = recorder.group_started(action: :eventually, source: source)
+    act(recorder, :click, 'refresh', status: :failed, error: error)
+    recorder.group_retried(group, error: error)
+    act(recorder, :click, 'refresh')
+    recorder.group_finished(group, status: :passed, retries: 1, error: nil)
+    steps = kept(recorder, failed_test.merge(error: error))['steps']
+
+    expect(steps.map { |step| step.values_at('kind', 'status') }).to eq([%w[group passed], %w[action passed]])
+    expect(steps.first['error']).to eq('class' => 'RuntimeError', 'message' => 'not yet')
+  end
+
+  it 'appends a failure step when the step that raised the test error was dropped by max_steps' do
+    allow(TraceHelper).to receive(:config).and_return(trace_config.merge('max_steps' => 2))
+    recorder = started_recorder
+    error = RuntimeError.new('gone')
+    act(recorder, :click, 'first', status: :failed, error: error)
+    2.times { act(recorder, :click, 'later') }
+    steps = kept(recorder, failed_test.merge(error: error))['steps']
+
+    expect(steps.map { |step| step['kind'] }).to eq(%w[action failure])
+    expect(steps.last['error']).to eq('class' => 'RuntimeError', 'message' => 'gone')
   end
 
   it 'records screenshot: null and keeps going when the screenshot lambda raises' do

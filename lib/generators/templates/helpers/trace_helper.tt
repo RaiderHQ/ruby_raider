@@ -92,8 +92,9 @@ module TraceHelper
       Process.clock_gettime(Process::CLOCK_MONOTONIC)
     end
 
-    def error_text(error)
-      error && "#{error.class}: #{error.message}"
+    # The format's error shape, on steps and on test: { class:, message: } or nil.
+    def error_json(error)
+      error && { class: error.class.name, message: error.message }
     end
 
     private
@@ -142,7 +143,7 @@ module TraceHelper
     def as_json(index, parent_index, media)
       { index: index, parent_index: parent_index, kind: kind, action: action, locator: locator, url: url,
         page_title: page_title, started_at: started_at, duration_ms: duration_ms.to_i, waited_ms: waited_ms.to_i,
-        retries: retries.to_i, status: status, error: TraceHelper.error_text(error), source: source, rect: rect,
+        retries: retries.to_i, status: status, error: TraceHelper.error_json(error), source: source, rect: rect,
         screenshot: media[:screenshots], snapshot: media[:snapshots] }
     end
   end
@@ -182,7 +183,7 @@ module TraceHelper
 
     def action_finished(step, status:, waited_ms:, retries:, error:, element:)
       record('action') do
-        finished(step, status, error)
+        step.finish(status, error)
         step.waited_ms = waited_ms
         step.retries = retries
         step.element = element
@@ -213,7 +214,7 @@ module TraceHelper
     def group_finished(group, status:, retries:, error:)
       record('group') do
         @groups.reject! { |open| open.equal?(group) }
-        finished(group, status, error || group.error)
+        group.finish(status, error || group.error)
         group.retries = retries
         nil
       end
@@ -277,7 +278,6 @@ module TraceHelper
       @steps = []
       @groups = []
       @events = []
-      @errors = []
       @seq = 0
       @page = { url: nil, page_title: nil }
       @truncated = { steps: 0, screenshots: 0, snapshots: 0, network: 0, console: 0 }
@@ -304,11 +304,6 @@ module TraceHelper
       @steps << step
       drop_oldest_step while @steps.size > TraceHelper.max_steps
       step
-    end
-
-    def finished(step, status, error)
-      step.finish(status, error)
-      @errors << error if error
     end
 
     def drop_oldest_step
@@ -357,9 +352,10 @@ module TraceHelper
       [step.screenshot, step.snapshot].compact.each { |path| FileUtils.rm_f(path) }
     end
 
-    # A test that raised outside every traced step gets a last failure step.
+    # A test that raised outside every kept step gets a last failure step. Steps dropped by
+    # eventually or max_steps own nothing, so their error still gets a step.
     def failure(error)
-      return if error.nil? || @errors.any? { |seen| seen.equal?(error) }
+      return if error.nil? || @steps.any? { |step| step.error.equal?(error) }
 
       step = add(kind: 'failure', action: 'failure', locator: nil, source: nil)
       step.finish(:failed, error)
@@ -415,7 +411,8 @@ module TraceHelper
 
     def document(test, steps, events)
       { format: 'raider-trace', version: 1, producer: PRODUCER,
-        test: { identifier: test[:identifier], full_name: test[:full_name], status: test[:status].to_s, attempt: test[:attempt] },
+        test: { identifier: test[:identifier], full_name: test[:full_name], status: test[:status].to_s, attempt: test[:attempt],
+                error: TraceHelper.error_json(test[:error]) },
         browser: @meta[:browser], viewport: @meta[:viewport], device_pixel_ratio: @meta[:device_pixel_ratio],
         started_at: @started_at, finished_at: TraceHelper.timestamp, capabilities: @capabilities, truncated: @truncated,
         steps: steps, network: events.select { |item| item.list == :network }.map(&:entry),
