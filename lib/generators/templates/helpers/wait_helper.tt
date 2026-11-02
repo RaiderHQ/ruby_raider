@@ -40,7 +40,7 @@ module WaitHelper
     # rubocop:disable Style/StderrPuts
     def report(hook, *args, **details)
       current = observer
-      return unless current&.respond_to?(hook)
+      return unless current.respond_to?(hook)
 
       details = yield if block_given?
       current.public_send(hook, *args, **details)

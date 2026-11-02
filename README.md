@@ -69,6 +69,7 @@ Every generated project comes with:
 - **Failure video replay** — Every test is recorded and the video is kept only for failing tests, attached to the report as `video` (WebM from page screenshots for Selenium and Watir, Appium's own MP4 for mobile, which needs `ffmpeg` on the Appium server host for iOS and for Android recordings over 180 s). Turn it off per run with `VIDEO=off`, or per project with `raider u video off`; ffmpeg is downloaded once, SHA-256 checked and cached in `~/.cache/raider`. The RaiderHQ `ffmpeg-7.1` build that the download uses is not published yet, so for now set `RAIDER_FFMPEG_PATH` to an ffmpeg with libvpx to get web videos
 - **Failure trace replay** (Selenium with RSpec or Cucumber) — Failing tests keep a step-by-step trace: each action with its locator and wait time, a screenshot and the page HTML after every step that changes the page, plus network requests and console messages on Chrome, Edge and Firefox. It is saved as `raider-results/attachments/<n>-trace.zip`, attached to the report as `trace` and opened in Raider Desktop or on Hideout. `TRACE=on` keeps passing tests too, `TRACE=off` captures nothing, and `raider u trace on|off` sets it for the project. Typed values in password fields and `RAIDER_SECRET_*` values are hidden; other typed values, page text and URLs are kept, so treat a trace like the video. Request headers, cookies and bodies are never captured
 - **Network mocking** (Selenium with RSpec or Cucumber) — Answer a request with your own response or block it, from the test: `mock_request('**/api/users', json: { users: [] })`, `mock_request(url, status: 500)` and `block_request('**/*.png')`, with `calls` to check what the page asked for. It uses WebDriver BiDi on Chrome, Edge and Firefox (Safari and `BIDI=off` raise `NetworkHelper::Unavailable`), handles CORS for cross-origin mocks, clears mocks after each test, and marks mocked requests in the trace
+- **Screenshot comparison** (Selenium with RSpec or Cucumber) — `match_screenshot('home')` compares the page, or an element with `element:`, with a baseline in `screenshots/baselines/<browser>/`. The first run saves the baseline; later runs fail on a difference and attach the expected, actual and diff pictures to the report and the trace. `SCREENSHOTS=update` rewrites baselines, a missing baseline fails on CI, and tolerances (`threshold`, `max_diff_pixels`, `max_diff_ratio`) go in `config/config.yml` under `screenshots:`. Generate baselines where CI runs: a Retina laptop makes 2x pictures
 - **GitHub Actions CI** — Ready-to-use test pipeline that caches ffmpeg for failure videos
 - **Rake tasks** — Default, smoke, and regression tasks with tag-based filtering
 - **Retry support** — RSpec retry with configurable retry count via `RETRY_COUNT` env var
@@ -174,6 +175,19 @@ Gem upgrades do not rewrite generated code, so a project made with 3.13 or earli
    mock block fails the test and mocks never leak into the next test.
 4. In `helpers/driver_helper.rb`, make the BiDi condition include the helper:
    `bidi = (defined?(TraceHelper) && TraceHelper.bidi?(load_browser)) || (defined?(NetworkHelper) && NetworkHelper.bidi?(load_browser))`.
+
+## Adding screenshot comparison to a 3.14 project
+
+Gem upgrades do not rewrite generated code, so a project made with 3.14 or earlier opts in by hand (Selenium web projects only):
+
+1. Copy `helpers/screenshot_helper.rb` from a freshly generated project into your `helpers/` folder, and add `gem 'chunky_png'` to the `Gemfile`.
+2. Load and include it: add `require_relative 'screenshot_helper'` next to the other helper requires, then
+   `config.include(ScreenshotHelper)` in `helpers/spec_helper.rb` (RSpec), or `World(ScreenshotHelper)` in
+   `features/support/world.rb` with `require_relative '../../helpers/screenshot_helper'` (Cucumber). If you want it in
+   page objects, add `include ScreenshotHelper` to `page_objects/abstract/page.rb`.
+3. Call `ScreenshotHelper.reset` in the before hook, so a name can be used again in the next test.
+4. Add the `screenshots:` block (`threshold`, `max_diff_pixels`, `max_diff_ratio`) from a fresh `config/config.yml`.
+5. Use `raider_reporter` 0.14 or later to list comparisons in the report; with an older one the pictures are still attached.
 
 ## Commands
 

@@ -627,6 +627,59 @@ The network helper is ordinary code in your project, so you can take it out. To 
 5. Delete any `mock_request` and `block_request` calls in your tests.
 
 <%- end -%>
+<%- if screenshot_helper? -%>
+## Screenshot comparison
+
+Use it when "does the page still look right?" is the question: a layout, a chart, a component. `match_screenshot` takes
+a screenshot of the page and compares it with a picture you approved earlier (the baseline). If they differ, the test fails.
+
+```ruby
+match_screenshot('home')                                     # the viewport
+match_screenshot('cart/summary', element: cart_summary)      # one element
+match_screenshot('home', max_diff_pixels: 50, timeout: 5)    # allow a few pixels, wait up to 5 s
+```
+
+A name is letters, digits, `-` and `_`, with `/` for folders, up to 100 characters, and can be used once per test.
+
+**Where baselines live.** `screenshots/baselines/<browser>/<name>.png`, for example
+`screenshots/baselines/chrome/home.png`. Commit them: they are part of your tests. Each browser has its own folder.
+
+**First run.** With no baseline, the call saves the screenshot as the baseline and passes. Look at the new file, and
+commit it if it is what you want. On CI (when `CI` is set or the reporter detects a CI system) a missing baseline fails the test
+and writes nothing, so a forgotten file never goes unnoticed.
+
+**After a change you wanted.** Run `SCREENSHOTS=update bundle exec <%= rspec? ? 'rspec' : 'cucumber' %>`. Every comparison that differs
+rewrites its baseline and passes. Review the changed PNGs in your diff before you commit them.
+
+**When it fails.** The failure message names the baseline and says how many pixels differ. The report gets three pictures,
+`comparison:<name>:expected`, `:actual` and `:diff` (differences in red), and the trace has a "match_screenshot" step. The
+comparison retries until it matches or `timeout:` (the wait timeout by default) runs out, so a page that is still settling does not fail it.
+
+**Tolerances.** Set them for the project in `config/config.yml` under `screenshots:`, or for one call as arguments:
+
+- `threshold` (default 0.2): how different a pixel must be to count, from 0 (exact) to 1.
+- `max_diff_pixels` (default 0): how many pixels may differ.
+- `max_diff_ratio` (default none): or the share of all pixels that may differ, for example `0.001`.
+
+A comparison passes when the differing pixels are within `max_diff_pixels` or `max_diff_ratio`. A picture with a different
+size always fails, and the message gives both sizes.
+
+**Generate baselines where CI runs.** Fonts and rendering differ between machines, so a baseline made on your laptop may not match CI.
+A Retina screen is the usual case: it makes 2x pictures, and a 1x CI machine fails with a size change that names the
+device pixel ratio. Create the baselines in the same environment that checks them (run the suite once with `SCREENSHOTS=update` there and commit the files).
+
+### Removing screenshot comparison
+
+The helper is ordinary code in your project, so you can take it out. To do that:
+
+1. Delete `helpers/screenshot_helper.rb` and the `screenshots/` folder.
+2. Remove `include ScreenshotHelper` from `page_objects/abstract/page.rb`, <%= rspec? ? '`config.include(ScreenshotHelper)` from `helpers/spec_helper.rb`' : '`World(ScreenshotHelper)` from `features/support/world.rb`' %>, and the
+   `require_relative` lines that load `screenshot_helper`.
+3. Remove the `ScreenshotHelper.reset` line from the before hook (<%= rspec? ? '`helpers/spec_helper.rb`' : '`features/support/env.rb`' %>).
+4. Remove the `screenshots:` block from `config/config.yml` and `gem 'chunky_png'` from the `Gemfile`.
+5. Delete any `match_screenshot` calls in your tests.
+
+<%- end -%>
 <%- if web? -%>
 ## Reusing the login
 

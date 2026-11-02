@@ -124,6 +124,28 @@ describe 'Generated Readme content' do
         end
       end
     end
+
+    context "with #{framework} and #{automation}, the screenshot comparison section" do
+      subject(:readme) { read_generated("#{framework}_#{automation}", 'Readme.md') }
+
+      if automation == 'selenium'
+        it 'documents the call, SCREENSHOTS=update, tolerances, CI baselines and removal' do
+          expect(readme).to include('## Screenshot comparison', "match_screenshot('home')", 'SCREENSHOTS=update',
+                                    'screenshots/baselines/', 'max_diff_pixels', 'Retina', 'Generate baselines where CI runs',
+                                    '### Removing screenshot comparison')
+        end
+
+        it 'names the files to edit for this framework' do
+          section = readme[/^### Removing screenshot comparison\n.*?(?=^##)/m]
+          expect(section).to include('helpers/screenshot_helper.rb', 'ScreenshotHelper.reset', "gem 'chunky_png'")
+          expect(section).to include(framework == 'rspec' ? 'config.include(ScreenshotHelper)' : 'World(ScreenshotHelper)')
+        end
+      else
+        it 'does not mention screenshot comparison' do
+          expect(readme).not_to include('Screenshot comparison', 'ScreenshotHelper', 'match_screenshot')
+        end
+      end
+    end
   end
 
   AUTOMATION_TYPES.each do |automation|
