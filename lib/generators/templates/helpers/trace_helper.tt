@@ -1030,7 +1030,7 @@ module TraceHelper
 
     def self.request_sent(recorder, params)
       request = params['request'] || {}
-      recorder.network_started(request['request'],
+      recorder.network_started(key(params, request['request']),
                                { method: request['method'], url: request['url'], status: nil, mime_type: nil,
                                  started_at: time(params['timestamp']), duration_ms: nil, bytes: nil, error: nil },
                                at: params['timestamp'])
@@ -1038,7 +1038,7 @@ module TraceHelper
 
     def self.response_completed(recorder, params)
       response = params['response'] || {}
-      recorder.network_completed(params.dig('request', 'request'),
+      recorder.network_completed(key(params, params.dig('request', 'request')),
                                  { status: response['status'], mime_type: response['mimeType'],
                                    bytes: response['bytesReceived'] || response['encodedDataLength'] },
                                  finished_at(params))
@@ -1055,7 +1055,13 @@ module TraceHelper
     end
 
     def self.fetch_error(recorder, params)
-      recorder.network_completed(params.dig('request', 'request'), { error: params['errorText'] }, params['timestamp'])
+      recorder.network_completed(key(params, params.dig('request', 'request')), { error: params['errorText'] },
+                                 params['timestamp'])
+    end
+
+    # A redirect keeps the request id and counts its hops, so the id alone would merge the hops.
+    def self.key(params, request)
+      [request, params['redirectCount'].to_i]
     end
 
     def self.log_entry(recorder, params)

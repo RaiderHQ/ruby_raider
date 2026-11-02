@@ -688,8 +688,8 @@ describe 'Generated TraceHelper' do
     let(:started_ms) { 1_793_568_600_020 }
     let(:bidi_events) { %w[network.beforeRequestSent network.responseCompleted network.fetchError log.entryAdded] }
 
-    def request_sent(id, method, url, at)
-      bidi.emit('network.beforeRequestSent',
+    def request_sent(id, method, url, at, hop: 0)
+      bidi.emit('network.beforeRequestSent', 'redirectCount' => hop,
                 'request' => { 'request' => id, 'method' => method, 'url' => url,
                                'headers' => [{ 'name' => 'Cookie', 'value' => { 'type' => 'string', 'value' => 'session=hush' } }] },
                 'timestamp' => at)
@@ -777,6 +777,23 @@ describe 'Generated TraceHelper' do
         [{ 'step_index' => 1, 'level' => 'error', 'text' => 'Uncaught TypeError: x is undefined',
            'source' => 'https://example.test/app.js:41:7', 'at' => '2026-11-01T21:30:00.020Z' },
          { 'step_index' => 1, 'level' => 'info', 'text' => 'ready', 'source' => nil, 'at' => '2026-11-01T21:30:00.021Z' }]
+      )
+    end
+
+    # A redirect keeps the request id; each hop has its own redirectCount. Chrome starts hop 1 in the same
+    # millisecond hop 0 completes, so the two events can arrive in either order.
+    it 'keeps each hop of a redirect as its own entry with its own status and duration' do
+      recorder = started_recorder
+      recorder.navigated('https://example.test/start')
+      request_sent('r1', 'GET', 'https://example.test/start', started_ms)
+      request_sent('r1', 'GET', 'https://example.test/', started_ms + 1, hop: 1)
+      bidi.emit('network.responseCompleted', 'redirectCount' => 0, 'timestamp' => started_ms + 1,
+                                             'request' => { 'request' => 'r1' }, 'response' => { 'status' => 302 })
+      bidi.emit('network.responseCompleted', 'redirectCount' => 1, 'timestamp' => started_ms + 206,
+                                             'request' => { 'request' => 'r1' }, 'response' => { 'status' => 200 })
+
+      expect(kept(recorder)['network'].map { |entry| entry.values_at('url', 'status', 'duration_ms') }).to eq(
+        [['https://example.test/start', 302, 1], ['https://example.test/', 200, 205]]
       )
     end
 
