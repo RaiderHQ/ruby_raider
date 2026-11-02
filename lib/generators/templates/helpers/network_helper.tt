@@ -1,0 +1,48 @@
+# frozen_string_literal: true
+
+# Mocks network requests in the browser through WebDriver BiDi (chrome, edge and firefox):
+# answer a request with your own response, or block it. The mixin methods land with the router.
+# BIDI=off turns BiDi off, for a grid that cannot carry the websocket.
+module NetworkHelper
+  # Raised when mocking cannot run: no BiDi, or a browser without it.
+  class Unavailable < StandardError; end
+
+  # Raised for a mock that cannot be set up: a bad pattern or an invalid response.
+  class MockError < StandardError; end
+
+  # The driver helper sets web_socket_url for these.
+  BIDI_BROWSERS = %w[chrome edge firefox].freeze
+
+  class << self
+    # Follows the mocks: responds to #call(event_hash) when set. Nil by default.
+    attr_accessor :observer
+
+    def bidi_off?
+      ENV['BIDI'].to_s.downcase == 'off'
+    end
+
+    # True for a browser that speaks WebDriver BiDi (Edge reports MicrosoftEdge), unless BIDI=off.
+    def bidi?(browser)
+      return false if bidi_off?
+
+      name = browser.to_s.downcase.delete_prefix('microsoft')
+      BIDI_BROWSERS.any? { |bidi_browser| name.start_with?(bidi_browser) }
+    end
+  end
+
+  def mock_request(*)
+    raise NotImplementedError, 'mock_request arrives with the router'
+  end
+
+  def block_request(*)
+    raise NotImplementedError, 'block_request arrives with the router'
+  end
+
+  def remove_mock(*)
+    raise NotImplementedError, 'remove_mock arrives with the router'
+  end
+
+  def clear_mocks
+    raise NotImplementedError, 'clear_mocks arrives with the router'
+  end
+end

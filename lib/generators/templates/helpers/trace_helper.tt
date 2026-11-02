@@ -55,7 +55,7 @@ module TraceHelper
     # True while tracing is on for a browser that speaks WebDriver BiDi (Edge reports MicrosoftEdge).
     def bidi?(browser)
       name = browser.to_s.downcase.delete_prefix('microsoft')
-      enabled? && BIDI_BROWSERS.any? { |bidi_browser| name.start_with?(bidi_browser) }
+      enabled? && ENV['BIDI'].to_s.downcase != 'off' && BIDI_BROWSERS.any? { |bidi_browser| name.start_with?(bidi_browser) }
     end
 
     # Passed to Selenium through the driver helper's fan-out listener when the driver is created.

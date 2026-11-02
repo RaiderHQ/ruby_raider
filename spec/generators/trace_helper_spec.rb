@@ -1133,6 +1133,14 @@ describe 'Generated TraceHelper' do
         .to eq([true, true, true, true, false, false])
     end
 
+    context 'with BIDI=off' do
+      let(:env) { { 'BIDI' => 'off' } }
+
+      it 'is false for every browser' do
+        expect(TraceHelper.bidi?('chrome')).to be(false)
+      end
+    end
+
     context 'with TRACE=off' do
       let(:env) { { 'TRACE' => 'off' } }
 
@@ -1159,7 +1167,7 @@ describe 'Generated TraceHelper' do
 
     def load_driver_helper
       generator = HelpersGenerator.new(%w[selenium rspec proj])
-      %w[driver_helper video_helper].each do |name|
+      %w[driver_helper video_helper network_helper].each do |name|
         source = File.read(File.expand_path("../../lib/generators/templates/helpers/#{name}.tt", __dir__))
         File.write(File.join(project_dir, "#{name}.rb"), ERB.new(source, trim_mode: '-').result(generator.instance_eval { binding }))
       end
@@ -1193,7 +1201,7 @@ describe 'Generated TraceHelper' do
     before { load_driver_helper }
 
     after do
-      %i[DriverHelper VideoHelper].each { |name| Object.send(:remove_const, name) if Object.const_defined?(name) }
+      %i[DriverHelper VideoHelper NetworkHelper].each { |name| Object.send(:remove_const, name) if Object.const_defined?(name) }
       $LOADED_FEATURES.delete(trace_feature)
     end
 
@@ -1212,8 +1220,8 @@ describe 'Generated TraceHelper' do
         .to eq([['navigate', 'https://example.test/login'], ['navigate', 'https://example.test/login']])
     end
 
-    context 'with VIDEO=off and TRACE=off' do
-      let(:env) { { 'VIDEO' => 'off', 'TRACE' => 'off' } }
+    context 'with VIDEO=off, TRACE=off and BIDI=off' do
+      let(:env) { { 'VIDEO' => 'off', 'TRACE' => 'off', 'BIDI' => 'off' } }
 
       it 'passes no listener at all' do
         expect(created_arguments.keys).to eq([:options])
@@ -1224,8 +1232,16 @@ describe 'Generated TraceHelper' do
       end
     end
 
-    it 'sets web_socket_url only for chrome, edge and firefox and not with TRACE=off' do
+    it 'sets web_socket_url only for chrome, edge and firefox' do
       expect(%w[chrome edge firefox safari].map { |browser| options_for(browser).web_socket_url }).to eq([true, true, true, nil])
+    end
+
+    context 'with TRACE=off' do
+      let(:env) { { 'TRACE' => 'off' } }
+
+      it 'still sets web_socket_url for the network mocks' do
+        expect(options_for('chrome').web_socket_url).to be(true)
+      end
     end
   end
 end

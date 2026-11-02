@@ -16,6 +16,9 @@ require_relative 'video_helper'
 <%- if wait_helper? -%>
 require_relative 'wait_helper'
 <%- end -%>
+<%- if network_helper? -%>
+require_relative 'network_helper'
+<%- end -%>
 <%- if web? -%>
 require_relative 'session_state'
 <%- end -%>
@@ -39,6 +42,9 @@ module SpecHelper
     <%- end -%>
     <%- if wait_helper? -%>
     config.include(WaitHelper)
+    <%- end -%>
+    <%- if network_helper? -%>
+    config.include(NetworkHelper)
     <%- end -%>
     <%- if mobile? -%>
     config.before(:each) do

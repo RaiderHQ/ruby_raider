@@ -44,12 +44,19 @@ describe 'Helper file content' do
       expect(helper).not_to include('Capybara')
     end
 
+    it 'requires network_helper before trace_helper' do
+      expect(helper).to include("require_relative 'network_helper'")
+      expect(helper.index("require_relative 'network_helper'")).to be < helper.index("require_relative 'trace_helper'")
+    end
+
     it 'requires trace_helper' do
       expect(helper).to include("require_relative 'trace_helper'")
     end
 
     it 'sets web_socket_url only for chrome, edge and firefox and not with TRACE=off' do
-      expect(helper).to include('options.web_socket_url = true if defined?(TraceHelper) && TraceHelper.bidi?(load_browser)')
+      expect(helper).to include('bidi = (defined?(TraceHelper) && TraceHelper.bidi?(load_browser)) ||',
+                                '(defined?(NetworkHelper) && NetworkHelper.bidi?(load_browser))')
+      expect(helper).to include('options.web_socket_url = true if bidi')
     end
 
     it 'fans the video and trace listeners out through one listener, each guarded by defined?' do
@@ -464,6 +471,11 @@ describe 'Auto-waiting helper wiring' do
       it 'includes WaitHelper in the spec helper' do
         helper = read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'helpers/spec_helper.rb')
         expect(helper).to include("require_relative 'wait_helper'", 'config.include(WaitHelper)')
+      end
+
+      it "#{automation == 'selenium' ? 'includes' : 'leaves out'} NetworkHelper in the spec helper" do
+        helper = read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'helpers/spec_helper.rb')
+        expect(helper.include?('config.include(NetworkHelper)')).to eq(automation == 'selenium')
       end
     end
   end

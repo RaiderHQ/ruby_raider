@@ -12,6 +12,7 @@ class HelpersGenerator < Generator
     generate_session_state
     generate_wait_helper
     generate_trace_helper
+    generate_network_helper
   end
 
   private
@@ -55,6 +56,12 @@ class HelpersGenerator < Generator
     return unless trace_helper?
 
     template('helpers/trace_helper.tt', "#{name}/helpers/trace_helper.rb")
+  end
+
+  def generate_network_helper
+    return unless network_helper?
+
+    template('helpers/network_helper.tt', "#{name}/helpers/network_helper.rb")
   end
 
   def generate_appium_helper
