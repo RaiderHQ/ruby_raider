@@ -624,9 +624,13 @@ module TraceHelper
       { name: nil, version: nil }
     end
 
+    # The inner size: the outer window size includes the browser chrome, so it would not match
+    # the rects or the viewport screenshot.
     def viewport
-      size = @driver.manage.window.size
-      { width: size.width, height: size.height }
+      width, height = @driver.execute_script('return [window.innerWidth, window.innerHeight]')
+      return { width: nil, height: nil } unless width.is_a?(Numeric) && height.is_a?(Numeric)
+
+      { width: width, height: height }
     rescue StandardError
       { width: nil, height: nil }
     end

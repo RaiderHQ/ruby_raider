@@ -219,7 +219,7 @@ timeout: 15
 - `url`: the address of the site under test. Each page adds its own path to it. Change it to your site.
 <%- end -%>
 - `timeout`: how many seconds the wait helper waits for an element before the test fails (10).
-- `viewport`: the browser window's width and height.
+- `viewport`: the page viewport's width and height in CSS pixels.
 - `browser_arguments`: extra options passed to each browser when it starts.
 - `headless`: not in the file by default. Add `headless: true`, or set `HEADLESS=true` for one run, to run the
   browser without a window.

@@ -67,10 +67,9 @@ describe 'Generated TraceHelper' do
   let(:bidi) { FakeTraceBidi.new(jpeg) }
   let(:html) { "<html><head><title>Login</title></head><body>#{'<p>row</p>' * 50}</body></html>" }
   let(:capabilities) { double('capabilities', browser_name: 'chrome', browser_version: '131.0.6778.85') }
-  let(:window) { double('window', size: double('size', width: 1920, height: 1080)) }
   let(:driver) do
     double('driver', screenshot_as: png, page_source: html, current_url: 'https://example.test/login', title: 'Login',
-                     capabilities: capabilities, manage: double('manage', window: window), execute_script: 2,
+                     capabilities: capabilities, execute_script: 2,
                      bidi: bidi, window_handle: 'context-1')
   end
   let(:wait_helper) do
@@ -91,6 +90,11 @@ describe 'Generated TraceHelper' do
     path = File.join(project_dir, 'trace_helper.rb')
     File.write(path, rendered)
     load path
+  end
+
+  # The inner viewport, which is what rects and the viewport screenshot are measured in.
+  def viewport_script(size)
+    allow(driver).to receive(:execute_script).with(/innerWidth/).and_return(size)
   end
 
   def started_recorder(**lambdas)
@@ -148,6 +152,7 @@ describe 'Generated TraceHelper' do
   end
 
   it 'writes a zip whose trace.json has format raider-trace, version 1 and the spec §1 top-level keys' do
+    viewport_script([1905, 969])
     recorder = started_recorder
     recorder.navigated('https://example.test/login')
     trace = kept(recorder)
@@ -159,7 +164,7 @@ describe 'Generated TraceHelper' do
                              'test' => { 'identifier' => 'spec/login_page_spec.rb[1:1]', 'full_name' => 'Login page logs in',
                                          'status' => 'failed', 'attempt' => 2, 'error' => nil },
                              'browser' => { 'name' => 'chrome', 'version' => '131.0.6778.85' },
-                             'viewport' => { 'width' => 1920, 'height' => 1080 }, 'device_pixel_ratio' => 2,
+                             'viewport' => { 'width' => 1905, 'height' => 969 }, 'device_pixel_ratio' => 2,
                              'capabilities' => { 'network' => true, 'console' => true, 'screenshots' => true, 'snapshots' => true },
                              'truncated' => { 'steps' => 0, 'screenshots' => 0, 'snapshots' => 0, 'network' => 0, 'console' => 0 })
     expect(trace['finished_at'] >= trace['started_at']).to be(true)
@@ -315,6 +320,20 @@ describe 'Generated TraceHelper' do
     expect(steps.map { |step| step['snapshot'] }).to eq(%w[steps/0001.html steps/0002.html steps/0003.html])
     expect(warnings).to eq(["[trace] screenshot not captured: browser gone\n"])
     expect(TraceHelper.enabled?).to be(true)
+  end
+
+  describe 'viewport' do
+    it 'is nil when the inner size cannot be read' do
+      viewport_script(nil)
+
+      expect(kept(started_recorder)['viewport']).to eq('width' => nil, 'height' => nil)
+    end
+
+    it 'is nil when the script raises' do
+      allow(driver).to receive(:execute_script).with(/innerWidth/).and_raise(Selenium::WebDriver::Error::WebDriverError, 'no page')
+
+      expect(kept(started_recorder)['viewport']).to eq('width' => nil, 'height' => nil)
+    end
   end
 
   describe 'snapshots' do
