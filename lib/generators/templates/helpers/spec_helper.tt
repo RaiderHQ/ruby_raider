@@ -19,6 +19,9 @@ require_relative 'wait_helper'
 <%- if network_helper? -%>
 require_relative 'network_helper'
 <%- end -%>
+<%- if screenshot_helper? -%>
+require_relative 'screenshot_helper'
+<%- end -%>
 <%- if web? -%>
 require_relative 'session_state'
 <%- end -%>
@@ -45,6 +48,9 @@ module SpecHelper
     <%- end -%>
     <%- if network_helper? -%>
     config.include(NetworkHelper)
+    <%- end -%>
+    <%- if screenshot_helper? -%>
+    config.include(ScreenshotHelper)
     <%- end -%>
     <%- if mobile? -%>
     config.before(:each) do

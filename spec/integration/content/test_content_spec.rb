@@ -187,6 +187,12 @@ describe 'Cucumber world WaitHelper wiring' do
       world = read_generated("cucumber_#{automation}", 'features/support/world.rb')
       expect(world.include?('World(NetworkHelper)')).to eq(automation == 'selenium')
     end
+
+    it "#{automation == 'selenium' ? 'adds' : 'leaves out'} ScreenshotHelper in the #{automation} world" do
+      world = read_generated("cucumber_#{automation}", 'features/support/world.rb')
+      expect(world.include?('World(ScreenshotHelper)')).to eq(automation == 'selenium')
+      expect(world.include?("require_relative '../../helpers/screenshot_helper'")).to eq(automation == 'selenium')
+    end
   end
 
   it 'leaves the watir world without WaitHelper' do

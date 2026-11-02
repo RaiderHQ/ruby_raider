@@ -13,6 +13,7 @@ class HelpersGenerator < Generator
     generate_wait_helper
     generate_trace_helper
     generate_network_helper
+    generate_screenshot_helper
   end
 
   private
@@ -62,6 +63,12 @@ class HelpersGenerator < Generator
     return unless network_helper?
 
     template('helpers/network_helper.tt', "#{name}/helpers/network_helper.rb")
+  end
+
+  def generate_screenshot_helper
+    return unless screenshot_helper?
+
+    template('helpers/screenshot_helper.tt', "#{name}/helpers/screenshot_helper.rb")
   end
 
   def generate_appium_helper

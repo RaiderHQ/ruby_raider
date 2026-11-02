@@ -83,6 +83,11 @@ class Generator < Thor::Group
     trace_helper?
   end
 
+  # Screenshot comparison needs the same Selenium web projects
+  def screenshot_helper?
+    trace_helper?
+  end
+
   # False for `raider new -p examples:false`: an empty skeleton without the example pages, tests and wiring
   def examples?
     !options_after_name.include?('no_examples')

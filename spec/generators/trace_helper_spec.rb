@@ -1253,7 +1253,7 @@ describe 'Generated TraceHelper' do
 
     def load_driver_helper
       generator = HelpersGenerator.new(%w[selenium rspec proj])
-      %w[driver_helper video_helper network_helper].each do |name|
+      %w[driver_helper video_helper network_helper screenshot_helper].each do |name|
         source = File.read(File.expand_path("../../lib/generators/templates/helpers/#{name}.tt", __dir__))
         File.write(File.join(project_dir, "#{name}.rb"), ERB.new(source, trim_mode: '-').result(generator.instance_eval { binding }))
       end

@@ -75,6 +75,23 @@ describe 'Config file content' do
     end
   end
 
+  shared_examples 'screenshots config' do |project_name|
+    it 'has the screenshots block between trace and login_state' do
+      raw = read_generated(project_name, 'config/config.yml')
+      config = YAML.safe_load(raw, permitted_classes: [Symbol])
+      expect(config['screenshots']).to eq('threshold' => 0.2, 'max_diff_pixels' => 0)
+      expect(raw).to include('# max_diff_ratio: 0.001')
+      expect(raw.index('screenshots:')).to be > raw.index('trace:')
+      expect(raw.index('screenshots:')).to be < raw.index('login_state:')
+    end
+  end
+
+  shared_examples 'no screenshots config' do |project_name|
+    it 'has no screenshots block' do
+      expect(read_generated(project_name, 'config/config.yml')).not_to include('screenshots')
+    end
+  end
+
   shared_examples 'login state config' do |project_name|
     it 'has a login_state max_age of an hour' do
       config = YAML.safe_load(read_generated(project_name, 'config/config.yml'), permitted_classes: [Symbol])
@@ -90,6 +107,7 @@ describe 'Config file content' do
     include_examples 'selenium config with timeout', name
     include_examples 'video config', name
     include_examples 'trace config', name
+    include_examples 'screenshots config', name
     include_examples 'login state config', name
   end
 
@@ -98,6 +116,7 @@ describe 'Config file content' do
     include_examples 'valid web config', name
     include_examples 'config without driver_options', name
     include_examples 'no trace config', name
+    include_examples 'no screenshots config', name
     include_examples 'login state config', name
   end
 
@@ -106,6 +125,7 @@ describe 'Config file content' do
     include_examples 'valid web config', name
     include_examples 'selenium config with timeout', name
     include_examples 'trace config', name
+    include_examples 'screenshots config', name
     include_examples 'login state config', name
   end
 

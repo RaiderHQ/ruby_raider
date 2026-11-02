@@ -1,0 +1,34 @@
+# frozen_string_literal: true
+
+require 'rspec/expectations'
+require 'yaml'
+
+# Visual regression for the browser: match_screenshot('home') compares the page (or an element)
+# with a baseline PNG in screenshots/baselines/<browser>/ and fails the test on a difference.
+# Tolerances live in config/config.yml under screenshots:. SCREENSHOTS=update rewrites baselines.
+# Not wanted? Delete this file and the lines that load or include ScreenshotHelper.
+module ScreenshotHelper
+  CONFIG_PATH = File.join('config', 'config.yml')
+  DEFAULTS = { threshold: 0.2, max_diff_pixels: 0, max_diff_ratio: nil }.freeze
+
+  # Raised when a screenshot differs from its baseline; counts as a failed expectation.
+  class Mismatch < RSpec::Expectations::ExpectationNotMetError; end
+
+  # The screenshots: block of config/config.yml over the defaults.
+  def self.config
+    settings = DEFAULTS.dup
+    file_settings.each { |key, value| settings[key] = value if settings.key?(key) }
+    settings
+  end
+
+  def self.file_settings
+    return {} unless File.exist?(CONFIG_PATH)
+
+    block = (YAML.safe_load(File.read(CONFIG_PATH), permitted_classes: [Symbol]) || {})['screenshots']
+    block.is_a?(Hash) ? block.transform_keys(&:to_sym) : {}
+  end
+
+  def match_screenshot(name, element: nil, threshold: nil, max_diff_pixels: nil, max_diff_ratio: nil, timeout: nil)
+    raise NotImplementedError, 'match_screenshot is not implemented yet'
+  end
+end

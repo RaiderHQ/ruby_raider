@@ -130,6 +130,10 @@ describe 'Gemfile content' do
           expect(gemfile).to include("gem 'raider_reporter', '~> 0.12'")
         end
 
+        it "#{automation == 'selenium' ? 'includes' : 'leaves out'} chunky_png" do
+          expect(gemfile.include?("gem 'chunky_png'")).to eq(automation == 'selenium')
+        end
+
         it 'has no allure gems' do
           expect(gemfile).not_to match(/allure/i)
         end
@@ -144,6 +148,10 @@ describe 'Gemfile content' do
 
         it 'includes raider_reporter' do
           expect(gemfile).to include("gem 'raider_reporter', '~> 0.12'")
+        end
+
+        it "#{automation == 'selenium' ? 'includes' : 'leaves out'} chunky_png" do
+          expect(gemfile.include?("gem 'chunky_png'")).to eq(automation == 'selenium')
         end
 
         it 'drops allure-cucumber' do

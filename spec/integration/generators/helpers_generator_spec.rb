@@ -64,6 +64,18 @@ describe HelpersGenerator do
     end
   end
 
+  shared_examples 'creates the screenshot helper' do |name|
+    it 'creates the screenshot helper' do
+      expect(File).to exist("#{name}/helpers/screenshot_helper.rb")
+    end
+  end
+
+  shared_examples 'skips the screenshot helper' do |name|
+    it 'does not create the screenshot helper' do
+      expect(File).not_to exist("#{name}/helpers/screenshot_helper.rb")
+    end
+  end
+
   shared_examples 'skips the network helper' do |name|
     it 'does not create the network helper' do
       expect(File).not_to exist("#{name}/helpers/network_helper.rb")
@@ -92,6 +104,7 @@ describe HelpersGenerator do
     include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates the trace helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates the network helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates the screenshot helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates a session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates the wait helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
@@ -102,6 +115,7 @@ describe HelpersGenerator do
     include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'skips the trace helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'skips the network helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
+    include_examples 'skips the screenshot helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'creates a session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'creates watir helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
@@ -111,6 +125,7 @@ describe HelpersGenerator do
     include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates the trace helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates the network helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates the screenshot helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates a session state helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates the wait helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
@@ -121,6 +136,7 @@ describe HelpersGenerator do
     include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
     include_examples 'skips the trace helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
     include_examples 'skips the network helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
+    include_examples 'skips the screenshot helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
     include_examples 'creates a session state helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
     include_examples 'creates watir helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
     include_examples 'creates cucumber helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
@@ -130,6 +146,7 @@ describe HelpersGenerator do
     include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
     include_examples 'skips the trace helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
     include_examples 'skips the network helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
+    include_examples 'skips the screenshot helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
     include_examples 'skips the session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
     include_examples 'creates the wait helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
@@ -140,6 +157,7 @@ describe HelpersGenerator do
     include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
     include_examples 'skips the trace helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
     include_examples 'skips the network helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
+    include_examples 'skips the screenshot helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
     include_examples 'skips the session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
     include_examples 'creates the wait helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
@@ -150,6 +168,7 @@ describe HelpersGenerator do
     include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
     include_examples 'skips the trace helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
     include_examples 'skips the network helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
+    include_examples 'skips the screenshot helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
     include_examples 'skips the session state helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
     include_examples 'creates the wait helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
@@ -160,6 +179,7 @@ describe HelpersGenerator do
     include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
     include_examples 'skips the trace helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
     include_examples 'skips the network helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
+    include_examples 'skips the screenshot helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
     include_examples 'skips the session state helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
     include_examples 'creates the wait helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
@@ -170,6 +190,7 @@ describe HelpersGenerator do
     include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'skips the trace helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'skips the network helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'skips the screenshot helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'skips the session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates the wait helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
@@ -181,6 +202,7 @@ describe HelpersGenerator do
     include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'skips the trace helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'skips the network helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'skips the screenshot helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'skips the session state helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates the wait helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
@@ -204,6 +226,10 @@ describe HelpersGenerator do
 
         it "#{automation == 'selenium' ? 'creates' : 'skips'} the network helper" do
           expect(File.exist?("#{name}/helpers/network_helper.rb")).to eq(automation == 'selenium')
+        end
+
+        it "#{automation == 'selenium' ? 'creates' : 'skips'} the screenshot helper" do
+          expect(File.exist?("#{name}/helpers/screenshot_helper.rb")).to eq(automation == 'selenium')
         end
       end
     end

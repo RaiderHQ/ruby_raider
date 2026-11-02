@@ -188,6 +188,14 @@ describe 'Page WaitHelper wiring' do
       end
     end
 
+    it "includes ScreenshotHelper only in #{framework} selenium" do
+      %w[selenium ios android cross_platform watir].each do |automation|
+        page = read_generated("#{framework}_#{automation}", 'page_objects/abstract/page.rb')
+        expect(page.include?('include ScreenshotHelper')).to eq(automation == 'selenium')
+        expect(page.include?("require_relative '../../helpers/screenshot_helper'")).to eq(automation == 'selenium')
+      end
+    end
+
     it "does not include WaitHelper in #{framework} watir" do
       expect(read_generated("#{framework}_watir", 'page_objects/abstract/page.rb')).not_to include('WaitHelper')
     end
