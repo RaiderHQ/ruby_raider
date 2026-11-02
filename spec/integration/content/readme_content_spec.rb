@@ -64,6 +64,8 @@ describe 'Generated Readme content' do
                                      'raider u trace on', 'raider-results/attachments/', 'Raider Desktop', 'Hideout',
                                      'helpers/trace_helper.rb')
           expect(section).to include('raider-results/attachments/<n>-trace.zip')
+          expect(section).to include('`raider u trace on` and `raider u trace off` write `enabled:`')
+          expect(section).not_to include('Both write')
         end
 
         it 'states the per-step cost and the caps' do
@@ -81,6 +83,7 @@ describe 'Generated Readme content' do
         it 'says what is hidden, what is kept and what is never captured' do
           expect(section).to include('password', 'RAIDER_SECRET_', 'page text', 'query strings', 'console text',
                                      'like the video', 'never captured', 'cookies')
+          expect(section).to include('Failure messages can contain typed text too, because an assertion message is kept as it is')
         end
 
         it 'says how to remove the trace helper and notes the wait helper link' do
