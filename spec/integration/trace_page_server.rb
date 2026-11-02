@@ -72,8 +72,8 @@ class TracePageServer
     sleep(API_DELAY) if path == '/api'
     socket.write("HTTP/1.1 #{status}\r\nContent-Type: #{type}\r\nContent-Length: #{body.bytesize}\r\n" \
                  "Cache-Control: no-store\r\nConnection: close\r\n\r\n#{body}")
-  rescue StandardError
-    nil
+  rescue StandardError => e
+    warn "[trace page server] #{e.class}: #{e.message}"
   ensure
     socket.close
   end
