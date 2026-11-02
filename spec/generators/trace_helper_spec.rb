@@ -261,6 +261,13 @@ describe 'Generated TraceHelper' do
                                   'screenshot' => 'steps/0003.jpg', 'snapshot' => 'steps/0003.html')
   end
 
+  it 'gives an error of an anonymous class a string class, which the format requires' do
+    error = Class.new(StandardError).new('anonymous')
+
+    expect(TraceHelper.error_json(error)).to eq(class: error.class.to_s, message: 'anonymous')
+    expect(TraceHelper.error_json(error)[:class]).to start_with('#<Class:')
+  end
+
   it 'marks the step that raised as failed and appends no failure step when that step owns the error' do
     recorder = started_recorder
     error = RuntimeError.new('Waited 10s for {id: "go"} to be visible')
@@ -785,6 +792,17 @@ describe 'Generated TraceHelper' do
       expect(traces.map { |trace| trace['steps'].first['screenshot'] }).to eq(%w[steps/0001.png steps/0001.png])
       expect(warnings).to eq(["[trace] network and console not captured: BiDi subscribe failed: no such frame\n"])
       expect(TraceHelper.enabled?).to be(true)
+    end
+
+    it 'names Edge edge, as Selenium reports it MicrosoftEdge, and attaches BiDi to it' do
+      allow(capabilities).to receive(:browser_name).and_return('MicrosoftEdge')
+      recorder = started_recorder
+      recorder.navigated('https://example.test/login')
+      trace = kept(recorder)
+
+      expect(trace['browser']).to eq('name' => 'edge', 'version' => '131.0.6778.85')
+      expect(trace['capabilities']).to include('network' => true, 'console' => true)
+      expect(warnings).to eq([])
     end
 
     it 'records network/console false and warns once for a browser without BiDi' do

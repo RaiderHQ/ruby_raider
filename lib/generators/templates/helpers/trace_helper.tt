@@ -125,7 +125,7 @@ module TraceHelper
 
     # The format's error shape, on steps and on test: { class:, message: } or nil.
     def error_json(error)
-      error && { class: error.class.name, message: error.message }
+      error && { class: error.class.name || error.class.to_s, message: error.message }
     end
 
     # True when a typed value equals a RAIDER_SECRET_* environment value.
@@ -593,9 +593,11 @@ module TraceHelper
         console: events.select { |item| item.list == :console }.map(&:entry) }
     end
 
+    # Selenium reports Edge as MicrosoftEdge; the trace names it edge, like config.yml.
     def browser
       caps = @driver.capabilities
-      { name: caps.browser_name.to_s, version: caps.browser_version.to_s }
+      name = caps.browser_name.to_s
+      { name: name.casecmp?('MicrosoftEdge') ? 'edge' : name, version: caps.browser_version.to_s }
     rescue StandardError
       { name: nil, version: nil }
     end

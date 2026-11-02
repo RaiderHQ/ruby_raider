@@ -20,7 +20,7 @@ require_relative '../../page_objects/pages/login'
 
 <%- if trace_helper? -%>
 # Attempts per scenario across --retry, keyed on the scenario's location, for the trace of each attempt.
-TRACE_ATTEMPTS = Hash.new(0)
+TRACE_ATTEMPTS = Hash.new(0) unless defined?(TRACE_ATTEMPTS)
 
 # Each Gherkin step becomes a group in the trace, named by its keyword and text; hook steps are not steps.
 InstallPlugin do |config, _registry|

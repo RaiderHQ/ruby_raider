@@ -76,7 +76,7 @@ describe 'Cucumber raider_reporter wiring' do
 
           it 'counts attempts per scenario location and starts the trace recorder after the video recorder' do
             before_hook = env[/^Before do.*?^end$/m]
-            expect(env).to match(/^TRACE_ATTEMPTS = Hash\.new\(0\)$/)
+            expect(env).to match(/^TRACE_ATTEMPTS = Hash\.new\(0\) unless defined\?\(TRACE_ATTEMPTS\)$/)
             expect(before_hook).to include('TRACE_ATTEMPTS[scenario.location.to_s] += 1', '@trace_recorder = TraceHelper.recorder_for(driver)')
             expect(before_hook).to match(/^Before do \|scenario\|$/)
             expect(before_hook.index('@video_recorder.start')).to be < before_hook.index('@trace_recorder = TraceHelper')
