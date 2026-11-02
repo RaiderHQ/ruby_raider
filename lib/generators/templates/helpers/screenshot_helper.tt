@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'chunky_png'
 require 'rspec/expectations'
 require 'yaml'
 
@@ -26,6 +27,99 @@ module ScreenshotHelper
 
     block = (YAML.safe_load(File.read(CONFIG_PATH), permitted_classes: [Symbol]) || {})['screenshots']
     block.is_a?(Hash) ? block.transform_keys(&:to_sym) : {}
+  end
+
+  # Pixel comparison of two PNGs and the picture of what differs. Internal.
+  module Diff
+    class Unreadable < StandardError; end
+
+    Result = Struct.new(:diff_pixels, :diff_ratio, :expected_size, :actual_size, :diff_png) do
+      def size_changed?
+        expected_size != actual_size
+      end
+    end
+
+    WHITE = ChunkyPNG::Color::WHITE
+    RED = ChunkyPNG::Color.rgb(255, 0, 0)
+    # pixelmatch: the largest possible YIQ delta; a pixel differs above this times threshold squared.
+    MAX_DELTA = 35_215.0
+    FADE = 0.1
+
+    def self.compare(expected_png, actual_png, threshold:)
+      expected = decode(expected_png)
+      actual = decode(actual_png)
+      return resized(expected, actual) unless size_of(expected) == size_of(actual)
+
+      count, image = paint(expected, actual, threshold)
+      size = size_of(expected)
+      Result.new(count, count.fdiv(size.inject(:*)), size, size, image.to_blob)
+    end
+
+    def self.readable?(png)
+      decode(png)
+      true
+    rescue Unreadable
+      false
+    end
+
+    def self.decode(png)
+      ChunkyPNG::Image.from_blob(png)
+    rescue StandardError => e
+      raise Unreadable, e.message
+    end
+
+    def self.size_of(image)
+      [image.width, image.height]
+    end
+
+    # Both images side by side, no pixel diff.
+    def self.resized(expected, actual)
+      canvas = ChunkyPNG::Image.new(expected.width + actual.width, [expected.height, actual.height].max, WHITE)
+      canvas.compose!(expected, 0, 0)
+      canvas.compose!(actual, expected.width, 0)
+      Result.new(0, 0.0, size_of(expected), size_of(actual), canvas.to_blob)
+    end
+
+    # Counts the differing pixels and draws them red over a faded copy of the expected image.
+    def self.paint(expected, actual, threshold)
+      limit = MAX_DELTA * (threshold**2)
+      image = ChunkyPNG::Image.new(expected.width, expected.height, WHITE)
+      count = 0
+      expected.height.times do |y|
+        expected.width.times do |x|
+          differs = delta(expected[x, y], actual[x, y]) > limit
+          count += 1 if differs
+          image[x, y] = differs ? RED : faded(expected[x, y])
+        end
+      end
+      [count, image]
+    end
+
+    def self.delta(first, second)
+      dy, di, dq = yiq(first).zip(yiq(second)).map { |one, two| one - two }
+      (0.5053 * dy * dy) + (0.299 * di * di) + (0.1957 * dq * dq)
+    end
+
+    def self.yiq(pixel)
+      red, green, blue = blended(pixel)
+      [(red * 0.29889531) + (green * 0.58662247) + (blue * 0.11448223),
+       (red * 0.59597799) - (green * 0.27417610) - (blue * 0.32180189),
+       (red * 0.21147017) - (green * 0.52261711) + (blue * 0.31114694)]
+    end
+
+    # Semi-transparent pixels count as they look over a white page.
+    def self.blended(pixel)
+      alpha = ChunkyPNG::Color.a(pixel)
+      [ChunkyPNG::Color.r(pixel), ChunkyPNG::Color.g(pixel), ChunkyPNG::Color.b(pixel)].map do |channel|
+        255 + ((channel - 255) * alpha / 255.0)
+      end
+    end
+
+    def self.faded(pixel)
+      luma = yiq(pixel).first
+      grey = (255 + ((luma - 255) * FADE)).round.clamp(0, 255)
+      ChunkyPNG::Color.rgb(grey, grey, grey)
+    end
   end
 
   def match_screenshot(name, element: nil, threshold: nil, max_diff_pixels: nil, max_diff_ratio: nil, timeout: nil)
