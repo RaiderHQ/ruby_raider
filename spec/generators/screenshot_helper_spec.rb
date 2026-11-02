@@ -51,11 +51,6 @@ RSpec.describe 'ScreenshotHelper' do
     end
   end
 
-  it 'has a match_screenshot that is not implemented yet' do
-    host = Class.new { include ScreenshotHelper }.new
-    expect { host.match_screenshot('home') }.to raise_error(NotImplementedError)
-  end
-
   describe 'ScreenshotHelper::Diff' do
     def png(width, height, color = ChunkyPNG::Color::WHITE)
       image = ChunkyPNG::Image.new(width, height, color)
@@ -242,6 +237,218 @@ RSpec.describe 'ScreenshotHelper' do
     it 'passes a match, update or not' do
       expect(decide(exists: true, matched: true)).to eq(:passed)
       expect(decide(exists: true, matched: true, update: true)).to eq(:passed)
+    end
+  end
+
+  describe '#match_screenshot' do
+    around { |example| Dir.mktmpdir { |dir| Dir.chdir(dir) { example.run } } }
+
+    before do
+      ScreenshotHelper.reset
+      allow(ScreenshotHelper).to receive_messages(ci?: false, update?: false)
+    end
+
+    # Answers like a Selenium driver: queued PNGs (the last one repeats), scripts logged as events.
+    let(:driver_class) do
+      Class.new do
+        attr_reader :events, :captures
+
+        def initialize(*pngs, ratio: 2, failing: false)
+          @pngs = pngs
+          @ratio = ratio
+          @failing = failing
+          @events = []
+          @captures = 0
+        end
+
+        def screenshot_as(_format)
+          @events << :capture
+          raise 'capture failed' if @failing
+
+          @captures += 1
+          @pngs[[@captures - 1, @pngs.length - 1].min]
+        end
+
+        def execute_async_script(_script)
+          @events << :fonts
+        end
+
+        def execute_script(script, *_args)
+          @events << :add_style if script.include?('appendChild')
+          @events << :remove_style if script.include?('.remove()')
+          @events << :scroll if script.include?('scrollIntoView')
+          raise 'no ratio' if script.include?('devicePixelRatio') && @ratio.nil?
+
+          @ratio if script.include?('devicePixelRatio')
+        end
+      end
+    end
+
+    def png(width = 10, height = 10, color = ChunkyPNG::Color::WHITE)
+      image = ChunkyPNG::Image.new(width, height, color)
+      yield image if block_given?
+      image.to_blob
+    end
+
+    def different
+      png { |image| image[1, 1] = ChunkyPNG::Color::BLACK }
+    end
+
+    def host_for(driver)
+      Class.new do
+        include ScreenshotHelper
+
+        attr_reader :driver
+
+        def initialize(driver)
+          @driver = driver
+        end
+      end.new(driver)
+    end
+
+    def baseline_path(name = 'home', browser = 'chrome')
+      "screenshots/baselines/#{browser}/#{name}.png"
+    end
+
+    def store_baseline(bytes, name = 'home')
+      FileUtils.mkdir_p(File.dirname(baseline_path(name)))
+      File.binwrite(baseline_path(name), bytes)
+    end
+
+    it 'passes when the page matches the baseline' do
+      store_baseline(png)
+      driver = driver_class.new(png)
+      expect(host_for(driver).match_screenshot('home')).to be(true)
+      expect(driver.captures).to eq(1)
+    end
+
+    it 'retries after a difference and passes once the page matches' do
+      store_baseline(png)
+      driver = driver_class.new(different, png)
+      expect(host_for(driver).match_screenshot('home', timeout: 5)).to be(true)
+      expect(driver.captures).to eq(2)
+    end
+
+    it 'raises Mismatch after the timeout, naming the baseline, the pixels and the limits' do
+      store_baseline(png)
+      driver = driver_class.new(different)
+      expect { host_for(driver).match_screenshot('home', timeout: 0.3) }
+        .to raise_error(ScreenshotHelper::Mismatch) { |error|
+          expect(error.message).to include(baseline_path, '1 pixel (1.00%) differ', 'threshold 0.2', '0 pixels')
+        }
+      expect(driver.captures).to be >= 2
+    end
+
+    it 'honours max_diff_pixels and max_diff_ratio' do
+      store_baseline(png)
+      expect(host_for(driver_class.new(different)).match_screenshot('home', max_diff_pixels: 1, timeout: 0)).to be(true)
+      ScreenshotHelper.reset
+      expect(host_for(driver_class.new(different)).match_screenshot('home', max_diff_ratio: 0.05, timeout: 0)).to be(true)
+    end
+
+    it 'reads the defaults from config.yml' do
+      FileUtils.mkdir_p('config')
+      File.write('config/config.yml', "screenshots:\n  max_diff_pixels: 5\n")
+      store_baseline(png)
+      expect(host_for(driver_class.new(different)).match_screenshot('home', timeout: 0)).to be(true)
+    end
+
+    it 'fails a size change naming both sizes and the device pixel ratio, without comparing pixels' do
+      store_baseline(png(20, 10))
+      driver = driver_class.new(png(40, 20), ratio: 2)
+      expect { host_for(driver).match_screenshot('home', timeout: 0) }
+        .to raise_error(ScreenshotHelper::Mismatch, /size changed: baseline 20x10, now 40x20 \(device pixel ratio 2\)/)
+    end
+
+    it 'leaves the device pixel ratio out when it cannot be read' do
+      store_baseline(png(20, 10))
+      expect { host_for(driver_class.new(png(40, 20), ratio: nil)).match_screenshot('home', timeout: 0) }
+        .to raise_error(ScreenshotHelper::Mismatch) { |error|
+          expect(error.message).to include('size changed: baseline 20x10, now 40x20')
+          expect(error.message).not_to include('device pixel ratio')
+        }
+    end
+
+    it 'writes a missing baseline outside CI and passes' do
+      expect(host_for(driver_class.new(png)).match_screenshot('home')).to be(true)
+      expect(File.binread(baseline_path)).to eq(png)
+    end
+
+    it 'fails a missing baseline on CI and writes nothing' do
+      allow(ScreenshotHelper).to receive(:ci?).and_return(true)
+      driver = driver_class.new(png)
+      expect { host_for(driver).match_screenshot('home') }.to raise_error(
+        ScreenshotHelper::Mismatch,
+        "no baseline for 'home' on chrome; run it locally or with SCREENSHOTS=update and commit the file"
+      )
+      expect(File.exist?('screenshots')).to be(false)
+    end
+
+    it 'writes a missing baseline on CI when asked to update' do
+      allow(ScreenshotHelper).to receive_messages(ci?: true, update?: true)
+      expect(host_for(driver_class.new(png)).match_screenshot('home')).to be(true)
+      expect(File.exist?(baseline_path)).to be(true)
+    end
+
+    it 'rewrites a differing baseline when asked to update' do
+      allow(ScreenshotHelper).to receive(:update?).and_return(true)
+      store_baseline(png)
+      expect(host_for(driver_class.new(different)).match_screenshot('home', timeout: 0)).to be(true)
+      expect(File.binread(baseline_path)).to eq(different)
+    end
+
+    it 'fails an unreadable baseline and leaves the file alone' do
+      store_baseline('not a png')
+      expect { host_for(driver_class.new(png)).match_screenshot('home', timeout: 0) }
+        .to raise_error(ScreenshotHelper::Mismatch, /baseline .*home\.png is not a readable PNG/)
+      expect(File.binread(baseline_path)).to eq('not a png')
+    end
+
+    it 'replaces an unreadable baseline when asked to update' do
+      allow(ScreenshotHelper).to receive(:update?).and_return(true)
+      store_baseline('not a png')
+      expect(host_for(driver_class.new(png)).match_screenshot('home')).to be(true)
+      expect(File.binread(baseline_path)).to eq(png)
+    end
+
+    it 'refuses a bad name before any capture' do
+      driver = driver_class.new(png)
+      expect { host_for(driver).match_screenshot('../x') }.to raise_error(ArgumentError)
+      expect(driver.events).to be_empty
+    end
+
+    it 'refuses the same name twice in one test until reset' do
+      store_baseline(png)
+      host = host_for(driver_class.new(png))
+      host.match_screenshot('home')
+      expect { host.match_screenshot('home') }.to raise_error(ArgumentError, /already used/)
+      ScreenshotHelper.reset
+      expect(host.match_screenshot('home')).to be(true)
+    end
+
+    it 'compares an element, scrolled into view' do
+      store_baseline(png)
+      element = instance_double('element')
+      allow(element).to receive(:screenshot_as).with(:png).and_return(png)
+      driver = driver_class.new(different)
+      expect(host_for(driver).match_screenshot('home', element: element)).to be(true)
+      expect(driver.captures).to eq(0)
+      expect(driver.events).to include(:scroll)
+    end
+
+    it 'adds the settle stylesheet before the capture and removes it after' do
+      store_baseline(png)
+      driver = driver_class.new(png)
+      host_for(driver).match_screenshot('home')
+      expect(driver.events.reject { |event| event == :scroll })
+        .to eq(%i[fonts add_style capture remove_style])
+    end
+
+    it 'removes the settle stylesheet when the capture raises' do
+      store_baseline(png)
+      driver = driver_class.new(png, failing: true)
+      expect { host_for(driver).match_screenshot('home') }.to raise_error(RuntimeError, 'capture failed')
+      expect(driver.events.last).to eq(:remove_style)
     end
   end
 end

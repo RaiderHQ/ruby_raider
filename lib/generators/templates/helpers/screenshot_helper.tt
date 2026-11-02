@@ -2,6 +2,7 @@
 
 require 'chunky_png'
 require 'fileutils'
+require 'set'
 require 'rspec/expectations'
 require 'yaml'
 
@@ -12,6 +13,21 @@ require 'yaml'
 module ScreenshotHelper
   CONFIG_PATH = File.join('config', 'config.yml')
   DEFAULTS = { threshold: 0.2, max_diff_pixels: 0, max_diff_ratio: nil }.freeze
+
+  @names_used = Set.new
+
+  class << self
+    # The names compared in this test, so two comparisons never share a baseline.
+    attr_reader :names_used
+
+    def reset
+      names_used.clear
+    end
+
+    def claim(name)
+      raise ArgumentError, "screenshot name '#{name}' was already used in this test" unless names_used.add?(name)
+    end
+  end
 
   # Raised when a screenshot differs from its baseline; counts as a failed expectation.
   class Mismatch < RSpec::Expectations::ExpectationNotMetError; end
@@ -55,10 +71,14 @@ module ScreenshotHelper
 
   # What a comparison comes to: :passed, :failed, :created, :updated or :missing_on_ci.
   def self.decide(baseline_exists:, matched:)
-    return(ci? && !update? ? :missing_on_ci : :created) unless baseline_exists
+    return missing_status unless baseline_exists
     return :passed if matched
 
     update? ? :updated : :failed
+  end
+
+  def self.missing_status
+    ci? && !update? ? :missing_on_ci : :created
   end
 
   # Pixel comparison of two PNGs and the picture of what differs. Internal.
@@ -156,13 +176,13 @@ module ScreenshotHelper
 
   # Where a baseline lives and how it is written. Internal.
   class Baseline
-    NAME_PATTERN = %r{\A[A-Za-z0-9_\-]+(/[A-Za-z0-9_\-]+)*\z}.freeze
+    NAME_PATTERN = %r{\A[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*\z}.freeze
     MAX_NAME = 100
 
     def self.validate_name!(name)
       return if name.is_a?(String) && name.length <= MAX_NAME && name.match?(NAME_PATTERN)
 
-      raise ArgumentError, "screenshot name must be letters, digits, - and _ with / for folders, " \
+      raise ArgumentError, 'screenshot name must be letters, digits, - and _ with / for folders, ' \
                            "at most #{MAX_NAME} characters; got #{name.inspect}"
     end
 
@@ -199,7 +219,182 @@ module ScreenshotHelper
     end
   end
 
+  # Takes one settled screenshot of the viewport or an element. Internal.
+  class Capture
+    STYLE_ID = 'raider-screenshot-settle'
+    FONTS_SCRIPT = <<~JS
+      var done = arguments[arguments.length - 1];
+      var timer = setTimeout(done, 2000);
+      (document.fonts ? document.fonts.ready : Promise.resolve()).then(function () { clearTimeout(timer); done(); });
+    JS
+    ADD_STYLE = <<~JS.tr("\n", ' ')
+      var style = document.createElement('style'); style.id = '#{STYLE_ID}';
+      style.textContent = '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}';
+      document.head.appendChild(style);
+    JS
+    REMOVE_STYLE = "var style = document.getElementById('#{STYLE_ID}'); if (style) { style.remove(); }"
+    SCROLL = "arguments[0].scrollIntoView({ block: 'center', inline: 'center' });"
+
+    def initialize(driver, element)
+      @driver = driver
+      @element = element
+    end
+
+    # Fonts loaded, animations and the caret stopped; the stylesheet is gone again afterwards.
+    def png
+      @driver.execute_async_script(FONTS_SCRIPT)
+      @driver.execute_script(ADD_STYLE)
+      @element ? element_png : @driver.screenshot_as(:png)
+    ensure
+      remove_style
+    end
+
+    private
+
+    def element_png
+      @driver.execute_script(SCROLL, @element)
+      @element.screenshot_as(:png)
+    end
+
+    def remove_style
+      @driver.execute_script(REMOVE_STYLE)
+    rescue StandardError
+      nil
+    end
+  end
+
+  # One match_screenshot call: capture until the page matches the baseline or time runs out. Internal.
+  class Comparison
+    PAUSE = 0.25
+    DEFAULT_TIMEOUT = 10
+
+    def initialize(driver, name, element:, options:, timeout:)
+      @driver = driver
+      @name = name
+      @element = element
+      @options = options
+      @timeout = timeout
+    end
+
+    def call
+      Baseline.validate_name!(@name)
+      ScreenshotHelper.claim(@name)
+      @baseline = Baseline.new(@name, browser: ScreenshotHelper.browser)
+      @baseline.exist? ? compare : create
+    end
+
+    private
+
+    def create
+      status = ScreenshotHelper.decide(baseline_exists: false, matched: false)
+      raise Mismatch, missing_message if status == :missing_on_ci
+
+      actual = capture
+      @baseline.write(actual)
+      finish(status, nil, actual: actual)
+    end
+
+    def compare
+      expected = @baseline.read
+      return unreadable unless Diff.readable?(expected)
+
+      actual, result = capture_until_match(expected)
+      status = ScreenshotHelper.decide(baseline_exists: true, matched: within_limits?(result))
+      @baseline.write(actual) if status == :updated
+      finish(status, result, images(status, expected, actual, result))
+    end
+
+    def unreadable
+      raise Mismatch, "baseline #{@baseline.path} is not a readable PNG" unless ScreenshotHelper.update?
+
+      actual = capture
+      @baseline.write(actual)
+      finish(:updated, nil, actual: actual)
+    end
+
+    def images(status, expected, actual, result)
+      return { expected: expected, actual: actual, diff: result.diff_png } if status == :failed
+
+      status == :updated ? { actual: actual } : {}
+    end
+
+    def finish(status, result, _images)
+      raise Mismatch, failure_message(result) if status == :failed
+
+      true
+    end
+
+    def capture
+      Capture.new(@driver, @element).png
+    end
+
+    def capture_until_match(expected)
+      deadline = now + (@timeout || default_timeout)
+      loop do
+        actual = capture
+        result = Diff.compare(expected, actual, threshold: @options[:threshold])
+        return [actual, result] if within_limits?(result) || now >= deadline
+
+        sleep([[PAUSE, deadline - now].min, 0].max)
+      end
+    end
+
+    def default_timeout
+      defined?(WaitHelper) ? WaitHelper.default_timeout : DEFAULT_TIMEOUT
+    end
+
+    def now
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    end
+
+    # Within the allowed pixel count, or within the allowed share when one is set.
+    def within_limits?(result)
+      return false if result.size_changed?
+
+      ratio = @options[:max_diff_ratio]
+      result.diff_pixels <= @options[:max_diff_pixels] || (!ratio.nil? && result.diff_ratio <= ratio)
+    end
+
+    def missing_message
+      "no baseline for '#{@name}' on #{ScreenshotHelper.browser}; " \
+        'run it locally or with SCREENSHOTS=update and commit the file'
+    end
+
+    def failure_message(result)
+      "#{@baseline.path}: #{result.size_changed? ? size_detail(result) : pixel_detail(result)}"
+    end
+
+    def size_detail(result)
+      ratio = device_pixel_ratio
+      "size changed: baseline #{result.expected_size.join('x')}, now #{result.actual_size.join('x')}" \
+        "#{ratio ? " (device pixel ratio #{ratio})" : ''}"
+    end
+
+    def device_pixel_ratio
+      ratio = @driver.execute_script('return window.devicePixelRatio')
+      return unless ratio.is_a?(Numeric)
+
+      ratio == ratio.to_i ? ratio.to_i : ratio
+    rescue StandardError
+      nil
+    end
+
+    def pixel_detail(result)
+      count = result.diff_pixels
+      "#{count} #{count == 1 ? 'pixel' : 'pixels'} (#{format('%.2f', result.diff_ratio * 100)}%) differ " \
+        "(allowed: #{allowed}, threshold #{@options[:threshold]})"
+    end
+
+    def allowed
+      ratio = @options[:max_diff_ratio]
+      allowed = "#{@options[:max_diff_pixels]} pixels"
+      ratio ? "#{allowed} or #{format('%g', ratio * 100)}%" : allowed
+    end
+  end
+
   def match_screenshot(name, element: nil, threshold: nil, max_diff_pixels: nil, max_diff_ratio: nil, timeout: nil)
-    raise NotImplementedError, 'match_screenshot is not implemented yet'
+    given = { threshold: threshold, max_diff_pixels: max_diff_pixels, max_diff_ratio: max_diff_ratio }.compact
+    options = ScreenshotHelper.config.merge(given)
+    Comparison.new(driver, name, element: element, options: options, timeout: timeout).call
   end
 end

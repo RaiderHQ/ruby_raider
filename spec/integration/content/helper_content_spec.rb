@@ -589,3 +589,19 @@ describe 'Auto-waiting helper wiring' do
     end
   end
 end
+
+describe 'ScreenshotHelper reset between tests' do
+  it 'resets in the RSpec before(:each) of Selenium web projects only' do
+    selenium = read_generated('rspec_selenium', 'helpers/spec_helper.rb')
+    expect(selenium[/config\.before\(:each\) do.*?^    end$/m]).to include('ScreenshotHelper.reset')
+    %w[rspec_watir rspec_ios rspec_android].each do |project|
+      expect(read_generated(project, 'helpers/spec_helper.rb')).not_to include('ScreenshotHelper')
+    end
+  end
+
+  it 'resets in the Cucumber Before of Selenium web projects only' do
+    selenium = read_generated('cucumber_selenium', 'features/support/env.rb')
+    expect(selenium[/^Before do.*?^end$/m]).to include('ScreenshotHelper.reset')
+    expect(read_generated('cucumber_watir', 'features/support/env.rb')).not_to include('ScreenshotHelper')
+  end
+end
