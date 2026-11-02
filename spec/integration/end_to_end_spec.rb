@@ -660,7 +660,7 @@ describe 'End-to-End Project Generation and Execution' do
     end
   end
 
-  # Trace replay against headless Chrome. The page is served over HTTP from this process (never file://), so
+  # Trace replay against headless Chrome, and one example on headless Firefox. The page is served over HTTP from this process (never file://), so
   # WebDriver BiDi reports real network and console entries. raider_reporter ~> 0.12 resolves from RubyGems, or
   # from a checkout at RAIDER_REPORTER_PATH. The example with video on also needs RAIDER_FFMPEG_PATH.
   # Set TRACE_FIXTURE_DIR to keep the failing RSpec example's trace.zip (and an unzipped copy) there.
@@ -683,8 +683,8 @@ describe 'End-to-End Project Generation and Execution' do
       'plain-trace-name'
     end
 
-    def skip_unless_trace_prerequisites(project)
-      skip 'Google Chrome is not installed' unless browser_installed?('chrome')
+    def skip_unless_trace_prerequisites(project, browser = 'chrome')
+      skip "#{browser == 'chrome' ? 'Google Chrome' : 'Firefox'} is not installed" unless browser_installed?(browser)
       version = run_in_project(project, %(bundle exec ruby -e "require 'raider_reporter/version'; print RaiderReporter::VERSION"))
       skip "the bundle does not resolve raider_reporter ~> 0.12 (set RAIDER_REPORTER_PATH): #{version[:stderr].lines.last}" unless
         version[:success] && Gem::Version.new(version[:stdout]) >= Gem::Version.new('0.12')
@@ -738,17 +738,66 @@ describe 'End-to-End Project Generation and Execution' do
       end
     end
 
+    # The RSpec examples' names, spec file and readers, shared by the Chrome and Firefox examples.
+    def failing
+      'fails after driving the page'
+    end
+
+    def passing
+      'passes after driving the page'
+    end
+
+    # Drives the page through the generated WaitHelper, so the trace has action steps.
+    # Each example prints the driver's webSocketUrl, which is set only while tracing is on.
+    def add_rspec_trace_spec(project)
+      File.write(File.join(project, 'spec/trace_replay_spec.rb'), <<~SPEC)
+        # frozen_string_literal: true
+
+        require_relative '../helpers/spec_helper'
+
+        describe 'Trace replay' do
+          it '#{failing}' do
+            driver.navigate.to('#{server.url}')
+            puts "TRACE_E2E_WEBSOCKET=\#{driver.capabilities[:web_socket_url].inspect}"
+            send_keys({ id: 'pw' }, '#{secrets[0]}')
+            send_keys({ id: 'pw2' }, '#{secrets[1]}')
+            find_element(id: 'name').send_keys('#{plain_value}')
+            click({ id: 'go' })
+            eventually(timeout: 5) { expect(text(id: 'status')).to eq('answered by /api') }
+            eventually(timeout: 1) { expect(text(id: 'title')).to eq('deliberate trace failure') }
+          end
+
+          it '#{passing}' do
+            driver.navigate.to('#{server.url}')
+            puts "TRACE_E2E_WEBSOCKET=\#{driver.capabilities[:web_socket_url].inspect}"
+            send_keys({ id: 'name' }, 'ok')
+            eventually { expect(text(id: 'title')).to eq('Trace') }
+          end
+        end
+      SPEC
+    end
+
+    def failing_trace(result)
+      expect(trace_attachments(result).size).to eq(1)
+      trace_zip(project, trace_attachments(result).first)
+    end
+
+    def steps_of(path)
+      TraceFormatChecker.read(path).first['steps']
+    end
+
+    # BiDi screenshots, so window_handle worked as the browsing context id: .jpg entries that are JPEGs.
+    def expect_jpeg_screenshots(path, names)
+      screenshots = names.grep(%r{\Asteps/\d{4}\.(jpg|png)\z})
+      expect(screenshots).not_to be_empty
+      expect(screenshots).to all(end_with('.jpg'))
+      entries = zip_entries(path)
+      screenshots.each { |name| expect(entries[name].byteslice(0, 2).bytes).to eq([0xFF, 0xD8]), name }
+    end
+
     describe 'Selenium + RSpec on headless Chrome' do
       let(:project) { 'video_rspec_selenium' }
       let(:command) { 'bundle exec rspec spec/trace_replay_spec.rb' }
-
-      def failing
-        'fails after driving the page'
-      end
-
-      def passing
-        'passes after driving the page'
-      end
 
       before do
         generate_video_project('rspec', 'selenium')
@@ -758,45 +807,6 @@ describe 'End-to-End Project Generation and Execution' do
 
       after { FileUtils.rm_f(File.join(project, 'spec/trace_replay_spec.rb')) }
 
-      # Drives the page through the generated WaitHelper, so the trace has action steps.
-      # Each example prints the driver's webSocketUrl, which is set only while tracing is on.
-      def add_rspec_trace_spec(project)
-        File.write(File.join(project, 'spec/trace_replay_spec.rb'), <<~SPEC)
-          # frozen_string_literal: true
-
-          require_relative '../helpers/spec_helper'
-
-          describe 'Trace replay' do
-            it '#{failing}' do
-              driver.navigate.to('#{server.url}')
-              puts "TRACE_E2E_WEBSOCKET=\#{driver.capabilities[:web_socket_url].inspect}"
-              send_keys({ id: 'pw' }, '#{secrets[0]}')
-              send_keys({ id: 'pw2' }, '#{secrets[1]}')
-              find_element(id: 'name').send_keys('#{plain_value}')
-              click({ id: 'go' })
-              eventually(timeout: 5) { expect(text(id: 'status')).to eq('answered by /api') }
-              eventually(timeout: 1) { expect(text(id: 'title')).to eq('deliberate trace failure') }
-            end
-
-            it '#{passing}' do
-              driver.navigate.to('#{server.url}')
-              puts "TRACE_E2E_WEBSOCKET=\#{driver.capabilities[:web_socket_url].inspect}"
-              send_keys({ id: 'name' }, 'ok')
-              eventually { expect(text(id: 'title')).to eq('Trace') }
-            end
-          end
-        SPEC
-      end
-
-      def failing_trace(result)
-        expect(trace_attachments(result).size).to eq(1)
-        trace_zip(project, trace_attachments(result).first)
-      end
-
-      def steps_of(path)
-        TraceFormatChecker.read(path).first['steps']
-      end
-
       # A navigate step (Selenium sends get through BiDi with web_socket_url set), and action steps whose
       # elements have a label and a rect.
       def expect_steps(steps)
@@ -804,15 +814,6 @@ describe 'End-to-End Project Generation and Execution' do
         actions = steps.select { |step| %w[click send_keys].include?(step['action']) }
         expect(actions.size).to eq(4)
         expect(actions).to all(include('element' => include('label' => a_kind_of(String)), 'rect' => a_kind_of(Hash)))
-      end
-
-      # BiDi screenshots, so window_handle worked as the browsing context id: .jpg entries that are JPEGs.
-      def expect_jpeg_screenshots(path, names)
-        screenshots = names.grep(%r{\Asteps/\d{4}\.(jpg|png)\z})
-        expect(screenshots).not_to be_empty
-        expect(screenshots).to all(end_with('.jpg'))
-        entries = zip_entries(path)
-        screenshots.each { |name| expect(entries[name].byteslice(0, 2).bytes).to eq([0xFF, 0xD8]), name }
       end
 
       def expect_network_and_console(trace)
@@ -925,6 +926,42 @@ describe 'End-to-End Project Generation and Execution' do
         expect(attachments.map { |attachment| File.basename(attachment['path']) })
           .to include(a_string_ending_with('video.webm'), a_string_ending_with('trace.zip'))
         expect_valid_trace(failing_trace(result_named(project, failing)))
+      end
+    end
+
+    # The same RSpec project with config.yml set to firefox; Selenium Manager fetches geckodriver.
+    describe 'Selenium + RSpec on headless Firefox' do
+      let(:project) { 'video_rspec_selenium' }
+      let(:config) { File.join(project, 'config/config.yml') }
+      # Read before the switch to firefox and written back after, so the Chrome examples keep chrome.
+      let(:original_config) { File.read(config) }
+
+      before do
+        generate_video_project('rspec', 'selenium')
+        skip_unless_trace_prerequisites(project, 'firefox')
+        File.write(config, original_config.sub(/^browser: .*$/, 'browser: firefox'))
+        add_rspec_trace_spec(project)
+      end
+
+      after do
+        File.write(config, original_config) if File.exist?(config)
+        FileUtils.rm_f(File.join(project, 'spec/trace_replay_spec.rb'))
+      end
+
+      it 'attaches a trace.zip valid against raider-trace v1, with network, console and BiDi JPEG screenshots',
+         :aggregate_failures do
+        run = run_in_project(project, 'bundle exec rspec spec/trace_replay_spec.rb', env: trace_env, timeout: 240)
+        expect_run(run)
+        path = failing_trace(result_named(project, failing))
+        expect_valid_trace(path)
+
+        trace, names = TraceFormatChecker.read(path)
+        expect(trace['browser']).to include('name' => 'firefox')
+        expect(trace['capabilities']).to include('network' => true, 'console' => true)
+        expect_jpeg_screenshots(path, names)
+        api = trace['network'].find { |entry| entry['url'].to_s.end_with?('/api') }
+        expect(api).to include('status' => 200)
+        expect(api && api['duration_ms']).to be_a(Integer).and be_positive
       end
     end
 
