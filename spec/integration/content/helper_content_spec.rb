@@ -144,7 +144,7 @@ describe 'Helper file content' do
 
     it 'screenshots only on failure' do
       lines = helper.lines
-      start = lines.index { |line| line.include?('if example.exception') }
+      start = lines.index { |line| line.match?(/if (example\.exception|failure)$/) }
       expect(start).not_to be_nil
       indent = lines[start][/\A */].size
       body = lines[(start + 1)..].take_while { |line| line.strip.empty? || line[/\A */].size > indent }
@@ -180,7 +180,7 @@ describe 'Helper file content' do
     end
 
     it 'attaches "video" only when example.exception && VideoHelper.final_attempt?(example)' do
-      expect(after_hook).to match(/example\.exception\s*(\?|&&)\s*VideoHelper\.final_attempt\?\(example\)/)
+      expect(after_hook).to match(/(example\.exception|failure)\s*(\?|&&)\s*VideoHelper\.final_attempt\?\(example\)/)
       expect(after_hook).to include("RaiderReporter.attach('video', video_path, type: #{video_type}) if video_path")
     end
 
@@ -190,7 +190,7 @@ describe 'Helper file content' do
                after_hook.index(/driver\.quit|browser\.quit/)]
       expect(order).to all(be_an(Integer)).and eq(order.compact.sort)
       expect(after_hook.scan(/driver\.quit|browser\.quit/).size).to eq(1)
-      expect(after_hook[order[2]..]).to match(/\n      (@trace_recorder&\.cleanup\n      )?@video_recorder&\.cleanup\n      (driver|browser)\.quit(_driver)?\n    end\n/)
+      expect(after_hook[order[2]..]).to match(/\n      (@trace_recorder&\.cleanup\n      )?@video_recorder&\.cleanup\n      (driver|browser)\.quit(_driver)?\n(      raise mock_error if mock_error\n)?    end\n/)
     end
 
     it 'keeps the screenshot attachment' do
@@ -210,11 +210,12 @@ describe 'Helper file content' do
     end
 
     it 'keeps the trace for TRACE=on or a final-attempt failure, falling back to keeping failures without a video helper' do
-      expect(after_hook).to include('TraceHelper.keep_all? || (example.exception && (defined?(VideoHelper) ? VideoHelper.final_attempt?(example) : true))')
+      expect(after_hook).to match(/TraceHelper\.keep_all\? \|\| \((example\.exception|failure) && \(defined\?\(VideoHelper\) \? VideoHelper\.final_attempt\?\(example\) : true\)\)/)
     end
 
     it 'counts the attempt from the rspec-retry metadata and hands the recorder the test' do
-      expect(after_hook).to include('example.metadata[:retry_attempts].to_i + 1', 'error: example.exception')
+      expect(after_hook).to include('example.metadata[:retry_attempts].to_i + 1')
+      expect(after_hook).to match(/error: (example\.exception|failure) \}/)
       expect(after_hook).to include('@trace_recorder&.stop(keep: keep_trace, test: trace_test)')
     end
 
@@ -224,6 +225,32 @@ describe 'Helper file content' do
                after_hook.index("\n    ensure\n"), after_hook.index('@trace_recorder&.cleanup'), after_hook.index('@video_recorder&.cleanup'),
                after_hook.index('driver.quit')]
       expect(order).to all(be_an(Integer)).and eq(order.compact.sort)
+    end
+  end
+
+  shared_examples 'network mock after hook' do |project_name|
+    subject(:helper) { read_generated(project_name, 'helpers/spec_helper.rb') }
+
+    let(:after_hook) { helper[/config\.after\(:each\).*\z/m] }
+
+    it 'finishes the router first and counts a mock error as a failure' do
+      expect(after_hook).to include('mock_error = NetworkHelper.finish(driver) if defined?(NetworkHelper)', 'failure = example.exception || mock_error')
+      expect(after_hook.index('mock_error = NetworkHelper.finish')).to be < after_hook.index('TraceHelper.keep_all?')
+      expect(after_hook).not_to include('example.exception ?', 'error: example.exception')
+    end
+
+    it 'raises the mock error after the driver has quit' do
+      expect(after_hook.index('raise mock_error if mock_error')).to be > after_hook.index('driver.quit')
+    end
+
+    it 'is valid Ruby' do
+      expect(helper).to have_valid_ruby_syntax
+    end
+  end
+
+  shared_examples 'no network mock wiring' do |project_name|
+    it 'leaves spec_helper.rb without NetworkHelper' do
+      expect(read_generated(project_name, 'helpers/spec_helper.rb')).not_to include('NetworkHelper', 'mock_error')
     end
   end
 
@@ -420,8 +447,10 @@ describe 'Helper file content' do
                       %w[selenium watir].include?(automation) ? ':webm' : ':mp4'
       if automation == 'selenium'
         it_behaves_like 'trace spec helper wiring', name
+        it_behaves_like 'network mock after hook', name
       else
         it_behaves_like 'no trace wiring', name, 'helpers/spec_helper.rb'
+        it_behaves_like 'no network mock wiring', name
       end
     end
 

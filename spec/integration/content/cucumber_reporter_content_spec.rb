@@ -25,7 +25,7 @@ describe 'Cucumber raider_reporter wiring' do
       end
 
       it 'takes the screenshot only for failed scenarios, inside the guard block' do
-        guarded = /if scenario\.failed\?\n\s+Dir\.mktmpdir do \|temp_folder\|\n(?<body>.*?)\n\s+end\n\s+end\nensure/m
+        guarded = /if (?:scenario\.failed\?|failed)\n\s+Dir\.mktmpdir do \|temp_folder\|\n(?<body>.*?)\n\s+end\n\s+end\nensure/m
         expect(hook.match(guarded)[:body]).to include(screenshot_call)
       end
 
@@ -36,7 +36,7 @@ describe 'Cucumber raider_reporter wiring' do
 
       it 'quits the driver in an ensure of the After block, without a redundant begin' do
         quit = %w[android ios cross_platform].include?(automation) ? 'driver.quit_driver' : quit_call
-        expect(hook).to match(/^\s*After do \|scenario\|\n.*\n^ensure\n.*\n\s+#{Regexp.escape(quit)}\nend/m)
+        expect(hook).to match(/^\s*After do \|scenario\|\n.*\n^ensure\n.*\n\s+#{Regexp.escape(quit)}\n(  raise mock_error if mock_error\n)?end/m)
         expect(hook).not_to match(/^\s+begin$/)
       end
 
@@ -45,6 +45,21 @@ describe 'Cucumber raider_reporter wiring' do
         expect(env).to include(attach)
         expect(env.index(screenshot_call)).to be < env.index(attach)
         expect(env.index(attach)).to be < env.index(/driver\.quit|browser\.quit/, env.index(attach))
+      end
+
+      if automation == 'selenium'
+        it 'finishes the router first, counts a mock error as a failure and raises it after the driver quit' do
+          expect(hook).to include('mock_error = NetworkHelper.finish(driver) if defined?(NetworkHelper)',
+                                  'failed = scenario.failed? || !mock_error.nil?', 'error = scenario.exception || mock_error')
+          expect(hook.index('mock_error = NetworkHelper.finish')).to be < hook.index('TraceHelper.keep_all?')
+          expect(hook.index('raise mock_error if mock_error')).to be > hook.index('driver.quit')
+          expect(hook).not_to include('scenario.failed? ?', 'error: scenario.exception')
+          expect(env).to have_valid_ruby_syntax
+        end
+      else
+        it 'has no NetworkHelper wiring' do
+          expect(env).not_to include('NetworkHelper', 'mock_error')
+        end
       end
 
       context 'with video recording' do
@@ -60,7 +75,7 @@ describe 'Cucumber raider_reporter wiring' do
         end
 
         it 'stops with keep: scenario.failed? before quitting, attaches the path and cleans up in the ensure' do
-          expect(hook).to include('video_path = @video_recorder&.stop(keep: scenario.failed?)')
+          expect(hook).to match(/video_path = @video_recorder&\.stop\(keep: (scenario\.failed\?|failed)\)/)
           expect(hook).to include("RaiderReporter.attach('video', video_path, type: #{video_type}) if video_path")
           expect(hook.index('@video_recorder&.stop')).to be < hook.index("RaiderReporter.attach('video'")
           expect(hook.index("RaiderReporter.attach('video'")).to be < hook.index(/^ensure/)
@@ -84,7 +99,9 @@ describe 'Cucumber raider_reporter wiring' do
           end
 
           it 'stops with keep: TraceHelper.keep_all? || scenario.failed? before the video, attaches it and cleans up before quitting' do
-            expect(hook).to include('TraceHelper.keep_all? || scenario.failed?', 'error: scenario.exception', 'attempt: @trace_attempt')
+            expect(hook).to match(/TraceHelper\.keep_all\? \|\| (scenario\.failed\?|failed)/)
+            expect(hook).to match(/error: (scenario\.exception|error)\)/)
+            expect(hook).to include('attempt: @trace_attempt')
             expect(hook).to include("RaiderReporter.attach('trace', trace_path, type: :trace, attempt: @trace_attempt) if trace_path")
             order = [hook.index('@trace_recorder&.stop'), hook.index('@video_recorder&.stop'), hook.index("RaiderReporter.attach('trace'"),
                      hook.index(/^ensure/), hook.index('@trace_recorder&.cleanup'), hook.index('@video_recorder&.cleanup'), hook.index('driver.quit')]
