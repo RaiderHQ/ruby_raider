@@ -539,6 +539,94 @@ Note that without WaitHelper a trace records only navigation and the failure (se
 <%- end -%>
 
 <%- end -%>
+<%- if network_helper? -%>
+## Mocking network requests
+
+Sometimes a test should not depend on a real server: you want an empty list, an error page, or no images at all.
+`NetworkHelper` lets a test answer a request with your own response, or block it, before it leaves the browser.
+It is available in every test and in the page objects, and it works on Chrome, Edge and Firefox. Safari raises
+`NetworkHelper::Unavailable`, and so does a run with `BIDI=off` or a grid that cannot carry WebDriver BiDi.
+
+The methods:
+
+- `mock_request(url, ...)` answers matching requests with your own response. It takes `status:` (default 200, any
+  number from 100 to 599), `json:` or `body:` (not both), `headers:`, `content_type:` and `method:` (for example
+  `method: 'POST'`). It returns a mock, so you can look at it later.
+- `block_request(url)` makes matching requests fail with a network error, as if the server were unreachable.
+- `remove_mock(mock)` stops one mock. `clear_mocks` stops all of them.
+- `mock.calls` is the list of requests the mock handled, oldest first, and `mock.called?` says if there was one. Each
+  request has `method`, `url` and `headers` (header names are lowercase).
+
+Set a mock up before the page makes the request, usually before you visit the page:
+
+```ruby
+# An empty list instead of the real users
+mock_request('**/api/users', json: { users: [] })
+
+# A server error, to see how the page shows it
+mock_request('**/api/users', status: 500, json: { error: 'down' })
+
+# No images, so the page loads faster
+block_request('**/*.png')
+```
+
+To check that the page really made the request, keep the mock and look at its calls. Use `eventually` for the check,
+because the request may come a moment after the click:
+
+```ruby
+users = mock_request('**/api/users', json: { users: [] })
+# ...open the page that loads the users...
+eventually { expect(users.called?).to be(true) }
+eventually { expect(users.calls.first.method).to eq('GET') }
+```
+
+**Matching.** A URL is a glob that is matched against the whole URL, including the query string. `**` stands for any
+characters, `*` for any characters except `/`, and everything else is literal. So `'**/api/users'` matches
+`https://shop.test/api/users`, but not `https://shop.test/api/users?page=2`: write `'**/api/users?*'` for that. You can
+also pass a Regexp. When several mocks match, the one you added last wins. Pass `method:` to match only one HTTP method.
+
+**Name the host when you can.** A glob that starts with `scheme://host`, such as `'https://shop.test/api/users'`, tells
+the browser which requests to pause. A Regexp, or a glob that starts with `**` or has no host, makes the browser pause
+every request while the mock is registered, and the helper lets the ones that do not match go on. That works, but it
+is slower, so prefer `'https://shop.test/api/users'` to `'**/api/users'` on pages that load a lot.
+
+**CORS.** When the page and the mocked URL are on different origins, the helper answers the browser's preflight
+request and adds the CORS headers for you, unless your mock sets them itself.
+
+**Deciding per request.** Give `mock_request` a block to choose the answer for each request. The block gets the
+request and returns a Hash with the same options as above (`status:`, `json:`, `body:`, `headers:`, `content_type:`),
+`:fail` to make the request fail, or `:continue` to let it go on to the real server. To let it go on with a changed
+header, return `{ continue: { headers: { 'x-test' => '1' } } }`.
+
+```ruby
+mock_request('https://shop.test/api/users', method: 'POST') do |request|
+  request.headers['authorization'] ? { status: 201, json: { id: 1 } } : { status: 401 }
+end
+```
+
+The block runs on a background thread while the browser waits, so keep it quick and do not call the driver (or any
+page method) inside it.
+
+**Cleanup and errors.** Mocks are cleared after each test, so one test never affects the next. If a block raises, or
+returns something that is not a response, the request fails and the test fails with `NetworkHelper::MockError`. A bad
+`status:` or a pattern that is neither a String nor a Regexp raises right where you call `mock_request`.
+
+A mocked request shows up as "Mocked" in the [Trace replay](#trace-replay), so you can see which requests the test
+answered itself.
+
+### Removing the network helper
+
+The network helper is ordinary code in your project, so you can take it out. To do that:
+
+1. Delete `helpers/network_helper.rb`.
+2. Remove `include NetworkHelper` from `page_objects/abstract/page.rb`, <%= rspec? ? '`config.include(NetworkHelper)` from `helpers/spec_helper.rb`' : '`World(NetworkHelper)` from `features/support/world.rb`' %>, and the
+   `require_relative` lines that load `network_helper`.
+3. In the after hook (<%= rspec? ? '`helpers/spec_helper.rb`' : '`features/support/env.rb`' %>), remove the `NetworkHelper.finish` line and `raise mock_error`.
+4. In `helpers/driver_helper.rb`, remove the `NetworkHelper` half of the `bidi` condition, so it reads
+   `bidi = defined?(TraceHelper) && TraceHelper.bidi?(load_browser)`.
+5. Delete any `mock_request` and `block_request` calls in your tests.
+
+<%- end -%>
 <%- if web? -%>
 ## Reusing the login
 
@@ -691,6 +779,8 @@ next to the failure screenshot and video, and attached to the report as `trace`.
 
 - Keep the trace of passing tests too with `TRACE=on bundle exec <%= rspec? ? 'rspec' : 'cucumber' %>`. Capture nothing for one run with
   `TRACE=off bundle exec <%= rspec? ? 'rspec' : 'cucumber' %>`, or for the project with `raider u trace off` (`raider u trace on` turns it back on).
+  `TRACE=off` turns tracing off but BiDi stays on, so [network mocking](#mocking-network-requests) still works;
+  `BIDI=off` turns BiDi off, which also drops the network and console entries from a trace.
   `raider u trace on` and `raider u trace off` write `enabled:` under `trace:` in `config/config.yml`.
 - Open a trace in Raider Desktop, or from the test's page on Hideout when the run is uploaded.
 - Cost: a trace takes one screenshot and one page HTML for every step that changes the page (a click, typing,

@@ -68,6 +68,7 @@ Every generated project comes with:
 - **Login reuse** — generated web projects (Selenium or Watir) log in once and restore the saved session for examples tagged `:logged_in` (RSpec) or `@logged_in` (Cucumber); `RAIDER_LOGIN_STATE=off|refresh` and `login_state: max_age:` control it, and the state stays in git-ignored `.raider/auth/`
 - **Failure video replay** — Every test is recorded and the video is kept only for failing tests, attached to the report as `video` (WebM from page screenshots for Selenium and Watir, Appium's own MP4 for mobile, which needs `ffmpeg` on the Appium server host for iOS and for Android recordings over 180 s). Turn it off per run with `VIDEO=off`, or per project with `raider u video off`; ffmpeg is downloaded once, SHA-256 checked and cached in `~/.cache/raider`. The RaiderHQ `ffmpeg-7.1` build that the download uses is not published yet, so for now set `RAIDER_FFMPEG_PATH` to an ffmpeg with libvpx to get web videos
 - **Failure trace replay** (Selenium with RSpec or Cucumber) — Failing tests keep a step-by-step trace: each action with its locator and wait time, a screenshot and the page HTML after every step that changes the page, plus network requests and console messages on Chrome, Edge and Firefox. It is saved as `raider-results/attachments/<n>-trace.zip`, attached to the report as `trace` and opened in Raider Desktop or on Hideout. `TRACE=on` keeps passing tests too, `TRACE=off` captures nothing, and `raider u trace on|off` sets it for the project. Typed values in password fields and `RAIDER_SECRET_*` values are hidden; other typed values, page text and URLs are kept, so treat a trace like the video. Request headers, cookies and bodies are never captured
+- **Network mocking** (Selenium with RSpec or Cucumber) — Answer a request with your own response or block it, from the test: `mock_request('**/api/users', json: { users: [] })`, `mock_request(url, status: 500)` and `block_request('**/*.png')`, with `calls` to check what the page asked for. It uses WebDriver BiDi on Chrome, Edge and Firefox (Safari and `BIDI=off` raise `NetworkHelper::Unavailable`), handles CORS for cross-origin mocks, clears mocks after each test, and marks mocked requests in the trace
 - **GitHub Actions CI** — Ready-to-use test pipeline that caches ffmpeg for failure videos
 - **Rake tasks** — Default, smoke, and regression tasks with tag-based filtering
 - **Retry support** — RSpec retry with configurable retry count via `RETRY_COUNT` env var
@@ -157,6 +158,20 @@ Gem upgrades do not rewrite generated code, so existing projects keep their impl
 5. Move flaky spots to `click`, `send_keys` and `eventually` first.
 
 Keep in mind that keeping the implicit wait while using the layer makes every `find` miss cost up to `timeout` seconds per poll cycle, so remove it once you have moved over.
+
+## Adding network mocking to a 3.13 project
+
+Gem upgrades do not rewrite generated code, so a project made with 3.13 or earlier opts in by hand (Selenium web projects only):
+
+1. Copy `helpers/network_helper.rb` from a freshly generated project into your `helpers/` folder.
+2. Load and include it: add `require_relative 'network_helper'` next to the other helper requires, then
+   `config.include(NetworkHelper)` in `helpers/spec_helper.rb` (RSpec), or `World(NetworkHelper)` in
+   `features/support/world.rb` with `require_relative '../../helpers/network_helper'` (Cucumber). If you want mocks in
+   page objects, add `include NetworkHelper` to `page_objects/abstract/page.rb`.
+3. In the after hook, call `mock_error = NetworkHelper.finish(driver)` before the driver quits, and `raise mock_error if mock_error`
+   after `driver.quit`, so a failing mock block fails the test and mocks never leak into the next test.
+4. In `helpers/driver_helper.rb`, make the BiDi condition include the helper:
+   `bidi = (defined?(TraceHelper) && TraceHelper.bidi?(load_browser)) || (defined?(NetworkHelper) && NetworkHelper.bidi?(load_browser))`.
 
 ## Commands
 
