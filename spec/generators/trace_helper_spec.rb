@@ -680,6 +680,22 @@ describe 'Generated TraceHelper' do
       )
     end
 
+    # Seen in Chrome 156: responseCompleted carries the request's start as its timestamp, and the end only in
+    # request.timings (ms after timeOrigin). Firefox stamps the event's own time and gives absolute timings.
+    it "takes duration_ms from the request's timings when responseCompleted is stamped with the request's start" do
+      recorder = started_recorder
+      request_sent('chrome', 'GET', 'https://example.test/api', started_ms)
+      bidi.emit('network.responseCompleted', 'timestamp' => started_ms, 'response' => { 'status' => 200 },
+                                             'request' => { 'request' => 'chrome',
+                                                            'timings' => { 'timeOrigin' => started_ms, 'responseEnd' => 310.449 } })
+      request_sent('firefox', 'GET', 'https://example.test/api', started_ms)
+      bidi.emit('network.responseCompleted', 'timestamp' => started_ms + 301, 'response' => { 'status' => 200 },
+                                             'request' => { 'request' => 'firefox',
+                                                            'timings' => { 'timeOrigin' => 0, 'responseEnd' => started_ms + 300.6 } })
+
+      expect(kept(recorder)['network'].map { |entry| entry['duration_ms'] }).to eq([310, 301])
+    end
+
     it 'maps log.entryAdded into a console entry with level, text, source, at' do
       recorder = started_recorder
       recorder.navigated('https://example.test/login')

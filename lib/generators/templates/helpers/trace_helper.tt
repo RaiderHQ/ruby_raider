@@ -1025,7 +1025,17 @@ module TraceHelper
       recorder.network_completed(params.dig('request', 'request'),
                                  { status: response['status'], mime_type: response['mimeType'],
                                    bytes: response['bytesReceived'] || response['encodedDataLength'] },
-                                 params['timestamp'])
+                                 finished_at(params))
+    end
+
+    # Epoch ms the response ended. Chrome stamps every event of a request with its start, so the end comes
+    # from request.timings: ms after timeOrigin in Chrome, absolute (timeOrigin 0) in Firefox.
+    def self.finished_at(params)
+      stamp = params['timestamp']
+      origin, response_end = params.dig('request', 'timings')&.values_at('timeOrigin', 'responseEnd')
+      return stamp unless origin.is_a?(Numeric) && response_end.is_a?(Numeric) && response_end.positive?
+
+      [stamp, origin + response_end].grep(Numeric).max
     end
 
     def self.fetch_error(recorder, params)
