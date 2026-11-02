@@ -826,6 +826,92 @@ describe 'Generated TraceHelper' do
     end
   end
 
+  describe 'mocked requests' do
+    let(:started_ms) { 1_793_568_600_020 }
+    let(:recorder) { started_recorder }
+    let(:network) { kept(recorder)['network'] }
+
+    before { recorder.navigated('https://example.test/login') }
+
+    def start(id, hop = 0)
+      recorder.network_started([id, hop], { method: 'GET', url: "https://example.test/#{id}", status: nil, duration_ms: nil }, at: started_ms)
+    end
+
+    def complete(id, status, hop = 0)
+      recorder.network_completed([id, hop], { status: status }, started_ms + 7)
+    end
+
+    it 'marks a pending entry and still completes it' do
+      start('r1')
+      recorder.network_marked(['r1', 0], { mocked: 'fulfilled' })
+      complete('r1', 200)
+
+      expect(network.map { |entry| entry.values_at('mocked', 'status', 'duration_ms') }).to eq([['fulfilled', 200, 7]])
+    end
+
+    it 'applies an early mark when the entry starts' do
+      recorder.network_marked(['r1', 0], { mocked: 'failed' })
+      start('r1')
+
+      expect(network.map { |entry| entry['mocked'] }).to eq(['failed'])
+      expect(recorder.instance_variable_get(:@early_marks)).to be_empty
+    end
+
+    it 'marks only its hop' do
+      start('r1', 0)
+      start('r1', 1)
+      recorder.network_marked(['r1', 1], { mocked: 'fulfilled' })
+
+      expect(network.map { |entry| entry['mocked'] }).to eq([nil, 'fulfilled'])
+    end
+
+    it 'caps early marks at MAX_PENDING' do
+      cap = TraceHelper::Recorder::MAX_PENDING
+      (cap + 5).times { |index| recorder.network_marked(["m#{index}", 0], { mocked: 'fulfilled' }) }
+      marks = recorder.instance_variable_get(:@early_marks)
+
+      expect(marks.size).to eq(cap)
+      expect(marks.keys.first).to eq(['m5', 0])
+    end
+
+    it 'keeps the status from the mark when no completion arrives' do
+      start('r1')
+      recorder.network_marked(['r1', 0], { mocked: 'fulfilled', status: 503 })
+
+      expect(network.map { |entry| entry.values_at('mocked', 'status') }).to eq([['fulfilled', 503]])
+    end
+
+    it 'keeps the mark status when the completion has none' do
+      start('r1')
+      recorder.network_marked(['r1', 0], { mocked: 'fulfilled', status: 503 })
+      complete('r1', nil)
+
+      expect(network.map { |entry| entry['status'] }).to eq([503])
+    end
+
+    it 'is fed by NetworkHelper.observer, registered when recorder_for runs' do
+      helper = Module.new { class << self; attr_accessor :observer; end }
+      stub_const('NetworkHelper', helper)
+      started = started_recorder
+      started.network_started(['r1', 0], { url: 'https://example.test/r1' })
+      helper.observer.request_mocked(request_id: 'r1', redirect_count: 0, outcome: 'failed', status: nil)
+
+      expect(helper.observer).to be(TraceHelper::MockMarks)
+      expect(kept(started)['network'].map { |entry| entry['mocked'] }).to eq(['failed'])
+    end
+
+    it 'does not raise when a mark cannot be applied' do
+      allow(TraceHelper).to receive(:active_recorder).and_raise(RuntimeError, 'boom')
+
+      expect { TraceHelper::MockMarks.request_mocked(request_id: 'r1', redirect_count: 0, outcome: 'failed') }.not_to raise_error
+    end
+
+    it 'is accepted by the format checker, which rejects other values' do
+      trace = { 'network' => [{ 'mocked' => 'maybe' }, { 'mocked' => 'fulfilled' }, {}] }
+      expect(TraceFormatChecker.mocked_rules(trace['network']).size).to eq(1)
+    end
+  end
+
   describe 'browser wiring' do
     let(:started_ms) { 1_793_568_600_020 }
     let(:bidi_events) { %w[network.beforeRequestSent network.responseCompleted network.fetchError log.entryAdded] }
