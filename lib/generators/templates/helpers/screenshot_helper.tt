@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'chunky_png'
+require 'fileutils'
 require 'rspec/expectations'
 require 'yaml'
 
@@ -23,10 +24,41 @@ module ScreenshotHelper
   end
 
   def self.file_settings
+    block = read_config['screenshots']
+    block.is_a?(Hash) ? block.transform_keys(&:to_sym) : {}
+  end
+
+  def self.read_config
     return {} unless File.exist?(CONFIG_PATH)
 
-    block = (YAML.safe_load(File.read(CONFIG_PATH), permitted_classes: [Symbol]) || {})['screenshots']
-    block.is_a?(Hash) ? block.transform_keys(&:to_sym) : {}
+    loaded = YAML.safe_load(File.read(CONFIG_PATH), permitted_classes: [Symbol])
+    loaded.is_a?(Hash) ? loaded : {}
+  end
+
+  # The baseline folder: the configured browser, lower case, without a microsoft prefix (MicrosoftEdge is edge).
+  def self.browser
+    name = read_config['browser'].to_s.downcase.delete_prefix('microsoft')
+    name.empty? ? 'chrome' : name
+  end
+
+  def self.update?
+    ENV['SCREENSHOTS'].to_s.downcase == 'update'
+  end
+
+  # The reporter's CI detection when it is loaded, and CI in the environment.
+  def self.ci?
+    detected = defined?(RaiderReporter::CiDetector) ? RaiderReporter::CiDetector.new.ci : nil
+    !detected.nil? || !ENV['CI'].to_s.empty?
+  rescue StandardError
+    !ENV['CI'].to_s.empty?
+  end
+
+  # What a comparison comes to: :passed, :failed, :created, :updated or :missing_on_ci.
+  def self.decide(baseline_exists:, matched:)
+    return(ci? && !update? ? :missing_on_ci : :created) unless baseline_exists
+    return :passed if matched
+
+    update? ? :updated : :failed
   end
 
   # Pixel comparison of two PNGs and the picture of what differs. Internal.
@@ -119,6 +151,51 @@ module ScreenshotHelper
       luma = yiq(pixel).first
       grey = (255 + ((luma - 255) * FADE)).round.clamp(0, 255)
       ChunkyPNG::Color.rgb(grey, grey, grey)
+    end
+  end
+
+  # Where a baseline lives and how it is written. Internal.
+  class Baseline
+    NAME_PATTERN = %r{\A[A-Za-z0-9_\-]+(/[A-Za-z0-9_\-]+)*\z}.freeze
+    MAX_NAME = 100
+
+    def self.validate_name!(name)
+      return if name.is_a?(String) && name.length <= MAX_NAME && name.match?(NAME_PATTERN)
+
+      raise ArgumentError, "screenshot name must be letters, digits, - and _ with / for folders, " \
+                           "at most #{MAX_NAME} characters; got #{name.inspect}"
+    end
+
+    def initialize(name, browser:, root: Dir.pwd)
+      self.class.validate_name!(name)
+      @path = "screenshots/baselines/#{browser}/#{name}.png"
+      @root = root
+    end
+
+    attr_reader :path
+
+    def exist?
+      File.file?(full_path)
+    end
+
+    def read
+      File.binread(full_path)
+    end
+
+    # Through a temp file and a rename, so two processes never leave half a PNG.
+    def write(png)
+      FileUtils.mkdir_p(File.dirname(full_path))
+      temp = "#{full_path}.#{Process.pid}.#{rand(36**6).to_s(36)}.tmp"
+      File.binwrite(temp, png)
+      File.rename(temp, full_path)
+    ensure
+      FileUtils.rm_f(temp) if temp
+    end
+
+    private
+
+    def full_path
+      File.join(@root, @path)
     end
   end
 

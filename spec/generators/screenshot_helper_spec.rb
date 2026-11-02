@@ -113,4 +113,135 @@ RSpec.describe 'ScreenshotHelper' do
       expect { compare(png(2, 2), 'garbage') }.to raise_error(ScreenshotHelper::Diff::Unreadable)
     end
   end
+
+  describe 'ScreenshotHelper::Baseline' do
+    around { |example| Dir.mktmpdir { |dir| Dir.chdir(dir) { example.run } } }
+
+    it 'accepts plain and nested names' do
+      %w[home checkout/summary a-b_c].each do |name|
+        expect { ScreenshotHelper::Baseline.validate_name!(name) }.not_to raise_error
+      end
+    end
+
+    it 'rejects names that could leave the baseline folder or are malformed' do
+      ['../x', '/x', 'a//b', 'a.png', '', 'a/', 'a' * 101, nil].each do |name|
+        expect { ScreenshotHelper::Baseline.validate_name!(name) }.to raise_error(ArgumentError)
+      end
+    end
+
+    it 'accepts a name of exactly 100 characters' do
+      expect { ScreenshotHelper::Baseline.validate_name!('a' * 100) }.not_to raise_error
+    end
+
+    it 'refuses a bad name before anything is written' do
+      expect { ScreenshotHelper::Baseline.new('../x', browser: 'chrome') }.to raise_error(ArgumentError)
+      expect(Dir.children('.')).to be_empty
+    end
+
+    it 'builds a relative path under the browser folder' do
+      baseline = ScreenshotHelper::Baseline.new('checkout/summary', browser: 'edge')
+      expect(baseline.path).to eq('screenshots/baselines/edge/checkout/summary.png')
+    end
+
+    it 'writes atomically, creating folders and leaving no temp file' do
+      baseline = ScreenshotHelper::Baseline.new('a/b', browser: 'chrome')
+      expect(baseline.exist?).to be(false)
+      baseline.write('png bytes')
+      expect(baseline.exist?).to be(true)
+      expect(baseline.read).to eq('png bytes')
+      expect(Dir.children('screenshots/baselines/chrome/a')).to eq(['b.png'])
+    end
+
+    it 'resolves the path against root' do
+      Dir.mktmpdir do |root|
+        ScreenshotHelper::Baseline.new('x', browser: 'chrome', root: root).write('1')
+        expect(File.read(File.join(root, 'screenshots/baselines/chrome/x.png'))).to eq('1')
+      end
+    end
+  end
+
+  describe '.browser' do
+    around { |example| Dir.mktmpdir { |dir| Dir.chdir(dir) { example.run } } }
+
+    def browser_from(value)
+      FileUtils.mkdir_p('config')
+      File.write('config/config.yml', "browser: #{value}\n")
+      ScreenshotHelper.browser
+    end
+
+    it 'names the folder after the configured browser, without the microsoft prefix' do
+      expect(%w[chrome MicrosoftEdge edge Firefox].map { |value| browser_from(value) })
+        .to eq(%w[chrome edge edge firefox])
+    end
+
+    it 'falls back to chrome without a config' do
+      expect(ScreenshotHelper.browser).to eq('chrome')
+    end
+  end
+
+  describe '.update? and .ci?' do
+    around do |example|
+      saved = ENV.to_h.slice('SCREENSHOTS', 'CI')
+      example.run
+    ensure
+      %w[SCREENSHOTS CI].each { |key| ENV.delete(key) }
+      ENV.update(saved)
+    end
+
+    it 'updates only when SCREENSHOTS=update, in any case' do
+      ENV.delete('SCREENSHOTS')
+      expect(ScreenshotHelper.update?).to be(false)
+      ENV['SCREENSHOTS'] = 'Update'
+      expect(ScreenshotHelper.update?).to be(true)
+      ENV['SCREENSHOTS'] = 'no'
+      expect(ScreenshotHelper.update?).to be(false)
+    end
+
+    it 'detects CI through the reporter, or CI in the environment' do
+      hide_const('RaiderReporter')
+      ENV.delete('CI')
+      expect(ScreenshotHelper.ci?).to be(false)
+      ENV['CI'] = 'true'
+      expect(ScreenshotHelper.ci?).to be(true)
+    end
+
+    it 'uses the reporter detector when it is there' do
+      ENV.delete('CI')
+      detector = instance_double('detector', ci: { provider: 'github' })
+      stub_const('RaiderReporter::CiDetector', class_double('RaiderReporter::CiDetector', new: detector))
+      expect(ScreenshotHelper.ci?).to be(true)
+    end
+
+    it 'falls back to the environment when the detector fails' do
+      ENV['CI'] = '1'
+      stub_const('RaiderReporter::CiDetector', Class.new { define_method(:initialize) { raise 'boom' } })
+      expect(ScreenshotHelper.ci?).to be(true)
+    end
+  end
+
+  describe '.decide' do
+    def decide(exists:, matched:, ci: false, update: false)
+      allow(ScreenshotHelper).to receive_messages(ci?: ci, update?: update)
+      ScreenshotHelper.decide(baseline_exists: exists, matched: matched)
+    end
+
+    it 'creates a missing baseline locally' do
+      expect(decide(exists: false, matched: false)).to eq(:created)
+    end
+
+    it 'fails a missing baseline on CI unless asked to update' do
+      expect(decide(exists: false, matched: false, ci: true)).to eq(:missing_on_ci)
+      expect(decide(exists: false, matched: false, ci: true, update: true)).to eq(:created)
+    end
+
+    it 'updates a mismatch only when asked to' do
+      expect(decide(exists: true, matched: false, update: true)).to eq(:updated)
+      expect(decide(exists: true, matched: false)).to eq(:failed)
+    end
+
+    it 'passes a match, update or not' do
+      expect(decide(exists: true, matched: true)).to eq(:passed)
+      expect(decide(exists: true, matched: true, update: true)).to eq(:passed)
+    end
+  end
 end
