@@ -73,6 +73,11 @@ class Generator < Thor::Group
     !watir?
   end
 
+  # Selenium web projects record a trace per test; it needs WaitHelper's actions, and mobile has none yet
+  def trace_helper?
+    wait_helper? && !mobile?
+  end
+
   # False for `raider new -p examples:false`: an empty skeleton without the example pages, tests and wiring
   def examples?
     !options_after_name.include?('no_examples')
@@ -90,8 +95,12 @@ class Generator < Thor::Group
     selenium?
   end
 
+  def ruby_raider_version
+    File.read(File.expand_path('../version', __dir__)).strip
+  end
+
   def ruby_raider_version_requirement
-    major, minor = File.read(File.expand_path('../version', __dir__)).strip.split('.')
+    major, minor = ruby_raider_version.split('.')
     "~> #{major}.#{minor}"
   end
 

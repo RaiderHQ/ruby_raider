@@ -21,6 +21,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rubocop-performance', '~> 1.15.0'
   s.add_development_dependency 'rubocop-rspec', '~> 2.9.0'
   s.add_development_dependency 'ruby_audit', '~> 3.1'
+  s.add_development_dependency 'rubyzip', '>= 2.3', '< 4'
   s.add_development_dependency 'selenium-webdriver', '~> 4.0'
   s.add_development_dependency 'steep', '~> 1.9'
 

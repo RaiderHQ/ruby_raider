@@ -20,12 +20,16 @@ class Generator < Thor::Group
   def selenium?: () -> bool
   def watir?: () -> bool
   def wait_helper?: () -> bool
+  def trace_helper?: () -> bool
   def examples?: () -> bool
   def web?: () -> bool
   def selenium_based?: () -> bool
 
   # Add-on predicates
   def axe_addon?: () -> bool
+
+  def ruby_raider_version: () -> String
+  def ruby_raider_version_requirement: () -> String
 
   private
 

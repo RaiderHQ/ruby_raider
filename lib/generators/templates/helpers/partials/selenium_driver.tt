@@ -2,9 +2,17 @@
     @config = YAML.load_file('config/config.yml')
     browser = @config['browser']
     arguments = { options: create_webdriver_options(*opts) }
-    listener = VideoHelper.listener
+    listener = FanOutListener.for(listeners)
     arguments[:listener] = listener if listener
     Selenium::WebDriver.for(browser.to_sym, **arguments)
+  end
+
+  # The helpers' Selenium listeners. Deleting video_helper.rb or trace_helper.rb needs only its require.
+  def listeners
+    listeners = []
+    listeners << VideoHelper.listener if defined?(VideoHelper)
+    listeners << TraceHelper.listener if defined?(TraceHelper)
+    listeners.compact
   end
 
   def browser_arguments(*opts)
@@ -18,5 +26,7 @@
     browser = load_browser == 'ie' ? load_browser.upcase : load_browser.capitalize
     options = "Selenium::WebDriver::#{browser}::Options".constantize.new
     browser_arguments(*opts).each { |arg| options.add_argument(arg) }
+    # WebDriver BiDi carries the trace's network and console (chrome, edge and firefox).
+    options.web_socket_url = true if defined?(TraceHelper) && TraceHelper.bidi?(load_browser)
     options
   end

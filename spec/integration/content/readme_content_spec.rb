@@ -52,6 +52,52 @@ describe 'Generated Readme content' do
         end
       end
     end
+
+    context "with #{framework} and #{automation}, the Trace replay section" do
+      subject(:section) { readme[/^### Trace replay\n.*?(?=^##)/m]&.gsub(/\s+/, ' ') }
+
+      let(:readme) { read_generated("#{framework}_#{automation}", 'Readme.md') }
+
+      if automation == 'selenium'
+        it 'covers the defaults, TRACE=on, TRACE=off, the file location and how to open it' do
+          expect(section).to include('only for failing tests', 'TRACE=on', 'TRACE=off', 'raider u trace off',
+                                     'raider u trace on', 'raider-results/attachments/', 'Raider Desktop', 'Hideout',
+                                     'helpers/trace_helper.rb')
+          expect(section).to include('raider-results/attachments/<n>-trace.zip')
+          expect(section).to include('`raider u trace on` and `raider u trace off` write `enabled:`')
+          expect(section).not_to include('Both write')
+        end
+
+        it 'states the per-step cost and the caps' do
+          expect(section).to include('one screenshot and one page HTML', 'max_mb', 'max_steps', 'trace:')
+        end
+
+        it 'allows at most one [trace] notice, plus one line when tracing stops' do
+          expect(section).to include('at most one `[trace]` notice', 'one more `[trace]` line', 'tracing disabled for this run')
+        end
+
+        it 'limits network and console to Chrome, Edge or Firefox' do
+          expect(section).to include('Chrome, Edge or Firefox', 'Safari', 'steps, screenshots and HTML')
+        end
+
+        it 'says what is hidden, what is kept and what is never captured' do
+          expect(section).to include('password', 'RAIDER_SECRET_', 'page text', 'query strings', 'console text',
+                                     'like the video', 'never captured', 'cookies')
+          expect(section).to include('Failure messages can contain typed text too, because an assertion message is kept as it is')
+        end
+
+        it 'says how to remove the trace helper and notes the wait helper link' do
+          expect(readme).to include('Removing the trace helper', 'require_relative',
+                                    'without WaitHelper a trace records only navigation and the failure')
+          expect(readme).not_to match(/allure/i)
+          expect(readme).not_to include('—')
+        end
+      else
+        it 'does not mention trace replay' do
+          expect(readme).not_to include('Trace replay', 'TRACE=', 'trace_helper')
+        end
+      end
+    end
   end
 
   AUTOMATION_TYPES.each do |automation|

@@ -19,6 +19,13 @@ video:
   enabled: true
   fps: 5
   max_width: 1280
+<%- if trace_helper? -%>
+
+trace:
+  enabled: true      # capture traces; failing tests keep theirs
+  max_steps: 200     # newest steps are kept; older ones lose screenshots and snapshots first
+  max_mb: 20         # the zip stays under this; see Cost
+<%- end -%>
 
 login_state:
   max_age: 3600 # seconds a saved login is reused before logging in again

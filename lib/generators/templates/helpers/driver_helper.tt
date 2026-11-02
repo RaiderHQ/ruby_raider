@@ -5,12 +5,34 @@ require 'yaml'
 require 'active_support/inflector'
 require 'selenium-webdriver'
 require_relative 'video_helper'
+<%- if trace_helper? -%>
+require_relative 'trace_helper'
+<%- end -%>
 <%- else -%>
 require 'appium_lib'
 <%- end -%>
 
 module DriverHelper
   <%- if selenium_based? -%>
+  # Selenium takes one listener: this one hands every event on to the video and trace listeners.
+  class FanOutListener < Selenium::WebDriver::Support::AbstractEventListener
+    def self.for(listeners)
+      listeners.empty? ? nil : new(listeners)
+    end
+
+    def initialize(listeners)
+      super()
+      @listeners = listeners
+    end
+
+    Selenium::WebDriver::Support::AbstractEventListener.instance_methods(false).each do |event|
+      define_method(event) do |*args|
+        @listeners.each { |listener| listener.public_send(event, *args) if listener.respond_to?(event) }
+        nil
+      end
+    end
+  end
+
   def driver(*opts)
     @driver ||= create_driver(*opts)
   end

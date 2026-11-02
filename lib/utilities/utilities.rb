@@ -75,6 +75,13 @@ module Utilities
       overwrite_yaml
     end
 
+    def trace_enabled=(enabled)
+      reload_config
+      trace = @config['trace']
+      @config['trace'] = (trace.is_a?(Hash) ? trace : {}).merge('enabled' => enabled)
+      overwrite_yaml
+    end
+
     # Set multiple config keys in a single YAML write.
     # Usage: Utilities.batch_update(browser: 'chrome', timeout: 30)
     def batch_update(**settings)

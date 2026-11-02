@@ -65,13 +65,13 @@ class RaiderElement
   end
 
   def send_keys(*keys, timeout: nil)
-    perform(:send_keys, timeout) { |element| element.send_keys(*keys) }
+    perform(:send_keys, timeout, args: keys) { |element| element.send_keys(*keys) }
     self
   end
 
 <%- unless mobile? -%>
   def select_by(how, what, timeout: nil)
-    perform(:select_by, timeout) { |element| Selenium::WebDriver::Support::Select.new(element).select_by(how, what) }
+    perform(:select_by, timeout, args: [how, what]) { |element| Selenium::WebDriver::Support::Select.new(element).select_by(how, what) }
     self
   end
 
@@ -143,8 +143,8 @@ class RaiderElement
     WaitHelper::Lookup.for(@driver, locator, by, scope: @lookup)
   end
 
-  def perform(action, timeout, &block)
-    waiter(timeout).perform_action(action, @lookup, WaitHelper::Waiter::CHECKS.fetch(action), &block)
+  def perform(action, timeout, args: nil, &block)
+    waiter(timeout).perform_action(action, @lookup, WaitHelper::Waiter::CHECKS.fetch(action), args: args, &block)
   end
 
   def method_missing(name, *args, **options, &block)

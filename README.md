@@ -67,6 +67,7 @@ Every generated project comes with:
 - **Example tests or a skeleton (`examples:false`)** — start from the working login examples, or pass `examples:false` for an empty skeleton with the helpers, config, CI and README (see [Getting Started](#getting-started))
 - **Login reuse** — generated web projects (Selenium or Watir) log in once and restore the saved session for examples tagged `:logged_in` (RSpec) or `@logged_in` (Cucumber); `RAIDER_LOGIN_STATE=off|refresh` and `login_state: max_age:` control it, and the state stays in git-ignored `.raider/auth/`
 - **Failure video replay** — Every test is recorded and the video is kept only for failing tests, attached to the report as `video` (WebM from page screenshots for Selenium and Watir, Appium's own MP4 for mobile, which needs `ffmpeg` on the Appium server host for iOS and for Android recordings over 180 s). Turn it off per run with `VIDEO=off`, or per project with `raider u video off`; ffmpeg is downloaded once, SHA-256 checked and cached in `~/.cache/raider`. The RaiderHQ `ffmpeg-7.1` build that the download uses is not published yet, so for now set `RAIDER_FFMPEG_PATH` to an ffmpeg with libvpx to get web videos
+- **Failure trace replay** (Selenium with RSpec or Cucumber) — Failing tests keep a step-by-step trace: each action with its locator and wait time, a screenshot and the page HTML after every step that changes the page, plus network requests and console messages on Chrome, Edge and Firefox. It is saved as `raider-results/attachments/<n>-trace.zip`, attached to the report as `trace` and opened in Raider Desktop or on Hideout. `TRACE=on` keeps passing tests too, `TRACE=off` captures nothing, and `raider u trace on|off` sets it for the project. Typed values in password fields and `RAIDER_SECRET_*` values are hidden; other typed values, page text and URLs are kept, so treat a trace like the video. Request headers, cookies and bodies are never captured
 - **GitHub Actions CI** — Ready-to-use test pipeline that caches ffmpeg for failure videos
 - **Rake tasks** — Default, smoke, and regression tasks with tag-based filtering
 - **Retry support** — RSpec retry with configurable retry count via `RETRY_COUNT` env var
@@ -204,6 +205,7 @@ raider u platform [PLATFORM]    # Set platform for cross-platform tests
 raider u start_appium           # Start Appium server
 raider u desktop                # Download Raider Desktop
 raider u video [ACTION]         # Failure videos: install (ffmpeg), status, on, off
+raider u trace [on/off]         # Failure traces: turn on or off (Selenium)
 ```
 
 ## Development

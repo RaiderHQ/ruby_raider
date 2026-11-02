@@ -1,0 +1,1097 @@
+# frozen_string_literal: true
+
+require 'cgi/escape'
+require 'fileutils'
+require 'json'
+require 'selenium-webdriver'
+require 'tmpdir'
+require 'yaml'
+require 'zlib'
+
+# Records a trace of each test: one step per WaitHelper action and navigation, with
+# a screenshot and the page HTML after each state-changing step. stop(keep: true)
+# writes it as trace.zip in the raider-trace v1 format, which Raider Desktop and
+# Hideout open. Any capture error prints one [trace] line and turns tracing off for
+# the rest of the run; it never raises into a test. Something only left out (a
+# screenshot, or network on a browser without BiDi) prints at most one notice. TRACE=off skips tracing and
+# TRACE=on keeps the trace of passing tests too.
+# The Recorder follows WaitHelper as its observer. Without helpers/wait_helper.rb a
+# trace records only navigation and the failure. Navigation comes from TraceHelper.listener,
+# and network and console from passive WebDriver BiDi events (chrome, edge and firefox).
+module TraceHelper
+  DEFAULTS = { 'enabled' => true, 'max_steps' => 200, 'max_mb' => 20 }.freeze
+  PRODUCER = { name: 'ruby_raider', version: '<%= ruby_raider_version %>' }.freeze
+  # Only these get a screenshot and a snapshot; query actions cost almost nothing.
+  MEDIA_ACTIONS = %w[navigate click send_keys clear submit select_by hover drag_and_drop scroll_into_view].freeze
+  # Only these record what was typed or selected, as value (null when secret).
+  TYPED_ACTIONS = %w[send_keys select_by].freeze
+  SECRET_ENV_PREFIX = 'RAIDER_SECRET_'
+  # The driver helper sets web_socket_url for these while tracing is on.
+  BIDI_BROWSERS = %w[chrome edge firefox].freeze
+  # Step entries are named steps/NNNN.*, so a trace keeps at most 9999 steps.
+  MAX_STEPS_LIMIT = 9999
+
+  @disabled = false
+  @warned = false
+  @disable_warned = false
+  @active_recorder = nil
+
+  class << self
+    attr_accessor :active_recorder
+
+    def config
+      @config ||= DEFAULTS.merge(trace_config)
+    end
+
+    def enabled?
+      config['enabled'] != false && ENV['TRACE'] != 'off' && !@disabled
+    end
+
+    def keep_all?
+      ENV['TRACE'] == 'on'
+    end
+
+    # True while tracing is on for a browser that speaks WebDriver BiDi (Edge reports MicrosoftEdge).
+    def bidi?(browser)
+      name = browser.to_s.downcase.delete_prefix('microsoft')
+      enabled? && BIDI_BROWSERS.any? { |bidi_browser| name.start_with?(bidi_browser) }
+    end
+
+    # Passed to Selenium through the driver helper's fan-out listener when the driver is created.
+    def listener
+      return nil unless enabled?
+
+      @listener ||= Listener.new
+    end
+
+    # screenshot: ->(driver) { [bytes, ext] }, snapshot: ->(driver) { html }; nil takes the default.
+    def recorder_for(driver, screenshot: nil, snapshot: nil)
+      return null_recorder unless enabled?
+
+      recorder = Recorder.new(driver, screenshot: screenshot, snapshot: snapshot)
+      WaitHelper.observer = recorder if defined?(WaitHelper)
+      recorder
+    rescue StandardError => e
+      disable!("could not create a recorder: #{e.message}")
+      null_recorder
+    end
+
+    # Unhooks the recorder from WaitHelper and the navigation listener.
+    def release(recorder)
+      @active_recorder = nil if @active_recorder.equal?(recorder)
+      WaitHelper.observer = nil if defined?(WaitHelper) && WaitHelper.observer.equal?(recorder)
+    end
+
+    # The first reason tracing stopped always gets its own [trace] line, even after a notice.
+    def disable!(reason)
+      @disabled = true
+      release(@active_recorder)
+      detach_observer
+      return nil if @disable_warned
+
+      @disable_warned = true
+      say("#{reason}; tracing disabled for this run")
+      nil
+    end
+
+    # At most one notice per run, for something left out of a trace while tracing goes on.
+    def warn_once(message)
+      return nil if @warned
+
+      @warned = true
+      say(message)
+      nil
+    end
+
+    # Above 9999 is taken as 9999, silently; zero or less (or not a number) as the default.
+    def max_steps
+      value = config['max_steps'].to_i
+      value.positive? ? [value, MAX_STEPS_LIMIT].min : DEFAULTS['max_steps']
+    end
+
+    def max_bytes
+      value = config['max_mb'].to_f
+      ((value.positive? ? value : DEFAULTS['max_mb']) * 1024 * 1024).floor
+    end
+
+    # UTC ISO-8601 with milliseconds.
+    def timestamp(time = Time.now)
+      time.getutc.strftime('%Y-%m-%dT%H:%M:%S.%LZ')
+    end
+
+    def monotonic_now
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    end
+
+    # The format's error shape, on steps and on test: { class:, message: } or nil.
+    def error_json(error)
+      error && { class: error.class.name || error.class.to_s, message: error.message }
+    end
+
+    # True when a typed value equals a RAIDER_SECRET_* environment value.
+    def secret_value?(value)
+      ENV.any? { |name, secret| name.start_with?(SECRET_ENV_PREFIX) && !secret.to_s.empty? && secret == value }
+    end
+
+    private
+
+    def null_recorder
+      detach_observer
+      NullRecorder.new
+    end
+
+    def detach_observer
+      WaitHelper.observer = nil if defined?(WaitHelper) && WaitHelper.observer.is_a?(Recorder)
+    end
+
+    def trace_config
+      trace = YAML.load_file('config/config.yml')['trace']
+      trace.is_a?(Hash) ? trace : {}
+    rescue StandardError
+      {}
+    end
+
+    # $stderr.puts, not Kernel#warn: warn is silenced under -W0.
+    # rubocop:disable Style/StderrPuts
+    def say(message)
+      $stderr.puts("[trace] #{message}")
+    end
+    # rubocop:enable Style/StderrPuts
+  end
+
+  # One step of the timeline. parent is the enclosing group Step; the index is given
+  # when the trace is written, after max_steps and eventually have dropped steps.
+  # element is the format's { tag, label, role }; secret is true, false, or nil while the field is unknown.
+  Step = Struct.new(:seq, :parent, :kind, :action, :locator, :url, :page_title, :started_at, :clock, :duration_ms,
+                    :waited_ms, :retries, :status, :error, :source, :rect, :screenshot, :snapshot, :element,
+                    :value, :secret, :typed_strings, :name, keyword_init: true) do
+    def finish(status, error)
+      self.status = status.to_s
+      self.error = error
+      self.duration_ms = ((TraceHelper.monotonic_now - clock) * 1000).round
+    end
+
+    def within?(group)
+      step = parent
+      step = step.parent until step.nil? || step.equal?(group)
+      !step.nil?
+    end
+
+    def as_json(index, parent_index, media)
+      json = { index: index, parent_index: parent_index, kind: kind, action: action, locator: locator }
+      json[:element] = element if element
+      json[:name] = name if name
+      json.update(typed) if TYPED_ACTIONS.include?(action)
+      json.update(url: url, page_title: page_title, started_at: started_at, duration_ms: duration_ms.to_i,
+                  waited_ms: waited_ms.to_i, retries: retries.to_i, status: status, error: TraceHelper.error_json(error),
+                  source: source, rect: rect, screenshot: media[:screenshots], snapshot: media[:snapshots])
+    end
+
+    # A field whose secrecy could not be read (it was never ready, or its script failed) is masked too.
+    def typed
+      masked = secret != false
+      { value: masked ? nil : value, secret: masked }
+    end
+  end
+
+  # Follows a test: WaitHelper reports its actions (the observer protocol) and the
+  # navigation listener calls navigated. Media goes to its own tmpdir until stop.
+  # BiDi events arrive on Selenium's websocket threads, so the event lists are locked.
+  class Recorder
+    SNAPSHOT = :page_source.to_proc
+
+    attr_reader :dir, :capabilities
+
+    # The default screenshot is a viewport JPEG through BiDi when it is attached, else a PNG.
+    def initialize(driver, screenshot: nil, snapshot: nil)
+      @driver = driver
+      @screenshot = screenshot || ->(page_driver) { Screenshot.take(page_driver, bidi: @bidi) }
+      @snapshot = snapshot || SNAPSHOT
+      @recording = false
+      @bidi = false
+      @lock = Mutex.new
+    end
+
+    def start
+      @dir = Dir.mktmpdir('raider-trace')
+      reset
+      @recording = true
+      TraceHelper.active_recorder = self
+      connect_bidi
+      nil
+    rescue StandardError => e
+      TraceHelper.disable!("tracing failed to start: #{e.message}")
+      discard
+    end
+
+    # Returns the step as the token WaitHelper hands back. args: send_keys' keys or select_by's how and what.
+    # The locator has no label: a page object's element method has returned before the action runs.
+    def action_started(action:, locator:, within:, source:, args: nil)
+      record('action') do
+        step = add(kind: 'action', action: action.to_s, locator: trace_locator(locator, within), source: source)
+        typed(step, Array(args)) if TYPED_ACTIONS.include?(step.action)
+        step
+      end
+    end
+
+    # The element is ready and the action is about to run: its rect, what it is, and whether it is secret.
+    # Query actions skip it, to stay cheap.
+    def action_ready(step, element:)
+      record('action') do
+        element_info(step, element) if element && MEDIA_ACTIONS.include?(step.action)
+        nil
+      end
+    end
+
+    def action_finished(step, status:, waited_ms:, retries:, error:, **)
+      record('action') do
+        step.finish(status, error)
+        step.waited_ms = waited_ms
+        step.retries = retries
+        remember_secret(step)
+        capture_step_media(step) if MEDIA_ACTIONS.include?(step.action)
+        nil
+      end
+    end
+
+    def group_started(action:, source:)
+      record('group') do
+        group = add(kind: 'group', action: action.to_s, locator: nil, source: source)
+        @groups.push(group)
+        group
+      end
+    end
+
+    # A new pass of eventually: only the last pass's steps are kept, and the
+    # group's error is the last one an earlier pass raised.
+    def group_retried(group, error: nil)
+      record('group') do
+        dropped, @steps = @steps.partition { |step| step.within?(group) }
+        dropped.each { |step| delete_media(step) }
+        group.error = error
+        nil
+      end
+    end
+
+    def group_finished(group, status:, retries:, error:)
+      record('group') do
+        @groups.reject! { |open| open.equal?(group) }
+        group.finish(status, error || group.error)
+        group.retries = retries
+        nil
+      end
+    end
+
+    # A Cucumber step is a group named by its keyword and text; the actions it runs become its children.
+    def step_started(name:, source:)
+      group = group_started(action: :cucumber_step, source: source)
+      group.name = name if group.is_a?(Step)
+      group
+    end
+
+    def step_finished(group, status:, error:)
+      group_finished(group, status: status, retries: 0, error: error) if group.is_a?(Step)
+    end
+
+    def navigated(url)
+      record('navigation') do
+        step = add(kind: 'navigate', action: 'navigate', locator: nil, source: navigation_source)
+        step.url = url
+        step.finish(:passed, nil)
+        capture_step_media(step)
+        nil
+      end
+    end
+
+    # hash: a network[] entry of the format; step_index is filled in when written.
+    def network_event(hash)
+      record('network') do
+        event(:network, hash)
+        nil
+      end
+    end
+
+    # A request whose response is still to come: network_completed finishes it by its BiDi
+    # request id. at: the event's epoch milliseconds, for duration_ms.
+    # Each BiDi event runs on its own thread, so a completion can come first; it is then kept
+    # until its start arrives.
+    def network_started(request, hash, at: nil)
+      record('network') do
+        entry = event(:network, hash)
+        early = @lock.synchronize do
+          @requests[request] = [entry, at]
+          @early.delete(request)
+        end
+        network_completed(request, *early) if early
+        nil
+      end
+    end
+
+    # Merges fields into the entry started for request; a redirect's next hop starts a new one.
+    def network_completed(request, fields, at = nil)
+      record('network') do
+        entry, started = @lock.synchronize do
+          @requests.delete(request).tap { |found| @early[request] = [fields, at] unless found }
+        end
+        complete(entry, fields, at, started) if entry
+        nil
+      end
+    end
+
+    # hash: a console[] entry of the format; step_index is filled in when written.
+    def console_event(hash)
+      record('console') do
+        event(:console, hash)
+        nil
+      end
+    end
+
+    # The screenshot and the sanitised page HTML after a step, and the page it ended on.
+    # One that fails is left out (null in the trace); the step is still kept. While an
+    # alert is open nothing is read: any page command would dismiss it.
+    def capture_step_media(step)
+      return nil if alert_open?
+
+      page = Page.capture(@driver, @snapshot)
+      read_page(step, page)
+      step.screenshot = media(step, 'screenshot') { @screenshot.call(@driver) }
+      step.snapshot = media(step, 'snapshot') do
+        raise page[:error] unless page[:html]
+
+        [Snapshot.sanitize(page[:html], css: page[:css], skipped: page[:skipped_sheets], secrets: @secrets), 'html']
+      end
+      nil
+    end
+
+    # test: { identifier:, full_name:, status:, attempt:, error: }. Returns the trace.zip path, or nil.
+    def stop(keep:, test:)
+      return nil unless @recording
+
+      @recording = false
+      TraceHelper.release(self)
+      return discard unless keep && TraceHelper.enabled?
+
+      failure(test[:error])
+      write(test)
+    rescue StandardError => e
+      TraceHelper.disable!("could not write the trace: #{e.message}")
+      discard
+    end
+
+    def cleanup
+      TraceHelper.release(self)
+      FileUtils.rm_rf(@dir) if @dir
+      nil
+    rescue StandardError => e
+      TraceHelper.disable!("could not remove the trace files: #{e.message}")
+    end
+
+    private
+
+    def reset
+      @steps = []
+      @groups = []
+      @lock.synchronize do
+        @events = []
+        @requests = {}
+        @early = {}
+      end
+      @bidi = false
+      @seq = 0
+      @secrets = []
+      @page = { url: nil, page_title: nil }
+      @truncated = { steps: 0, screenshots: 0, snapshots: 0, network: 0, console: 0 }
+      @capabilities = { network: false, console: false, screenshots: true, snapshots: true }
+      @meta = { browser: browser, viewport: viewport, device_pixel_ratio: pixel_ratio }
+      @started_at = TraceHelper.timestamp
+    end
+
+    # Network and console come over BiDi; without it the trace still has its steps and media.
+    def connect_bidi
+      name = @meta[:browser][:name].to_s
+      if TraceHelper.bidi?(name)
+        @bidi = Bidi.attach(@driver, self)
+      else
+        TraceHelper.warn_once("network and console not captured: #{name.empty? ? 'this browser' : name} has no WebDriver BiDi")
+      end
+      @capabilities[:network] = @capabilities[:console] = @bidi
+    end
+
+    # Runs a hook while recording. A hook that fails turns tracing off instead of
+    # raising into WaitHelper (which would warn a second time).
+    def record(what)
+      return nil unless @recording && TraceHelper.enabled?
+
+      yield
+    rescue StandardError => e
+      TraceHelper.disable!("#{what} capture failed: #{e.message}")
+    end
+
+    def add(kind:, action:, locator:, source:)
+      @seq += 1
+      step = Step.new(seq: @seq, parent: @groups.last, kind: kind, action: action, locator: locator, source: source,
+                      url: @page[:url], page_title: @page[:page_title], started_at: TraceHelper.timestamp,
+                      clock: TraceHelper.monotonic_now, waited_ms: 0, retries: 0)
+      @steps << step
+      drop_oldest_step while @steps.size > TraceHelper.max_steps
+      step
+    end
+
+    def drop_oldest_step
+      delete_media(@steps.shift)
+      @truncated[:steps] += 1
+    end
+
+    def complete(entry, fields, finished, started)
+      fields = fields.merge(duration_ms: (finished - started).round) if finished.is_a?(Numeric) && started.is_a?(Numeric)
+      @lock.synchronize { entry.update(fields.transform_keys(&:to_s)) }
+    end
+
+    # Returns the stored entry, which network_completed may still fill in.
+    def event(list, hash)
+      entry = hash.transform_keys(&:to_s)
+      @lock.synchronize { @events << [list, @seq, entry] }
+      entry
+    end
+
+    def trace_locator(locator, within)
+      return nil unless locator
+
+      traced = { strategy: locator[:strategy], selector: locator[:selector] }
+      traced[:within] = within unless within.nil? || within.empty?
+      traced
+    end
+
+    def navigation_source
+      WaitHelper::Observation.source if defined?(WaitHelper::Observation)
+    end
+
+    # The value as typed: strings as they are, keys such as :enter as {enter}; select_by's what.
+    def typed(step, args)
+      shown = step.action == 'select_by' ? args.last.to_s : args.flatten.map { |key| key_name(key) }.join
+      step.value = shown
+      step.typed_strings = [shown, *args.flatten.grep(String)].reject(&:empty?).uniq
+      step.secret = true if step.typed_strings.any? { |each_value| TraceHelper.secret_value?(each_value) }
+    end
+
+    # What a masked step typed, so this test's later snapshots blank it too (a show-password
+    # toggle makes the field type=text, but its value is still the secret).
+    def remember_secret(step)
+      return unless TYPED_ACTIONS.include?(step.action) && step.typed[:secret]
+
+      @secrets |= step.typed_strings.to_a
+    end
+
+    def key_name(key)
+      key.is_a?(Symbol) ? "{#{key}}" : key.to_s
+    end
+
+    def element_info(step, element)
+      info = Page.element_info(@driver, element)
+      return unless info
+
+      step.rect = info[:rect]
+      step.element = info[:element]
+      step.secret = info[:secret] || step.secret || false unless info[:secret].nil?
+    end
+
+    # VideoHelper's check, called rather than copied; without the video helper there is no check.
+    def alert_open?
+      return false unless defined?(VideoHelper) && VideoHelper.respond_to?(:alert_open?)
+
+      VideoHelper.alert_open?(@driver) == true
+    rescue StandardError
+      false
+    end
+
+    # A step whose page cannot be read keeps the URL and title it started with.
+    def read_page(step, page)
+      @page = { url: page[:url] || @page[:url], page_title: page[:page_title] || @page[:page_title] }
+      step.url = @page[:url]
+      step.page_title = @page[:page_title]
+    end
+
+    def media(step, kind)
+      bytes, ext = yield
+      path = File.join(@dir, format('%<seq>06d-%<kind>s.%<ext>s', seq: step.seq, kind: kind, ext: ext))
+      File.binwrite(path, bytes)
+      path
+    rescue StandardError => e
+      TraceHelper.warn_once("#{kind} not captured: #{e.message}")
+      nil
+    end
+
+    def delete_media(step)
+      [step.screenshot, step.snapshot].compact.each { |path| FileUtils.rm_f(path) }
+    end
+
+    # A test that raised outside every kept step gets a last failure step. Steps dropped by
+    # eventually or max_steps own nothing, so their error still gets a step.
+    def failure(error)
+      return if error.nil? || @steps.any? { |step| step.error.equal?(error) }
+
+      step = add(kind: 'failure', action: 'failure', locator: nil, source: nil)
+      step.finish(:failed, error)
+      capture_step_media(step)
+    end
+
+    def write(test)
+      @steps.each { |step| step.finish(:failed, nil) unless step.status }
+      positions = {}.compare_by_identity
+      @steps.each_with_index { |step, position| positions[step] = position }
+      caps = Caps.new(TraceHelper.max_bytes)
+      media, events = caps.fit(media_entries, event_entries, @steps.size) { |kept, listed| index(test, positions, kept, listed) }
+      caps.drops.each { |kind, count| @truncated[kind] += count }
+      path = File.join(@dir, 'trace.zip')
+      ZipWriter.write(path, [['trace.json', index(test, positions, media, events), true], *media.map(&:entry)])
+    end
+
+    # [Caps::Media] for every captured file, oldest step first.
+    def media_entries
+      @steps.each_with_index.flat_map do |step, position|
+        { screenshots: step.screenshot, snapshots: step.snapshot }.filter_map do |kind, file|
+          next unless file
+
+          name = format('steps/%<index>04d%<ext>s', index: position + 1, ext: File.extname(file))
+          Caps::Media.new(position, kind, ZipWriter.entry(name, File.binread(file), kind == :snapshots))
+        end
+      end
+    end
+
+    # [Caps::Event] in arrival order, each with the step that was running or had just run.
+    def event_entries
+      seqs = @steps.map(&:seq)
+      events = @lock.synchronize { @events.map { |list, seq, hash| [list, seq, hash.dup] } }
+      events.map do |list, seq, hash|
+        step_index = [seqs.bsearch_index { |each_seq| each_seq > seq } || seqs.size, 1].max
+        entry = { 'step_index' => step_index }.merge(hash.reject { |key, _| key == 'step_index' })
+        Caps::Event.new(list, entry, JSON.generate(entry).bytesize + 1)
+      end
+    end
+
+    def index(test, positions, media, events)
+      names = media.each_with_object(Hash.new { |hash, key| hash[key] = {} }) do |item, by_position|
+        by_position[item.position][item.kind] = item.entry.name
+      end
+      JSON.generate(document(test, steps_json(positions, names), events))
+    end
+
+    def steps_json(positions, names)
+      @steps.each_with_index.map do |step, position|
+        parent = step.parent && positions[step.parent]
+        step.as_json(position + 1, parent && (parent + 1), names.fetch(position, {}))
+      end
+    end
+
+    def document(test, steps, events)
+      { format: 'raider-trace', version: 1, producer: PRODUCER,
+        test: { identifier: test[:identifier], full_name: test[:full_name], status: test[:status].to_s, attempt: test[:attempt],
+                error: TraceHelper.error_json(test[:error]) },
+        browser: @meta[:browser], viewport: @meta[:viewport], device_pixel_ratio: @meta[:device_pixel_ratio],
+        started_at: @started_at, finished_at: TraceHelper.timestamp, capabilities: @capabilities, truncated: @truncated,
+        steps: steps, network: events.select { |item| item.list == :network }.map(&:entry),
+        console: events.select { |item| item.list == :console }.map(&:entry) }
+    end
+
+    # Selenium reports Edge as MicrosoftEdge; the trace names it edge, like config.yml.
+    def browser
+      caps = @driver.capabilities
+      name = caps.browser_name.to_s
+      { name: name.casecmp?('MicrosoftEdge') ? 'edge' : name, version: caps.browser_version.to_s }
+    rescue StandardError
+      { name: nil, version: nil }
+    end
+
+    def viewport
+      size = @driver.manage.window.size
+      { width: size.width, height: size.height }
+    rescue StandardError
+      { width: nil, height: nil }
+    end
+
+    def pixel_ratio
+      ratio = @driver.execute_script('return window.devicePixelRatio')
+      ratio.is_a?(Numeric) && ratio.positive? ? ratio : 1
+    rescue StandardError
+      1
+    end
+
+    def discard
+      cleanup
+      nil
+    end
+  end
+
+  # Keeps the zip under max_mb. Drops, in order: the HTML of the oldest steps, then
+  # their screenshots, then the oldest network and console entries. The index and
+  # the last 10 steps' media are never dropped. drops counts what went, by kind.
+  class Caps
+    KEEP_LAST = 10
+    MEDIA_ORDER = %i[snapshots screenshots].freeze
+    Media = Struct.new(:position, :kind, :entry)
+    Event = Struct.new(:list, :entry, :bytes)
+
+    attr_reader :drops
+
+    def initialize(limit)
+      @limit = limit
+      @drops = Hash.new(0)
+    end
+
+    # Yields (media, events) for the trace.json they give; returns the [media, events] to keep.
+    def fit(media, events, step_count)
+      queue = drop_order(media, events, step_count)
+      loop do
+        index = yield(media, events)
+        excess = size(media, index) - @limit
+        return [media, events] if excess <= 0 || queue.empty?
+
+        ratio = deflated(index).bytesize.fdiv([index.bytesize, 1].max)
+        media, events = drop(queue, media, events, excess, ratio)
+      end
+    end
+
+    private
+
+    def drop_order(media, events, step_count)
+      droppable = media.select { |item| item.position < step_count - KEEP_LAST }
+      MEDIA_ORDER.flat_map { |kind| droppable.select { |item| item.kind == kind } } + events
+    end
+
+    # Drops from the front of the queue until the estimate says excess bytes went.
+    def drop(queue, media, events, excess, ratio)
+      gone = {}.compare_by_identity
+      while excess.positive? && !queue.empty?
+        item = queue.shift
+        gone[item] = true
+        @drops[item.is_a?(Media) ? item.kind : item.list] += 1
+        excess -= item.is_a?(Media) ? ZipWriter.footprint(item.entry) : item.bytes * ratio
+      end
+      [media.reject { |item| gone.key?(item) }, events.reject { |item| gone.key?(item) }]
+    end
+
+    def size(media, index)
+      ZipWriter::END_RECORD_BYTES + ZipWriter.footprint(ZipWriter::Entry.new('trace.json', deflated(index))) +
+        media.sum { |item| ZipWriter.footprint(item.entry) }
+    end
+
+    def deflated(bytes)
+      ZipWriter.entry('trace.json', bytes, true).data
+    end
+  end
+
+  # A minimal zip writer (no rubyzip in generated projects): stored or raw-deflated
+  # entries, a central directory and the end record. No directories, no zip64.
+  module ZipWriter
+    Entry = Struct.new(:name, :data, :crc, :raw_size, :compression)
+    STORED = 0
+    DEFLATED = 8
+    VERSION = 20
+    LOCAL_HEADER_BYTES = 30
+    CENTRAL_RECORD_BYTES = 46
+    END_RECORD_BYTES = 22
+
+    def self.entry(name, bytes, deflate)
+      bytes = bytes.to_s.b
+      data = deflate ? raw_deflate(bytes) : bytes
+      Entry.new(name, data, Zlib.crc32(bytes), bytes.bytesize, deflate ? DEFLATED : STORED)
+    end
+
+    # The bytes an entry takes in the zip: its local header, its data and its central record.
+    def self.footprint(entry)
+      LOCAL_HEADER_BYTES + CENTRAL_RECORD_BYTES + (2 * entry.name.bytesize) + entry.data.bytesize
+    end
+
+    # entries: [[name, bytes, deflate]] or Entry. Returns path.
+    def self.write(path, entries)
+      entries = entries.map { |each_entry| each_entry.is_a?(Entry) ? each_entry : entry(*each_entry) }
+      stamp = dos_time(Time.now)
+      File.open(path, 'wb') do |file|
+        central = entries.map do |each_entry|
+          offset = file.pos
+          file.write(header(each_entry, stamp), each_entry.data)
+          central_record(each_entry, stamp, offset)
+        end
+        start = file.pos
+        file.write(central.join)
+        file.write([0x06054b50, 0, 0, entries.size, entries.size, file.pos - start, start, 0].pack('VvvvvVVv'))
+      end
+      path
+    end
+
+    def self.raw_deflate(bytes)
+      deflater = Zlib::Deflate.new(Zlib::DEFAULT_COMPRESSION, -Zlib::MAX_WBITS)
+      deflater.deflate(bytes, Zlib::FINISH)
+    ensure
+      deflater&.close
+    end
+
+    def self.header(entry, stamp)
+      [0x04034b50, VERSION, 0, entry.compression, *stamp, entry.crc, entry.data.bytesize, entry.raw_size,
+       entry.name.bytesize, 0].pack('VvvvvvVVVvv') + entry.name
+    end
+
+    def self.central_record(entry, stamp, offset)
+      [0x02014b50, VERSION, VERSION, 0, entry.compression, *stamp, entry.crc, entry.data.bytesize, entry.raw_size,
+       entry.name.bytesize, 0, 0, 0, 0, 0, offset].pack('VvvvvvvVVVvvvvvVV') + entry.name
+    end
+
+    # [time, date] in MS-DOS format.
+    def self.dos_time(time)
+      [(time.hour << 11) | (time.min << 5) | (time.sec / 2), ((time.year - 1980) << 9) | (time.month << 5) | time.day]
+    end
+  end
+
+  # Used when tracing is off.
+  class NullRecorder
+    def start
+      nil
+    end
+
+    def navigated(_url)
+      nil
+    end
+
+    def network_event(_hash)
+      nil
+    end
+
+    def network_started(_request, _hash, **)
+      nil
+    end
+
+    def network_completed(_request, _fields, _at = nil)
+      nil
+    end
+
+    def console_event(_hash)
+      nil
+    end
+
+    def stop(**)
+      nil
+    end
+
+    def cleanup
+      nil
+    end
+  end
+end
+
+# What a step reads from the page, and the snapshot made of its HTML. Kept apart from the
+# recorder above. Every script is guarded: one that fails leaves its fields nil.
+module TraceHelper
+  # Reads the page through the driver, one execute_script per call.
+  module Page
+    # The cssText of every enabled sheet in document order, @import and media kept; a
+    # sheet whose rules cannot be read (cross-origin) is skipped and counted. ES5 only.
+    STYLES = <<~'JS'
+      var skipped = 0;
+      function read(sheet) {
+        var rules = null, parts = [], media = sheet.media && sheet.media.mediaText;
+        try { rules = sheet.cssRules; } catch (e) { rules = null; }
+        if (!rules) { skipped += 1; return ''; }
+        for (var i = 0; i < rules.length; i += 1) {
+          parts.push(rules[i].styleSheet ? read(rules[i].styleSheet) : rules[i].cssText);
+        }
+        var text = parts.join('\n');
+        return media && media !== 'all' ? '@media ' + media + ' {\n' + text + '\n}' : text;
+      }
+      var css = [];
+      for (var i = 0; i < document.styleSheets.length; i += 1) {
+        if (!document.styleSheets[i].disabled) { css.push(read(document.styleSheets[i])); }
+      }
+      return { css: css.join('\n'), skipped: skipped, title: document.title };
+    JS
+    # The element's viewport rect and what a person would call it. ES5 only.
+    ELEMENT = <<~'JS'
+      var el = arguments[0], box = el.getBoundingClientRect(), tag = el.tagName.toLowerCase();
+      var type = (el.getAttribute('type') || '').toLowerCase();
+      var text = (el.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+      var roles = { button: 'button', textarea: 'textbox', select: 'combobox' };
+      var role = el.getAttribute('role') || roles[tag] || null;
+      if (!role && tag === 'a' && el.hasAttribute('href')) { role = 'link'; }
+      if (!role && tag === 'input') {
+        if (type === 'checkbox') { role = 'checkbox'; }
+        else if (['button', 'submit', 'reset', 'image'].indexOf(type) >= 0) { role = 'button'; }
+        else if (['', 'text', 'email', 'password', 'search', 'tel', 'url'].indexOf(type) >= 0) { role = 'textbox'; }
+      }
+      var autocomplete = (el.getAttribute('autocomplete') || '').toLowerCase();
+      return { rect: { x: box.left, y: box.top, width: box.width, height: box.height }, tag: tag,
+               label: text || el.getAttribute('aria-label') || el.getAttribute('placeholder') || null, role: role,
+               secret: type === 'password' || autocomplete.indexOf('password') >= 0 };
+    JS
+
+    # { html:, css:, skipped_sheets:, page_title:, url: }, plus error: when the HTML could not be read.
+    # source reads the HTML (the recorder's snapshot lambda, page_source by default).
+    def self.capture(driver, source = :page_source.to_proc)
+      styles = script(driver, STYLES) || {}
+      page = { css: styles['css'], skipped_sheets: styles['skipped'].to_i,
+               page_title: styles['title'] || read { driver.title }, url: read { driver.current_url } }
+      page.merge(html: source.call(driver))
+    rescue StandardError => e
+      (page || {}).merge(html: nil, error: e)
+    end
+
+    # { rect:, element: { tag:, label:, role: }, secret: }, or nil when the script fails.
+    def self.element_info(driver, element)
+      info = script(driver, ELEMENT, element)
+      return unless info
+
+      { rect: info['rect'], element: { tag: info['tag'], label: info['label'], role: info['role'] }.compact,
+        secret: info['secret'] }
+    end
+
+    # The script's Hash, or nil when it raised or answered something else.
+    def self.script(driver, source, *args)
+      result = driver.execute_script(source, *args)
+      result.is_a?(Hash) ? result : nil
+    rescue StandardError
+      nil
+    end
+
+    def self.read
+      yield
+    rescue StandardError
+      nil
+    end
+  end
+
+  # Makes page HTML safe to keep and to open offline. Scans the HTML string (no parser in a
+  # generated project); viewers sanitise again, so the aim is that real pages come out right.
+  module Snapshot
+    SCRIPT = %r{<script\b[^>]*>.*?</script\s*>|</?script\b[^>]*>}mi.freeze
+    STYLE = %r{<style\b[^>]*>.*?</style\s*>}mi.freeze
+    # A start tag, its attributes allowed to hold a quoted '>'.
+    TAG = /<([a-zA-Z][\w:.-]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/.freeze
+    ATTRIBUTE = %r{([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?}.freeze
+    URL_ATTRIBUTES = %w[href src action formaction xlink:href].freeze
+    SKIPPED_ATTRIBUTE = 'data-raider-skipped-sheets'
+
+    # Removes scripts, on* handlers, javascript: URLs, <base> and meta refresh; blanks the value of
+    # secret inputs. With css (Page.capture's), one <style> holding it replaces every stylesheet
+    # link and <style>. <html> gets data-raider-skipped-sheets: the sheets that could not be read.
+    # Never adds a <base>: a viewer must not fetch from the site under test.
+    # secrets: values the recorder masked in this test; a value attribute equal to one, or to a
+    # RAIDER_SECRET_* value, is blanked whatever the field's type is now.
+    def self.sanitize(html, css:, skipped: 0, secrets: [])
+      html = html.to_s.gsub(SCRIPT, '')
+      html = html.gsub(STYLE, '') if css
+      links = 0
+      html = html.gsub(TAG) do
+        tag = Regexp.last_match
+        attributes = tag[2].to_enum(:scan, ATTRIBUTE).map { Regexp.last_match }
+        next '' if removed?(tag[1].downcase, attributes) { links += 1 }
+
+        clean(tag[0], tag[1], attributes, secrets)
+      end
+      html = counted(html, css ? skipped : links)
+      css ? with_style(html, css) : html
+    end
+
+    # A <base>, a meta refresh or a stylesheet link (which yields, to be counted).
+    def self.removed?(tag, attributes)
+      return true if tag == 'base'
+      return value(attributes, 'http-equiv').casecmp?('refresh') if tag == 'meta'
+      return false unless tag == 'link' && value(attributes, 'rel').downcase.split.include?('stylesheet')
+
+      yield
+      true
+    end
+
+    def self.clean(original, name, attributes, secrets)
+      field = name.casecmp?('input') && secret?(attributes)
+      kept = attributes.reject { |attribute| unsafe?(attribute) }
+      parts = kept.map { |attribute| blank?(attribute, field, secrets) ? 'value=""' : attribute[0] }
+      return original if parts == attributes.map { |attribute| attribute[0] }
+
+      rebuilt(original, name, parts)
+    end
+
+    # A value attribute of a secret field, or one holding a secret value. The HTML has it
+    # entity-encoded (& as &amp;), so it is decoded before it is compared.
+    def self.blank?(attribute, field, secrets)
+      return false unless attribute[1].casecmp?('value')
+
+      value = attribute_value(attribute)
+      return false if value.empty?
+
+      value = CGI.unescapeHTML(value)
+      field || secrets.include?(value) || TraceHelper.secret_value?(value)
+    end
+
+    def self.rebuilt(original, name, parts)
+      slash = original.match?(%r{/\s*>\z}) ? ' /' : ''
+      "<#{[name, *parts].join(' ')}#{slash}>"
+    end
+
+    # Sets data-raider-skipped-sheets on <html>, once every stylesheet link has been counted.
+    def self.counted(html, skipped)
+      html.sub(/<(html)\b((?:[^>"']|"[^"]*"|'[^']*')*)>/i) do
+        tag = Regexp.last_match
+        parts = tag[2].to_enum(:scan, ATTRIBUTE).map { Regexp.last_match }
+                      .reject { |attribute| attribute[1].casecmp?(SKIPPED_ATTRIBUTE) }.map { |attribute| attribute[0] }
+        rebuilt(tag[0], tag[1], parts << %(#{SKIPPED_ATTRIBUTE}="#{skipped.to_i}"))
+      end
+    end
+
+    def self.unsafe?(attribute)
+      name = attribute[1].downcase
+      return true if name.start_with?('on')
+
+      URL_ATTRIBUTES.include?(name) && attribute_value(attribute).gsub(/[\x00-\x20]/, '').match?(/\Ajavascript:/i)
+    end
+
+    def self.secret?(attributes)
+      value(attributes, 'type').casecmp?('password') || value(attributes, 'autocomplete').downcase.include?('password')
+    end
+
+    def self.value(attributes, name)
+      attribute = attributes.find { |each_attribute| each_attribute[1].casecmp?(name) }
+      attribute ? attribute_value(attribute) : ''
+    end
+
+    def self.attribute_value(attribute)
+      attribute[2] || attribute[3] || attribute[4] || ''
+    end
+
+    # One <style> at the end of <head>, or after <html> when there is no head.
+    def self.with_style(html, css)
+      style = "<style>#{css.gsub(%r{</(style)}i) { "<\\/#{Regexp.last_match(1)}" }}</style>"
+      return html.sub(%r{</head\s*>}i) { "#{style}#{Regexp.last_match(0)}" } if html.match?(%r{</head\s*>}i)
+      return html.sub(/<html\b(?:[^>"']|"[^"]*"|'[^']*')*>/i) { "#{Regexp.last_match(0)}#{style}" } if html.match?(/<html\b/i)
+
+      style + html
+    end
+  end
+end
+
+# What comes from the browser beside WaitHelper: navigation from Selenium's event listener,
+# network and console from WebDriver BiDi, and the screenshot.
+module TraceHelper
+  # Selenium calls these after each navigation (through the driver helper's fan-out listener).
+  class Listener < Selenium::WebDriver::Support::AbstractEventListener
+    def after_navigate_to(url, _driver)
+      navigated(url)
+    end
+
+    # The URL is read from the page with the step's media.
+    def after_navigate_back(_driver)
+      navigated(nil)
+    end
+
+    def after_navigate_forward(_driver)
+      navigated(nil)
+    end
+
+    private
+
+    def navigated(url)
+      TraceHelper.active_recorder&.navigated(url)
+      nil
+    end
+  end
+
+  # Passive BiDi: one session.subscribe per driver, never network.addIntercept, which would
+  # pause every request. Events go to the recorder last attached to that driver. Only the
+  # method, URL, status, MIME type, timing, size and error text are kept: no headers, no bodies.
+  module Bidi
+    HANDLERS = { 'network.beforeRequestSent' => :request_sent, 'network.responseCompleted' => :response_completed,
+                 'network.fetchError' => :fetch_error, 'log.entryAdded' => :log_entry }.freeze
+    Link = Struct.new(:recorder)
+    @links = ObjectSpace::WeakMap.new
+
+    # True when the driver's network and console events now reach recorder. False, with one
+    # [trace] warning, when the driver has no BiDi or the subscription fails.
+    def self.attach(driver, recorder)
+      link = @links[driver] ||= subscribe(driver.bidi)
+      link.recorder = recorder
+      true
+    rescue StandardError => e
+      TraceHelper.warn_once("network and console not captured: BiDi subscribe failed: #{e.message}")
+      false
+    end
+
+    def self.subscribe(bidi)
+      bidi.session.subscribe(HANDLERS.keys)
+      link = Link.new
+      HANDLERS.each { |event, handler| bidi.add_callback(event) { |params| deliver(link, handler, params) } }
+      link
+    end
+
+    # On a websocket thread, which swallows errors: a failure is reported here.
+    def self.deliver(link, handler, params)
+      recorder = link.recorder
+      send(handler, recorder, params) if recorder
+    rescue StandardError => e
+      TraceHelper.disable!("network and console capture failed: #{e.message}")
+    end
+
+    def self.request_sent(recorder, params)
+      request = params['request'] || {}
+      recorder.network_started(request['request'],
+                               { method: request['method'], url: request['url'], status: nil, mime_type: nil,
+                                 started_at: time(params['timestamp']), duration_ms: nil, bytes: nil, error: nil },
+                               at: params['timestamp'])
+    end
+
+    def self.response_completed(recorder, params)
+      response = params['response'] || {}
+      recorder.network_completed(params.dig('request', 'request'),
+                                 { status: response['status'], mime_type: response['mimeType'],
+                                   bytes: response['bytesReceived'] || response['encodedDataLength'] },
+                                 finished_at(params))
+    end
+
+    # Epoch ms the response ended. Chrome stamps every event of a request with its start, so the end comes
+    # from request.timings: ms after timeOrigin in Chrome, absolute (timeOrigin 0) in Firefox.
+    def self.finished_at(params)
+      stamp = params['timestamp']
+      origin, response_end = params.dig('request', 'timings')&.values_at('timeOrigin', 'responseEnd')
+      return stamp unless origin.is_a?(Numeric) && response_end.is_a?(Numeric) && response_end.positive?
+
+      [stamp, origin + response_end].grep(Numeric).max
+    end
+
+    def self.fetch_error(recorder, params)
+      recorder.network_completed(params.dig('request', 'request'), { error: params['errorText'] }, params['timestamp'])
+    end
+
+    def self.log_entry(recorder, params)
+      recorder.console_event(level: params['level'], text: params['text'], source: location(params),
+                             at: time(params['timestamp']))
+    end
+
+    # "url:line:column" of the innermost frame, 1-based; nil without a stack trace.
+    def self.location(params)
+      frame = Array(params.dig('stackTrace', 'callFrames')).first
+      frame && "#{frame['url']}:#{frame['lineNumber'].to_i + 1}:#{frame['columnNumber'].to_i + 1}"
+    end
+
+    # BiDi timestamps are epoch milliseconds.
+    def self.time(milliseconds)
+      return TraceHelper.timestamp unless milliseconds.is_a?(Numeric)
+
+      TraceHelper.timestamp(Time.at(Rational(milliseconds.to_i, 1000)))
+    end
+  end
+
+  # The viewport after a step: a JPEG through BiDi, else (or when BiDi fails for that shot) a PNG.
+  module Screenshot
+    JPEG = { type: 'image/jpeg', quality: 0.7 }.freeze
+
+    # [bytes, ext]
+    def self.take(driver, bidi:)
+      (bidi && jpeg(driver)) || [driver.screenshot_as(:png), 'png']
+    end
+
+    # In Chrome and Firefox BiDi the window handle is the browsing context id.
+    def self.jpeg(driver)
+      params = { context: driver.window_handle, origin: 'viewport', format: JPEG }
+      result = driver.bidi.send_cmd('browsingContext.captureScreenshot', **params)
+      [result.fetch('data').unpack1('m'), 'jpg']
+    rescue StandardError
+      nil
+    end
+  end
+end

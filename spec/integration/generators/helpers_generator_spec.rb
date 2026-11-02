@@ -46,6 +46,18 @@ describe HelpersGenerator do
     end
   end
 
+  shared_examples 'creates the trace helper' do |name|
+    it 'creates the trace helper' do
+      expect(File).to exist("#{name}/helpers/trace_helper.rb")
+    end
+  end
+
+  shared_examples 'skips the trace helper' do |name|
+    it 'does not create the trace helper' do
+      expect(File).not_to exist("#{name}/helpers/trace_helper.rb")
+    end
+  end
+
   shared_examples 'creates rspec helpers' do |name|
     it 'creates a spec helper file' do
       expect(File).to exist("#{name}/helpers/spec_helper.rb")
@@ -66,6 +78,7 @@ describe HelpersGenerator do
 
   context 'with rspec and selenium' do
     include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates the trace helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates a session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates the wait helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
@@ -74,6 +87,7 @@ describe HelpersGenerator do
 
   context 'with rspec and watir' do
     include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
+    include_examples 'skips the trace helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'creates a session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'creates watir helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
     include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
@@ -81,6 +95,7 @@ describe HelpersGenerator do
 
   context 'with cucumber and selenium' do
     include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
+    include_examples 'creates the trace helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates a session state helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates the wait helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
@@ -89,6 +104,7 @@ describe HelpersGenerator do
 
   context 'with cucumber and watir' do
     include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
+    include_examples 'skips the trace helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
     include_examples 'creates a session state helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
     include_examples 'creates watir helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
     include_examples 'creates cucumber helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
@@ -96,6 +112,7 @@ describe HelpersGenerator do
 
   context 'with rspec and appium android' do
     include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
+    include_examples 'skips the trace helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
     include_examples 'skips the session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
     include_examples 'creates the wait helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
@@ -104,6 +121,7 @@ describe HelpersGenerator do
 
   context 'with rspec and appium ios' do
     include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
+    include_examples 'skips the trace helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
     include_examples 'skips the session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
     include_examples 'creates the wait helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
@@ -112,6 +130,7 @@ describe HelpersGenerator do
 
   context 'with cucumber and appium android' do
     include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
+    include_examples 'skips the trace helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
     include_examples 'skips the session state helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
     include_examples 'creates the wait helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
@@ -120,6 +139,7 @@ describe HelpersGenerator do
 
   context 'with cucumber and appium ios' do
     include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
+    include_examples 'skips the trace helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
     include_examples 'skips the session state helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
     include_examples 'creates the wait helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
@@ -128,6 +148,7 @@ describe HelpersGenerator do
 
   context 'with rspec and appium cross platform' do
     include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'skips the trace helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'skips the session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates the wait helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
@@ -137,6 +158,7 @@ describe HelpersGenerator do
 
   context 'with cucumber and appium cross platform' do
     include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'skips the trace helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'skips the session state helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates the wait helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
@@ -152,6 +174,10 @@ describe HelpersGenerator do
         it 'creates the wait helper and RaiderElement' do
           expect(File).to exist("#{name}/helpers/wait_helper.rb")
           expect(File).to exist("#{name}/helpers/raider_element.rb")
+        end
+
+        it "#{automation == 'selenium' ? 'creates' : 'skips'} the trace helper" do
+          expect(File.exist?("#{name}/helpers/trace_helper.rb")).to eq(automation == 'selenium')
         end
       end
     end
