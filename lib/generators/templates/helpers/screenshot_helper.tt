@@ -277,6 +277,13 @@ module ScreenshotHelper
       $stderr.puts("[screenshots] could not report '#{name}': #{e.class}: #{e.message}")
     end
 
+    # One trace step per comparison, when the trace helper is watching. Never raises into the test.
+    def self.traced(name:, status:, png:)
+      return unless defined?(WaitHelper) && png
+
+      WaitHelper.report(:screenshot_compared, name: name, status: status == :failed ? :failed : :passed, png: png)
+    end
+
     def self.attach_images(name, images)
       Dir.mktmpdir('raider-screenshot') do |folder|
         IMAGES.each do |kind|
@@ -373,13 +380,14 @@ module ScreenshotHelper
     def finish(status, result, images)
       Report.call(name: @name, status: status, baseline: @baseline.path, result: result,
                   options: @options, images: images)
+      Report.traced(name: @name, status: status, png: @actual)
       raise Mismatch, failure_message(result) if status == :failed
 
       true
     end
 
     def capture
-      Capture.new(@driver, @element).png
+      @actual = Capture.new(@driver, @element).png
     end
 
     def capture_until_match(expected)

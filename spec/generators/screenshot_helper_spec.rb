@@ -452,6 +452,116 @@ RSpec.describe 'ScreenshotHelper' do
     end
   end
 
+  describe 'trace step' do
+    around { |example| Dir.mktmpdir { |dir| Dir.chdir(dir) { example.run } } }
+
+    let(:seen) { [] }
+    let(:driver_class) do
+      Class.new do
+        def initialize(png)
+          @png = png
+        end
+
+        def screenshot_as(_format)
+          @png
+        end
+
+        def execute_async_script(_script); end
+
+        def execute_script(*); end
+      end
+    end
+    let(:host_class) do
+      Class.new do
+        include ScreenshotHelper
+        attr_reader :driver
+
+        def initialize(driver)
+          @driver = driver
+        end
+      end
+    end
+    let(:white) { ChunkyPNG::Image.new(10, 10, ChunkyPNG::Color::WHITE).to_blob }
+    let(:black) { ChunkyPNG::Image.new(10, 10, ChunkyPNG::Color::BLACK).to_blob }
+
+    before do
+      ScreenshotHelper.reset
+      allow(ScreenshotHelper).to receive_messages(ci?: false, update?: false)
+      seen = self.seen
+      wait_helper = Module.new
+      wait_helper.define_singleton_method(:report) { |hook, **details| seen.replace([hook, details]) }
+      stub_const('WaitHelper', wait_helper)
+    end
+
+    def match(png, name: 'home', **options)
+      host_class.new(driver_class.new(png)).match_screenshot(name, timeout: 0, **options)
+    end
+
+    def store(bytes)
+      FileUtils.mkdir_p('screenshots/baselines/chrome')
+      File.binwrite('screenshots/baselines/chrome/home.png', bytes)
+    end
+
+    it 'reports a created comparison as passed with the actual PNG' do
+      match(white)
+      expect(seen).to eq([:screenshot_compared, { name: 'home', status: :passed, png: white }])
+    end
+
+    it 'reports a passed comparison once' do
+      store(white)
+      match(white)
+      expect(seen).to eq([:screenshot_compared, { name: 'home', status: :passed, png: white }])
+    end
+
+    it 'reports a failed comparison before the Mismatch is raised, with the last actual PNG' do
+      store(white)
+      expect { match(black) }.to raise_error(ScreenshotHelper::Mismatch)
+      expect(seen).to eq([:screenshot_compared, { name: 'home', status: :failed, png: black }])
+    end
+
+    it 'reports an updated comparison as passed' do
+      store(white)
+      allow(ScreenshotHelper).to receive(:update?).and_return(true)
+      match(black)
+      expect(seen).to eq([:screenshot_compared, { name: 'home', status: :passed, png: black }])
+    end
+
+    it 'reports nothing when no screenshot was taken' do
+      allow(ScreenshotHelper).to receive(:ci?).and_return(true)
+      expect { match(white) }.to raise_error(ScreenshotHelper::Mismatch, /no baseline/)
+      expect(seen).to be_empty
+    end
+
+    it 'reports nothing without WaitHelper' do
+      hide_const('WaitHelper')
+      expect(match(white)).to be(true)
+    end
+  end
+
+  describe 'WaitHelper.report' do
+    # Only the observer part of the rendered wait helper, on a module of its own.
+    def wait_helper_observer
+      generator = HelpersGenerator.new(%w[selenium rspec proj])
+      template = File.expand_path('../../lib/generators/templates/helpers/wait_helper.tt', __dir__)
+      rendered = ERB.new(File.read(template), trim_mode: '-').result(generator.instance_eval { binding })
+      code = rendered[%r{^\s*attr_accessor :observer.*?# rubocop:enable Style/StderrPuts}m]
+      Module.new.tap { |mod| mod.singleton_class.class_eval(code) }
+    end
+
+    it 'passes the hook to an observer that has it and leaves one without it alone, silently' do
+      helper = wait_helper_observer
+      seen = []
+      helper.observer = Class.new { define_method(:screenshot_compared) { |**details| seen << details } }.new
+      helper.report(:screenshot_compared, name: 'a', status: :passed, png: 'x')
+      expect(seen).to eq([{ name: 'a', status: :passed, png: 'x' }])
+
+      other = Object.new
+      helper.observer = other
+      expect { helper.report(:screenshot_compared, name: 'a', status: :passed, png: 'x') }.not_to output.to_stderr
+      expect(helper.observer).to be(other)
+    end
+  end
+
   describe 'ScreenshotHelper::Report' do
     let(:attached) { [] }
     let(:recorded) { [] }

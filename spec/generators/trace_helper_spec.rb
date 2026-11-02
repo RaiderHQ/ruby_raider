@@ -170,6 +170,33 @@ describe 'Generated TraceHelper' do
     expect(trace['finished_at'] >= trace['started_at']).to be(true)
   end
 
+  it 'records a match_screenshot step with the given PNG as its screenshot, without taking another one' do
+    taken = 0
+    recorder = started_recorder(screenshot: ->(_driver) { [(taken += 1) && 'NAV', 'png'] })
+    recorder.navigated('https://example.test/login')
+    recorder.screenshot_compared(name: 'home', status: :failed, png: 'PNG-BYTES')
+    path = recorder.stop(keep: true, test: failed_test)
+    steps = TraceFormatChecker.read(path).first['steps']
+
+    expect(TraceFormatChecker.problems(path)).to eq([])
+    expect(steps.last).to include('kind' => 'action', 'action' => 'match_screenshot', 'name' => 'home', 'locator' => nil,
+                                  'status' => 'failed', 'error' => nil, 'screenshot' => 'steps/0002.png', 'snapshot' => nil)
+    expect(Zip::File.open(path) { |zip| zip.read('steps/0002.png') }).to eq('PNG-BYTES')
+    expect(taken).to eq(1)
+  end
+
+  it 'records a passed comparison and never fails the test when the step cannot be written' do
+    recorder = started_recorder
+    recorder.screenshot_compared(name: 'home', status: :passed, png: 'PNG')
+    expect(kept(recorder)['steps'].last).to include('action' => 'match_screenshot', 'status' => 'passed')
+    allow(recorder).to receive(:add).and_raise('boom')
+    expect { recorder.screenshot_compared(name: 'again', status: :passed, png: 'PNG') }.not_to raise_error
+  end
+
+  it 'does not take match_screenshot as a media action' do
+    expect(TraceHelper::MEDIA_ACTIONS).not_to include('match_screenshot')
+  end
+
   it 'records navigate and click steps in order with index, kind, action, locator, source, waited_ms, retries' do
     recorder = started_recorder
     recorder.navigated('https://example.test/login')
