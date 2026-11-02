@@ -652,7 +652,7 @@ and writes nothing, so a forgotten file never goes unnoticed.
 rewrites its baseline and passes. Review the changed PNGs in your diff before you commit them.
 
 **When it fails.** The failure message names the baseline and says how many pixels differ. The report gets three pictures,
-`comparison:<name>:expected`, `:actual` and `:diff` (differences in red), and the trace has a "match_screenshot" step. The
+`comparison:<name>:expected`, `:actual` and `:diff` (differences in red), and the trace has a "match_screenshot" step that shows the actual screenshot. The
 comparison retries until it matches or `timeout:` (the wait timeout by default) runs out, so a page that is still settling does not fail it.
 
 **Tolerances.** Set them for the project in `config/config.yml` under `screenshots:`, or for one call as arguments:
@@ -660,6 +660,8 @@ comparison retries until it matches or `timeout:` (the wait timeout by default) 
 - `threshold` (default 0.2): how different a pixel must be to count, from 0 (exact) to 1.
 - `max_diff_pixels` (default 0): how many pixels may differ.
 - `max_diff_ratio` (default none): or the share of all pixels that may differ, for example `0.001`.
+
+Anti-aliasing is not ignored (unlike Playwright's default), so for text-heavy areas raise `threshold` or `max_diff_pixels`.
 
 A comparison passes when the differing pixels are within `max_diff_pixels` or `max_diff_ratio`. A picture with a different
 size always fails, and the message gives both sizes.

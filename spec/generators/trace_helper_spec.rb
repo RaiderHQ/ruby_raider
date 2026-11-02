@@ -185,6 +185,16 @@ describe 'Generated TraceHelper' do
     expect(taken).to eq(1)
   end
 
+  it 'gives the match_screenshot step the comparison error and appends no failure step for it' do
+    recorder = started_recorder
+    error = RuntimeError.new('1 pixel differs')
+    recorder.screenshot_compared(name: 'home', status: :failed, png: 'PNG', error: error)
+    steps = kept(recorder, failed_test.merge(error: error))['steps']
+
+    expect(steps.map { |step| step.values_at('kind', 'action', 'status') }).to eq([%w[action match_screenshot failed]])
+    expect(steps.first['error']).to eq('class' => 'RuntimeError', 'message' => '1 pixel differs')
+  end
+
   it 'records a passed comparison and never fails the test when the step cannot be written' do
     recorder = started_recorder
     recorder.screenshot_compared(name: 'home', status: :passed, png: 'PNG')

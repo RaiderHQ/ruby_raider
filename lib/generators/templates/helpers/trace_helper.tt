@@ -261,11 +261,11 @@ module TraceHelper
 
     # match_screenshot compared the page with a baseline. The PNG it took is the step's screenshot,
     # so no second screenshot is taken.
-    def screenshot_compared(name:, status:, png:)
+    def screenshot_compared(name:, status:, png:, error: nil)
       record('action') do
         step = add(kind: 'action', action: 'match_screenshot', locator: nil, source: navigation_source)
         step.name = name
-        step.finish(status, nil)
+        step.finish(status, error)
         step.screenshot = media(step, 'screenshot') { [png, 'png'] }
         nil
       end

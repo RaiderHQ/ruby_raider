@@ -44,6 +44,36 @@ RSpec.describe 'ScreenshotHelper' do
       expect(ScreenshotHelper.config).to eq(threshold: 0.2, max_diff_pixels: 0, max_diff_ratio: nil)
     end
 
+    def config_with(block)
+      FileUtils.mkdir_p('config')
+      File.write('config/config.yml', "screenshots:\n#{block}")
+      ScreenshotHelper.config
+    end
+
+    it 'falls back to the default with one warning for an invalid value' do
+      ScreenshotHelper.instance_variable_get(:@warned).clear
+      bad = "  threshold: 2\n  max_diff_pixels: -1\n  max_diff_ratio: lots\n"
+      expect { 2.times { expect(config_with(bad)).to eq(ScreenshotHelper::DEFAULTS) } }
+        .to output(/threshold: 2.*\n.*max_diff_pixels: -1.*\n.*max_diff_ratio: "lots"/).to_stderr
+    end
+
+    it 'warns once per bad value, not on every call' do
+      ScreenshotHelper.instance_variable_get(:@warned).clear
+      expect { 3.times { config_with("  threshold: high\n") } }.to output(/\A[^\n]*threshold[^\n]*\n\z/).to_stderr
+    end
+
+    it 'treats a blank threshold as invalid and a blank ratio as none' do
+      ScreenshotHelper.instance_variable_get(:@warned).clear
+      expect { expect(config_with("  threshold:\n  max_diff_ratio:\n")).to eq(ScreenshotHelper::DEFAULTS) }
+        .to output(/threshold/).to_stderr
+    end
+
+    it 'accepts a whole number threshold and a float max_diff_pixels is invalid' do
+      ScreenshotHelper.instance_variable_get(:@warned).clear
+      expect { expect(config_with("  threshold: 1\n  max_diff_pixels: 2.5\n")).to include(threshold: 1, max_diff_pixels: 0) }
+        .to output(/max_diff_pixels/).to_stderr
+    end
+
     it 'reads the screenshots block over the defaults' do
       FileUtils.mkdir_p('config')
       File.write('config/config.yml', "screenshots:\n  threshold: 0.1\n  max_diff_ratio: 0.001\n")
@@ -58,8 +88,18 @@ RSpec.describe 'ScreenshotHelper' do
       image.to_blob
     end
 
+    def decode(bytes)
+      ScreenshotHelper::Diff.decode(bytes)
+    end
+
     def compare(expected, actual, threshold: 0.2)
-      ScreenshotHelper::Diff.compare(expected, actual, threshold: threshold)
+      ScreenshotHelper::Diff.count(decode(expected), decode(actual), threshold: threshold)
+    end
+
+    def diff_image(expected, actual, threshold: 0.2)
+      ChunkyPNG::Image.from_blob(
+        ScreenshotHelper::Diff.image(decode(expected), decode(actual), threshold: threshold)
+      )
     end
 
     it 'finds no difference between identical images' do
@@ -82,12 +122,21 @@ RSpec.describe 'ScreenshotHelper' do
       expect(compare(expected, actual, threshold: 0).diff_pixels).to eq(1)
     end
 
-    it 'reports a size change and draws both images side by side' do
+    it 'reports a size change without counting pixels' do
       result = compare(png(10, 10), png(10, 12))
-      diff = ChunkyPNG::Image.from_blob(result.diff_png)
-      expect([result.size_changed?, result.expected_size, result.actual_size, result.diff_ratio])
-        .to eq([true, [10, 10], [10, 12], 0.0])
+      expect([result.size_changed?, result.expected_size, result.actual_size, result.diff_pixels, result.diff_ratio])
+        .to eq([true, [10, 10], [10, 12], 0, 0.0])
+    end
+
+    it 'draws both images side by side after a size change' do
+      diff = diff_image(png(10, 10), png(10, 12))
       expect([diff.width, diff.height]).to eq([20, 12])
+    end
+
+    it 'does not compare colours of equal pixels' do
+      allow(ScreenshotHelper::Diff).to receive(:delta).and_call_original
+      compare(png(10, 10), png(10, 10, ChunkyPNG::Color::WHITE))
+      expect(ScreenshotHelper::Diff).not_to have_received(:delta)
     end
 
     it 'blends transparent pixels over white before comparing' do
@@ -97,15 +146,14 @@ RSpec.describe 'ScreenshotHelper' do
 
     it 'paints a changed pixel red and the rest grey in the diff image' do
       changed = png(10, 10) { |image| image[3, 4] = ChunkyPNG::Color.rgb(0, 0, 0) }
-      diff = ChunkyPNG::Image.from_blob(compare(png(10, 10), changed).diff_png)
+      diff = diff_image(png(10, 10), changed)
       expect(diff[3, 4]).to eq(ChunkyPNG::Color.rgb(255, 0, 0))
       expect(ChunkyPNG::Color.r(diff[0, 0])).to eq(ChunkyPNG::Color.g(diff[0, 0]))
       expect(diff[0, 0]).not_to eq(diff[3, 4])
     end
 
     it 'raises Unreadable for bytes that are not a PNG' do
-      expect { compare('garbage', png(2, 2)) }.to raise_error(ScreenshotHelper::Diff::Unreadable)
-      expect { compare(png(2, 2), 'garbage') }.to raise_error(ScreenshotHelper::Diff::Unreadable)
+      expect { decode('garbage') }.to raise_error(ScreenshotHelper::Diff::Unreadable)
     end
   end
 
@@ -171,6 +219,10 @@ RSpec.describe 'ScreenshotHelper' do
 
     it 'falls back to chrome without a config' do
       expect(ScreenshotHelper.browser).to eq('chrome')
+    end
+
+    it 'falls back to chrome for a value that could leave the baselines folder' do
+      ['../../x', 'a/b', '"my browser"', '.'].each { |value| expect(browser_from(value)).to eq('chrome') }
     end
   end
 
@@ -319,6 +371,53 @@ RSpec.describe 'ScreenshotHelper' do
       store_baseline(png)
       driver = driver_class.new(png)
       expect(host_for(driver).match_screenshot('home')).to be(true)
+      expect(driver.captures).to eq(1)
+    end
+
+    it 'treats names that differ only in case as the same screenshot' do
+      host = host_for(driver_class.new(png))
+      host.match_screenshot('Home')
+      expect { host.match_screenshot('home') }.to raise_error(ArgumentError, /already used/)
+    end
+
+    it 'lets an explicit max_diff_ratio: nil override a configured ratio' do
+      FileUtils.mkdir_p('config')
+      File.write('config/config.yml', "screenshots:\n  max_diff_ratio: 0.05\n")
+      store_baseline(png)
+      expect(host_for(driver_class.new(different)).match_screenshot('home', timeout: 0)).to be(true)
+      ScreenshotHelper.reset
+      expect { host_for(driver_class.new(different)).match_screenshot('home', max_diff_ratio: nil, timeout: 0) }
+        .to raise_error(ScreenshotHelper::Mismatch)
+    end
+
+    it 'draws the diff image once, for a final failure only' do
+      store_baseline(png)
+      allow(ScreenshotHelper::Diff).to receive(:image).and_call_original
+      host_for(driver_class.new(different, different, png)).match_screenshot('home', timeout: 5)
+      expect(ScreenshotHelper::Diff).not_to have_received(:image)
+      ScreenshotHelper.reset
+      driver = driver_class.new(different)
+      expect { host_for(driver).match_screenshot('home', timeout: 0.6) }.to raise_error(ScreenshotHelper::Mismatch)
+      expect(driver.captures).to be >= 2
+      expect(ScreenshotHelper::Diff).to have_received(:image).once
+    end
+
+    it 'decodes the baseline once however many attempts it takes' do
+      store_baseline(png)
+      allow(ScreenshotHelper::Diff).to receive(:decode).and_call_original
+      host_for(driver_class.new(different, different, png)).match_screenshot('home', timeout: 5)
+      expect(ScreenshotHelper::Diff).to have_received(:decode).exactly(4).times
+    end
+
+    it 'retries a size change and passes when the element settles' do
+      store_baseline(png)
+      expect(host_for(driver_class.new(png(5, 5), png)).match_screenshot('home', timeout: 5)).to be(true)
+    end
+
+    it 'does not start another capture after the deadline' do
+      store_baseline(png)
+      driver = driver_class.new(different)
+      expect { host_for(driver).match_screenshot('home', timeout: 0) }.to raise_error(ScreenshotHelper::Mismatch)
       expect(driver.captures).to eq(1)
     end
 
@@ -504,26 +603,28 @@ RSpec.describe 'ScreenshotHelper' do
 
     it 'reports a created comparison as passed with the actual PNG' do
       match(white)
-      expect(seen).to eq([:screenshot_compared, { name: 'home', status: :passed, png: white }])
+      expect(seen).to eq([:screenshot_compared, { name: 'home', status: :passed, png: white, error: nil }])
     end
 
     it 'reports a passed comparison once' do
       store(white)
       match(white)
-      expect(seen).to eq([:screenshot_compared, { name: 'home', status: :passed, png: white }])
+      expect(seen).to eq([:screenshot_compared, { name: 'home', status: :passed, png: white, error: nil }])
     end
 
     it 'reports a failed comparison before the Mismatch is raised, with the last actual PNG' do
       store(white)
-      expect { match(black) }.to raise_error(ScreenshotHelper::Mismatch)
-      expect(seen).to eq([:screenshot_compared, { name: 'home', status: :failed, png: black }])
+      expect { match(black) }.to raise_error(ScreenshotHelper::Mismatch) { |raised|
+        expect(seen.last).to include(name: 'home', status: :failed, png: black)
+        expect(seen.last[:error]).to be(raised)
+      }
     end
 
     it 'reports an updated comparison as passed' do
       store(white)
       allow(ScreenshotHelper).to receive(:update?).and_return(true)
       match(black)
-      expect(seen).to eq([:screenshot_compared, { name: 'home', status: :passed, png: black }])
+      expect(seen).to eq([:screenshot_compared, { name: 'home', status: :passed, png: black, error: nil }])
     end
 
     it 'reports nothing when no screenshot was taken' do
@@ -576,7 +677,7 @@ RSpec.describe 'ScreenshotHelper' do
       end
     end
     let(:diff_result) do
-      ScreenshotHelper::Diff::Result.new(1, 0.01, [10, 10], [10, 10], 'diff-bytes')
+      ScreenshotHelper::Diff::Result.new(1, 0.01, [10, 10], [10, 10])
     end
     let(:options) { { threshold: 0.2, max_diff_pixels: 0, max_diff_ratio: nil } }
 
