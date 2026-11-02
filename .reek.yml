@@ -62,3 +62,4 @@ detectors:
   TooManyConstants:
     exclude:
       - 'RubyRaider::Ffmpeg' # pinned version, release URL and manifest constants
+      - 'TracePageServer' # routes, redirects and delays of the e2e page
