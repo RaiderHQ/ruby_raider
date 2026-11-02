@@ -123,7 +123,6 @@ class FakeNetworkBidi
     @subscribed = []
     @callbacks = Hash.new { |hash, event| hash[event] = [] }
     @commands = []
-    @intercepts = 0
     @lock = Mutex.new
   end
 
@@ -148,7 +147,7 @@ class FakeNetworkBidi
 
     @lock.synchronize do
       @commands << [method, params]
-      method == 'network.addIntercept' ? { 'intercept' => "i-#{@intercepts += 1}" } : {}
+      method == 'network.addIntercept' ? { 'intercept' => "i-#{named('network.addIntercept').size}" } : {}
     end
   end
 
@@ -239,11 +238,27 @@ RSpec.describe 'NetworkHelper::Router' do
   end
 
   it 'sends body bytes exactly' do
-    host.mock_request('**/api/users', body: "\xFF\x00é".b, status: 999)
+    host.mock_request('**/api/users', body: "\xFF\x00é".b, status: 201)
     emit
     params = bidi.named('network.provideResponse').first
     expect(params[:body][:value].unpack1('m0')).to eq("\xFF\x00é".b)
-    expect(params[:reasonPhrase]).to eq('OK')
+    expect(params[:reasonPhrase]).to eq('Created')
+  end
+
+  it 'rejects a status outside 100..599' do
+    expect { host.mock_request('**/a', status: 999) }.to raise_error(ArgumentError, /100..599/)
+    expect { host.mock_request('**/a', status: 99) }.to raise_error(ArgumentError)
+  end
+
+  it 'falls back to failRequest when provideResponse raises' do
+    host.mock_request('**/api/users', json: {})
+    allow(bidi).to receive(:send_cmd).and_wrap_original do |original, method, **params|
+      raise 'gone' if method == 'network.provideResponse'
+
+      original.call(method, **params)
+    end
+    emit
+    expect(bidi.named('network.failRequest')).to eq([{ request: 'r1' }])
   end
 
   it 'rejects json and body together' do
@@ -326,6 +341,29 @@ RSpec.describe 'NetworkHelper::Router' do
       expect(error).to be_a(NetworkHelper::MockError)
       expect(error.cause.message).to eq('boom')
       expect(NetworkHelper.finish(fake_driver)).to be_nil
+    end
+
+    it 'catches non-StandardError exceptions such as failed expectations' do
+      custom = Class.new(Exception) { def message = 'expectation not met' } # rubocop:disable Lint/InheritException
+      host.mock_request('**/api/users') { raise custom }
+      emit
+      expect(bidi.named('network.failRequest')).to eq([{ request: 'r1' }])
+      expect { host.mock_request('**/x') }.to raise_error(NetworkHelper::MockError, /expectation not met/) do |error|
+        expect(error.cause).to be_a(custom)
+      end
+    end
+
+    it 'includes the reason when a returned Hash is rejected' do
+      host.mock_request('**/api/users') { { json: {}, body: 'x' } }
+      emit
+      expect { host.clear_mocks }.to raise_error(NetworkHelper::MockError, /returned.*not both/)
+    end
+
+    it 'rejects a returned status out of range' do
+      host.mock_request('**/api/users') { { status: 700 } }
+      emit
+      expect(bidi.named('network.failRequest').size).to eq(1)
+      expect { host.clear_mocks }.to raise_error(NetworkHelper::MockError, /returned.*100..599/)
     end
 
     it 'treats a junk result as an error' do

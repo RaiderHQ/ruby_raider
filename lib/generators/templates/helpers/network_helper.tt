@@ -113,6 +113,7 @@ module NetworkHelper
   # All state sits behind one Mutex; a mock_request block runs outside it.
   class Router
     EVENT = 'network.beforeRequestSent'
+    FATAL = [Interrupt, SystemExit, NoMemoryError].freeze
 
     def initialize(bidi)
       @bidi = bidi
@@ -239,7 +240,11 @@ module NetworkHelper
 
     def run_block(mock, request)
       mock.block.call(request)
-    rescue StandardError => e
+    rescue Exception => e # rubocop:disable Lint/RescueException
+      # An expectation failure inside the block is an Exception, not a StandardError: it must not
+      # vanish on Selenium's callback thread. Fatal ones fail the request (ensure) and propagate.
+      raise if FATAL.any? { |fatal| e.is_a?(fatal) }
+
       raise MockError, "mock_request block for #{mock.url} raised #{e.class}: #{e.message}"
     end
 
@@ -247,8 +252,8 @@ module NetworkHelper
       return continue_with(mock, result, raw_headers) if result.key?(:continue)
 
       [:fulfil, NetworkHelper.build_response(**result)]
-    rescue ArgumentError, TypeError
-      junk(mock, result)
+    rescue ArgumentError, TypeError => e
+      junk(mock, result, e.message)
     end
 
     def continue_with(mock, result, raw_headers)
@@ -258,8 +263,8 @@ module NetworkHelper
       [:continue, NetworkHelper.merge_headers(raw_headers, options[:headers] || {})]
     end
 
-    def junk(mock, result)
-      raise MockError, "mock_request block for #{mock.url} returned #{result.inspect}"
+    def junk(mock, result, reason = nil)
+      raise MockError, ["mock_request block for #{mock.url} returned #{result.inspect}", reason].compact.join(': ')
     end
 
     def deliver(params, answer)
@@ -280,6 +285,13 @@ module NetworkHelper
                                                 reasonPhrase: REASON_PHRASES.fetch(response[:status], 'OK'),
                                                 headers: NetworkHelper.header_list(response[:headers]),
                                                 body: { type: 'base64', value: [response[:body]].pack('m0') })
+    rescue StandardError
+      # The page must never hang on a paused request: fall back to a network error.
+      begin
+        @bidi.send_cmd('network.failRequest', request: request_id)
+      rescue StandardError
+        nil
+      end
     end
 
     def fail_request(params, request_id)
@@ -322,7 +334,8 @@ module NetworkHelper
     end
 
     # The router for this driver, created on first use. Raises Unavailable without BiDi.
-    # (The BiDi callback keeps the router alive for as long as the driver's connection.)
+    # ROUTERS holds its values weakly; the router stays alive because the block registered with
+    # bidi.add_callback in Router#initialize captures it, and the driver's bidi holds that block.
     def router_for(driver)
       ROUTERS_LOCK.synchronize { ROUTERS[driver] ||= create_router(driver) }
     end
@@ -353,7 +366,14 @@ module NetworkHelper
       list = headers.map { |name, value| [name.to_s, value.to_s] }
       list = list.reject { |name, _| name.casecmp?('content-type') } << ['Content-Type', content_type.to_s] if content_type
       list << ['Content-Type', 'application/json'] if !json.nil? && list.none? { |name, _| name.casecmp?('content-type') }
-      { status: Integer(status), headers: list, body: (json.nil? ? body.to_s : JSON.generate(json)) }
+      { status: valid_status(status), headers: list, body: (json.nil? ? body.to_s : JSON.generate(json)) }
+    end
+
+    def valid_status(status)
+      code = Integer(status)
+      raise ArgumentError, "status must be 100..599, got #{code}" unless (100..599).cover?(code)
+
+      code
     end
 
     # The request's own headers with these replacing same-named ones, as a BiDi header list.
