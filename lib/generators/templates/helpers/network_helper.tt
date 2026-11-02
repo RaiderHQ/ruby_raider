@@ -48,23 +48,22 @@ module NetworkHelper
       Regexp.new("\\A#{source.join}\\z", Regexp::MULTILINE)
     end
 
+    # Only a glob that opens with a literal scheme://host[:port] narrows: anything else could match a
+    # URL the pattern would miss. The path counts only right after such an origin.
     def literal_parts
       glob = @url.split(/[?#]/, 2).first.to_s
       scheme = glob[%r{\A([a-z][a-z0-9+.-]*)://}i, 1]
-      return { pathname: literal(glob.delete_prefix('**'), prefix: '/') }.compact unless scheme
+      return {} unless scheme
 
       hostport, path = glob.delete_prefix("#{scheme}://").split(%r{(?=/)}, 2)
       host, port = hostport.to_s.split(':', 2)
-      { protocol: literal(scheme.downcase), hostname: literal(host), port: literal(port),
-        pathname: literal(path) }.compact
+      return {} if [host, port].compact.any? { |part| part.empty? || part.include?('*') }
+
+      { protocol: scheme.downcase, hostname: host, port: port, pathname: literal_path(path) }.compact
     end
 
-    # The value when it is a plain string with no wildcard, else nil.
-    def literal(value, prefix: nil)
-      return nil if value.nil? || value.empty? || value.include?('*')
-      return nil if prefix && !value.start_with?(prefix)
-
-      value
+    def literal_path(path)
+      path unless path.nil? || path.include?('*')
     end
   end
 
