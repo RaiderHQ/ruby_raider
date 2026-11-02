@@ -430,6 +430,23 @@ describe 'Generated TraceHelper' do
       end
     end
 
+    context 'with a RAIDER_SECRET_* value holding & and "' do
+      let(:env) { { 'RAIDER_SECRET_TOKEN' => 'a&b"c' } }
+
+      it 'blanks the value attribute the browser wrote entity-encoded, and keeps it out of every zip entry' do
+        element_script(field, secret: false, label: 'Notes')
+        allow(driver).to receive(:page_source).and_return('<html><body><input type="text" name="notes" value="a&amp;b&quot;c"></body></html>')
+        recorder = started_recorder
+        act(recorder, :send_keys, 'notes', args: ['a&b"c'], element: field)
+        path = recorder.stop(keep: true, test: failed_test)
+        entries = Zip::File.open(path) { |zip| zip.entries.map { |entry| zip.read(entry.name) } }
+
+        expect(TraceFormatChecker.problems(path)).to eq([])
+        expect(snapshot_of(path, 1)).to include('<input type="text" name="notes" value="">')
+        expect(entries).to all(satisfy { |bytes| !bytes.include?('a&amp;b&quot;c') && !bytes.include?('a&b"c') && !bytes.include?('a&b\\"c') })
+      end
+    end
+
     it 'keeps other typed values as typed' do
       element_script(field, secret: false)
       recorder = started_recorder

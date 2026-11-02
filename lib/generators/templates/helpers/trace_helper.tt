@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'cgi'
 require 'fileutils'
 require 'json'
 require 'selenium-webdriver'
@@ -902,13 +903,15 @@ module TraceHelper
       rebuilt(original, name, parts)
     end
 
-    # A value attribute of a secret field, or one holding a secret value.
+    # A value attribute of a secret field, or one holding a secret value. The HTML has it
+    # entity-encoded (& as &amp;), so it is decoded before it is compared.
     def self.blank?(attribute, field, secrets)
       return false unless attribute[1].casecmp?('value')
 
       value = attribute_value(attribute)
       return false if value.empty?
 
+      value = CGI.unescapeHTML(value)
       field || secrets.include?(value) || TraceHelper.secret_value?(value)
     end
 
