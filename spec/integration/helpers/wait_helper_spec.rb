@@ -642,6 +642,17 @@ describe 'WaitHelper' do
       expect(button.log).to eq([%i[click]] * 2)
       expect(WaitHelper.observer).to be_nil
     end
+
+    it 'still prints observer stopped under -W0, where Kernel#warn is silent' do
+      allow(observer).to receive(:action_started).and_raise('boom')
+      driver.script({ id: 'go' }, element)
+      verbose = $VERBOSE
+      $VERBOSE = nil
+
+      expect { page.click({ id: 'go' }, timeout: 1) }.to output("[trace] observer stopped: RuntimeError: boom\n").to_stderr
+    ensure
+      $VERBOSE = verbose
+    end
   end
 
   describe '.default_timeout' do

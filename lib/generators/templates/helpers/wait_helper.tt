@@ -36,6 +36,8 @@ module WaitHelper
     # Calls the observer's hook, or returns nil without one. A broken observer must
     # never fail a test: it is warned about once and removed.
     # A block builds the details, so computing them is covered by the same rescue.
+    # $stderr.puts, not Kernel#warn: warn is silenced under -W0.
+    # rubocop:disable Style/StderrPuts
     def report(hook, *args, **details)
       current = observer
       return unless current
@@ -43,9 +45,10 @@ module WaitHelper
       details = yield if block_given?
       current.public_send(hook, *args, **details)
     rescue StandardError => e
-      warn "[trace] observer stopped: #{e.class}: #{e.message}"
+      $stderr.puts("[trace] observer stopped: #{e.class}: #{e.message}")
       self.observer = nil
     end
+    # rubocop:enable Style/StderrPuts
   end
 
   def self.default_timeout
