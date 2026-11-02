@@ -35,6 +35,7 @@ module TraceHelper
   @warned = false
   @disable_warned = false
   @active_recorder = nil
+  @flags = Mutex.new
 
   class << self
     attr_accessor :active_recorder
@@ -87,20 +88,31 @@ module TraceHelper
       @disabled = true
       release(@active_recorder)
       detach_observer
-      return nil if @disable_warned
+      return nil unless claim(:@disable_warned)
 
-      @disable_warned = true
       say("#{reason}; tracing disabled for this run")
       nil
     end
 
     # At most one notice per run, for something left out of a trace while tracing goes on.
     def warn_once(message)
-      return nil if @warned
+      return nil unless claim(:@warned)
 
-      @warned = true
       say(message)
       nil
+    end
+
+    # One notice per run for events dropped as malformed, apart from warn_once so neither hides the other.
+    def warn_dropped_event(message)
+      return nil unless claim(:@dropped_warned)
+
+      say(message)
+      nil
+    end
+
+    # A real number that is neither NaN nor infinite; a duration or a timestamp is built only from these.
+    def finite_number?(value)
+      value.is_a?(Numeric) && value.real? && value.finite?
     end
 
     # Above 9999 is taken as 9999, silently; zero or less (or not a number) as the default.
@@ -151,6 +163,15 @@ module TraceHelper
       {}
     end
 
+    # Atomically takes a once-only flag; true for the first caller only. Events arrive on websocket threads.
+    def claim(flag)
+      @flags.synchronize do
+        next false if instance_variable_get(flag)
+
+        instance_variable_set(flag, true)
+      end
+    end
+
     # $stderr.puts, not Kernel#warn: warn is silenced under -W0.
     # rubocop:disable Style/StderrPuts
     def say(message)
@@ -199,6 +220,8 @@ module TraceHelper
   # BiDi events arrive on Selenium's websocket threads, so the event lists are locked.
   class Recorder
     SNAPSHOT = :page_source.to_proc
+    # Requests awaiting their response, and responses awaiting their request: a page cannot grow either past this.
+    MAX_PENDING = 1_000
 
     attr_reader :dir, :capabilities
 
@@ -332,6 +355,7 @@ module TraceHelper
         entry = event(:network, hash)
         early = @lock.synchronize do
           @requests[request] = [entry, at]
+          @requests.shift while @requests.size > MAX_PENDING
           @early.delete(request)
         end
         network_completed(request, *early) if early
@@ -343,7 +367,7 @@ module TraceHelper
     def network_completed(request, fields, at = nil)
       record('network') do
         entry, started = @lock.synchronize do
-          @requests.delete(request).tap { |found| @early[request] = [fields, at] unless found }
+          @requests.delete(request).tap { |found| remember_early(request, fields, at) unless found }
         end
         complete(entry, fields, at, started) if entry
         nil
@@ -464,8 +488,15 @@ module TraceHelper
       @truncated[:steps] += 1
     end
 
+    # Called inside the lock.
+    def remember_early(request, fields, at)
+      @early[request] = [fields, at]
+      @early.shift while @early.size > MAX_PENDING
+    end
+
     def complete(entry, fields, finished, started)
-      fields = fields.merge(duration_ms: (finished - started).round) if finished.is_a?(Numeric) && started.is_a?(Numeric)
+      duration = finished - started if TraceHelper.finite_number?(finished) && TraceHelper.finite_number?(started)
+      fields = fields.merge(duration_ms: duration.round) if TraceHelper.finite_number?(duration)
       @lock.synchronize { entry.update(fields.transform_keys(&:to_s)) }
     end
 
@@ -1073,22 +1104,24 @@ module TraceHelper
       recorder = link.recorder
       send(handler, recorder, params) if recorder
     rescue StandardError => e
-      TraceHelper.warn_once("dropped a malformed BiDi #{event} event: #{e.class}")
+      TraceHelper.warn_dropped_event("dropped a malformed BiDi #{event} event: #{e.class}")
     end
 
     def self.request_sent(recorder, params)
-      request = params['request'] || {}
-      recorder.network_started(key(params, request['request']),
-                               { method: request['method'], url: request['url'], status: nil, mime_type: nil,
+      key = key(params)
+      request = params['request']
+      recorder.network_started(key,
+                               { method: scalar(request['method']), url: scalar(request['url']), status: nil, mime_type: nil,
                                  started_at: time(params['timestamp']), duration_ms: nil, bytes: nil, error: nil },
                                at: params['timestamp'])
     end
 
     def self.response_completed(recorder, params)
-      response = params['response'] || {}
-      recorder.network_completed(key(params, params.dig('request', 'request')),
-                                 { status: response['status'], mime_type: response['mimeType'],
-                                   bytes: response['bytesReceived'] || response['encodedDataLength'] },
+      key = key(params)
+      response = params['response'].is_a?(Hash) ? params['response'] : {}
+      recorder.network_completed(key,
+                                 { status: scalar(response['status']), mime_type: scalar(response['mimeType']),
+                                   bytes: scalar(response['bytesReceived'] || response['encodedDataLength']) },
                                  finished_at(params))
     end
 
@@ -1097,23 +1130,35 @@ module TraceHelper
     def self.finished_at(params)
       stamp = params['timestamp']
       origin, response_end = params.dig('request', 'timings')&.values_at('timeOrigin', 'responseEnd')
-      return stamp unless origin.is_a?(Numeric) && response_end.is_a?(Numeric) && response_end.positive?
+      return stamp unless TraceHelper.finite_number?(origin) && TraceHelper.finite_number?(response_end) && response_end.positive?
 
-      [stamp, origin + response_end].grep(Numeric).max
+      [stamp, origin + response_end].select { |ms| TraceHelper.finite_number?(ms) }.max
     end
 
     def self.fetch_error(recorder, params)
-      recorder.network_completed(key(params, params.dig('request', 'request')), { error: params['errorText'] },
-                                 params['timestamp'])
+      recorder.network_completed(key(params), { error: scalar(params['errorText']) }, params['timestamp'])
     end
 
     # A redirect keeps the request id and counts its hops, so the id alone would merge the hops.
-    def self.key(params, request)
-      [request, params['redirectCount'].to_i]
+    # An event without an object request that has a string id is malformed: it raises, so deliver drops it.
+    def self.key(params)
+      request = params['request']
+      raise ArgumentError, 'request is not an object with a string id' unless request.is_a?(Hash) && request['request'].is_a?(String)
+
+      hop = params['redirectCount']
+      [request['request'], hop.is_a?(Integer) ? hop : 0]
+    end
+
+    # Only text, finite numbers, booleans and nil are kept from an event; a list or object becomes nil.
+    def self.scalar(value)
+      case value
+      when String, true, false, nil then value
+      when Numeric then value if TraceHelper.finite_number?(value)
+      end
     end
 
     def self.log_entry(recorder, params)
-      recorder.console_event(level: params['level'], text: params['text'], source: location(params),
+      recorder.console_event(level: scalar(params['level']), text: scalar(params['text']), source: location(params),
                              at: time(params['timestamp']))
     end
 
@@ -1125,7 +1170,7 @@ module TraceHelper
 
     # BiDi timestamps are epoch milliseconds.
     def self.time(milliseconds)
-      return TraceHelper.timestamp unless milliseconds.is_a?(Numeric)
+      return TraceHelper.timestamp unless TraceHelper.finite_number?(milliseconds)
 
       TraceHelper.timestamp(Time.at(Rational(milliseconds.to_i, 1000)))
     end

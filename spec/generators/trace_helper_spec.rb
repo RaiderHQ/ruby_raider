@@ -898,6 +898,115 @@ describe 'Generated TraceHelper' do
       expect(warnings.first).to match(/dropped a malformed BiDi .* event/)
     end
 
+    describe 'hardening against hostile event content' do
+      it 'keeps tracing and records no duration for a timing or timestamp that is not finite' do
+        recorder = started_recorder
+        recorder.navigated('https://example.test/login')
+        request_sent('r1', 'GET', 'https://example.test/a', started_ms)
+        bidi.emit('network.responseCompleted', 'request' => { 'request' => 'r1' }, 'timestamp' => Float::INFINITY,
+                                               'response' => { 'status' => 200 })
+        request_sent('r2', 'GET', 'https://example.test/b', Float::INFINITY)
+        bidi.emit('network.responseCompleted', 'request' => { 'request' => 'r2', 'timings' => { 'timeOrigin' => Float::INFINITY, 'responseEnd' => 5 } },
+                                               'timestamp' => started_ms, 'response' => { 'status' => 200 })
+        bidi.emit('log.entryAdded', 'level' => 'info', 'text' => 'inf', 'timestamp' => Float::INFINITY)
+        trace = kept(recorder)
+
+        expect(TraceHelper.enabled?).to be(true)
+        expect(trace['network'].map { |entry| entry.values_at('url', 'status', 'duration_ms') })
+          .to eq([['https://example.test/a', 200, nil], ['https://example.test/b', 200, nil]])
+        expect(trace['console'].map { |entry| entry['text'] }).to eq(['inf'])
+      end
+
+      it 'drops, and records nothing for, an event whose request is not an object with a string id' do
+        recorder = started_recorder
+        recorder.navigated('https://example.test/login')
+        bidi.emit('network.beforeRequestSent', 'request' => 'string', 'timestamp' => started_ms)
+        bidi.emit('network.beforeRequestSent', 'request' => { 'request' => 123, 'url' => 'https://example.test/x' }, 'timestamp' => started_ms)
+        bidi.emit('network.responseCompleted', 'request' => 'string', 'timestamp' => started_ms, 'response' => { 'status' => 200 })
+        bidi.emit('network.responseCompleted', 'request' => { 'request' => 123 }, 'timestamp' => started_ms, 'response' => { 'status' => 200 })
+        bidi.emit('network.fetchError', 'request' => 'string', 'errorText' => 'x', 'timestamp' => started_ms)
+        bidi.emit('network.fetchError', 'request' => { 'request' => 123 }, 'errorText' => 'x', 'timestamp' => started_ms)
+        pending = recorder.instance_variable_get(:@requests).size + recorder.instance_variable_get(:@early).size
+
+        expect(pending).to eq(0)
+        expect(kept(recorder)['network']).to eq([])
+        expect(TraceHelper.enabled?).to be(true)
+        expect(warnings.size).to eq(1)
+      end
+
+      it 'treats a redirectCount that is not an Integer as 0' do
+        recorder = started_recorder
+        recorder.navigated('https://example.test/login')
+        request_sent('r1', 'GET', 'https://example.test/a', started_ms, hop: '7')
+        bidi.emit('network.responseCompleted', 'redirectCount' => 0, 'request' => { 'request' => 'r1' }, 'timestamp' => started_ms + 4,
+                                               'response' => { 'status' => 200 })
+
+        expect(kept(recorder)['network'].map { |entry| entry.values_at('status', 'duration_ms') }).to eq([[200, 4]])
+      end
+
+      it 'keeps only scalar values for network and console fields' do
+        recorder = started_recorder
+        recorder.navigated('https://example.test/login')
+        bidi.emit('network.beforeRequestSent', 'request' => { 'request' => 'r1', 'method' => ['GET'], 'url' => { 'nested' => 'x' } },
+                                               'timestamp' => started_ms)
+        bidi.emit('network.responseCompleted', 'request' => { 'request' => 'r1' }, 'timestamp' => started_ms + 1,
+                                               'response' => { 'status' => { 'a' => 1 }, 'mimeType' => ['x'], 'bytesReceived' => { 'b' => 2 } })
+        bidi.emit('network.beforeRequestSent', 'request' => { 'request' => 'r3', 'method' => 'GET', 'url' => 'https://example.test/n' },
+                                               'timestamp' => started_ms)
+        bidi.emit('network.responseCompleted', 'request' => { 'request' => 'r3' }, 'timestamp' => started_ms + 1,
+                                               'response' => { 'status' => 200, 'bytesReceived' => Float::INFINITY })
+        bidi.emit('network.beforeRequestSent', 'request' => { 'request' => 'r2', 'method' => 'GET', 'url' => 'https://example.test/e' },
+                                               'timestamp' => started_ms)
+        bidi.emit('network.fetchError', 'request' => { 'request' => 'r2' }, 'errorText' => { 'deep' => 'x' }, 'timestamp' => started_ms + 1)
+        bidi.emit('log.entryAdded', 'level' => { 'a' => 1 }, 'text' => %w[a b], 'timestamp' => started_ms)
+        trace = kept(recorder)
+
+        expect(trace['network'].map { |entry| entry.values_at('method', 'url', 'status', 'mime_type', 'bytes', 'error') })
+          .to eq([[nil, nil, nil, nil, nil, nil], ['GET', 'https://example.test/n', 200, nil, nil, nil],
+                  ['GET', 'https://example.test/e', nil, nil, nil, nil]])
+        expect(trace['console'].map { |entry| entry.values_at('level', 'text') }).to eq([[nil, nil]])
+      end
+
+      it 'caps the pending requests and the early completions, dropping the oldest' do
+        recorder = started_recorder
+        cap = TraceHelper::Recorder::MAX_PENDING
+        (cap + 5).times do |index|
+          recorder.network_started("s#{index}", { url: "https://example.test/#{index}" })
+          recorder.network_completed("e#{index}", { status: 200 })
+        end
+        requests = recorder.instance_variable_get(:@requests)
+        early = recorder.instance_variable_get(:@early)
+
+        expect([requests.size, early.size]).to eq([cap, cap])
+        expect(requests.keys.first).to eq('s5')
+        expect(early.keys.first).to eq('e5')
+        expect(TraceHelper.enabled?).to be(true)
+      end
+
+      it 'warns about a dropped event even after another notice, and the notice is not hidden by it' do
+        TraceHelper.warn_once('something left out')
+        recorder = started_recorder
+        bidi.emit('network.beforeRequestSent', 'request' => 'string', 'timestamp' => started_ms)
+        bidi.emit('network.beforeRequestSent', 'request' => 'string', 'timestamp' => started_ms)
+        TraceHelper.warn_once('another')
+
+        expect(warnings.size).to eq(2)
+        expect(warnings.first).to eq("[trace] something left out\n")
+        expect(warnings.last).to match(/dropped a malformed BiDi network.beforeRequestSent event/)
+        expect(recorder).not_to be_nil
+        expect(TraceHelper.enabled?).to be(true)
+      end
+
+      it 'warns once about a dropped event before any other notice, leaving that notice free' do
+        started_recorder
+        bidi.emit('log.entryAdded', 'level' => 'info', 'text' => 'x', 'timestamp' => 1, 'stackTrace' => 'string')
+        TraceHelper.warn_once('something left out')
+
+        expect(warnings.size).to eq(2)
+        expect(warnings.last).to eq("[trace] something left out\n")
+      end
+    end
+
     it 'records capabilities network/console false and warns once when subscribe raises' do
       bidi.failure = Selenium::WebDriver::Error::WebDriverError.new('no such frame')
       traces = Array.new(2) do
