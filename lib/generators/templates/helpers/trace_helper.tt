@@ -293,9 +293,21 @@ module TraceHelper
       group_finished(group, status: status, retries: 0, error: error) if group.is_a?(Step)
     end
 
+    # A navigation has begun. Its step stays pending until navigated, so the requests the page makes
+    # while loading are credited to it. A driver.get that fails never reaches navigated.
+    def navigating(url)
+      record('navigation') do
+        finish_navigation(:failed)
+        @navigation = add(kind: 'navigate', action: 'navigate', locator: nil, source: navigation_source)
+        @navigation.url = url
+        nil
+      end
+    end
+
     def navigated(url)
       record('navigation') do
-        step = add(kind: 'navigate', action: 'navigate', locator: nil, source: navigation_source)
+        step = @navigation || add(kind: 'navigate', action: 'navigate', locator: nil, source: navigation_source)
+        @navigation = nil
         step.url = url
         step.finish(:passed, nil)
         capture_step_media(step)
@@ -371,6 +383,7 @@ module TraceHelper
       TraceHelper.release(self)
       return discard unless keep && TraceHelper.enabled?
 
+      finish_navigation(:failed)
       failure(test[:error])
       write(test)
     rescue StandardError => e
@@ -390,6 +403,7 @@ module TraceHelper
 
     def reset
       @steps = []
+      @navigation = nil
       @groups = []
       @lock.synchronize do
         @events = []
@@ -435,6 +449,14 @@ module TraceHelper
       @steps << step
       drop_oldest_step while @steps.size > TraceHelper.max_steps
       step
+    end
+
+    # A navigation still pending when the next one starts, or at stop, never completed.
+    def finish_navigation(status)
+      return unless @navigation
+
+      @navigation.finish(status, nil)
+      @navigation = nil
     end
 
     def drop_oldest_step
@@ -748,6 +770,10 @@ module TraceHelper
       nil
     end
 
+    def navigating(_url)
+      nil
+    end
+
     def navigated(_url)
       nil
     end
@@ -971,6 +997,19 @@ end
 module TraceHelper
   # Selenium calls these after each navigation (through the driver helper's fan-out listener).
   class Listener < Selenium::WebDriver::Support::AbstractEventListener
+    # Before, so the requests of the load belong to the navigate step. If the navigation fails, after is never called.
+    def before_navigate_to(url, _driver)
+      navigating(url)
+    end
+
+    def before_navigate_back(_driver)
+      navigating(nil)
+    end
+
+    def before_navigate_forward(_driver)
+      navigating(nil)
+    end
+
     def after_navigate_to(url, _driver)
       navigated(url)
     end
@@ -985,6 +1024,11 @@ module TraceHelper
     end
 
     private
+
+    def navigating(url)
+      TraceHelper.active_recorder&.navigating(url)
+      nil
+    end
 
     def navigated(url)
       TraceHelper.active_recorder&.navigated(url)

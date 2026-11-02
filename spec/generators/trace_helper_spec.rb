@@ -684,15 +684,78 @@ describe 'Generated TraceHelper' do
     expect(WaitHelper.observer).to be_nil
   end
 
+  describe 'a navigation in flight' do
+    let(:started_ms) { 1_793_568_600_020 }
+
+    def request_sent(id, url)
+      bidi.emit('network.beforeRequestSent', 'request' => { 'request' => id, 'method' => 'GET', 'url' => url },
+                                             'timestamp' => started_ms)
+    end
+
+    it 'credits requests made between navigating and navigated to the navigate step' do
+      recorder = started_recorder
+      recorder.navigating('https://example.test/start')
+      request_sent('r1', 'https://example.test/start')
+      recorder.navigated('https://example.test/')
+      act(recorder, :click, 'go')
+      request_sent('r2', 'https://example.test/api')
+      trace = kept(recorder)
+
+      expect(trace['steps'].map { |step| step.values_at('index', 'action', 'status') }).to eq([[1, 'navigate', 'passed'], [2, 'click', 'passed']])
+      expect(trace['network'].map { |entry| entry.values_at('step_index', 'url') })
+        .to eq([[1, 'https://example.test/start'], [2, 'https://example.test/api']])
+    end
+
+    it 'keeps the old path: navigated alone adds one finished navigate step' do
+      recorder = started_recorder
+      recorder.navigated('https://example.test/login')
+
+      expect(kept(recorder)['steps'].map { |step| step.values_at('kind', 'status') }).to eq([%w[navigate passed]])
+    end
+
+    it 'finishes a navigation that never completed as failed at the next navigating' do
+      recorder = started_recorder
+      recorder.navigating('https://example.test/down')
+      recorder.navigating('https://example.test/up')
+      recorder.navigated('https://example.test/up')
+      steps = kept(recorder)['steps']
+
+      expect(steps.map { |step| step.values_at('kind', 'status', 'url') })
+        .to eq([['navigate', 'failed', 'https://example.test/down'], ['navigate', 'passed', 'https://example.test/login']])
+    end
+
+    it 'finishes a navigation that never completed as failed at stop' do
+      recorder = started_recorder
+      recorder.navigating('https://example.test/down')
+      steps = kept(recorder)['steps']
+
+      expect(steps.map { |step| step.values_at('kind', 'status') }).to eq([%w[navigate failed]])
+    end
+
+    it 'is driven by the listener before each navigation, and the null recorder ignores it' do
+      listener = TraceHelper.listener
+      recorder = started_recorder
+      listener.before_navigate_to('https://example.test/a', driver)
+      listener.after_navigate_to('https://example.test/a', driver)
+      listener.before_navigate_back(driver)
+      listener.after_navigate_back(driver)
+      listener.before_navigate_forward(driver)
+      listener.after_navigate_forward(driver)
+
+      expect(kept(recorder)['steps'].map { |step| step['status'] }).to eq(%w[passed passed passed])
+      expect(TraceHelper::NullRecorder.new.navigating('https://example.test/')).to be_nil
+    end
+  end
+
   describe 'browser wiring' do
     let(:started_ms) { 1_793_568_600_020 }
     let(:bidi_events) { %w[network.beforeRequestSent network.responseCompleted network.fetchError log.entryAdded] }
 
     def request_sent(id, method, url, at, hop: 0)
       bidi.emit('network.beforeRequestSent', 'redirectCount' => hop,
-                'request' => { 'request' => id, 'method' => method, 'url' => url,
-                               'headers' => [{ 'name' => 'Cookie', 'value' => { 'type' => 'string', 'value' => 'session=hush' } }] },
-                'timestamp' => at)
+                                             'request' => { 'request' => id, 'method' => method, 'url' => url,
+                                                            'headers' => [{ 'name' => 'Cookie', 'value' => { 'type' => 'string', 'value' => 'session=hush' } }] },
+                                             'timestamp' => at)
     end
 
     it 'subscribes passively to the four BiDi events and never adds a request handler' do
