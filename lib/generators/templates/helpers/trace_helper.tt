@@ -291,6 +291,7 @@ module TraceHelper
       record('group') do
         dropped, @steps = @steps.partition { |step| step.within?(group) }
         dropped.each { |step| delete_media(step) }
+        @navigation = nil if dropped.any? { |step| step.equal?(@navigation) }
         group.error = error
         nil
       end
@@ -322,7 +323,7 @@ module TraceHelper
       record('navigation') do
         finish_navigation(:failed)
         @navigation = add(kind: 'navigate', action: 'navigate', locator: nil, source: navigation_source)
-        @navigation.url = url
+        @navigation.url = url if url
         nil
       end
     end
@@ -331,7 +332,7 @@ module TraceHelper
       record('navigation') do
         step = @navigation || add(kind: 'navigate', action: 'navigate', locator: nil, source: navigation_source)
         @navigation = nil
-        step.url = url
+        step.url = url if url
         step.finish(:passed, nil)
         capture_step_media(step)
         nil
@@ -407,7 +408,7 @@ module TraceHelper
       TraceHelper.release(self)
       return discard unless keep && TraceHelper.enabled?
 
-      finish_navigation(:failed)
+      finish_navigation(:failed, test[:error])
       failure(test[:error])
       write(test)
     rescue StandardError => e
@@ -466,6 +467,7 @@ module TraceHelper
     end
 
     def add(kind:, action:, locator:, source:)
+      finish_navigation(:failed) unless kind == 'navigate'
       @seq += 1
       step = Step.new(seq: @seq, parent: @groups.last, kind: kind, action: action, locator: locator, source: source,
                       url: @page[:url], page_title: @page[:page_title], started_at: TraceHelper.timestamp,
@@ -475,16 +477,19 @@ module TraceHelper
       step
     end
 
-    # A navigation still pending when the next one starts, or at stop, never completed.
-    def finish_navigation(status)
+    # A navigation still pending when the next step starts, or at stop, never completed. At stop the test's
+    # error goes to it, so failure does not add a second step for the same exception.
+    def finish_navigation(status, error = nil)
       return unless @navigation
 
-      @navigation.finish(status, nil)
+      @navigation.finish(status, error)
       @navigation = nil
     end
 
     def drop_oldest_step
-      delete_media(@steps.shift)
+      step = @steps.shift
+      @navigation = nil if step.equal?(@navigation)
+      delete_media(step)
       @truncated[:steps] += 1
     end
 

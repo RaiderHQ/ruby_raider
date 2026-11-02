@@ -751,6 +751,66 @@ describe 'Generated TraceHelper' do
       expect(steps.map { |step| step.values_at('kind', 'status') }).to eq([%w[navigate failed]])
     end
 
+    it 'finishes a navigation that never completed as failed when the next action is added, with only its own duration' do
+      clock = 100.0
+      allow(TraceHelper).to receive(:monotonic_now) { clock }
+      recorder = started_recorder
+      recorder.navigating('https://example.test/down')
+      clock += 0.25
+      act(recorder, :click, 'go')
+      clock += 60
+      steps = kept(recorder)['steps']
+
+      expect(steps.map { |step| step.values_at('action', 'status') }).to eq([%w[navigate failed], %w[click passed]])
+      expect(steps.first['duration_ms']).to eq(250)
+    end
+
+    it 'adds no second failure step for the error a pending navigation ends the test with' do
+      error = Selenium::WebDriver::Error::WebDriverError.new('net::ERR_CONNECTION_REFUSED')
+      recorder = started_recorder
+      recorder.navigating('https://example.test/down')
+      steps = kept(recorder, failed_test.merge(error: error))['steps']
+
+      expect(steps.map { |step| step.values_at('kind', 'status') }).to eq([%w[navigate failed]])
+      expect(steps.first['error']).to include('message' => a_string_including('ERR_CONNECTION_REFUSED'))
+    end
+
+    it 'adds no failure step for the error of the action that followed a pending navigation' do
+      error = RuntimeError.new('boom')
+      recorder = started_recorder
+      recorder.navigating('https://example.test/down')
+      act(recorder, :click, 'go', status: :failed, error: error)
+      steps = kept(recorder, failed_test.merge(error: error))['steps']
+
+      expect(steps.map { |step| step.values_at('kind', 'status') }).to eq([%w[navigate failed], %w[action failed]])
+    end
+
+    it 'keeps the page url a back or forward navigation started from when the driver does not give one' do
+      alert = { open: false }
+      stub_const('VideoHelper', Module.new { define_singleton_method(:alert_open?) { |_driver| alert[:open] } })
+      recorder = started_recorder
+      recorder.navigated('https://example.test/login')
+      alert[:open] = true
+      recorder.navigating(nil)
+      recorder.navigated(nil)
+      steps = kept(recorder)['steps']
+
+      expect(steps.map { |step| step['url'] }).to eq(['https://example.test/login', 'https://example.test/login'])
+    end
+
+    it 'forgets a pending navigation that eventually retried away, so navigated captures nothing for it' do
+      recorder = started_recorder
+      group = recorder.group_started(action: :eventually, source: source)
+      recorder.navigating('https://example.test/slow')
+      recorder.group_retried(group)
+      recorder.navigated('https://example.test/slow')
+      steps = kept(recorder)['steps']
+
+      expect(steps.map { |step| step.values_at('kind', 'action', 'status') }).to eq([%w[group eventually failed], %w[navigate navigate passed]])
+      expect(recorder.instance_variable_get(:@navigation)).to be_nil
+      expect(Dir.children(recorder.dir).grep(/\A000002/)).to eq([])
+    end
+
     it 'is driven by the listener before each navigation, and the null recorder ignores it' do
       listener = TraceHelper.listener
       recorder = started_recorder
