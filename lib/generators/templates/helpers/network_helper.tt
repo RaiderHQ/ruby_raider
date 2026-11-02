@@ -247,7 +247,7 @@ module NetworkHelper
 
     # Adds Allow-Origin and Allow-Credentials for a cross-origin request unless the mock set them.
     def with_cors(request, response, force: false)
-      origin = request.headers['origin']
+      origin = request_origin(request)
       return response unless origin && (force || cross_origin?(origin, request.url))
 
       headers = response[:headers].dup
@@ -255,6 +255,21 @@ module NetworkHelper
         headers << [name, value] if headers.none? { |existing, _| existing.casecmp?(name) }
       end
       response.merge(headers: headers)
+    end
+
+    # Chrome adds the Origin header after the request is paused, so it is missing here: the Referer's
+    # origin stands in for it.
+    def request_origin(request)
+      request.headers['origin'] || referer_origin(request.headers['referer'])
+    end
+
+    def referer_origin(referer)
+      return nil unless referer
+
+      uri = URI(referer)
+      "#{uri.scheme}://#{uri.host}#{":#{uri.port}" unless uri.port == uri.default_port}" if uri.host
+    rescue URI::Error
+      nil
     end
 
     def cross_origin?(origin, url)

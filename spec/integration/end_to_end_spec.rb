@@ -1029,6 +1029,149 @@ describe 'End-to-End Project Generation and Execution' do
         expect(groups).to include(include('kind' => 'group', 'name' => a_string_including('the trace page is open')))
       end
     end
+
+    # mock_request / block_request through WebDriver BiDi, on a page that fetches /api/* and a cross-origin URL
+    # that exists nowhere (so it only answers when mocked). Chrome by default; Edge and Firefox run only when
+    # RAIDER_E2E_BROWSERS (comma separated) lists them.
+    describe 'Network mocking' do
+      let(:project) { 'video_rspec_selenium' }
+      let(:original_config) { File.read(config) }
+
+      def config
+        File.join(project, 'config/config.yml')
+      end
+
+      def spec_path
+        File.join(project, 'spec/network_mocking_spec.rb')
+      end
+
+      def opted_in?(browser)
+        ENV.fetch('RAIDER_E2E_BROWSERS', '').split(',').map(&:strip).include?(browser)
+      end
+
+      def skip_unless_mocking_prerequisites(browser)
+        skip "set RAIDER_E2E_BROWSERS=#{browser} to run network mocking on #{browser}" unless browser == 'chrome' || opted_in?(browser)
+        skip 'Microsoft Edge is not installed' if browser == 'edge' && !File.directory?('/Applications/Microsoft Edge.app')
+        skip_unless_trace_prerequisites(project, browser == 'firefox' ? 'firefox' : 'chrome')
+      end
+
+      def write_spec(body)
+        File.write(spec_path, <<~SPEC)
+          # frozen_string_literal: true
+
+          require_relative '../helpers/spec_helper'
+
+          describe 'Network mocking' do
+          #{body.lines.map { |line| line.strip.empty? ? line : "  #{line}" }.join}
+          end
+        SPEC
+      end
+
+      def mocking_run(overrides = {})
+        run_in_project(project, 'bundle exec rspec spec/network_mocking_spec.rb', env: trace_env(overrides), timeout: 240)
+      end
+
+      def mock_example(browser)
+        write_spec(<<~BODY)
+          it 'mocks, blocks, edits and removes' do
+            driver.navigate.to('#{server.url}mock')
+            users = mock_request('#{server.url}api/users', json: { users: ['ana'] })
+            block_request('**/api/fail')
+            mock_request('**/api/echo') { { continue: { headers: { 'x-raider' => 'yes' } } } }
+            mock_request('http://mock.raider.test/api/cors', json: { ok: true })
+            click({ id: 'users' })
+            eventually(timeout: 5) { expect(text(id: 'users-out')).to eq('ana') }
+            click({ id: 'fail' })
+            eventually(timeout: 5) { expect(text(id: 'fail-out')).to eq('request failed') }
+            click({ id: 'echo' })
+            eventually(timeout: 5) { expect(text(id: 'echo-out')).to eq('echo yes') }
+            click({ id: 'cors' })
+            eventually(timeout: 5) { expect(text(id: 'cors-out')).to eq('cors true') }
+            expect(users.calls.size).to eq(1)
+            expect(users).to be_called
+            remove_mock(users)
+            click({ id: 'users' })
+            eventually(timeout: 5) { expect(text(id: 'users-out')).to eq('real') }
+            expect(users.calls.size).to eq(1)
+            puts 'NETWORK_MOCKING_#{browser.upcase}_DONE'
+          end
+        BODY
+      end
+
+      def switch_browser(name)
+        # The generated config carries browser arguments for chrome and firefox only.
+        edge_args = "  edge:\n    - no-sandbox\n"
+        File.write(config, original_config.sub(/^browser: .*$/, "browser: #{name}").sub(/^  firefox:/, "#{edge_args}  firefox:"))
+      end
+
+      # Skips when the browser is unavailable or not opted in; otherwise points the config at it.
+      def use_browser(name)
+        skip_unless_mocking_prerequisites(name)
+        original_config
+        switch_browser(name)
+      end
+
+      before { generate_video_project('rspec', 'selenium') }
+
+      after do
+        File.write(config, original_config) if File.exist?(config)
+        FileUtils.rm_f(spec_path)
+      end
+
+      %w[chrome edge firefox].each do |name|
+        it "mocks, blocks, edits headers and removes a mock on headless #{name}", :aggregate_failures do
+          use_browser(name)
+          mock_example(name)
+          run = mocking_run('TRACE' => 'off')
+          expect_run(run, exit_code: 0)
+          expect(run[:stdout]).to include("NETWORK_MOCKING_#{name.upcase}_DONE")
+        end
+      end
+
+      def write_failing_spec
+        write_spec(<<~BODY)
+          it 'fails after mocking' do
+            driver.navigate.to('#{server.url}mock')
+            mock_request('#{server.url}api/users', json: { users: ['ana'] })
+            block_request('#{server.url}api/fail')
+            click({ id: 'users' })
+            eventually(timeout: 5) { expect(text(id: 'users-out')).to eq('ana') }
+            click({ id: 'fail' })
+            eventually(timeout: 5) { expect(text(id: 'fail-out')).to eq('request failed') }
+            eventually(timeout: 1) { expect(text(id: 'users-out')).to eq('deliberate mocking failure') }
+          end
+        BODY
+      end
+
+      it 'keeps mocked entries in the failing example trace', :aggregate_failures do
+        use_browser('chrome')
+        write_failing_spec
+        expect_run(mocking_run)
+        path = failing_trace(result_named(project, 'fails after mocking'))
+        keep_fixture(path)
+        expect_valid_trace(path)
+        network = TraceFormatChecker.read(path).first['network']
+        users = network.find { |entry| entry['url'].to_s.end_with?('/api/users') }
+        failed = network.find { |entry| entry['url'].to_s.end_with?('/api/fail') }
+        expect(users).to include('mocked' => 'fulfilled', 'status' => 200)
+        expect(failed).to include('mocked' => 'failed')
+      end
+
+      it 'fails the example with MockError when a block raises', :aggregate_failures do
+        use_browser('chrome')
+        write_spec(<<~BODY)
+          it 'has a raising block' do
+            driver.navigate.to('#{server.url}mock')
+            mock_request('#{server.url}api/users') { raise 'boom from the block' }
+            click({ id: 'users' })
+            eventually(timeout: 5) { expect(text(id: 'users-out')).to eq('users failed') }
+          end
+        BODY
+        run = mocking_run('TRACE' => 'off')
+        expect(run[:exit_code]).to eq(1), "STDOUT: #{run[:stdout]}\nSTDERR: #{run[:stderr]}"
+        expect(run[:stdout]).to include('NetworkHelper::MockError', 'boom from the block')
+      end
+    end
   end
 
   # Mobile and Visual frameworks require external services, so we only verify structure

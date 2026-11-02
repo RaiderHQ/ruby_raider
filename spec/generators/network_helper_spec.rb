@@ -406,6 +406,20 @@ RSpec.describe 'NetworkHelper::Router' do
       )
     end
 
+    it "uses the Referer's origin when the browser pauses the request before adding Origin (Chrome)" do
+      host.mock_request('**/api/users', json: {})
+      emit(headers: sent('Referer' => 'https://app.test/some/page'))
+      expect(header_pairs(bidi.named('network.provideResponse').first)).to include(
+        'Access-Control-Allow-Origin' => 'https://app.test'
+      )
+    end
+
+    it 'adds none when the Referer is same-origin' do
+      host.mock_request('**/api/users', json: {})
+      emit(headers: sent('Referer' => 'https://a.test/page'))
+      expect(header_pairs(bidi.named('network.provideResponse').first).keys).to eq(['Content-Type'])
+    end
+
     it 'adds none for same-origin' do
       host.mock_request('**/api/users', json: {})
       emit(headers: sent('Origin' => 'https://a.test'))
