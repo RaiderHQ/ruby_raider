@@ -595,7 +595,7 @@ RSpec.describe 'ScreenshotHelper' do
       )
       expect(attached.map { |file| file[4] }).to eq(%w[e a d])
       expect(recorded).to eq(
-        [{ name: 'home', status: :failed, baseline: 'screenshots/baselines/chrome/home.png', diff_pixels: 1,
+        [{ name: 'home', status: 'failed', baseline: 'screenshots/baselines/chrome/home.png', diff_pixels: 1,
            diff_ratio: 0.01, threshold: 0.2, max_diff_pixels: 0, max_diff_ratio: nil,
            expected_size: [10, 10], actual_size: [10, 10] }]
       )
@@ -605,14 +605,14 @@ RSpec.describe 'ScreenshotHelper' do
       stub_const('RaiderReporter', reporter)
       report(:created, result: nil, images: { actual: ChunkyPNG::Image.new(7, 5).to_blob })
       expect(attached.map(&:first)).to eq(['comparison:home:actual'])
-      expect(recorded.first).to include(status: :created, diff_pixels: 0, diff_ratio: 0.0, expected_size: nil,
+      expect(recorded.first).to include(status: 'created', diff_pixels: 0, diff_ratio: 0.0, expected_size: nil,
                                         actual_size: [7, 5])
     end
 
     it 'gives an updated comparison without a diff result the size of the actual image' do
       stub_const('RaiderReporter', reporter)
       report(:updated, result: nil, images: { actual: ChunkyPNG::Image.new(3, 4).to_blob })
-      expect(recorded.first).to include(status: :updated, expected_size: nil, actual_size: [3, 4])
+      expect(recorded.first).to include(status: 'updated', expected_size: nil, actual_size: [3, 4])
     end
 
     it 'keeps the real sizes of an updated comparison that had a diff result' do
@@ -625,7 +625,7 @@ RSpec.describe 'ScreenshotHelper' do
       stub_const('RaiderReporter', reporter)
       report(:passed)
       expect(attached).to be_empty
-      expect(recorded.map { |fields| fields[:status] }).to eq([:passed])
+      expect(recorded.map { |fields| fields[:status] }).to eq(['passed'])
     end
 
     it 'removes the temp files afterwards' do
@@ -677,7 +677,7 @@ RSpec.describe 'ScreenshotHelper' do
         end
       end
       expect(attached.map(&:first)).to eq(%w[comparison:home:expected comparison:home:actual comparison:home:diff])
-      expect(recorded.first).to include(status: :failed, diff_pixels: 16)
+      expect(recorded.first).to include(status: 'failed', diff_pixels: 16)
     end
   end
 end

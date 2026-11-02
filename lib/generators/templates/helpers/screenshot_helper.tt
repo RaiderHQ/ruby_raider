@@ -316,7 +316,7 @@ module ScreenshotHelper
     end
 
     def self.fields(name, status, baseline, result)
-      { name: name, status: status, baseline: baseline,
+      { name: name, status: status.to_s, baseline: baseline,
         diff_pixels: result ? result.diff_pixels : 0, diff_ratio: result ? result.diff_ratio : 0.0,
         expected_size: result&.expected_size, actual_size: result&.actual_size }
     end
