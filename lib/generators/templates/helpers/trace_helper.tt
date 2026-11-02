@@ -214,9 +214,10 @@ module TraceHelper
     end
 
     # Returns the step as the token WaitHelper hands back. args: send_keys' keys or select_by's how and what.
-    def action_started(action:, locator:, within:, source:, label:, args: nil)
+    # The locator has no label: a page object's element method has returned before the action runs.
+    def action_started(action:, locator:, within:, source:, args: nil)
       record('action') do
-        step = add(kind: 'action', action: action.to_s, locator: trace_locator(locator, within, label), source: source)
+        step = add(kind: 'action', action: action.to_s, locator: trace_locator(locator, within), source: source)
         typed(step, Array(args)) if TYPED_ACTIONS.include?(step.action)
         step
       end
@@ -442,11 +443,10 @@ module TraceHelper
       entry
     end
 
-    def trace_locator(locator, within, label)
+    def trace_locator(locator, within)
       return nil unless locator
 
       traced = { strategy: locator[:strategy], selector: locator[:selector] }
-      traced[:label] = label if label
       traced[:within] = within unless within.nil? || within.empty?
       traced
     end

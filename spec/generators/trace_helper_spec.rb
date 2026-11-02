@@ -98,9 +98,9 @@ describe 'Generated TraceHelper' do
   end
 
   # What WaitHelper reports for one action. With an element, it was found ready (action_ready).
-  def act(recorder, action, selector, status: :passed, error: nil, label: nil, within: [], args: nil, element: nil)
+  def act(recorder, action, selector, status: :passed, error: nil, within: [], args: nil, element: nil)
     token = recorder.action_started(action: action, locator: { strategy: 'id', selector: selector }, within: within,
-                                    source: source, label: label, args: args)
+                                    source: source, args: args)
     recorder.action_ready(token, element: element) if element
     recorder.action_finished(token, status: status, waited_ms: 95, retries: 1, error: error, element: element)
   end
@@ -168,19 +168,28 @@ describe 'Generated TraceHelper' do
   it 'records navigate and click steps in order with index, kind, action, locator, source, waited_ms, retries' do
     recorder = started_recorder
     recorder.navigated('https://example.test/login')
-    act(recorder, :click, 'go', label: 'login_button', within: [{ strategy: 'css', selector: '.form' }])
+    act(recorder, :click, 'go', within: [{ strategy: 'css', selector: '.form' }])
     steps = kept(recorder)['steps']
 
     expect(steps.map { |step| step.values_at('index', 'kind', 'action') }).to eq([[1, 'navigate', 'navigate'], [2, 'action', 'click']])
     expect(steps.first).to include('parent_index' => nil, 'locator' => nil, 'url' => 'https://example.test/login', 'page_title' => 'Login',
                                    'waited_ms' => 0, 'retries' => 0, 'status' => 'passed', 'error' => nil, 'rect' => nil,
                                    'screenshot' => 'steps/0001.jpg', 'snapshot' => 'steps/0001.html')
-    expect(steps.last).to include('locator' => { 'strategy' => 'id', 'selector' => 'go', 'label' => 'login_button',
+    # No locator.label: a page object's element method has returned before the action runs, so it is never known.
+    expect(steps.last).to include('locator' => { 'strategy' => 'id', 'selector' => 'go',
                                                  'within' => [{ 'strategy' => 'css', 'selector' => '.form' }] },
                                   'source' => { 'file' => 'spec/login_page_spec.rb', 'line' => 12 },
                                   'waited_ms' => 95, 'retries' => 1, 'status' => 'passed',
                                   'screenshot' => 'steps/0002.jpg', 'snapshot' => 'steps/0002.html')
     expect(steps.last['duration_ms']).to be_a(Integer)
+  end
+
+  it 'leaves locator.label optional in the format checker: a string is allowed, anything else is a problem' do
+    locator = { 'strategy' => 'id', 'selector' => 'password' }
+
+    expect(TraceFormatChecker.locator_rules('steps[0]', locator)).to eq([])
+    expect(TraceFormatChecker.locator_rules('steps[0]', locator.merge('label' => 'password_field'))).to eq([])
+    expect(TraceFormatChecker.locator_rules('steps[0]', locator.merge('label' => 3))).to eq(['steps[0].locator.label is not a string'])
   end
 
   it 'gives query actions a step without screenshot or snapshot' do

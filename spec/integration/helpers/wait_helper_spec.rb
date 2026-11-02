@@ -512,8 +512,9 @@ describe 'WaitHelper' do
       page.click({ id: 'go' }, timeout: 1)
 
       expect(observer.calls.map(&:first)).to eq(%i[action_started action_ready action_finished])
-      expect(started.first).to include(action: :click, locator: { strategy: 'id', selector: 'go' }, within: [], label: nil,
+      expect(started.first).to include(action: :click, locator: { strategy: 'id', selector: 'go' }, within: [],
                                        source: { file: Pathname(__FILE__).relative_path_from(Dir.pwd).to_s, line: line })
+        .and(satisfy { |details| !details.key?(:label) })
       expect(observer.calls[2][1]).to eq(0)
       expect(finished.first).to include(status: :passed, retries: 2, error: nil, element: button)
       expect(finished.first[:waited_ms]).to be_between(50, 500)
@@ -608,7 +609,7 @@ describe 'WaitHelper' do
       expect(WaitHelper::Observation.project?(File.expand_path('spec/login_spec.rb'))).to be(true)
     end
 
-    it 'labels an action by the nearest page_objects method' do
+    it 'reports no label for an action called from a page_objects method' do
       Dir.mktmpdir do |dir|
         FileUtils.mkdir_p(File.join(dir, 'page_objects'))
         path = File.join(dir, 'page_objects', 'login.rb')
@@ -618,7 +619,7 @@ describe 'WaitHelper' do
         login_button(page)
       end
 
-      expect(started.first).to include(label: 'login_button')
+      expect(started.first).not_to have_key(:label)
       expect(started.first[:source][:file]).to end_with('page_objects/login.rb')
     end
 

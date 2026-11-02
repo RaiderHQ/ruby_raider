@@ -98,10 +98,12 @@ module TraceFormatChecker
     %w[class message].filter_map { |key| "#{where}.error.#{key} is not a string" unless error[key].is_a?(String) }
   end
 
+  # label is optional: ruby_raider never writes it, but another producer may.
   def self.locator_rules(where, locator)
     return [] unless locator.is_a?(Hash)
 
-    [locator, *Array(locator['within'])].filter_map do |one|
+    label = locator.key?('label') && !locator['label'].is_a?(String) ? ["#{where}.locator.label is not a string"] : []
+    label + [locator, *Array(locator['within'])].filter_map do |one|
       strategy = one['strategy']
       "#{where}.locator strategy #{strategy.inspect} is not canonical" unless STRATEGIES.include?(strategy)
     end

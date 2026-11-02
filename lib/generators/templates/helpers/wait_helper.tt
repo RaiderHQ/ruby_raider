@@ -359,7 +359,7 @@ module WaitHelper
       run = { retries: 0, element: nil, token: nil }
       token = run[:token] = WaitHelper.report(:action_started) do
         { action: action, locator: lookup.trace_locator, within: lookup.trace_within,
-          source: Observation.source, label: Observation.label, args: args }
+          source: Observation.source, args: args }
       end
       started = now
       begin
@@ -514,7 +514,6 @@ module WaitHelper
 
   # Where an action was called from, for the observer.
   module Observation
-    PAGE_OBJECTS = '/page_objects/'
     # helpers/ by its given and its real path (__dir__ is the real one): the wait, trace and
     # driver helpers are never the line that called an action or a navigation.
     HELPER_DIRS = [File.dirname(__FILE__), __dir__].uniq.map { |dir| File.join(dir, '') }.freeze
@@ -526,11 +525,6 @@ module WaitHelper
       return unless frame
 
       { file: relative(frame.absolute_path || frame.path), line: frame.lineno }
-    end
-
-    # The method name of the nearest calling frame in a page_objects/ directory, or nil.
-    def self.label
-      caller_locations.find { |location| (location.absolute_path || location.path).include?(PAGE_OBJECTS) }&.base_label
     end
 
     def self.project?(path)
