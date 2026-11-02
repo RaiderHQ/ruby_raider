@@ -189,9 +189,10 @@ RSpec.describe 'NetworkHelper::Router' do
     ENV.delete('BIDI')
   end
 
-  def event(id: 'r1', url: 'https://a.test/api/users', http_method: 'GET', intercepts: ['i-1'], blocked: true)
+  def event(id: 'r1', url: 'https://a.test/api/users', http_method: 'GET', intercepts: ['i-1'], blocked: true,
+            headers: accept)
     { 'isBlocked' => blocked, 'intercepts' => intercepts, 'redirectCount' => 0,
-      'request' => { 'request' => id, 'url' => url, 'method' => http_method, 'headers' => accept } }
+      'request' => { 'request' => id, 'url' => url, 'method' => http_method, 'headers' => headers } }
   end
 
   def emit(**options)
@@ -390,6 +391,70 @@ RSpec.describe 'NetworkHelper::Router' do
     answered = bidi.commands.select { |name, _| name.match?(/provideResponse|failRequest|continueRequest/) }
     expect(answered.size).to eq(50)
     expect(answered.map { |_, params| params[:request] }.uniq.size).to eq(50)
+  end
+
+  describe 'CORS' do
+    def sent(pairs)
+      pairs.map { |name, value| { 'name' => name, 'value' => { 'type' => 'string', 'value' => value } } }
+    end
+
+    it 'adds CORS headers for a cross-origin request' do
+      host.mock_request('**/api/users', json: {})
+      emit(headers: sent('Origin' => 'https://app.test'))
+      expect(header_pairs(bidi.named('network.provideResponse').first)).to include(
+        'Access-Control-Allow-Origin' => 'https://app.test', 'Access-Control-Allow-Credentials' => 'true'
+      )
+    end
+
+    it 'adds none for same-origin' do
+      host.mock_request('**/api/users', json: {})
+      emit(headers: sent('Origin' => 'https://a.test'))
+      expect(header_pairs(bidi.named('network.provideResponse').first).keys).to eq(['Content-Type'])
+    end
+
+    it "keeps the mock's own Access-Control-Allow-Origin" do
+      host.mock_request('**/api/users', json: {}, headers: { 'access-control-allow-origin' => '*' })
+      emit(headers: sent('Origin' => 'https://app.test'))
+      pairs = header_pairs(bidi.named('network.provideResponse').first)
+      expect(pairs).to include('access-control-allow-origin' => '*', 'Access-Control-Allow-Credentials' => 'true')
+      expect(pairs).not_to include('Access-Control-Allow-Origin')
+    end
+
+    it 'answers a preflight with 204 echoing method and headers' do
+      mock = host.mock_request('**/api/users', method: 'POST', json: {})
+      NetworkHelper.observer = double('observer').tap { |o| expect(o).not_to receive(:request_mocked) }
+      emit(http_method: 'OPTIONS', headers: sent('Origin' => 'https://app.test', 'Access-Control-Request-Method' => 'POST',
+                                                 'Access-Control-Request-Headers' => 'content-type'))
+      params = bidi.named('network.provideResponse').first
+      expect(params).to include(statusCode: 204)
+      expect(header_pairs(params)).to eq('Access-Control-Allow-Methods' => 'POST', 'Access-Control-Allow-Headers' => 'content-type',
+                                         'Access-Control-Allow-Origin' => 'https://app.test',
+                                         'Access-Control-Allow-Credentials' => 'true')
+      expect(mock).not_to be_called
+    end
+
+    it 'omits Allow-Headers when none were requested' do
+      host.mock_request('**/api/users', json: {})
+      emit(http_method: 'OPTIONS', headers: sent('Origin' => 'https://app.test', 'Access-Control-Request-Method' => 'GET'))
+      expect(header_pairs(bidi.named('network.provideResponse').first).keys).not_to include('Access-Control-Allow-Headers')
+    end
+
+    it "a mock with method: 'OPTIONS' answers the preflight itself" do
+      host.mock_request('**/api/users', json: {})
+      host.mock_request('**/api/users', method: 'OPTIONS', status: 200, body: 'mine')
+      emit(http_method: 'OPTIONS', intercepts: ['i-2'],
+           headers: sent('Origin' => 'https://app.test', 'Access-Control-Request-Method' => 'GET'))
+      params = bidi.named('network.provideResponse').first
+      expect(params).to include(statusCode: 200, body: { type: 'base64', value: ['mine'].pack('m0') })
+    end
+
+    it 'preflight to an unmatched URL is continued' do
+      host.mock_request('**/api/users', json: {})
+      emit(url: 'https://a.test/other', http_method: 'OPTIONS',
+           headers: sent('Origin' => 'https://app.test', 'Access-Control-Request-Method' => 'GET'))
+      expect(bidi.named('network.provideResponse')).to be_empty
+      expect(bidi.named('network.continueRequest').size).to eq(1)
+    end
   end
 
   it 'records calls, frozen, with lowercase headers' do

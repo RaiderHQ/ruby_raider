@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'json'
+require 'uri'
 
 # Mocks network requests in the browser through WebDriver BiDi (chrome, edge and firefox):
 # answer a request with your own response, or block it.
@@ -26,7 +27,15 @@ module NetworkHelper
     def match?(url_string, http_method)
       return false if @method && @method != http_method.to_s.upcase
 
+      match_url?(url_string)
+    end
+
+    def match_url?(url_string)
       @regexp.match?(url_string.to_s)
+    end
+
+    def method?(http_method)
+      @method == http_method.to_s.upcase
     end
 
     # BiDi urlPatterns narrowing the intercept to the literal parts of the glob, or nil to pause everything.
@@ -208,12 +217,52 @@ module NetworkHelper
 
     def decide(raw)
       request = build_request(raw)
-      mock, error = @lock.synchronize { [@mocks.reverse_each.find { |m| m.matcher.match?(request.url, request.method) }, @error] }
+      mocks, error = @lock.synchronize { [@mocks.reverse, @error] }
       return [:fail] if error
+
+      mock = mocks.find { |m| m.matcher.match?(request.url, request.method) }
+      return preflight_answer(request) if preflight?(request, mocks)
       return [:continue, nil] unless mock
 
       mock.record(request)
-      mock.block ? from_block(mock, request, raw['headers']) : [:fulfil, mock.response]
+      answer = mock.block ? from_block(mock, request, raw['headers']) : [:fulfil, mock.response]
+      answer.first == :fulfil ? [:fulfil, with_cors(request, answer.last)] : answer
+    end
+
+    # An OPTIONS request asking for CORS permission to a URL some mock covers, with no mock of
+    # its own for OPTIONS: the router answers it. It is neither recorded nor reported.
+    def preflight?(request, mocks)
+      return false unless request.method.upcase == 'OPTIONS' && request.headers.key?('access-control-request-method')
+
+      covering = mocks.select { |m| m.matcher.match_url?(request.url) }
+      covering.any? && covering.none? { |m| m.matcher.method?('OPTIONS') }
+    end
+
+    def preflight_answer(request)
+      pairs = [['Access-Control-Allow-Methods', request.headers['access-control-request-method']]]
+      requested = request.headers['access-control-request-headers']
+      pairs << ['Access-Control-Allow-Headers', requested] if requested
+      [:preflight, with_cors(request, { status: 204, headers: pairs, body: '' }, force: true)]
+    end
+
+    # Adds Allow-Origin and Allow-Credentials for a cross-origin request unless the mock set them.
+    def with_cors(request, response, force: false)
+      origin = request.headers['origin']
+      return response unless origin && (force || cross_origin?(origin, request.url))
+
+      headers = response[:headers].dup
+      { 'Access-Control-Allow-Origin' => origin, 'Access-Control-Allow-Credentials' => 'true' }.each do |name, value|
+        headers << [name, value] if headers.none? { |existing, _| existing.casecmp?(name) }
+      end
+      response.merge(headers: headers)
+    end
+
+    def cross_origin?(origin, url)
+      uri = URI(url)
+      own = "#{uri.scheme}://#{uri.host}#{":#{uri.port}" unless uri.port == uri.default_port}"
+      origin.downcase != own.downcase
+    rescue URI::Error
+      false
     end
 
     def build_request(raw)
@@ -272,6 +321,7 @@ module NetworkHelper
       kind, detail = answer
       case kind
       when :fulfil then respond(params, request_id, detail)
+      when :preflight then provide(request_id, detail)
       when :fail then fail_request(params, request_id)
       else continue_request(request_id, detail)
       end
@@ -281,6 +331,10 @@ module NetworkHelper
 
     def respond(params, request_id, response)
       notify(params, request_id, 'fulfilled', response[:status])
+      provide(request_id, response)
+    end
+
+    def provide(request_id, response)
       @bidi.send_cmd('network.provideResponse', request: request_id, statusCode: response[:status],
                                                 reasonPhrase: REASON_PHRASES.fetch(response[:status], 'OK'),
                                                 headers: NetworkHelper.header_list(response[:headers]),
