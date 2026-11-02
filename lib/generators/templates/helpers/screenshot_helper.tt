@@ -1,0 +1,494 @@
+# frozen_string_literal: true
+
+require 'chunky_png'
+require 'fileutils'
+require 'set'
+require 'rspec/expectations'
+require 'yaml'
+
+# Visual regression for the browser: match_screenshot('home') compares the page (or an element)
+# with a baseline PNG in screenshots/baselines/<browser>/ and fails the test on a difference.
+# Tolerances live in config/config.yml under screenshots:. SCREENSHOTS=update rewrites baselines.
+# Not wanted? Delete this file and the lines that load or include ScreenshotHelper.
+module ScreenshotHelper
+  CONFIG_PATH = File.join('config', 'config.yml')
+  DEFAULTS = { threshold: 0.2, max_diff_pixels: 0, max_diff_ratio: nil }.freeze
+  # Told apart from nil: an explicit max_diff_ratio: nil switches the configured ratio off.
+  UNSET = Object.new.freeze
+  VALID = {
+    threshold: ->(value) { value.is_a?(Numeric) && value.between?(0, 1) },
+    max_diff_pixels: ->(value) { value.is_a?(Integer) && value >= 0 },
+    max_diff_ratio: ->(value) { value.nil? || (value.is_a?(Numeric) && value.between?(0, 1)) }
+  }.freeze
+  BROWSER_FOLDER = /\A[a-z0-9_-]+\z/.freeze
+
+  @names_used = Set.new
+  @warned = Set.new
+
+  class << self
+    # The names compared in this test, so two comparisons never share a baseline.
+    attr_reader :names_used
+
+    def reset
+      names_used.clear
+    end
+
+    # Case-insensitive: Home and home are the same file on a case-insensitive disk.
+    def claim(name)
+      raise ArgumentError, "screenshot name '#{name}' was already used in this test" unless names_used.add?(name.downcase)
+    end
+
+    # One warning per setting and value for the whole run.
+    # rubocop:disable Style/StderrPuts
+    def warn_once(key, value)
+      return unless @warned.add?([key, value])
+
+      $stderr.puts("[screenshots] ignoring #{key}: #{value.inspect} in config/config.yml " \
+                   "(using #{DEFAULTS[key].inspect}); see the README for the allowed values")
+    end
+    # rubocop:enable Style/StderrPuts
+  end
+
+  # Raised when a screenshot differs from its baseline; counts as a failed expectation.
+  class Mismatch < RSpec::Expectations::ExpectationNotMetError; end
+
+  # The screenshots: block of config/config.yml over the defaults.
+  def self.config
+    settings = DEFAULTS.dup
+    file_settings.each do |key, value|
+      next unless settings.key?(key)
+
+      VALID.fetch(key).call(value) ? settings[key] = value : warn_once(key, value)
+    end
+    settings
+  end
+
+  def self.file_settings
+    block = read_config['screenshots']
+    block.is_a?(Hash) ? block.transform_keys(&:to_sym) : {}
+  end
+
+  def self.read_config
+    return {} unless File.exist?(CONFIG_PATH)
+
+    loaded = YAML.safe_load(File.read(CONFIG_PATH), permitted_classes: [Symbol])
+    loaded.is_a?(Hash) ? loaded : {}
+  end
+
+  # The baseline folder: the configured browser, lower case, without a microsoft prefix (MicrosoftEdge is edge).
+  def self.browser
+    name = read_config['browser'].to_s.downcase.delete_prefix('microsoft')
+    name.match?(BROWSER_FOLDER) ? name : 'chrome'
+  end
+
+  def self.update?
+    ENV['SCREENSHOTS'].to_s.downcase == 'update'
+  end
+
+  # The reporter's CI detection when it is loaded, and CI in the environment.
+  def self.ci?
+    detected = defined?(RaiderReporter::CiDetector) ? RaiderReporter::CiDetector.new.ci : nil
+    !detected.nil? || !ENV['CI'].to_s.empty?
+  rescue StandardError
+    !ENV['CI'].to_s.empty?
+  end
+
+  # What a comparison comes to: :passed, :failed, :created, :updated or :missing_on_ci.
+  def self.decide(baseline_exists:, matched:)
+    return missing_status unless baseline_exists
+    return :passed if matched
+
+    update? ? :updated : :failed
+  end
+
+  def self.missing_status
+    ci? && !update? ? :missing_on_ci : :created
+  end
+
+  # Pixel comparison of two decoded PNGs and the picture of what differs. Internal.
+  module Diff
+    class Unreadable < StandardError; end
+
+    Result = Struct.new(:diff_pixels, :diff_ratio, :expected_size, :actual_size) do
+      def size_changed?
+        expected_size != actual_size
+      end
+    end
+
+    WHITE = ChunkyPNG::Color::WHITE
+    RED = ChunkyPNG::Color.rgb(255, 0, 0)
+    # pixelmatch: the largest possible YIQ delta; a pixel differs above this times threshold squared.
+    MAX_DELTA = 35_215.0
+    FADE = 0.1
+
+    def self.decode(png)
+      ChunkyPNG::Image.from_blob(png)
+    rescue StandardError => e
+      raise Unreadable, e.message
+    end
+
+    def self.size_of(image)
+      [image.width, image.height]
+    end
+
+    # How many pixels differ. Equal pixels are skipped, so only the changed ones cost a colour comparison.
+    def self.count(expected, actual, threshold:)
+      sizes = [size_of(expected), size_of(actual)]
+      return Result.new(0, 0.0, *sizes) unless sizes.first == sizes.last
+
+      limit = MAX_DELTA * (threshold**2)
+      differing = 0
+      expected.pixels.each_with_index do |pixel, index|
+        other = actual.pixels[index]
+        differing += 1 if pixel != other && delta(pixel, other) > limit
+      end
+      Result.new(differing, differing.fdiv(expected.pixels.length), *sizes)
+    end
+
+    # The picture of a difference as PNG bytes: both images side by side after a size change,
+    # otherwise the differing pixels in red over a faded copy of the expected image.
+    def self.image(expected, actual, threshold:)
+      return side_by_side(expected, actual).to_blob unless size_of(expected) == size_of(actual)
+
+      limit = MAX_DELTA * (threshold**2)
+      canvas = ChunkyPNG::Image.new(expected.width, expected.height, WHITE)
+      expected.pixels.each_with_index do |pixel, index|
+        other = actual.pixels[index]
+        canvas.pixels[index] = pixel != other && delta(pixel, other) > limit ? RED : faded(pixel)
+      end
+      canvas.to_blob
+    end
+
+    def self.side_by_side(expected, actual)
+      canvas = ChunkyPNG::Image.new(expected.width + actual.width, [expected.height, actual.height].max, WHITE)
+      canvas.compose!(expected, 0, 0)
+      canvas.compose!(actual, expected.width, 0)
+    end
+
+    def self.delta(first, second)
+      dy, di, dq = yiq(first).zip(yiq(second)).map { |one, two| one - two }
+      (0.5053 * dy * dy) + (0.299 * di * di) + (0.1957 * dq * dq)
+    end
+
+    def self.yiq(pixel)
+      red, green, blue = blended(pixel)
+      [(red * 0.29889531) + (green * 0.58662247) + (blue * 0.11448223),
+       (red * 0.59597799) - (green * 0.27417610) - (blue * 0.32180189),
+       (red * 0.21147017) - (green * 0.52261711) + (blue * 0.31114694)]
+    end
+
+    # Semi-transparent pixels count as they look over a white page.
+    def self.blended(pixel)
+      alpha = ChunkyPNG::Color.a(pixel)
+      [ChunkyPNG::Color.r(pixel), ChunkyPNG::Color.g(pixel), ChunkyPNG::Color.b(pixel)].map do |channel|
+        255 + ((channel - 255) * alpha / 255.0)
+      end
+    end
+
+    def self.faded(pixel)
+      luma = yiq(pixel).first
+      grey = (255 + ((luma - 255) * FADE)).round.clamp(0, 255)
+      ChunkyPNG::Color.rgb(grey, grey, grey)
+    end
+  end
+
+  # Where a baseline lives and how it is written. Internal.
+  class Baseline
+    NAME_PATTERN = %r{\A[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*\z}.freeze
+    MAX_NAME = 100
+
+    def self.validate_name!(name)
+      return if name.is_a?(String) && name.length <= MAX_NAME && name.match?(NAME_PATTERN)
+
+      raise ArgumentError, 'screenshot name must be letters, digits, - and _ with / for folders, ' \
+                           "at most #{MAX_NAME} characters; got #{name.inspect}"
+    end
+
+    def initialize(name, browser:, root: Dir.pwd)
+      self.class.validate_name!(name)
+      @path = "screenshots/baselines/#{browser}/#{name}.png"
+      @root = root
+    end
+
+    attr_reader :path
+
+    def exist?
+      File.file?(full_path)
+    end
+
+    def read
+      File.binread(full_path)
+    end
+
+    # Through a temp file and a rename, so two processes never leave half a PNG.
+    def write(png)
+      FileUtils.mkdir_p(File.dirname(full_path))
+      temp = "#{full_path}.#{Process.pid}.#{rand(36**6).to_s(36)}.tmp"
+      File.binwrite(temp, png)
+      File.rename(temp, full_path)
+    ensure
+      FileUtils.rm_f(temp) if temp
+    end
+
+    private
+
+    def full_path
+      File.join(@root, @path)
+    end
+  end
+
+  # Takes one settled screenshot of the viewport or an element. Internal.
+  class Capture
+    STYLE_ID = 'raider-screenshot-settle'
+    FONTS_SCRIPT = <<~JS
+      var done = arguments[arguments.length - 1];
+      var timer = setTimeout(done, 2000);
+      (document.fonts ? document.fonts.ready : Promise.resolve()).then(function () { clearTimeout(timer); done(); });
+    JS
+    ADD_STYLE = <<~JS.tr("\n", ' ')
+      var style = document.createElement('style'); style.id = '#{STYLE_ID}';
+      style.textContent = '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}';
+      document.head.appendChild(style);
+    JS
+    REMOVE_STYLE = "var style = document.getElementById('#{STYLE_ID}'); if (style) { style.remove(); }"
+    SCROLL = "arguments[0].scrollIntoView({ block: 'center', inline: 'center' });"
+
+    def initialize(driver, element)
+      @driver = driver
+      @element = element
+    end
+
+    # Fonts loaded, animations and the caret stopped; the stylesheet is gone again afterwards.
+    def png
+      @driver.execute_async_script(FONTS_SCRIPT)
+      @driver.execute_script(ADD_STYLE)
+      @element ? element_png : @driver.screenshot_as(:png)
+    ensure
+      remove_style
+    end
+
+    private
+
+    def element_png
+      @driver.execute_script(SCROLL, @element)
+      @element.screenshot_as(:png)
+    end
+
+    def remove_style
+      @driver.execute_script(REMOVE_STYLE)
+    rescue StandardError
+      nil
+    end
+  end
+
+  # Hands a comparison to raider_reporter while the test runs: its images, then the record. Internal.
+  module Report
+    IMAGES = %i[expected actual diff].freeze
+
+    # rubocop:disable Style/StderrPuts
+    def self.call(name:, status:, baseline:, result:, options:, images:)
+      return unless defined?(RaiderReporter)
+
+      attach_images(name, images)
+      record(name, status, baseline, result || sizes_of(images[:actual]), options)
+    rescue StandardError => e
+      $stderr.puts("[screenshots] could not report '#{name}': #{e.class}: #{e.message}")
+    end
+
+    # One trace step per comparison, when the trace helper is watching. Never raises into the test.
+    def self.traced(name:, status:, png:, error: nil)
+      return unless defined?(WaitHelper) && png
+
+      WaitHelper.report(:screenshot_compared, name: name, status: status == :failed ? :failed : :passed, png: png,
+                                              error: error)
+    end
+
+    def self.attach_images(name, images)
+      Dir.mktmpdir('raider-screenshot') do |folder|
+        IMAGES.each do |kind|
+          next unless images[kind]
+
+          path = File.join(folder, "#{kind}.png")
+          File.binwrite(path, images[kind])
+          RaiderReporter.attach("comparison:#{name}:#{kind}", path, type: :png)
+        end
+      end
+    end
+
+    def self.record(name, status, baseline, result, options)
+      unless RaiderReporter.respond_to?(:comparison)
+        return if @warned
+
+        @warned = true
+        return $stderr.puts('[screenshots] this raider_reporter has no comparison method; update it to list comparisons in the report')
+      end
+
+      RaiderReporter.comparison(**fields(name, status, baseline, result), **options)
+    end
+    # rubocop:enable Style/StderrPuts
+
+    # With no diff result (created, or updated over an unreadable baseline) only the actual image has a size.
+    def self.sizes_of(png)
+      return unless png
+
+      Diff::Result.new(0, 0.0, nil, Diff.size_of(Diff.decode(png)))
+    end
+
+    def self.fields(name, status, baseline, result)
+      { name: name, status: status.to_s, baseline: baseline,
+        diff_pixels: result ? result.diff_pixels : 0, diff_ratio: result ? result.diff_ratio : 0.0,
+        expected_size: result&.expected_size, actual_size: result&.actual_size }
+    end
+  end
+
+  # One match_screenshot call: capture until the page matches the baseline or time runs out. Internal.
+  class Comparison
+    PAUSE = 0.25
+    DEFAULT_TIMEOUT = 10
+
+    def initialize(driver, name, element:, options:, timeout:)
+      @driver = driver
+      @name = name
+      @element = element
+      @options = options
+      @timeout = timeout
+    end
+
+    def call
+      Baseline.validate_name!(@name)
+      ScreenshotHelper.claim(@name)
+      @baseline = Baseline.new(@name, browser: ScreenshotHelper.browser)
+      @baseline.exist? ? compare : create
+    end
+
+    private
+
+    def create
+      status = ScreenshotHelper.decide(baseline_exists: false, matched: false)
+      raise Mismatch, missing_message if status == :missing_on_ci
+
+      actual = capture
+      @baseline.write(actual)
+      finish(status, nil, actual: actual)
+    end
+
+    def compare
+      expected = Diff.decode(@baseline.read)
+      actual_png, actual, result = capture_until_match(expected)
+      status = ScreenshotHelper.decide(baseline_exists: true, matched: within_limits?(result))
+      @baseline.write(actual_png) if status == :updated
+      finish(status, result, images(status, expected, actual, actual_png))
+    rescue Diff::Unreadable
+      unreadable
+    end
+
+    def unreadable
+      raise Mismatch, "baseline #{@baseline.path} is not a readable PNG" unless ScreenshotHelper.update?
+
+      actual = capture
+      @baseline.write(actual)
+      finish(:updated, nil, actual: actual)
+    end
+
+    # The expected, actual and diff pictures exist only for a failure; the diff is drawn once, here.
+    def images(status, expected, actual, actual_png)
+      return { actual: actual_png } if status == :updated
+      return {} unless status == :failed
+
+      { expected: @baseline.read, actual: actual_png,
+        diff: Diff.image(expected, actual, threshold: @options[:threshold]) }
+    end
+
+    def finish(status, result, images)
+      error = Mismatch.new(failure_message(result)) if status == :failed
+      Report.call(name: @name, status: status, baseline: @baseline.path, result: result,
+                  options: @options, images: images)
+      Report.traced(name: @name, status: status, png: @actual, error: error)
+      raise error if error
+
+      true
+    end
+
+    def capture
+      @actual = Capture.new(@driver, @element).png
+    end
+
+    # Capture and count until the page matches or the deadline passes; the deadline is checked after every
+    # attempt, before the next capture. Cheap on every attempt: no diff picture.
+    def capture_until_match(expected)
+      deadline = now + (@timeout || default_timeout)
+      attempt = attempt_once(expected)
+      until within_limits?(attempt.last) || now >= deadline
+        sleep([[PAUSE, deadline - now].min, 0].max)
+        attempt = attempt_once(expected)
+      end
+      attempt
+    end
+
+    def attempt_once(expected)
+      png = capture
+      actual = Diff.decode(png)
+      [png, actual, Diff.count(expected, actual, threshold: @options[:threshold])]
+    end
+
+    def default_timeout
+      defined?(WaitHelper) ? WaitHelper.default_timeout : DEFAULT_TIMEOUT
+    end
+
+    def now
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    end
+
+    # Within the allowed pixel count, or within the allowed share when one is set.
+    def within_limits?(result)
+      return false if result.size_changed?
+
+      ratio = @options[:max_diff_ratio]
+      result.diff_pixels <= @options[:max_diff_pixels] || (!ratio.nil? && result.diff_ratio <= ratio)
+    end
+
+    def missing_message
+      "no baseline for '#{@name}' on #{ScreenshotHelper.browser}; " \
+        'run it locally or with SCREENSHOTS=update and commit the file'
+    end
+
+    def failure_message(result)
+      "#{@baseline.path}: #{result.size_changed? ? size_detail(result) : pixel_detail(result)}"
+    end
+
+    def size_detail(result)
+      ratio = device_pixel_ratio
+      "size changed: baseline #{result.expected_size.join('x')}, now #{result.actual_size.join('x')}" \
+        "#{ratio ? " (device pixel ratio #{ratio})" : ''}"
+    end
+
+    def device_pixel_ratio
+      ratio = @driver.execute_script('return window.devicePixelRatio')
+      return unless ratio.is_a?(Numeric)
+
+      ratio == ratio.to_i ? ratio.to_i : ratio
+    rescue StandardError
+      nil
+    end
+
+    def pixel_detail(result)
+      count = result.diff_pixels
+      "#{count} #{count == 1 ? 'pixel' : 'pixels'} (#{format('%.2f', result.diff_ratio * 100)}%) differ " \
+        "(allowed: #{allowed}, threshold #{@options[:threshold]})"
+    end
+
+    def allowed
+      ratio = @options[:max_diff_ratio]
+      allowed = "#{@options[:max_diff_pixels]} pixels"
+      ratio ? "#{allowed} or #{format('%g', ratio * 100)}%" : allowed
+    end
+  end
+
+  def match_screenshot(name, element: nil, threshold: nil, max_diff_pixels: nil, max_diff_ratio: ScreenshotHelper::UNSET,
+                       timeout: nil)
+    given = { threshold: threshold, max_diff_pixels: max_diff_pixels }.compact
+    given[:max_diff_ratio] = max_diff_ratio unless max_diff_ratio.equal?(ScreenshotHelper::UNSET)
+    options = ScreenshotHelper.config.merge(given)
+    Comparison.new(driver, name, element: element, options: options, timeout: timeout).call
+  end
+end

@@ -14,6 +14,7 @@ Gem::Specification.new do |s|
   s.bindir = 'bin'
   s.executables << 'raider'
   s.add_development_dependency 'bundler-audit', '~> 0.9'
+  s.add_development_dependency 'chunky_png', '~> 1.4'
   s.add_development_dependency 'rake', '~> 13.0.6'
   s.add_development_dependency 'reek', '~> 6.5'
   s.add_development_dependency 'rspec', '~> 3.11.0'

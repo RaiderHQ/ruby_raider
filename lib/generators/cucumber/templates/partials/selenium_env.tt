@@ -67,6 +67,9 @@ Before do<%= trace_helper? ? ' |scenario|' : '' %>
   end
   @video_recorder = VideoHelper.recorder_for(driver)
   @video_recorder.start
+<%- if screenshot_helper? -%>
+  ScreenshotHelper.reset
+<%- end -%>
 <%- if trace_helper? -%>
   if defined?(TraceHelper)
     @trace_attempt = (TRACE_ATTEMPTS[scenario.location.to_s] += 1)

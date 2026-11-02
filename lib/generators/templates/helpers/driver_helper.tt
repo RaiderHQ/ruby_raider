@@ -8,6 +8,9 @@ require_relative 'video_helper'
 <%- if network_helper? -%>
 require_relative 'network_helper'
 <%- end -%>
+<%- if screenshot_helper? -%>
+require_relative 'screenshot_helper'
+<%- end -%>
 <%- if trace_helper? -%>
 require_relative 'trace_helper'
 <%- end -%>

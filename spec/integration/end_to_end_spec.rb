@@ -1174,6 +1174,184 @@ describe 'End-to-End Project Generation and Execution' do
     end
   end
 
+  # match_screenshot against real browsers, on a fixed data: page (no server, no animation). Chrome by default; Edge and
+  # Firefox run only when RAIDER_E2E_BROWSERS (comma separated) lists them. The generated spec or step recolours the page
+  # when SHOT_VARIANT=changed. raider_reporter comes from RubyGems (no `comparison` method yet), so the images are
+  # attached and one warning is printed; the report's comparisons field is not asserted here.
+  context 'Screenshot comparison', :slow do
+    let(:cache_dir) { Dir.mktmpdir('raider-cache') }
+    let(:baseline) { "screenshots/baselines/#{browser_name}/home.png" }
+    let(:original_config) { File.read(config_path) }
+
+    after do
+      File.write(config_path, original_config) if File.exist?(config_path)
+      FileUtils.rm_rf(File.join(project, 'screenshots'))
+      FileUtils.rm_f(File.join(project, 'spec/screenshot_comparison_spec.rb'))
+      FileUtils.rm_f(File.join(project, 'features/screenshot_comparison.feature'))
+      FileUtils.rm_f(File.join(project, 'features/step_definitions/screenshot_comparison_steps.rb'))
+      FileUtils.rm_rf(cache_dir)
+    end
+
+    def config_path
+      File.join(project, 'config/config.yml')
+    end
+
+    def shot_page
+      html = '<body style="margin:0;font-family:monospace"><h1 id="title">Screenshot</h1><p>Fixed content</p></body>'
+      "data:text/html,#{ERB::Util.url_encode(html)}"
+    end
+
+    def recolour
+      "document.documentElement.style.background = 'rgb(200, 0, 0)'; document.body.style.background = 'rgb(200, 0, 0)'"
+    end
+
+    def shot_env(overrides = {})
+      ci = %w[CI GITHUB_ACTIONS GITLAB_CI JENKINS_URL BUILDKITE CIRCLECI TF_BUILD TRAVIS].to_h { |key| [key, nil] }
+      ci.merge('HEADLESS' => 'true', 'VIDEO' => 'off', 'TRACE' => 'off', 'RAIDER_CACHE_DIR' => cache_dir,
+               'RAIDER_TOKEN' => nil, 'RAIDER_ENDPOINT' => nil, 'SCREENSHOTS' => nil, 'SHOT_VARIANT' => nil).merge(overrides)
+    end
+
+    def use_browser(name)
+      opted_in = ENV.fetch('RAIDER_E2E_BROWSERS', '').split(',').map(&:strip).include?(name)
+      skip "set RAIDER_E2E_BROWSERS=#{name} to run screenshot comparison on #{name}" unless name == 'chrome' || opted_in
+      skip 'Microsoft Edge is not installed' if name == 'edge' && !File.directory?('/Applications/Microsoft Edge.app')
+      skip "#{name} is not installed" unless name == 'edge' || browser_installed?(name == 'firefox' ? 'firefox' : 'chrome')
+      @browser_name = name
+      original_config
+      edge_args = "  edge:\n    - no-sandbox\n"
+      File.write(config_path, original_config.sub(/^browser: .*$/, "browser: #{name}").sub(/^  firefox:/, "#{edge_args}  firefox:"))
+    end
+
+    attr_reader :browser_name
+
+    def attachment_names(project)
+      results(project).flat_map { |result| result['attachments'].map { |attachment| attachment['name'] } }
+    end
+
+    def comparison_names(project)
+      attachment_names(project).grep(/\Acomparison:/)
+    end
+
+    def baseline_path
+      File.join(project, baseline)
+    end
+
+    def write_rspec_spec
+      File.write(File.join(project, 'spec/screenshot_comparison_spec.rb'), <<~SPEC)
+        # frozen_string_literal: true
+
+        require_relative '../helpers/spec_helper'
+
+        describe 'Screenshot comparison' do
+          it 'matches home' do
+            driver.navigate.to('#{shot_page}')
+            driver.execute_script("#{recolour}") if ENV['SHOT_VARIANT'] == 'changed'
+            match_screenshot('home')
+          end
+        end
+      SPEC
+    end
+
+    def write_cucumber_feature
+      File.write(File.join(project, 'features/screenshot_comparison.feature'), <<~FEATURE)
+        Feature: Screenshot comparison
+
+        Scenario: Home matches
+            Given the screenshot page is open
+            Then the page matches the "home" screenshot
+      FEATURE
+      File.write(File.join(project, 'features/step_definitions/screenshot_comparison_steps.rb'), <<~STEPS)
+        # frozen_string_literal: true
+
+        Given('the screenshot page is open') do
+          driver.navigate.to('#{shot_page}')
+          driver.execute_script("#{recolour}") if ENV['SHOT_VARIANT'] == 'changed'
+        end
+
+        Then('the page matches the {string} screenshot') do |name|
+          match_screenshot(name)
+        end
+      STEPS
+    end
+
+    # Every failure message in run.json, as text.
+    def failure_text(project)
+      results(project).to_json
+    end
+
+    def expect_ok(run)
+      expect(run[:exit_code]).to eq(0), "STDOUT: #{run[:stdout]}\nSTDERR: #{run[:stderr]}"
+    end
+
+    def expect_failed(run)
+      expect(run[:exit_code]).to eq(1), "STDOUT: #{run[:stdout]}\nSTDERR: #{run[:stderr]}"
+    end
+
+    # The five runs of the plan, in order; each block is one run of the generated test.
+    def walk_through(command)
+      run = proc do |overrides = {}|
+        FileUtils.rm_rf(File.join(project, 'raider-results'))
+        run_in_project(project, command, env: shot_env(overrides), timeout: 300)
+      end
+
+      expect_ok(run.call) # 1: creates the baseline
+      expect(File).to exist(baseline_path)
+      expect(File.binread(baseline_path)).to start_with("\x89PNG".b)
+      first_bytes = File.binread(baseline_path)
+
+      expect_ok(run.call) # 2: matches
+      expect(comparison_names(project)).to be_empty
+
+      different = run.call('SHOT_VARIANT' => 'changed') # 3: differs
+      expect_failed(different)
+      expect(comparison_names(project)).to include('comparison:home:expected', 'comparison:home:actual', 'comparison:home:diff')
+      expect(failure_text(project)).to include(baseline)
+      expect(File.binread(baseline_path)).to eq(first_bytes)
+      expect(different[:stderr].scan('[screenshots] this raider_reporter has no comparison method').size).to be <= 1
+
+      FileUtils.rm_f(baseline_path) # 4: CI without a baseline
+      missing = run.call('CI' => '1')
+      expect_failed(missing)
+      expect(File).not_to exist(baseline_path)
+      expect(failure_text(project)).to include('no baseline')
+
+      expect_ok(run.call('SCREENSHOTS' => 'update')) # 5: update rewrites
+      expect(File).to exist(baseline_path)
+      expect_ok(run.call('SHOT_VARIANT' => 'changed', 'SCREENSHOTS' => 'update'))
+      expect(File.binread(baseline_path)).not_to eq(first_bytes)
+    end
+
+    %w[chrome edge firefox].each do |name|
+      describe "Selenium + RSpec on headless #{name}" do
+        let(:project) { 'video_rspec_selenium' }
+
+        before do
+          generate_video_project('rspec', 'selenium')
+          use_browser(name)
+          write_rspec_spec
+        end
+
+        it 'creates, matches, fails with images, refuses on CI and updates', :aggregate_failures do
+          walk_through('bundle exec rspec spec/screenshot_comparison_spec.rb')
+        end
+      end
+
+      describe "Selenium + Cucumber on headless #{name}" do
+        let(:project) { 'video_cucumber_selenium' }
+
+        before do
+          generate_video_project('cucumber', 'selenium')
+          use_browser(name)
+          write_cucumber_feature
+        end
+
+        it 'creates, matches, fails with images, refuses on CI and updates', :aggregate_failures do
+          walk_through('bundle exec cucumber features/screenshot_comparison.feature')
+        end
+      end
+    end
+  end
+
   # Mobile and Visual frameworks require external services, so we only verify structure
   context 'Mobile Automation Frameworks (structure validation only)' do
     describe 'iOS + RSpec' do

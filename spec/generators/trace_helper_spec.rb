@@ -170,6 +170,43 @@ describe 'Generated TraceHelper' do
     expect(trace['finished_at'] >= trace['started_at']).to be(true)
   end
 
+  it 'records a match_screenshot step with the given PNG as its screenshot, without taking another one' do
+    taken = 0
+    recorder = started_recorder(screenshot: ->(_driver) { [(taken += 1) && 'NAV', 'png'] })
+    recorder.navigated('https://example.test/login')
+    recorder.screenshot_compared(name: 'home', status: :failed, png: 'PNG-BYTES')
+    path = recorder.stop(keep: true, test: failed_test)
+    steps = TraceFormatChecker.read(path).first['steps']
+
+    expect(TraceFormatChecker.problems(path)).to eq([])
+    expect(steps.last).to include('kind' => 'action', 'action' => 'match_screenshot', 'name' => 'home', 'locator' => nil,
+                                  'status' => 'failed', 'error' => nil, 'screenshot' => 'steps/0002.png', 'snapshot' => nil)
+    expect(Zip::File.open(path) { |zip| zip.read('steps/0002.png') }).to eq('PNG-BYTES')
+    expect(taken).to eq(1)
+  end
+
+  it 'gives the match_screenshot step the comparison error and appends no failure step for it' do
+    recorder = started_recorder
+    error = RuntimeError.new('1 pixel differs')
+    recorder.screenshot_compared(name: 'home', status: :failed, png: 'PNG', error: error)
+    steps = kept(recorder, failed_test.merge(error: error))['steps']
+
+    expect(steps.map { |step| step.values_at('kind', 'action', 'status') }).to eq([%w[action match_screenshot failed]])
+    expect(steps.first['error']).to eq('class' => 'RuntimeError', 'message' => '1 pixel differs')
+  end
+
+  it 'records a passed comparison and never fails the test when the step cannot be written' do
+    recorder = started_recorder
+    recorder.screenshot_compared(name: 'home', status: :passed, png: 'PNG')
+    expect(kept(recorder)['steps'].last).to include('action' => 'match_screenshot', 'status' => 'passed')
+    allow(recorder).to receive(:add).and_raise('boom')
+    expect { recorder.screenshot_compared(name: 'again', status: :passed, png: 'PNG') }.not_to raise_error
+  end
+
+  it 'does not take match_screenshot as a media action' do
+    expect(TraceHelper::MEDIA_ACTIONS).not_to include('match_screenshot')
+  end
+
   it 'records navigate and click steps in order with index, kind, action, locator, source, waited_ms, retries' do
     recorder = started_recorder
     recorder.navigated('https://example.test/login')
@@ -1253,7 +1290,7 @@ describe 'Generated TraceHelper' do
 
     def load_driver_helper
       generator = HelpersGenerator.new(%w[selenium rspec proj])
-      %w[driver_helper video_helper network_helper].each do |name|
+      %w[driver_helper video_helper network_helper screenshot_helper].each do |name|
         source = File.read(File.expand_path("../../lib/generators/templates/helpers/#{name}.tt", __dir__))
         File.write(File.join(project_dir, "#{name}.rb"), ERB.new(source, trim_mode: '-').result(generator.instance_eval { binding }))
       end

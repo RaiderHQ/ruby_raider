@@ -19,6 +19,9 @@ require_relative 'wait_helper'
 <%- if network_helper? -%>
 require_relative 'network_helper'
 <%- end -%>
+<%- if screenshot_helper? -%>
+require_relative 'screenshot_helper'
+<%- end -%>
 <%- if web? -%>
 require_relative 'session_state'
 <%- end -%>
@@ -46,6 +49,9 @@ module SpecHelper
     <%- if network_helper? -%>
     config.include(NetworkHelper)
     <%- end -%>
+    <%- if screenshot_helper? -%>
+    config.include(ScreenshotHelper)
+    <%- end -%>
     <%- if mobile? -%>
     config.before(:each) do
       driver.start_driver
@@ -68,6 +74,9 @@ module SpecHelper
     <%- end -%>
       @video_recorder = VideoHelper.recorder_for(<%= watir? ? 'browser' : 'driver' %>)
       @video_recorder.start
+<%- if screenshot_helper? -%>
+      ScreenshotHelper.reset
+<%- end -%>
 <%- if trace_helper? -%>
       @trace_recorder = TraceHelper.recorder_for(driver) if defined?(TraceHelper)
       @trace_recorder&.start

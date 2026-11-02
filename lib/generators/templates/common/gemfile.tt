@@ -9,6 +9,9 @@ gem 'appium_lib'
 gem 'axe-core-rspec'
 gem 'axe-core-selenium'
 <%- end -%>
+<%- if screenshot_helper? -%>
+gem 'chunky_png'
+<%- end -%>
 <%- if cucumber? -%>
 gem 'cucumber'
 <%- end -%>

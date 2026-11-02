@@ -49,6 +49,12 @@ describe 'Helper file content' do
       expect(helper.index("require_relative 'network_helper'")).to be < helper.index("require_relative 'trace_helper'")
     end
 
+    it 'requires screenshot_helper next to network_helper' do
+      expect(helper).to include("require_relative 'screenshot_helper'")
+      expect(helper.index("require_relative 'screenshot_helper'")).to be > helper.index("require_relative 'network_helper'")
+      expect(helper.index("require_relative 'screenshot_helper'")).to be < helper.index("require_relative 'trace_helper'")
+    end
+
     it 'requires trace_helper' do
       expect(helper).to include("require_relative 'trace_helper'")
     end
@@ -506,6 +512,12 @@ describe 'Auto-waiting helper wiring' do
         helper = read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'helpers/spec_helper.rb')
         expect(helper.include?('config.include(NetworkHelper)')).to eq(automation == 'selenium')
       end
+
+      it "#{automation == 'selenium' ? 'includes' : 'leaves out'} ScreenshotHelper in the spec helper" do
+        helper = read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'helpers/spec_helper.rb')
+        expect(helper.include?('config.include(ScreenshotHelper)')).to eq(automation == 'selenium')
+        expect(helper.include?("require_relative 'screenshot_helper'")).to eq(automation == 'selenium')
+      end
     end
   end
 
@@ -575,5 +587,21 @@ describe 'Auto-waiting helper wiring' do
                               'helpers/spec_helper.rb')
       expect(helper).to include("require_relative 'session_state'")
     end
+  end
+end
+
+describe 'ScreenshotHelper reset between tests' do
+  it 'resets in the RSpec before(:each) of Selenium web projects only' do
+    selenium = read_generated('rspec_selenium', 'helpers/spec_helper.rb')
+    expect(selenium[/config\.before\(:each\) do.*?^    end$/m]).to include('ScreenshotHelper.reset')
+    %w[rspec_watir rspec_ios rspec_android].each do |project|
+      expect(read_generated(project, 'helpers/spec_helper.rb')).not_to include('ScreenshotHelper')
+    end
+  end
+
+  it 'resets in the Cucumber Before of Selenium web projects only' do
+    selenium = read_generated('cucumber_selenium', 'features/support/env.rb')
+    expect(selenium[/^Before do.*?^end$/m]).to include('ScreenshotHelper.reset')
+    expect(read_generated('cucumber_watir', 'features/support/env.rb')).not_to include('ScreenshotHelper')
   end
 end
