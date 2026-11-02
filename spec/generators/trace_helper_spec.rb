@@ -67,10 +67,9 @@ describe 'Generated TraceHelper' do
   let(:bidi) { FakeTraceBidi.new(jpeg) }
   let(:html) { "<html><head><title>Login</title></head><body>#{'<p>row</p>' * 50}</body></html>" }
   let(:capabilities) { double('capabilities', browser_name: 'chrome', browser_version: '131.0.6778.85') }
-  let(:window) { double('window', size: double('size', width: 1920, height: 1080)) }
   let(:driver) do
     double('driver', screenshot_as: png, page_source: html, current_url: 'https://example.test/login', title: 'Login',
-                     capabilities: capabilities, manage: double('manage', window: window), execute_script: 2,
+                     capabilities: capabilities, execute_script: 2,
                      bidi: bidi, window_handle: 'context-1')
   end
   let(:wait_helper) do
@@ -91,6 +90,11 @@ describe 'Generated TraceHelper' do
     path = File.join(project_dir, 'trace_helper.rb')
     File.write(path, rendered)
     load path
+  end
+
+  # The inner viewport, which is what rects and the viewport screenshot are measured in.
+  def viewport_script(size)
+    allow(driver).to receive(:execute_script).with(/innerWidth/).and_return(size)
   end
 
   def started_recorder(**lambdas)
@@ -148,6 +152,7 @@ describe 'Generated TraceHelper' do
   end
 
   it 'writes a zip whose trace.json has format raider-trace, version 1 and the spec §1 top-level keys' do
+    viewport_script([1905, 969])
     recorder = started_recorder
     recorder.navigated('https://example.test/login')
     trace = kept(recorder)
@@ -159,7 +164,7 @@ describe 'Generated TraceHelper' do
                              'test' => { 'identifier' => 'spec/login_page_spec.rb[1:1]', 'full_name' => 'Login page logs in',
                                          'status' => 'failed', 'attempt' => 2, 'error' => nil },
                              'browser' => { 'name' => 'chrome', 'version' => '131.0.6778.85' },
-                             'viewport' => { 'width' => 1920, 'height' => 1080 }, 'device_pixel_ratio' => 2,
+                             'viewport' => { 'width' => 1905, 'height' => 969 }, 'device_pixel_ratio' => 2,
                              'capabilities' => { 'network' => true, 'console' => true, 'screenshots' => true, 'snapshots' => true },
                              'truncated' => { 'steps' => 0, 'screenshots' => 0, 'snapshots' => 0, 'network' => 0, 'console' => 0 })
     expect(trace['finished_at'] >= trace['started_at']).to be(true)
@@ -315,6 +320,20 @@ describe 'Generated TraceHelper' do
     expect(steps.map { |step| step['snapshot'] }).to eq(%w[steps/0001.html steps/0002.html steps/0003.html])
     expect(warnings).to eq(["[trace] screenshot not captured: browser gone\n"])
     expect(TraceHelper.enabled?).to be(true)
+  end
+
+  describe 'viewport' do
+    it 'is nil when the inner size cannot be read' do
+      viewport_script(nil)
+
+      expect(kept(started_recorder)['viewport']).to eq('width' => nil, 'height' => nil)
+    end
+
+    it 'is nil when the script raises' do
+      allow(driver).to receive(:execute_script).with(/innerWidth/).and_raise(Selenium::WebDriver::Error::WebDriverError, 'no page')
+
+      expect(kept(started_recorder)['viewport']).to eq('width' => nil, 'height' => nil)
+    end
   end
 
   describe 'snapshots' do
@@ -684,15 +703,138 @@ describe 'Generated TraceHelper' do
     expect(WaitHelper.observer).to be_nil
   end
 
+  describe 'a navigation in flight' do
+    let(:started_ms) { 1_793_568_600_020 }
+
+    def request_sent(id, url)
+      bidi.emit('network.beforeRequestSent', 'request' => { 'request' => id, 'method' => 'GET', 'url' => url },
+                                             'timestamp' => started_ms)
+    end
+
+    it 'credits requests made between navigating and navigated to the navigate step' do
+      recorder = started_recorder
+      recorder.navigating('https://example.test/start')
+      request_sent('r1', 'https://example.test/start')
+      recorder.navigated('https://example.test/')
+      act(recorder, :click, 'go')
+      request_sent('r2', 'https://example.test/api')
+      trace = kept(recorder)
+
+      expect(trace['steps'].map { |step| step.values_at('index', 'action', 'status') }).to eq([[1, 'navigate', 'passed'], [2, 'click', 'passed']])
+      expect(trace['network'].map { |entry| entry.values_at('step_index', 'url') })
+        .to eq([[1, 'https://example.test/start'], [2, 'https://example.test/api']])
+    end
+
+    it 'keeps the old path: navigated alone adds one finished navigate step' do
+      recorder = started_recorder
+      recorder.navigated('https://example.test/login')
+
+      expect(kept(recorder)['steps'].map { |step| step.values_at('kind', 'status') }).to eq([%w[navigate passed]])
+    end
+
+    it 'finishes a navigation that never completed as failed at the next navigating' do
+      recorder = started_recorder
+      recorder.navigating('https://example.test/down')
+      recorder.navigating('https://example.test/up')
+      recorder.navigated('https://example.test/up')
+      steps = kept(recorder)['steps']
+
+      expect(steps.map { |step| step.values_at('kind', 'status', 'url') })
+        .to eq([['navigate', 'failed', 'https://example.test/down'], ['navigate', 'passed', 'https://example.test/login']])
+    end
+
+    it 'finishes a navigation that never completed as failed at stop' do
+      recorder = started_recorder
+      recorder.navigating('https://example.test/down')
+      steps = kept(recorder)['steps']
+
+      expect(steps.map { |step| step.values_at('kind', 'status') }).to eq([%w[navigate failed]])
+    end
+
+    it 'finishes a navigation that never completed as failed when the next action is added, with only its own duration' do
+      clock = 100.0
+      allow(TraceHelper).to receive(:monotonic_now) { clock }
+      recorder = started_recorder
+      recorder.navigating('https://example.test/down')
+      clock += 0.25
+      act(recorder, :click, 'go')
+      clock += 60
+      steps = kept(recorder)['steps']
+
+      expect(steps.map { |step| step.values_at('action', 'status') }).to eq([%w[navigate failed], %w[click passed]])
+      expect(steps.first['duration_ms']).to eq(250)
+    end
+
+    it 'adds no second failure step for the error a pending navigation ends the test with' do
+      error = Selenium::WebDriver::Error::WebDriverError.new('net::ERR_CONNECTION_REFUSED')
+      recorder = started_recorder
+      recorder.navigating('https://example.test/down')
+      steps = kept(recorder, failed_test.merge(error: error))['steps']
+
+      expect(steps.map { |step| step.values_at('kind', 'status') }).to eq([%w[navigate failed]])
+      expect(steps.first['error']).to include('message' => a_string_including('ERR_CONNECTION_REFUSED'))
+    end
+
+    it 'adds no failure step for the error of the action that followed a pending navigation' do
+      error = RuntimeError.new('boom')
+      recorder = started_recorder
+      recorder.navigating('https://example.test/down')
+      act(recorder, :click, 'go', status: :failed, error: error)
+      steps = kept(recorder, failed_test.merge(error: error))['steps']
+
+      expect(steps.map { |step| step.values_at('kind', 'status') }).to eq([%w[navigate failed], %w[action failed]])
+    end
+
+    it 'keeps the page url a back or forward navigation started from when the driver does not give one' do
+      alert = { open: false }
+      stub_const('VideoHelper', Module.new { define_singleton_method(:alert_open?) { |_driver| alert[:open] } })
+      recorder = started_recorder
+      recorder.navigated('https://example.test/login')
+      alert[:open] = true
+      recorder.navigating(nil)
+      recorder.navigated(nil)
+      steps = kept(recorder)['steps']
+
+      expect(steps.map { |step| step['url'] }).to eq(['https://example.test/login', 'https://example.test/login'])
+    end
+
+    it 'forgets a pending navigation that eventually retried away, so navigated captures nothing for it' do
+      recorder = started_recorder
+      group = recorder.group_started(action: :eventually, source: source)
+      recorder.navigating('https://example.test/slow')
+      recorder.group_retried(group)
+      recorder.navigated('https://example.test/slow')
+      steps = kept(recorder)['steps']
+
+      expect(steps.map { |step| step.values_at('kind', 'action', 'status') }).to eq([%w[group eventually failed], %w[navigate navigate passed]])
+      expect(recorder.instance_variable_get(:@navigation)).to be_nil
+      expect(Dir.children(recorder.dir).grep(/\A000002/)).to eq([])
+    end
+
+    it 'is driven by the listener before each navigation, and the null recorder ignores it' do
+      listener = TraceHelper.listener
+      recorder = started_recorder
+      listener.before_navigate_to('https://example.test/a', driver)
+      listener.after_navigate_to('https://example.test/a', driver)
+      listener.before_navigate_back(driver)
+      listener.after_navigate_back(driver)
+      listener.before_navigate_forward(driver)
+      listener.after_navigate_forward(driver)
+
+      expect(kept(recorder)['steps'].map { |step| step['status'] }).to eq(%w[passed passed passed])
+      expect(TraceHelper::NullRecorder.new.navigating('https://example.test/')).to be_nil
+    end
+  end
+
   describe 'browser wiring' do
     let(:started_ms) { 1_793_568_600_020 }
     let(:bidi_events) { %w[network.beforeRequestSent network.responseCompleted network.fetchError log.entryAdded] }
 
-    def request_sent(id, method, url, at)
-      bidi.emit('network.beforeRequestSent',
-                'request' => { 'request' => id, 'method' => method, 'url' => url,
-                               'headers' => [{ 'name' => 'Cookie', 'value' => { 'type' => 'string', 'value' => 'session=hush' } }] },
-                'timestamp' => at)
+    def request_sent(id, method, url, at, hop: 0)
+      bidi.emit('network.beforeRequestSent', 'redirectCount' => hop,
+                                             'request' => { 'request' => id, 'method' => method, 'url' => url,
+                                                            'headers' => [{ 'name' => 'Cookie', 'value' => { 'type' => 'string', 'value' => 'session=hush' } }] },
+                                             'timestamp' => at)
     end
 
     it 'subscribes passively to the four BiDi events and never adds a request handler' do
@@ -778,6 +920,151 @@ describe 'Generated TraceHelper' do
            'source' => 'https://example.test/app.js:41:7', 'at' => '2026-11-01T21:30:00.020Z' },
          { 'step_index' => 1, 'level' => 'info', 'text' => 'ready', 'source' => nil, 'at' => '2026-11-01T21:30:00.021Z' }]
       )
+    end
+
+    # A redirect keeps the request id; each hop has its own redirectCount. Chrome starts hop 1 in the same
+    # millisecond hop 0 completes, so the two events can arrive in either order.
+    it 'keeps each hop of a redirect as its own entry with its own status and duration' do
+      recorder = started_recorder
+      recorder.navigated('https://example.test/start')
+      request_sent('r1', 'GET', 'https://example.test/start', started_ms)
+      request_sent('r1', 'GET', 'https://example.test/', started_ms + 1, hop: 1)
+      bidi.emit('network.responseCompleted', 'redirectCount' => 0, 'timestamp' => started_ms + 1,
+                                             'request' => { 'request' => 'r1' }, 'response' => { 'status' => 302 })
+      bidi.emit('network.responseCompleted', 'redirectCount' => 1, 'timestamp' => started_ms + 206,
+                                             'request' => { 'request' => 'r1' }, 'response' => { 'status' => 200 })
+
+      expect(kept(recorder)['network'].map { |entry| entry.values_at('url', 'status', 'duration_ms') }).to eq(
+        [['https://example.test/start', 302, 1], ['https://example.test/', 200, 205]]
+      )
+    end
+
+    it 'drops one malformed BiDi event, warns once and keeps tracing' do
+      recorder = started_recorder
+      bidi.emit('network.beforeRequestSent', 'request' => 'string', 'timestamp' => started_ms)
+      bidi.emit('network.responseCompleted', 'request' => { 'request' => 'bad', 'timings' => 'string' },
+                                             'response' => 'string', 'timestamp' => started_ms)
+      bidi.emit('log.entryAdded', 'level' => 'info', 'text' => 'bad', 'timestamp' => started_ms, 'stackTrace' => 'string')
+      request_sent('r1', 'GET', 'https://example.test/ok', started_ms)
+      bidi.emit('network.responseCompleted', 'request' => { 'request' => 'r1' }, 'timestamp' => started_ms + 5,
+                                             'response' => { 'status' => 200 })
+      bidi.emit('log.entryAdded', 'level' => 'info', 'text' => 'good', 'timestamp' => started_ms)
+      trace = kept(recorder)
+
+      expect(trace['network'].map { |entry| [entry['url'], entry['status']] }).to include(['https://example.test/ok', 200])
+      expect(trace['console'].map { |entry| entry['text'] }).to include('good')
+      expect(TraceHelper.enabled?).to be(true)
+      expect(warnings.size).to eq(1)
+      expect(warnings.first).to match(/dropped a malformed BiDi .* event/)
+    end
+
+    describe 'hardening against hostile event content' do
+      it 'keeps tracing and records no duration for a timing or timestamp that is not finite' do
+        recorder = started_recorder
+        recorder.navigated('https://example.test/login')
+        request_sent('r1', 'GET', 'https://example.test/a', started_ms)
+        bidi.emit('network.responseCompleted', 'request' => { 'request' => 'r1' }, 'timestamp' => Float::INFINITY,
+                                               'response' => { 'status' => 200 })
+        request_sent('r2', 'GET', 'https://example.test/b', Float::INFINITY)
+        bidi.emit('network.responseCompleted', 'request' => { 'request' => 'r2', 'timings' => { 'timeOrigin' => Float::INFINITY, 'responseEnd' => 5 } },
+                                               'timestamp' => started_ms, 'response' => { 'status' => 200 })
+        bidi.emit('log.entryAdded', 'level' => 'info', 'text' => 'inf', 'timestamp' => Float::INFINITY)
+        trace = kept(recorder)
+
+        expect(TraceHelper.enabled?).to be(true)
+        expect(trace['network'].map { |entry| entry.values_at('url', 'status', 'duration_ms') })
+          .to eq([['https://example.test/a', 200, nil], ['https://example.test/b', 200, nil]])
+        expect(trace['console'].map { |entry| entry['text'] }).to eq(['inf'])
+      end
+
+      it 'drops, and records nothing for, an event whose request is not an object with a string id' do
+        recorder = started_recorder
+        recorder.navigated('https://example.test/login')
+        bidi.emit('network.beforeRequestSent', 'request' => 'string', 'timestamp' => started_ms)
+        bidi.emit('network.beforeRequestSent', 'request' => { 'request' => 123, 'url' => 'https://example.test/x' }, 'timestamp' => started_ms)
+        bidi.emit('network.responseCompleted', 'request' => 'string', 'timestamp' => started_ms, 'response' => { 'status' => 200 })
+        bidi.emit('network.responseCompleted', 'request' => { 'request' => 123 }, 'timestamp' => started_ms, 'response' => { 'status' => 200 })
+        bidi.emit('network.fetchError', 'request' => 'string', 'errorText' => 'x', 'timestamp' => started_ms)
+        bidi.emit('network.fetchError', 'request' => { 'request' => 123 }, 'errorText' => 'x', 'timestamp' => started_ms)
+        pending = recorder.instance_variable_get(:@requests).size + recorder.instance_variable_get(:@early).size
+
+        expect(pending).to eq(0)
+        expect(kept(recorder)['network']).to eq([])
+        expect(TraceHelper.enabled?).to be(true)
+        expect(warnings.size).to eq(1)
+      end
+
+      it 'treats a redirectCount that is not an Integer as 0' do
+        recorder = started_recorder
+        recorder.navigated('https://example.test/login')
+        request_sent('r1', 'GET', 'https://example.test/a', started_ms, hop: '7')
+        bidi.emit('network.responseCompleted', 'redirectCount' => 0, 'request' => { 'request' => 'r1' }, 'timestamp' => started_ms + 4,
+                                               'response' => { 'status' => 200 })
+
+        expect(kept(recorder)['network'].map { |entry| entry.values_at('status', 'duration_ms') }).to eq([[200, 4]])
+      end
+
+      it 'keeps only scalar values for network and console fields' do
+        recorder = started_recorder
+        recorder.navigated('https://example.test/login')
+        bidi.emit('network.beforeRequestSent', 'request' => { 'request' => 'r1', 'method' => ['GET'], 'url' => { 'nested' => 'x' } },
+                                               'timestamp' => started_ms)
+        bidi.emit('network.responseCompleted', 'request' => { 'request' => 'r1' }, 'timestamp' => started_ms + 1,
+                                               'response' => { 'status' => { 'a' => 1 }, 'mimeType' => ['x'], 'bytesReceived' => { 'b' => 2 } })
+        bidi.emit('network.beforeRequestSent', 'request' => { 'request' => 'r3', 'method' => 'GET', 'url' => 'https://example.test/n' },
+                                               'timestamp' => started_ms)
+        bidi.emit('network.responseCompleted', 'request' => { 'request' => 'r3' }, 'timestamp' => started_ms + 1,
+                                               'response' => { 'status' => 200, 'bytesReceived' => Float::INFINITY })
+        bidi.emit('network.beforeRequestSent', 'request' => { 'request' => 'r2', 'method' => 'GET', 'url' => 'https://example.test/e' },
+                                               'timestamp' => started_ms)
+        bidi.emit('network.fetchError', 'request' => { 'request' => 'r2' }, 'errorText' => { 'deep' => 'x' }, 'timestamp' => started_ms + 1)
+        bidi.emit('log.entryAdded', 'level' => { 'a' => 1 }, 'text' => %w[a b], 'timestamp' => started_ms)
+        trace = kept(recorder)
+
+        expect(trace['network'].map { |entry| entry.values_at('method', 'url', 'status', 'mime_type', 'bytes', 'error') })
+          .to eq([[nil, nil, nil, nil, nil, nil], ['GET', 'https://example.test/n', 200, nil, nil, nil],
+                  ['GET', 'https://example.test/e', nil, nil, nil, nil]])
+        expect(trace['console'].map { |entry| entry.values_at('level', 'text') }).to eq([[nil, nil]])
+      end
+
+      it 'caps the pending requests and the early completions, dropping the oldest' do
+        recorder = started_recorder
+        cap = TraceHelper::Recorder::MAX_PENDING
+        (cap + 5).times do |index|
+          recorder.network_started("s#{index}", { url: "https://example.test/#{index}" })
+          recorder.network_completed("e#{index}", { status: 200 })
+        end
+        requests = recorder.instance_variable_get(:@requests)
+        early = recorder.instance_variable_get(:@early)
+
+        expect([requests.size, early.size]).to eq([cap, cap])
+        expect(requests.keys.first).to eq('s5')
+        expect(early.keys.first).to eq('e5')
+        expect(TraceHelper.enabled?).to be(true)
+      end
+
+      it 'warns about a dropped event even after another notice, and the notice is not hidden by it' do
+        TraceHelper.warn_once('something left out')
+        recorder = started_recorder
+        bidi.emit('network.beforeRequestSent', 'request' => 'string', 'timestamp' => started_ms)
+        bidi.emit('network.beforeRequestSent', 'request' => 'string', 'timestamp' => started_ms)
+        TraceHelper.warn_once('another')
+
+        expect(warnings.size).to eq(2)
+        expect(warnings.first).to eq("[trace] something left out\n")
+        expect(warnings.last).to match(/dropped a malformed BiDi network.beforeRequestSent event/)
+        expect(recorder).not_to be_nil
+        expect(TraceHelper.enabled?).to be(true)
+      end
+
+      it 'warns once about a dropped event before any other notice, leaving that notice free' do
+        started_recorder
+        bidi.emit('log.entryAdded', 'level' => 'info', 'text' => 'x', 'timestamp' => 1, 'stackTrace' => 'string')
+        TraceHelper.warn_once('something left out')
+
+        expect(warnings.size).to eq(2)
+        expect(warnings.last).to eq("[trace] something left out\n")
+      end
     end
 
     it 'records capabilities network/console false and warns once when subscribe raises' do

@@ -757,7 +757,7 @@ describe 'End-to-End Project Generation and Execution' do
 
         describe 'Trace replay' do
           it '#{failing}' do
-            driver.navigate.to('#{server.url}')
+            driver.navigate.to('#{server.url}start')
             puts "TRACE_E2E_WEBSOCKET=\#{driver.capabilities[:web_socket_url].inspect}"
             send_keys({ id: 'pw' }, '#{secrets[0]}')
             send_keys({ id: 'pw2' }, '#{secrets[1]}')
@@ -824,6 +824,16 @@ describe 'End-to-End Project Generation and Execution' do
         expect(trace['console']).to include(include('level' => 'error', 'text' => a_string_including('trace e2e error')))
       end
 
+      # /start redirects to /: two entries, one per hop, both credited to the navigate step.
+      def expect_redirect_hops(trace)
+        navigate = trace['steps'].find { |step| step['kind'] == 'navigate' }
+        start = trace['network'].find { |entry| entry['url'].to_s.end_with?('/start') }
+        page = trace['network'].find { |entry| entry['url'] == server.url }
+        expect(start).to include('status' => 302, 'step_index' => navigate['index'])
+        expect(page).to include('status' => 200, 'step_index' => navigate['index'])
+        expect(page['duration_ms']).to be >= (TracePageServer::PAGE_DELAY * 1000) - 50
+      end
+
       # The same-origin stylesheet inlined as <style>, and the page's <script> gone.
       def expect_sanitised_snapshots(path, names)
         entries = zip_entries(path)
@@ -853,6 +863,7 @@ describe 'End-to-End Project Generation and Execution' do
         expect_steps(trace['steps'])
         expect_jpeg_screenshots(path, names)
         expect_network_and_console(trace)
+        expect_redirect_hops(trace)
         expect_sanitised_snapshots(path, names)
       end
 

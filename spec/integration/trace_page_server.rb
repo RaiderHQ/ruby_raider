@@ -3,7 +3,8 @@
 require 'socket'
 
 # Serves the trace e2e page over HTTP on 127.0.0.1 (never file://), so the browser makes
-# real requests that WebDriver BiDi reports: the page, its same-origin stylesheet and /api.
+# real requests that WebDriver BiDi reports: the page (behind a redirect at /start), its same-origin
+# stylesheet and /api.
 class TracePageServer
   CSS_RULE = '#title { color: rgb(1, 2, 3); }'
   PAGE = <<~HTML
@@ -35,9 +36,15 @@ class TracePageServer
     '/style.css' => ['200 OK', 'text/css', "#{CSS_RULE}\n"],
     '/api' => ['200 OK', 'application/json', '{"status":"answered by /api"}']
   }.freeze
+  # A first page that redirects, as a login does; BiDi gives both hops the same request id.
+  REDIRECTS = { '/start' => '/' }.freeze
   NOT_FOUND = ['404 Not Found', 'text/plain', 'not found'].freeze
   # /api answers this late, so a network entry's duration_ms has something to measure.
   API_DELAY = 0.3
+  # The page answers this late too, so the navigation's duration_ms is measurable.
+  PAGE_DELAY = 0.1
+
+  DELAYS = { '/' => PAGE_DELAY, '/api' => API_DELAY }.freeze
 
   attr_reader :url
 
@@ -64,12 +71,19 @@ class TracePageServer
     nil
   end
 
+  def redirect(socket, location)
+    socket.write("HTTP/1.1 302 Found\r\nLocation: #{location}\r\nContent-Length: 0\r\n" \
+                 "Cache-Control: no-store\r\nConnection: close\r\n\r\n")
+  end
+
   def answer(socket)
     request_line = socket.gets.to_s
     nil while (line = socket.gets) && line != "\r\n"
     path = request_line.split[1].to_s.split('?').first
+    return redirect(socket, REDIRECTS[path]) if REDIRECTS.key?(path)
+
     status, type, body = ROUTES.fetch(path, NOT_FOUND)
-    sleep(API_DELAY) if path == '/api'
+    sleep(DELAYS.fetch(path, 0))
     socket.write("HTTP/1.1 #{status}\r\nContent-Type: #{type}\r\nContent-Length: #{body.bytesize}\r\n" \
                  "Cache-Control: no-store\r\nConnection: close\r\n\r\n#{body}")
   rescue StandardError => e
