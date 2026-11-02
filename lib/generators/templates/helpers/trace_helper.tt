@@ -1015,16 +1015,17 @@ module TraceHelper
     def self.subscribe(bidi)
       bidi.session.subscribe(HANDLERS.keys)
       link = Link.new
-      HANDLERS.each { |event, handler| bidi.add_callback(event) { |params| deliver(link, handler, params) } }
+      HANDLERS.each { |event, handler| bidi.add_callback(event) { |params| deliver(link, event, handler, params) } }
       link
     end
 
-    # On a websocket thread, which swallows errors: a failure is reported here.
-    def self.deliver(link, handler, params)
+    # On a websocket thread, which swallows errors. One event we cannot read is dropped with a notice;
+    # tracing carries on, since the next one is usually fine.
+    def self.deliver(link, event, handler, params)
       recorder = link.recorder
       send(handler, recorder, params) if recorder
     rescue StandardError => e
-      TraceHelper.disable!("network and console capture failed: #{e.message}")
+      TraceHelper.warn_once("dropped a malformed BiDi #{event} event: #{e.class}")
     end
 
     def self.request_sent(recorder, params)

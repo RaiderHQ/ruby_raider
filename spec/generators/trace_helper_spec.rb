@@ -780,6 +780,25 @@ describe 'Generated TraceHelper' do
       )
     end
 
+    it 'drops one malformed BiDi event, warns once and keeps tracing' do
+      recorder = started_recorder
+      bidi.emit('network.beforeRequestSent', 'request' => 'string', 'timestamp' => started_ms)
+      bidi.emit('network.responseCompleted', 'request' => { 'request' => 'bad', 'timings' => 'string' },
+                                             'response' => 'string', 'timestamp' => started_ms)
+      bidi.emit('log.entryAdded', 'level' => 'info', 'text' => 'bad', 'timestamp' => started_ms, 'stackTrace' => 'string')
+      request_sent('r1', 'GET', 'https://example.test/ok', started_ms)
+      bidi.emit('network.responseCompleted', 'request' => { 'request' => 'r1' }, 'timestamp' => started_ms + 5,
+                                             'response' => { 'status' => 200 })
+      bidi.emit('log.entryAdded', 'level' => 'info', 'text' => 'good', 'timestamp' => started_ms)
+      trace = kept(recorder)
+
+      expect(trace['network'].map { |entry| [entry['url'], entry['status']] }).to include(['https://example.test/ok', 200])
+      expect(trace['console'].map { |entry| entry['text'] }).to include('good')
+      expect(TraceHelper.enabled?).to be(true)
+      expect(warnings.size).to eq(1)
+      expect(warnings.first).to match(/dropped a malformed BiDi .* event/)
+    end
+
     it 'records capabilities network/console false and warns once when subscribe raises' do
       bidi.failure = Selenium::WebDriver::Error::WebDriverError.new('no such frame')
       traces = Array.new(2) do
