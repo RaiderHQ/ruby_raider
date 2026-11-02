@@ -826,6 +826,92 @@ describe 'Generated TraceHelper' do
     end
   end
 
+  describe 'mocked requests' do
+    let(:started_ms) { 1_793_568_600_020 }
+    let(:recorder) { started_recorder }
+    let(:network) { kept(recorder)['network'] }
+
+    before { recorder.navigated('https://example.test/login') }
+
+    def start(id, hop = 0)
+      recorder.network_started([id, hop], { method: 'GET', url: "https://example.test/#{id}", status: nil, duration_ms: nil }, at: started_ms)
+    end
+
+    def complete(id, status, hop = 0)
+      recorder.network_completed([id, hop], { status: status }, started_ms + 7)
+    end
+
+    it 'marks a pending entry and still completes it' do
+      start('r1')
+      recorder.network_marked(['r1', 0], { mocked: 'fulfilled' })
+      complete('r1', 200)
+
+      expect(network.map { |entry| entry.values_at('mocked', 'status', 'duration_ms') }).to eq([['fulfilled', 200, 7]])
+    end
+
+    it 'applies an early mark when the entry starts' do
+      recorder.network_marked(['r1', 0], { mocked: 'failed' })
+      start('r1')
+
+      expect(network.map { |entry| entry['mocked'] }).to eq(['failed'])
+      expect(recorder.instance_variable_get(:@early_marks)).to be_empty
+    end
+
+    it 'marks only its hop' do
+      start('r1', 0)
+      start('r1', 1)
+      recorder.network_marked(['r1', 1], { mocked: 'fulfilled' })
+
+      expect(network.map { |entry| entry['mocked'] }).to eq([nil, 'fulfilled'])
+    end
+
+    it 'caps early marks at MAX_PENDING' do
+      cap = TraceHelper::Recorder::MAX_PENDING
+      (cap + 5).times { |index| recorder.network_marked(["m#{index}", 0], { mocked: 'fulfilled' }) }
+      marks = recorder.instance_variable_get(:@early_marks)
+
+      expect(marks.size).to eq(cap)
+      expect(marks.keys.first).to eq(['m5', 0])
+    end
+
+    it 'keeps the status from the mark when no completion arrives' do
+      start('r1')
+      recorder.network_marked(['r1', 0], { mocked: 'fulfilled', status: 503 })
+
+      expect(network.map { |entry| entry.values_at('mocked', 'status') }).to eq([['fulfilled', 503]])
+    end
+
+    it 'keeps the mark status when the completion has none' do
+      start('r1')
+      recorder.network_marked(['r1', 0], { mocked: 'fulfilled', status: 503 })
+      complete('r1', nil)
+
+      expect(network.map { |entry| entry['status'] }).to eq([503])
+    end
+
+    it 'is fed by NetworkHelper.observer, registered when recorder_for runs' do
+      helper = Module.new { class << self; attr_accessor :observer; end }
+      stub_const('NetworkHelper', helper)
+      started = started_recorder
+      started.network_started(['r1', 0], { url: 'https://example.test/r1' })
+      helper.observer.request_mocked(request_id: 'r1', redirect_count: 0, outcome: 'failed', status: nil)
+
+      expect(helper.observer).to be(TraceHelper::MockMarks)
+      expect(kept(started)['network'].map { |entry| entry['mocked'] }).to eq(['failed'])
+    end
+
+    it 'does not raise when a mark cannot be applied' do
+      allow(TraceHelper).to receive(:active_recorder).and_raise(RuntimeError, 'boom')
+
+      expect { TraceHelper::MockMarks.request_mocked(request_id: 'r1', redirect_count: 0, outcome: 'failed') }.not_to raise_error
+    end
+
+    it 'is accepted by the format checker, which rejects other values' do
+      trace = { 'network' => [{ 'mocked' => 'maybe' }, { 'mocked' => 'fulfilled' }, {}] }
+      expect(TraceFormatChecker.mocked_rules(trace['network']).size).to eq(1)
+    end
+  end
+
   describe 'browser wiring' do
     let(:started_ms) { 1_793_568_600_020 }
     let(:bidi_events) { %w[network.beforeRequestSent network.responseCompleted network.fetchError log.entryAdded] }
@@ -1133,6 +1219,14 @@ describe 'Generated TraceHelper' do
         .to eq([true, true, true, true, false, false])
     end
 
+    context 'with BIDI=off' do
+      let(:env) { { 'BIDI' => 'off' } }
+
+      it 'is false for every browser' do
+        expect(TraceHelper.bidi?('chrome')).to be(false)
+      end
+    end
+
     context 'with TRACE=off' do
       let(:env) { { 'TRACE' => 'off' } }
 
@@ -1159,7 +1253,7 @@ describe 'Generated TraceHelper' do
 
     def load_driver_helper
       generator = HelpersGenerator.new(%w[selenium rspec proj])
-      %w[driver_helper video_helper].each do |name|
+      %w[driver_helper video_helper network_helper].each do |name|
         source = File.read(File.expand_path("../../lib/generators/templates/helpers/#{name}.tt", __dir__))
         File.write(File.join(project_dir, "#{name}.rb"), ERB.new(source, trim_mode: '-').result(generator.instance_eval { binding }))
       end
@@ -1193,7 +1287,7 @@ describe 'Generated TraceHelper' do
     before { load_driver_helper }
 
     after do
-      %i[DriverHelper VideoHelper].each { |name| Object.send(:remove_const, name) if Object.const_defined?(name) }
+      %i[DriverHelper VideoHelper NetworkHelper].each { |name| Object.send(:remove_const, name) if Object.const_defined?(name) }
       $LOADED_FEATURES.delete(trace_feature)
     end
 
@@ -1212,8 +1306,8 @@ describe 'Generated TraceHelper' do
         .to eq([['navigate', 'https://example.test/login'], ['navigate', 'https://example.test/login']])
     end
 
-    context 'with VIDEO=off and TRACE=off' do
-      let(:env) { { 'VIDEO' => 'off', 'TRACE' => 'off' } }
+    context 'with VIDEO=off, TRACE=off and BIDI=off' do
+      let(:env) { { 'VIDEO' => 'off', 'TRACE' => 'off', 'BIDI' => 'off' } }
 
       it 'passes no listener at all' do
         expect(created_arguments.keys).to eq([:options])
@@ -1224,8 +1318,16 @@ describe 'Generated TraceHelper' do
       end
     end
 
-    it 'sets web_socket_url only for chrome, edge and firefox and not with TRACE=off' do
+    it 'sets web_socket_url only for chrome, edge and firefox' do
       expect(%w[chrome edge firefox safari].map { |browser| options_for(browser).web_socket_url }).to eq([true, true, true, nil])
+    end
+
+    context 'with TRACE=off' do
+      let(:env) { { 'TRACE' => 'off' } }
+
+      it 'still sets web_socket_url for the network mocks' do
+        expect(options_for('chrome').web_socket_url).to be(true)
+      end
     end
   end
 end

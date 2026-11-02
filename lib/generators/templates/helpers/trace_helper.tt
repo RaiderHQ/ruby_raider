@@ -55,7 +55,7 @@ module TraceHelper
     # True while tracing is on for a browser that speaks WebDriver BiDi (Edge reports MicrosoftEdge).
     def bidi?(browser)
       name = browser.to_s.downcase.delete_prefix('microsoft')
-      enabled? && BIDI_BROWSERS.any? { |bidi_browser| name.start_with?(bidi_browser) }
+      enabled? && ENV['BIDI'].to_s.downcase != 'off' && BIDI_BROWSERS.any? { |bidi_browser| name.start_with?(bidi_browser) }
     end
 
     # Passed to Selenium through the driver helper's fan-out listener when the driver is created.
@@ -71,6 +71,8 @@ module TraceHelper
 
       recorder = Recorder.new(driver, screenshot: screenshot, snapshot: snapshot)
       WaitHelper.observer = recorder if defined?(WaitHelper)
+      # Lazy: Cucumber's env.rb loads this helper before the World loads network_helper.
+      NetworkHelper.observer = MockMarks if defined?(NetworkHelper)
       recorder
     rescue StandardError => e
       disable!("could not create a recorder: #{e.message}")
@@ -357,6 +359,7 @@ module TraceHelper
         early = @lock.synchronize do
           @requests[request] = [entry, at]
           @requests.shift while @requests.size > MAX_PENDING
+          entry.update(@early_marks.delete(request) || {})
           @early.delete(request)
         end
         network_completed(request, *early) if early
@@ -371,6 +374,25 @@ module TraceHelper
           @requests.delete(request).tap { |found| remember_early(request, fields, at) unless found }
         end
         complete(entry, fields, at, started) if entry
+        nil
+      end
+    end
+
+    # A mocked request, marked by NetworkHelper before it answers. The entry stays pending: its
+    # completion still arrives, and its status wins when it has one. A mark that comes before
+    # network_started is kept until the entry exists.
+    def network_marked(request, fields)
+      record('network') do
+        fields = fields.transform_keys(&:to_s)
+        @lock.synchronize do
+          entry = @requests[request]&.first
+          if entry
+            entry.update(fields)
+          else
+            @early_marks[request] = fields
+            @early_marks.shift while @early_marks.size > MAX_PENDING
+          end
+        end
         nil
       end
     end
@@ -434,6 +456,7 @@ module TraceHelper
         @events = []
         @requests = {}
         @early = {}
+        @early_marks = {}
       end
       @bidi = false
       @seq = 0
@@ -502,7 +525,10 @@ module TraceHelper
     def complete(entry, fields, finished, started)
       duration = finished - started if TraceHelper.finite_number?(finished) && TraceHelper.finite_number?(started)
       fields = fields.merge(duration_ms: duration.round) if TraceHelper.finite_number?(duration)
-      @lock.synchronize { entry.update(fields.transform_keys(&:to_s)) }
+      @lock.synchronize do
+        fields = fields.reject { |key, value| key == :status && value.nil? && entry['status'] }
+        entry.update(fields.transform_keys(&:to_s))
+      end
     end
 
     # Returns the stored entry, which network_completed may still fill in.
@@ -830,6 +856,10 @@ module TraceHelper
       nil
     end
 
+    def network_marked(_request, _fields)
+      nil
+    end
+
     def console_event(_hash)
       nil
     end
@@ -1073,6 +1103,17 @@ module TraceHelper
     def navigated(url)
       TraceHelper.active_recorder&.navigated(url)
       nil
+    end
+  end
+
+  # NetworkHelper's observer: marks the trace entry of a request it answers without the network.
+  module MockMarks
+    def self.request_mocked(request_id:, redirect_count:, outcome:, status: nil)
+      fields = { mocked: outcome }
+      fields[:status] = status if status
+      TraceHelper.active_recorder&.network_marked([request_id, redirect_count], fields)
+    rescue StandardError => e
+      TraceHelper.warn_dropped_event("dropped a mocked-request mark: #{e.class}")
     end
   end
 

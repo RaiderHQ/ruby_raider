@@ -182,6 +182,13 @@ describe 'Cucumber world WaitHelper wiring' do
     end
   end
 
+  %w[selenium ios android cross_platform watir].each do |automation|
+    it "#{automation == 'selenium' ? 'adds' : 'leaves out'} NetworkHelper in the #{automation} world" do
+      world = read_generated("cucumber_#{automation}", 'features/support/world.rb')
+      expect(world.include?('World(NetworkHelper)')).to eq(automation == 'selenium')
+    end
+  end
+
   it 'leaves the watir world without WaitHelper' do
     expect(read_generated('cucumber_watir', 'features/support/world.rb')).not_to include('WaitHelper')
   end

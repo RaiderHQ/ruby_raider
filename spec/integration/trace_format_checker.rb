@@ -42,7 +42,7 @@ module TraceFormatChecker
     problems.concat(error_rules('test', trace['test'])) if trace['test'].is_a?(Hash)
     return problems unless trace['steps'].is_a?(Array)
 
-    problems.concat(steps(trace['steps'], names)).concat(events(trace))
+    problems.concat(steps(trace['steps'], names)).concat(events(trace)).concat(mocked_rules(trace['network']))
   rescue Zip::Error, JSON::ParserError, Errno::ENOENT => e
     ["not a readable trace.zip: #{e.class}: #{e.message}"]
   end
@@ -126,6 +126,15 @@ module TraceFormatChecker
     %w[screenshot snapshot].filter_map do |key|
       entry = step[key]
       "#{where}.#{key} #{entry.inspect} is not an entry in the zip" if entry && !names.include?(entry)
+    end
+  end
+
+  # mocked is optional on a network entry: "fulfilled" or "failed".
+  def self.mocked_rules(network)
+    Array(network).each_with_index.filter_map do |entry, position|
+      next unless entry.is_a?(Hash) && entry.key?('mocked') && !%w[fulfilled failed].include?(entry['mocked'])
+
+      "network[#{position}].mocked #{entry['mocked'].inspect} is not fulfilled or failed"
     end
   end
 

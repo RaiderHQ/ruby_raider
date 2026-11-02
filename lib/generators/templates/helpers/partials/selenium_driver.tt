@@ -26,7 +26,10 @@
     browser = load_browser == 'ie' ? load_browser.upcase : load_browser.capitalize
     options = "Selenium::WebDriver::#{browser}::Options".constantize.new
     browser_arguments(*opts).each { |arg| options.add_argument(arg) }
-    # WebDriver BiDi carries the trace's network and console (chrome, edge and firefox).
-    options.web_socket_url = true if defined?(TraceHelper) && TraceHelper.bidi?(load_browser)
+    # WebDriver BiDi carries the trace's network and console and the network mocks (chrome, edge and firefox).
+    # BIDI=off turns it off for a grid that cannot carry the websocket.
+    bidi = (defined?(TraceHelper) && TraceHelper.bidi?(load_browser)) ||
+           (defined?(NetworkHelper) && NetworkHelper.bidi?(load_browser))
+    options.web_socket_url = true if bidi
     options
   end

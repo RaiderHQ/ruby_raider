@@ -78,6 +78,11 @@ class Generator < Thor::Group
     wait_helper? && !mobile?
   end
 
+  # Network mocking needs the same Selenium web projects (WebDriver BiDi, no mobile)
+  def network_helper?
+    trace_helper?
+  end
+
   # False for `raider new -p examples:false`: an empty skeleton without the example pages, tests and wiring
   def examples?
     !options_after_name.include?('no_examples')

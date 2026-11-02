@@ -6,6 +6,9 @@ require_relative '../components/header'
 <%- if wait_helper? -%>
 require_relative '../../helpers/wait_helper'
 <%- end -%>
+<%- if network_helper? -%>
+require_relative '../../helpers/network_helper'
+<%- end -%>
 
 class Page
 <%- if cross_platform? -%>
@@ -13,6 +16,9 @@ class Page
 <%- end -%>
 <%- if wait_helper? -%>
   include WaitHelper
+<%- end -%>
+<%- if network_helper? -%>
+  include NetworkHelper
 <%- end -%>
 <%- if cross_platform? || wait_helper? -%>
 

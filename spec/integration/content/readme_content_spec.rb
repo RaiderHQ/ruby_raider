@@ -98,6 +98,32 @@ describe 'Generated Readme content' do
         end
       end
     end
+
+    context "with #{framework} and #{automation}, the network mocking section" do
+      subject(:readme) { read_generated("#{framework}_#{automation}", 'Readme.md') }
+
+      if automation == 'selenium'
+        it 'documents the API, the examples, BIDI=off and how to remove the helper' do
+          expect(readme).to include('## Mocking network requests', "mock_request('**/api/users', json: { users: [] })",
+                                    'BIDI=off', '### Removing the network helper', 'status: 500',
+                                    "block_request('**/*.png')", 'eventually', 'NetworkHelper::MockError')
+        end
+
+        it 'names the files to edit for this framework' do
+          section = readme[/^### Removing the network helper\n.*?(?=^##)/m]
+          expect(section).to include('helpers/network_helper.rb', 'NetworkHelper.finish', 'raise mock_error')
+          expect(section).to include(framework == 'rspec' ? 'config.include(NetworkHelper)' : 'World(NetworkHelper)')
+        end
+
+        it 'says that TRACE=off keeps BiDi on' do
+          expect(readme).to include('BiDi stays on')
+        end
+      else
+        it 'does not mention network mocking' do
+          expect(readme).not_to include('Mocking network requests', 'NetworkHelper')
+        end
+      end
+    end
   end
 
   AUTOMATION_TYPES.each do |automation|

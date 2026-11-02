@@ -91,20 +91,27 @@ Before('@logged_in') do
 end
 
 <%- end -%>
+<%- failed_ref = network_helper? ? 'failed' : 'scenario.failed?' -%>
+<%- error_ref = network_helper? ? 'error' : 'scenario.exception' -%>
 After do |scenario|
+<%- if network_helper? -%>
+  mock_error = NetworkHelper.finish(driver) if defined?(NetworkHelper)
+  failed = scenario.failed? || !mock_error.nil?
+  error = scenario.exception || mock_error
+<%- end -%>
 <%- if trace_helper? -%>
   if defined?(TraceHelper)
-    keep_trace = TraceHelper.keep_all? || scenario.failed?
-    trace_test = @trace_test&.merge(status: scenario.failed? ? 'failed' : 'passed', error: scenario.exception)
+    keep_trace = TraceHelper.keep_all? || <%= failed_ref %>
+    trace_test = @trace_test&.merge(status: <%= failed_ref %> ? 'failed' : 'passed', error: <%= error_ref %>)
     trace_path = @trace_recorder&.stop(keep: keep_trace, test: trace_test)
   end
 <%- end -%>
-  video_path = @video_recorder&.stop(keep: scenario.failed?)
+  video_path = @video_recorder&.stop(keep: <%= failed_ref %>)
   RaiderReporter.attach('video', video_path, type: :webm) if video_path
 <%- if trace_helper? -%>
   RaiderReporter.attach('trace', trace_path, type: :trace, attempt: @trace_attempt) if trace_path
 <%- end -%>
-  if scenario.failed?
+  if <%= failed_ref %>
     Dir.mktmpdir do |temp_folder|
       screenshot_path = File.join(temp_folder, 'screenshot.png')
       driver.save_screenshot(screenshot_path)
@@ -117,4 +124,7 @@ ensure
 <%- end -%>
   @video_recorder&.cleanup
   driver.quit
+<%- if network_helper? -%>
+  raise mock_error if mock_error
+<%- end -%>
 end

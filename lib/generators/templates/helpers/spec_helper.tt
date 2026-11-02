@@ -16,6 +16,9 @@ require_relative 'video_helper'
 <%- if wait_helper? -%>
 require_relative 'wait_helper'
 <%- end -%>
+<%- if network_helper? -%>
+require_relative 'network_helper'
+<%- end -%>
 <%- if web? -%>
 require_relative 'session_state'
 <%- end -%>
@@ -39,6 +42,9 @@ module SpecHelper
     <%- end -%>
     <%- if wait_helper? -%>
     config.include(WaitHelper)
+    <%- end -%>
+    <%- if network_helper? -%>
+    config.include(NetworkHelper)
     <%- end -%>
     <%- if mobile? -%>
     config.before(:each) do
@@ -82,21 +88,26 @@ module SpecHelper
     end
 <%- end -%>
 
+    <%- failure_ref = network_helper? ? 'failure' : 'example.exception' -%>
     config.after(:each) do |example|
       example_name = example.description
+<%- if network_helper? -%>
+      mock_error = NetworkHelper.finish(driver) if defined?(NetworkHelper)
+      failure = example.exception || mock_error
+<%- end -%>
 <%- if trace_helper? -%>
       if defined?(TraceHelper)
         attempt = example.metadata[:retry_attempts].to_i + 1
-        keep_trace = TraceHelper.keep_all? || (example.exception && (defined?(VideoHelper) ? VideoHelper.final_attempt?(example) : true))
+        keep_trace = TraceHelper.keep_all? || (<%= failure_ref %> && (defined?(VideoHelper) ? VideoHelper.final_attempt?(example) : true))
         trace_test = { identifier: example.id.delete_prefix('./'), full_name: example.full_description,
-                       status: example.exception ? 'failed' : 'passed', attempt: attempt, error: example.exception }
+                       status: <%= failure_ref %> ? 'failed' : 'passed', attempt: attempt, error: <%= failure_ref %> }
         trace_path = @trace_recorder&.stop(keep: keep_trace, test: trace_test)
       end
 <%- end -%>
-      keep_video = example.exception ? VideoHelper.final_attempt?(example) : false
+      keep_video = <%= failure_ref %> ? VideoHelper.final_attempt?(example) : false
       video_path = @video_recorder&.stop(keep: keep_video)
-      if example.exception
-        @_exception = example.exception
+      if <%= failure_ref %>
+        @_exception = <%= failure_ref %>
         Dir.mktmpdir do |temp_folder|
           screenshot_path = "#{temp_folder}/#{example_name}.png"
           <%= partial('screenshot', strip: true) %>
@@ -113,6 +124,9 @@ module SpecHelper
 <%- end -%>
       @video_recorder&.cleanup
       <%= partial('quit_driver', strip: true) %>
+<%- if network_helper? -%>
+      raise mock_error if mock_error
+<%- end -%>
     end
   end
 end

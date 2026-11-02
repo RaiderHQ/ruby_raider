@@ -5,6 +5,9 @@ require 'yaml'
 require 'active_support/inflector'
 require 'selenium-webdriver'
 require_relative 'video_helper'
+<%- if network_helper? -%>
+require_relative 'network_helper'
+<%- end -%>
 <%- if trace_helper? -%>
 require_relative 'trace_helper'
 <%- end -%>

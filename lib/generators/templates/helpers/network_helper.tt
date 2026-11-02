@@ -1,0 +1,521 @@
+# frozen_string_literal: true
+
+require 'json'
+require 'uri'
+
+# Mocks network requests in the browser through WebDriver BiDi (chrome, edge and firefox):
+# answer a request with your own response, or block it.
+# BIDI=off turns BiDi off, for a grid that cannot carry the websocket.
+module NetworkHelper
+  # Raised when mocking cannot run: no BiDi, or a browser without it.
+  class Unavailable < StandardError; end
+
+  # Raised for a mock that cannot be set up: a bad pattern or an invalid response.
+  class MockError < StandardError; end
+
+  # Matches a request against a glob or Regexp URL and an optional HTTP method.
+  # Glob: ** is any characters, * is any characters except /, everything else is literal.
+  class Matcher
+    def initialize(url, method: nil)
+      raise ArgumentError, "url must be a String or Regexp, got #{url.class}" unless url.is_a?(String) || url.is_a?(Regexp)
+
+      @url = url
+      @method = method&.to_s&.upcase
+      @regexp = url.is_a?(Regexp) ? url : glob_to_regexp(url)
+    end
+
+    def match?(url_string, http_method)
+      return false if @method && @method != http_method.to_s.upcase
+
+      match_url?(url_string)
+    end
+
+    def match_url?(url_string)
+      @regexp.match?(url_string.to_s)
+    end
+
+    def method?(http_method)
+      @method == http_method.to_s.upcase
+    end
+
+    # BiDi urlPatterns narrowing the intercept to the literal parts of the glob, or nil to pause everything.
+    def intercept_patterns
+      return nil if @url.is_a?(Regexp)
+
+      pattern = literal_parts.compact
+      pattern.empty? ? nil : [{ type: 'pattern' }.merge(pattern)]
+    end
+
+    # Characters a BiDi URL pattern pathname accepts as literals; anything else is left to the matcher.
+    SAFE_PATH = %r{\A[A-Za-z0-9._~!$&'+,;=:@/%-]*\z}.freeze
+
+    private
+
+    def glob_to_regexp(glob)
+      source = glob.split(/(\*\*|\*)/).map do |token|
+        case token
+        when '**' then '.*'
+        when '*' then '[^/]*'
+        else Regexp.escape(token)
+        end
+      end
+      Regexp.new("\\A#{source.join}\\z", Regexp::MULTILINE)
+    end
+
+    # Only a glob that opens with a literal scheme://host[:port] narrows: anything else could match a
+    # URL the pattern would miss. The path counts only right after such an origin.
+    def literal_parts
+      glob = @url.split(/[?#]/, 2).first.to_s
+      scheme = glob[%r{\A([a-z][a-z0-9+.-]*)://}i, 1]
+      return {} unless scheme
+
+      hostport, path = glob.delete_prefix("#{scheme}://").split(%r{(?=/)}, 2)
+      return {} if hostport.to_s.match?(/[\[@]/)
+
+      host, port = hostport.to_s.split(':', 2)
+      return {} if [host, port].compact.any? { |part| part.empty? || part.include?('*') }
+
+      { protocol: scheme.downcase, hostname: host, port: port, pathname: literal_path(path) }.compact
+    end
+
+    def literal_path(path)
+      path if path&.match?(SAFE_PATH)
+    end
+  end
+
+  # The driver helper sets web_socket_url for these.
+  BIDI_BROWSERS = %w[chrome edge firefox].freeze
+
+  REASON_PHRASES = {
+    200 => 'OK', 201 => 'Created', 204 => 'No Content', 301 => 'Moved Permanently', 302 => 'Found',
+    304 => 'Not Modified', 400 => 'Bad Request', 401 => 'Unauthorized', 403 => 'Forbidden',
+    404 => 'Not Found', 409 => 'Conflict', 422 => 'Unprocessable Entity', 429 => 'Too Many Requests',
+    500 => 'Internal Server Error', 502 => 'Bad Gateway', 503 => 'Service Unavailable',
+    504 => 'Gateway Timeout'
+  }.freeze
+
+  # A request the browser paused: lowercase header names, values as strings. Frozen.
+  RaiderRequest = Struct.new(:method, :url, :headers) # rubocop:disable Lint/StructNewOverride
+
+  # What a mock answered or will answer. calls holds the requests it handled, oldest first.
+  class RaiderMock
+    attr_reader :url, :matcher, :response, :block
+
+    def initialize(url, matcher, response: nil, block: nil)
+      @url = url
+      @matcher = matcher
+      @response = response
+      @block = block
+      @calls = []
+      @lock = Mutex.new
+    end
+
+    def calls
+      @lock.synchronize { @calls.dup.freeze }
+    end
+
+    def called?
+      @lock.synchronize { !@calls.empty? }
+    end
+
+    def record(request)
+      @lock.synchronize { @calls << request }
+    end
+  end
+
+  # One per driver. Holds the mocks and answers paused requests on Selenium's callback threads.
+  # All state sits behind one Mutex; a mock_request block runs outside it.
+  class Router
+    EVENT = 'network.beforeRequestSent'
+    FATAL = [Interrupt, SystemExit, NoMemoryError].freeze
+
+    def initialize(bidi)
+      @bidi = bidi
+      @lock = Mutex.new
+      @mocks = []
+      @intercepts = {}
+      @ids = []
+      @error = nil
+      bidi.session.subscribe(EVENT)
+      bidi.add_callback(EVENT) { |params| handle(params) }
+    end
+
+    def add(mock)
+      @lock.synchronize do
+        params = { phases: ['beforeRequestSent'] }
+        patterns = mock.matcher.intercept_patterns
+        params[:urlPatterns] = patterns if patterns
+        id = @bidi.send_cmd('network.addIntercept', **params)['intercept']
+        @mocks << mock
+        @intercepts[mock] = id
+        @ids << id
+      end
+      mock
+    end
+
+    def remove(mock)
+      id = @lock.synchronize do
+        @mocks.delete(mock)
+        @intercepts.delete(mock)
+      end
+      remove_intercept(id) if id
+      nil
+    end
+
+    def clear
+      ids = @lock.synchronize do
+        @mocks.clear
+        @intercepts.values.tap { @intercepts.clear }
+      end
+      ids.each { |id| remove_intercept(id) }
+      nil
+    end
+
+    def raise_error!
+      error = @lock.synchronize { @error }
+      raise error if error
+    end
+
+    # Removes every intercept and hands back the stored error, if any. Never raises.
+    def finish
+      ids, error = @lock.synchronize do
+        taken = [@intercepts.values, @error]
+        @mocks.clear
+        @intercepts.clear
+        @error = nil
+        taken
+      end
+      ids.each { |id| remove_intercept(id) }
+      error
+    rescue StandardError
+      nil
+    end
+
+    private
+
+    def remove_intercept(id)
+      @bidi.send_cmd('network.removeIntercept', intercept: id)
+    rescue StandardError
+      nil
+    end
+
+    def handle(params)
+      return unless params['isBlocked'] && ours?(params['intercepts'])
+
+      answer = [:fail]
+      begin
+        answer = decide(params['request'] || {})
+      rescue StandardError => e
+        store_error(e)
+      ensure
+        deliver(params, answer)
+      end
+    end
+
+    def ours?(ids)
+      @lock.synchronize { Array(ids).any? { |id| @ids.include?(id) } }
+    end
+
+    def store_error(error)
+      @lock.synchronize { @error = error if @error.nil? }
+    end
+
+    def decide(raw)
+      request = build_request(raw)
+      mocks, error = @lock.synchronize { [@mocks.reverse, @error] }
+      mock = mocks.find { |m| m.matcher.match?(request.url, request.method) }
+      preflight = preflight?(request, mocks)
+      return (mock || preflight ? [:fail] : [:continue, nil]) if error
+      return preflight_answer(request) if preflight
+      return [:continue, nil] unless mock
+
+      mock.record(request)
+      answer = mock.block ? from_block(mock, request, raw['headers']) : [:fulfil, mock.response]
+      answer.first == :fulfil ? [:fulfil, with_cors(request, answer.last)] : answer
+    end
+
+    # An OPTIONS request asking for CORS permission to a URL some mock covers, with no mock of
+    # its own for OPTIONS: the router answers it. It is neither recorded nor reported.
+    def preflight?(request, mocks)
+      return false unless request.method.upcase == 'OPTIONS' && request.headers.key?('access-control-request-method')
+
+      covering = mocks.select { |m| m.matcher.match_url?(request.url) }
+      covering.any? && covering.none? { |m| m.matcher.method?('OPTIONS') }
+    end
+
+    def preflight_answer(request)
+      pairs = [['Access-Control-Allow-Methods', request.headers['access-control-request-method']]]
+      requested = request.headers['access-control-request-headers']
+      pairs << ['Access-Control-Allow-Headers', requested] if requested
+      [:preflight, with_cors(request, { status: 204, headers: pairs, body: '' }, force: true)]
+    end
+
+    # Adds Allow-Origin and Allow-Credentials for a cross-origin request unless the mock set them.
+    def with_cors(request, response, force: false)
+      origin = request_origin(request)
+      return response if origin && !(force || cross_origin?(origin, request.url))
+
+      headers = response[:headers].dup
+      # Without a known origin (Referrer-Policy no-referrer) a wildcard passes, but never with credentials.
+      allowed = { 'Access-Control-Allow-Origin' => origin || '*' }
+      allowed['Access-Control-Allow-Credentials'] = 'true' if origin
+      allowed.each do |name, value|
+        headers << [name, value] if headers.none? { |existing, _| existing.casecmp?(name) }
+      end
+      response.merge(headers: headers)
+    end
+
+    # Chrome adds the Origin header after the request is paused, so it is missing here: the Referer's
+    # origin stands in for it.
+    def request_origin(request)
+      request.headers['origin'] || referer_origin(request.headers['referer'])
+    end
+
+    def referer_origin(referer)
+      return nil unless referer
+
+      uri = URI(referer)
+      "#{uri.scheme}://#{uri.host}#{":#{uri.port}" unless uri.port == uri.default_port}" if uri.host
+    rescue URI::Error
+      nil
+    end
+
+    def cross_origin?(origin, url)
+      uri = URI(url)
+      own = "#{uri.scheme}://#{uri.host}#{":#{uri.port}" unless uri.port == uri.default_port}"
+      origin.downcase != own.downcase
+    rescue URI::Error
+      false
+    end
+
+    def build_request(raw)
+      headers = Array(raw['headers']).each_with_object({}) do |header, all|
+        all[header['name'].to_s.downcase] = header_value(header)
+      end
+      RaiderRequest.new(raw['method'].to_s, raw['url'].to_s, headers.freeze).freeze
+    end
+
+    def header_value(header)
+      value = header['value']
+      value.is_a?(Hash) ? value['value'] : value
+    end
+
+    def from_block(mock, request, raw_headers)
+      result = run_block(mock, request)
+      case result
+      when :fail then [:fail]
+      when :continue then [:continue, nil]
+      when Hash then from_hash(mock, result, raw_headers)
+      else junk(mock, result)
+      end
+    end
+
+    def run_block(mock, request)
+      mock.block.call(request)
+    rescue Exception => e # rubocop:disable Lint/RescueException
+      # An expectation failure inside the block is an Exception, not a StandardError: it must not
+      # vanish on Selenium's callback thread. Fatal ones fail the request (ensure) and propagate.
+      raise if FATAL.any? { |fatal| e.is_a?(fatal) }
+
+      raise MockError, "mock_request block for #{mock.url} raised #{e.class}: #{e.message}"
+    end
+
+    def from_hash(mock, result, raw_headers)
+      return continue_with(mock, result, raw_headers) if result.key?(:continue)
+
+      [:fulfil, NetworkHelper.build_response(**result)]
+    rescue ArgumentError, TypeError, NoMethodError => e
+      junk(mock, result, e.message)
+    end
+
+    def continue_with(mock, result, raw_headers)
+      options = result[:continue]
+      return junk(mock, result) unless result.size == 1 && options.is_a?(Hash) && (options.keys - [:headers]).empty?
+
+      [:continue, NetworkHelper.merge_headers(raw_headers, options[:headers] || {})]
+    end
+
+    def junk(mock, result, reason = nil)
+      raise MockError, ["mock_request block for #{mock.url} returned #{result.inspect}", reason].compact.join(': ')
+    end
+
+    def deliver(params, answer)
+      request_id = params['request']['request']
+      kind, detail = answer
+      case kind
+      when :fulfil then respond(params, request_id, detail)
+      when :preflight then provide(request_id, detail)
+      when :fail then fail_request(params, request_id)
+      else continue_request(request_id, detail)
+      end
+    rescue StandardError
+      nil
+    end
+
+    def respond(params, request_id, response)
+      notify(params, request_id, 'fulfilled', response[:status])
+      provide(request_id, response)
+    end
+
+    def provide(request_id, response)
+      @bidi.send_cmd('network.provideResponse', request: request_id, statusCode: response[:status],
+                                                reasonPhrase: REASON_PHRASES.fetch(response[:status], 'OK'),
+                                                headers: NetworkHelper.header_list(response[:headers]),
+                                                body: { type: 'base64', value: [response[:body]].pack('m0') })
+    rescue StandardError
+      # The page must never hang on a paused request: fall back to a network error.
+      begin
+        @bidi.send_cmd('network.failRequest', request: request_id)
+      rescue StandardError
+        nil
+      end
+    end
+
+    def fail_request(params, request_id)
+      notify(params, request_id, 'failed', nil)
+      @bidi.send_cmd('network.failRequest', request: request_id)
+    end
+
+    def continue_request(request_id, headers)
+      args = { request: request_id }
+      args[:headers] = headers if headers
+      @bidi.send_cmd('network.continueRequest', **args)
+    end
+
+    def notify(params, request_id, outcome, status)
+      NetworkHelper.observer&.request_mocked(request_id: request_id, redirect_count: params['redirectCount'].to_i,
+                                             outcome: outcome, status: status)
+    rescue StandardError
+      nil
+    end
+  end
+
+  ROUTERS = ObjectSpace::WeakMap.new
+  ROUTERS_LOCK = Mutex.new
+
+  class << self
+    # Follows the mocks: responds to #request_mocked(request_id:, redirect_count:, outcome:, status:)
+    # when set. Called before a request is answered. Nil by default.
+    attr_accessor :observer
+
+    def bidi_off?
+      ENV['BIDI'].to_s.downcase == 'off'
+    end
+
+    # True for a browser that speaks WebDriver BiDi (Edge reports MicrosoftEdge), unless BIDI=off.
+    def bidi?(browser)
+      return false if bidi_off?
+
+      name = browser.to_s.downcase.delete_prefix('microsoft')
+      BIDI_BROWSERS.any? { |bidi_browser| name.start_with?(bidi_browser) }
+    end
+
+    # The router for this driver, created on first use. Raises Unavailable without BiDi.
+    # ROUTERS holds its values weakly; the router stays alive because the block registered with
+    # bidi.add_callback in Router#initialize captures it, and the driver's bidi holds that block.
+    def router_for(driver)
+      ROUTERS_LOCK.synchronize { ROUTERS[driver] ||= create_router(driver) }
+    end
+
+    # Removes the driver's intercepts and returns the stored MockError, or nil. Never raises.
+    def finish(driver)
+      router = ROUTERS_LOCK.synchronize { ROUTERS[driver] }
+      router&.finish
+    rescue StandardError
+      nil
+    end
+
+    # Adds the mock to the driver's router, raising a stored MockError first.
+    def register(driver, mock)
+      router = router_for(driver)
+      router.raise_error!
+      router.add(mock)
+    end
+
+    # The router if one exists; never creates one.
+    def existing_router(driver)
+      ROUTERS_LOCK.synchronize { ROUTERS[driver] }
+    end
+
+    def build_response(status: 200, json: nil, body: nil, headers: {}, content_type: nil)
+      raise ArgumentError, 'pass json: or body:, not both' unless json.nil? || body.nil?
+
+      list = headers.map { |name, value| [name.to_s, value.to_s] }
+      list = list.reject { |name, _| name.casecmp?('content-type') } << ['Content-Type', content_type.to_s] if content_type
+      list << ['Content-Type', 'application/json'] if !json.nil? && list.none? { |name, _| name.casecmp?('content-type') }
+      { status: valid_status(status), headers: list, body: (json.nil? ? body.to_s : JSON.generate(json)) }
+    end
+
+    def valid_status(status)
+      code = Integer(status)
+      raise ArgumentError, "status must be 100..599, got #{code}" unless (100..599).cover?(code)
+
+      code
+    end
+
+    # The request's own headers with these replacing same-named ones, as a BiDi header list.
+    def merge_headers(raw_headers, changes)
+      names = changes.keys.map { |name| name.to_s.downcase }
+      kept = Array(raw_headers).reject { |header| names.include?(header['name'].to_s.downcase) }
+      kept = kept.map do |header|
+        value = header['value'].is_a?(Hash) ? header['value'] : { 'type' => 'string', 'value' => header['value'] }
+        { name: header['name'], value: { type: value['type'], value: value['value'] } }
+      end
+      kept + header_list(changes.map { |name, value| [name.to_s, value.to_s] })
+    end
+
+    def header_list(pairs)
+      pairs.map { |name, value| { name: name, value: { type: 'string', value: value } } }
+    end
+
+    private
+
+    def create_router(driver)
+      raise Unavailable, 'network mocking is off: BIDI=off is set' if bidi_off?
+
+      browser = driver.capabilities.browser_name
+      raise Unavailable, "network mocking needs WebDriver BiDi, which #{browser.inspect} does not support" unless bidi?(browser)
+
+      begin
+        Router.new(driver.bidi)
+      rescue StandardError => e
+        raise Unavailable, "network mocking needs WebDriver BiDi, but #{browser} refused it: #{e.class}: #{e.message}"
+      end
+    end
+  end
+
+  # Answers matching requests with your own response; the request never reaches the server.
+  # Pass a block instead to decide per request: it gets a RaiderRequest and returns a Hash of
+  # response options, :fail, :continue, or { continue: { headers: { 'x-a' => 'b' } } }.
+  def mock_request(url, status: 200, json: nil, body: nil, headers: {}, content_type: nil, method: nil, &block)
+    matcher = Matcher.new(url, method: method)
+    response = nil
+    given = status != 200 || !json.nil? || !body.nil? || !headers.empty? || content_type
+    raise ArgumentError, 'give either a block or a response, not both' if block && given
+
+    unless block
+      response = NetworkHelper.build_response(status: status, json: json, body: body,
+                                              headers: headers, content_type: content_type)
+    end
+    NetworkHelper.register(driver, RaiderMock.new(url, matcher, response: response, block: block))
+  end
+
+  # Matching requests fail with a network error.
+  def block_request(url, method: nil)
+    mock_request(url, method: method) { :fail }
+  end
+
+  # Stops answering for this mock and removes its intercept.
+  def remove_mock(mock)
+    router = NetworkHelper.existing_router(driver)
+    router&.raise_error!
+    router&.remove(mock)
+  end
+
+  # Removes every mock on this driver.
+  def clear_mocks
+    router = NetworkHelper.existing_router(driver)
+    router&.raise_error!
+    router&.clear
+  end
+end
