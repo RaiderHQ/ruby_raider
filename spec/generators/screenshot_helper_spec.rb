@@ -215,8 +215,8 @@ RSpec.describe 'ScreenshotHelper' do
   end
 
   describe '.decide' do
-    def decide(exists:, matched:, ci: false, update: false)
-      allow(ScreenshotHelper).to receive_messages(ci?: ci, update?: update)
+    def decide(exists:, matched:, on_ci: false, update: false)
+      allow(ScreenshotHelper).to receive_messages(ci?: on_ci, update?: update)
       ScreenshotHelper.decide(baseline_exists: exists, matched: matched)
     end
 
@@ -225,8 +225,8 @@ RSpec.describe 'ScreenshotHelper' do
     end
 
     it 'fails a missing baseline on CI unless asked to update' do
-      expect(decide(exists: false, matched: false, ci: true)).to eq(:missing_on_ci)
-      expect(decide(exists: false, matched: false, ci: true, update: true)).to eq(:created)
+      expect(decide(exists: false, matched: false, on_ci: true)).to eq(:missing_on_ci)
+      expect(decide(exists: false, matched: false, on_ci: true, update: true)).to eq(:created)
     end
 
     it 'updates a mismatch only when asked to' do
@@ -449,6 +449,112 @@ RSpec.describe 'ScreenshotHelper' do
       driver = driver_class.new(png, failing: true)
       expect { host_for(driver).match_screenshot('home') }.to raise_error(RuntimeError, 'capture failed')
       expect(driver.events.last).to eq(:remove_style)
+    end
+  end
+
+  describe 'ScreenshotHelper::Report' do
+    let(:attached) { [] }
+    let(:recorded) { [] }
+    let(:reporter) do
+      files = attached
+      records = recorded
+      Module.new do
+        define_singleton_method(:attach) do |name, path, **options|
+          files << [name, path, options, File.exist?(path), File.binread(path)]
+        end
+        define_singleton_method(:comparison) { |**fields| records << fields }
+      end
+    end
+    let(:diff_result) do
+      ScreenshotHelper::Diff::Result.new(1, 0.01, [10, 10], [10, 10], 'diff-bytes')
+    end
+    let(:options) { { threshold: 0.2, max_diff_pixels: 0, max_diff_ratio: nil } }
+
+    def report(status, result: diff_result, images: {})
+      ScreenshotHelper::Report.call(name: 'home', status: status, baseline: 'screenshots/baselines/chrome/home.png',
+                                    result: result, options: options, images: images)
+    end
+
+    it 'attaches the three images of a failed comparison, then records it' do
+      stub_const('RaiderReporter', reporter)
+      report(:failed, images: { expected: 'e', actual: 'a', diff: 'd' })
+      expect(attached.map { |file| file.first(3) }).to eq(
+        [['comparison:home:expected', attached[0][1], { type: :png }],
+         ['comparison:home:actual', attached[1][1], { type: :png }],
+         ['comparison:home:diff', attached[2][1], { type: :png }]]
+      )
+      expect(attached.map { |file| file[4] }).to eq(%w[e a d])
+      expect(recorded).to eq(
+        [{ name: 'home', status: :failed, baseline: 'screenshots/baselines/chrome/home.png', diff_pixels: 1,
+           diff_ratio: 0.01, threshold: 0.2, max_diff_pixels: 0, max_diff_ratio: nil,
+           expected_size: [10, 10], actual_size: [10, 10] }]
+      )
+    end
+
+    it 'attaches only the actual image of a created comparison, with zero differences' do
+      stub_const('RaiderReporter', reporter)
+      report(:created, result: nil, images: { actual: 'a' })
+      expect(attached.map(&:first)).to eq(['comparison:home:actual'])
+      expect(recorded.first).to include(status: :created, diff_pixels: 0, diff_ratio: 0.0, expected_size: nil)
+    end
+
+    it 'attaches nothing for a passed comparison but still records it' do
+      stub_const('RaiderReporter', reporter)
+      report(:passed)
+      expect(attached).to be_empty
+      expect(recorded.map { |fields| fields[:status] }).to eq([:passed])
+    end
+
+    it 'removes the temp files afterwards' do
+      stub_const('RaiderReporter', reporter)
+      report(:failed, images: { expected: 'e', actual: 'a', diff: 'd' })
+      expect(attached.map { |file| file[3] }).to all(be(true))
+      expect(attached.map { |file| File.exist?(file[1]) }).to all(be(false))
+    end
+
+    it 'attaches only and warns once when the reporter has no comparison method' do
+      old = Module.new
+      files = attached
+      old.define_singleton_method(:attach) { |name, path, **_| files << [name, path] }
+      stub_const('RaiderReporter', old)
+      expect { 2.times { report(:failed, images: { actual: 'a' }) } }
+        .to output(/raider_reporter.*comparison/m).to_stderr
+      expect(attached.length).to eq(2)
+    end
+
+    it 'does nothing without raider_reporter' do
+      hide_const('RaiderReporter')
+      expect { report(:failed, images: { actual: 'a' }) }.not_to raise_error
+    end
+
+    def host_with(png)
+      driver = Struct.new(:png) do
+        def screenshot_as(_format)
+          png
+        end
+
+        def execute_async_script(_script); end
+
+        def execute_script(*); end
+      end.new(png)
+      Class.new { include ScreenshotHelper }.new.tap { |host| host.define_singleton_method(:driver) { driver } }
+    end
+
+    it 'is called by match_screenshot before it raises' do
+      stub_const('RaiderReporter', reporter)
+      ScreenshotHelper.reset
+      allow(ScreenshotHelper).to receive_messages(ci?: false, update?: false)
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          FileUtils.mkdir_p('screenshots/baselines/chrome')
+          File.binwrite('screenshots/baselines/chrome/home.png', ChunkyPNG::Image.new(4, 4, ChunkyPNG::Color::WHITE).to_blob)
+          black = ChunkyPNG::Image.new(4, 4, ChunkyPNG::Color::BLACK).to_blob
+          host = host_with(black)
+          expect { host.match_screenshot('home', timeout: 0) }.to raise_error(ScreenshotHelper::Mismatch)
+        end
+      end
+      expect(attached.map(&:first)).to eq(%w[comparison:home:expected comparison:home:actual comparison:home:diff])
+      expect(recorded.first).to include(status: :failed, diff_pixels: 16)
     end
   end
 end

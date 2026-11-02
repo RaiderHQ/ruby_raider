@@ -263,6 +263,51 @@ module ScreenshotHelper
     end
   end
 
+  # Hands a comparison to raider_reporter while the test runs: its images, then the record. Internal.
+  module Report
+    IMAGES = %i[expected actual diff].freeze
+
+    # rubocop:disable Style/StderrPuts
+    def self.call(name:, status:, baseline:, result:, options:, images:)
+      return unless defined?(RaiderReporter)
+
+      attach_images(name, images)
+      record(name, status, baseline, result, options)
+    rescue StandardError => e
+      $stderr.puts("[screenshots] could not report '#{name}': #{e.class}: #{e.message}")
+    end
+
+    def self.attach_images(name, images)
+      Dir.mktmpdir('raider-screenshot') do |folder|
+        IMAGES.each do |kind|
+          next unless images[kind]
+
+          path = File.join(folder, "#{kind}.png")
+          File.binwrite(path, images[kind])
+          RaiderReporter.attach("comparison:#{name}:#{kind}", path, type: :png)
+        end
+      end
+    end
+
+    def self.record(name, status, baseline, result, options)
+      unless RaiderReporter.respond_to?(:comparison)
+        return if @warned
+
+        @warned = true
+        return $stderr.puts('[screenshots] this raider_reporter has no comparison method; update it to list comparisons in the report')
+      end
+
+      RaiderReporter.comparison(**fields(name, status, baseline, result), **options)
+    end
+    # rubocop:enable Style/StderrPuts
+
+    def self.fields(name, status, baseline, result)
+      { name: name, status: status, baseline: baseline,
+        diff_pixels: result ? result.diff_pixels : 0, diff_ratio: result ? result.diff_ratio : 0.0,
+        expected_size: result&.expected_size, actual_size: result&.actual_size }
+    end
+  end
+
   # One match_screenshot call: capture until the page matches the baseline or time runs out. Internal.
   class Comparison
     PAUSE = 0.25
@@ -318,7 +363,9 @@ module ScreenshotHelper
       status == :updated ? { actual: actual } : {}
     end
 
-    def finish(status, result, _images)
+    def finish(status, result, images)
+      Report.call(name: @name, status: status, baseline: @baseline.path, result: result,
+                  options: @options, images: images)
       raise Mismatch, failure_message(result) if status == :failed
 
       true
