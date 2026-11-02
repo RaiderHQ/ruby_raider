@@ -613,6 +613,31 @@ describe 'Generated TraceHelper' do
     end
   end
 
+  it 'prints the no-BiDi notice and then the disable line when a Safari run fails to write its zip' do
+    allow(capabilities).to receive(:browser_name).and_return('Safari')
+    allow(TraceHelper::ZipWriter).to receive(:write).and_raise(Errno::ENOSPC)
+    2.times do
+      recorder = started_recorder
+      recorder.navigated('https://example.test/login')
+      recorder.stop(keep: true, test: failed_test)
+    end
+
+    expect(warnings).to eq(["[trace] network and console not captured: Safari has no WebDriver BiDi\n",
+                            "[trace] could not write the trace: No space left on device; tracing disabled for this run\n"])
+    expect(TraceHelper.enabled?).to be(false)
+  end
+
+  it 'prints a media miss and then the disable line, at most one of each' do
+    allow(TraceHelper::ZipWriter).to receive(:write).and_raise(Errno::ENOSPC)
+    recorder = started_recorder(screenshot: ->(_driver) { raise 'browser gone' })
+    2.times { recorder.navigated('https://example.test/login') }
+    recorder.stop(keep: true, test: failed_test)
+    TraceHelper.disable!('a second reason')
+
+    expect(warnings).to eq(["[trace] screenshot not captured: browser gone\n",
+                            "[trace] could not write the trace: No space left on device; tracing disabled for this run\n"])
+  end
+
   it 'turns tracing off for the run after one [trace] warning when writing the zip fails' do
     allow(TraceHelper::ZipWriter).to receive(:write).and_raise(Errno::ENOSPC)
     2.times do

@@ -100,6 +100,12 @@ describe 'Cucumber raider_reporter wiring' do
             expect(plugin).to include('TraceHelper.warn_once("Gherkin step groups unavailable')
           end
 
+          it 'turns tracing off with TraceHelper.disable! when a step group handler raises' do
+            plugin = env[/^InstallPlugin do.*?^end$/m]
+            expect(plugin.scan(/TraceHelper\.disable!\("step groups failed: \#\{e\.message\}"\) if defined\?\(TraceHelper\)/).size).to eq(2)
+            expect(plugin).not_to include('tracing disabled')
+          end
+
           it 'records each Gherkin step as a group through the InstallPlugin step events, skipping hooks' do
             plugin = env[/^InstallPlugin do.*?^end$/m]
             expect(plugin).to include('config.on_event(:test_step_started)', 'config.on_event(:test_step_finished)', 'next if event.test_step.hook?')

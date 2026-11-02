@@ -10,8 +10,9 @@ require 'zlib'
 # Records a trace of each test: one step per WaitHelper action and navigation, with
 # a screenshot and the page HTML after each state-changing step. stop(keep: true)
 # writes it as trace.zip in the raider-trace v1 format, which Raider Desktop and
-# Hideout open. Any capture error prints one [trace] warning and turns tracing off
-# for the rest of the run; it never raises into a test. TRACE=off skips tracing and
+# Hideout open. Any capture error prints one [trace] line and turns tracing off for
+# the rest of the run; it never raises into a test. Something only left out (a
+# screenshot, or network on a browser without BiDi) prints at most one notice. TRACE=off skips tracing and
 # TRACE=on keeps the trace of passing tests too.
 # The Recorder follows WaitHelper as its observer. Without helpers/wait_helper.rb a
 # trace records only navigation and the failure. Navigation comes from TraceHelper.listener,
@@ -29,6 +30,7 @@ module TraceHelper
 
   @disabled = false
   @warned = false
+  @disable_warned = false
   @active_recorder = nil
 
   class << self
@@ -77,14 +79,19 @@ module TraceHelper
       WaitHelper.observer = nil if defined?(WaitHelper) && WaitHelper.observer.equal?(recorder)
     end
 
+    # The first reason tracing stopped always gets its own [trace] line, even after a notice.
     def disable!(reason)
       @disabled = true
       release(@active_recorder)
       detach_observer
-      warn_once("#{reason}; tracing disabled for this run")
+      return nil if @disable_warned
+
+      @disable_warned = true
+      say("#{reason}; tracing disabled for this run")
+      nil
     end
 
-    # One [trace] warning per run, whatever went wrong first.
+    # At most one notice per run, for something left out of a trace while tracing goes on.
     def warn_once(message)
       return nil if @warned
 

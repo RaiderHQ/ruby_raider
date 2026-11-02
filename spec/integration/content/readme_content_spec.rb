@@ -70,6 +70,10 @@ describe 'Generated Readme content' do
           expect(section).to include('one screenshot and one page HTML', 'max_mb', 'max_steps', 'trace:')
         end
 
+        it 'allows at most one [trace] notice, plus one line when tracing stops' do
+          expect(section).to include('at most one `[trace]` notice', 'one more `[trace]` line', 'tracing disabled for this run')
+        end
+
         it 'limits network and console to Chrome, Edge or Firefox' do
           expect(section).to include('Chrome, Edge or Firefox', 'Safari', 'steps, screenshots and HTML')
         end

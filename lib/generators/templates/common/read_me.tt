@@ -702,8 +702,9 @@ next to the failure screenshot and video, and attached to the report as `trace`.
 - Network requests and console messages are captured only on Chrome, Edge or Firefox. Other browsers, such as
   Safari, get a trace with steps, screenshots and HTML only. Capture is passive: the trace listens to the browser and
   never changes a request.
-- The trace helper never fails a test. If capturing breaks, you get one `[trace]` line on stderr and no more traces
-  for that run.
+- The trace helper never fails a test. When it has to leave something out, such as network on a browser without
+  BiDi or a screenshot it could not take, you get at most one `[trace]` notice on stderr for the run. If capturing
+  breaks, you get one more `[trace]` line ending in "tracing disabled for this run", and no more traces for that run.
 
 **Treat a trace like the video: it can contain secrets.** What is hidden: values typed into password fields
 (`type=password`, or an `autocomplete` that contains "password"), and any typed value equal to a `RAIDER_SECRET_*`

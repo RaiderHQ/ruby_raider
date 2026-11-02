@@ -40,7 +40,7 @@ InstallPlugin do |config, _registry|
         location = { file: step.location.file, line: step.location.lines.min }
         groups[step.id] = TraceHelper.active_recorder&.step_started(name: [keyword, step.text].compact.join(' '), source: location)
       rescue StandardError => e
-        TraceHelper.warn_once("step groups failed: #{e.message}; tracing disabled for this run")
+        TraceHelper.disable!("step groups failed: #{e.message}") if defined?(TraceHelper)
       end
       config.on_event(:test_step_finished) do |event|
         next if event.test_step.hook?
@@ -49,7 +49,7 @@ InstallPlugin do |config, _registry|
         error = event.result.failed? ? event.result.exception : nil
         TraceHelper.active_recorder&.step_finished(groups.delete(event.test_step.id), status: status, error: error)
       rescue StandardError => e
-        TraceHelper.warn_once("step groups failed: #{e.message}; tracing disabled for this run")
+        TraceHelper.disable!("step groups failed: #{e.message}") if defined?(TraceHelper)
       end
     rescue StandardError => e
       TraceHelper.warn_once("Gherkin step groups unavailable: #{e.message}")
