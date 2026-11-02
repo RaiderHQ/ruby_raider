@@ -272,7 +272,7 @@ module ScreenshotHelper
       return unless defined?(RaiderReporter)
 
       attach_images(name, images)
-      record(name, status, baseline, result, options)
+      record(name, status, baseline, result || sizes_of(images[:actual]), options)
     rescue StandardError => e
       $stderr.puts("[screenshots] could not report '#{name}': #{e.class}: #{e.message}")
     end
@@ -300,6 +300,13 @@ module ScreenshotHelper
       RaiderReporter.comparison(**fields(name, status, baseline, result), **options)
     end
     # rubocop:enable Style/StderrPuts
+
+    # With no diff result (created, or updated over an unreadable baseline) only the actual image has a size.
+    def self.sizes_of(png)
+      return unless png
+
+      Diff::Result.new(0, 0.0, nil, Diff.size_of(Diff.decode(png)), nil)
+    end
 
     def self.fields(name, status, baseline, result)
       { name: name, status: status, baseline: baseline,

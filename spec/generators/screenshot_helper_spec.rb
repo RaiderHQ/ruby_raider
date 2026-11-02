@@ -493,9 +493,22 @@ RSpec.describe 'ScreenshotHelper' do
 
     it 'attaches only the actual image of a created comparison, with zero differences' do
       stub_const('RaiderReporter', reporter)
-      report(:created, result: nil, images: { actual: 'a' })
+      report(:created, result: nil, images: { actual: ChunkyPNG::Image.new(7, 5).to_blob })
       expect(attached.map(&:first)).to eq(['comparison:home:actual'])
-      expect(recorded.first).to include(status: :created, diff_pixels: 0, diff_ratio: 0.0, expected_size: nil)
+      expect(recorded.first).to include(status: :created, diff_pixels: 0, diff_ratio: 0.0, expected_size: nil,
+                                        actual_size: [7, 5])
+    end
+
+    it 'gives an updated comparison without a diff result the size of the actual image' do
+      stub_const('RaiderReporter', reporter)
+      report(:updated, result: nil, images: { actual: ChunkyPNG::Image.new(3, 4).to_blob })
+      expect(recorded.first).to include(status: :updated, expected_size: nil, actual_size: [3, 4])
+    end
+
+    it 'keeps the real sizes of an updated comparison that had a diff result' do
+      stub_const('RaiderReporter', reporter)
+      report(:updated, images: { actual: ChunkyPNG::Image.new(3, 4).to_blob })
+      expect(recorded.first).to include(expected_size: [10, 10], actual_size: [10, 10])
     end
 
     it 'attaches nothing for a passed comparison but still records it' do
