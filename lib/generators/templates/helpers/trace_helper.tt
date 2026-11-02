@@ -28,6 +28,8 @@ module TraceHelper
   SECRET_ENV_PREFIX = 'RAIDER_SECRET_'
   # The driver helper sets web_socket_url for these while tracing is on.
   BIDI_BROWSERS = %w[chrome edge firefox].freeze
+  # Step entries are named steps/NNNN.*, so a trace keeps at most 9999 steps.
+  MAX_STEPS_LIMIT = 9999
 
   @disabled = false
   @warned = false
@@ -101,9 +103,10 @@ module TraceHelper
       nil
     end
 
+    # Above 9999 is taken as 9999, silently; zero or less (or not a number) as the default.
     def max_steps
       value = config['max_steps'].to_i
-      value.positive? ? value : DEFAULTS['max_steps']
+      value.positive? ? [value, MAX_STEPS_LIMIT].min : DEFAULTS['max_steps']
     end
 
     def max_bytes

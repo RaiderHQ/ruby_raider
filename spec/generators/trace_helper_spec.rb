@@ -539,6 +539,14 @@ describe 'Generated TraceHelper' do
     end
   end
 
+  it 'treats max_steps above 9999 as 9999, so step entries stay steps/NNNN, and a non-positive one as the default' do
+    { 50_000 => 9999, 9999 => 9999, 1 => 1, 0 => 200, -3 => 200 }.each do |configured, used|
+      allow(TraceHelper).to receive(:config).and_return(trace_config.merge('max_steps' => configured))
+      expect(TraceHelper.max_steps).to eq(used), "max_steps: #{configured}"
+    end
+    expect(warnings).to eq([])
+  end
+
   it 'keeps at most max_steps steps, newest kept' do
     allow(TraceHelper).to receive(:config).and_return(trace_config.merge('max_steps' => 5))
     recorder = started_recorder
