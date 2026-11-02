@@ -168,8 +168,10 @@ Gem upgrades do not rewrite generated code, so a project made with 3.13 or earli
    `config.include(NetworkHelper)` in `helpers/spec_helper.rb` (RSpec), or `World(NetworkHelper)` in
    `features/support/world.rb` with `require_relative '../../helpers/network_helper'` (Cucumber). If you want mocks in
    page objects, add `include NetworkHelper` to `page_objects/abstract/page.rb`.
-3. In the after hook, call `mock_error = NetworkHelper.finish(driver)` before the driver quits, and `raise mock_error if mock_error`
-   after `driver.quit`, so a failing mock block fails the test and mocks never leak into the next test.
+3. In the after hook, call `mock_error = NetworkHelper.finish(driver)` before the driver quits. Treat the returned mock error
+   as a failure when deciding whether to keep the trace and video (`example.exception || mock_error` in RSpec,
+   `scenario.failed? || mock_error` in Cucumber), and `raise mock_error if mock_error` after the driver quits, so a failing
+   mock block fails the test and mocks never leak into the next test.
 4. In `helpers/driver_helper.rb`, make the BiDi condition include the helper:
    `bidi = (defined?(TraceHelper) && TraceHelper.bidi?(load_browser)) || (defined?(NetworkHelper) && NetworkHelper.bidi?(load_browser))`.
 

@@ -77,6 +77,15 @@ RSpec.describe 'NetworkHelper::Matcher' do
         .to eq([{ type: 'pattern', protocol: 'http', hostname: '127.0.0.1', port: '4567', pathname: '/api' }])
     end
 
+    it 'does not narrow on an IPv6 host, userinfo, or a path BiDi patterns reject' do
+      expect(matcher.new('http://[::1]:8080/api').intercept_patterns).to be_nil
+      expect(matcher.new('https://u@a.test/x').intercept_patterns).to be_nil
+      expect(matcher.new('https://a.test/a(b)').intercept_patterns)
+        .to eq([{ type: 'pattern', protocol: 'https', hostname: 'a.test' }])
+      expect(matcher.new('https://a.test/a{b}').intercept_patterns)
+        .to eq([{ type: 'pattern', protocol: 'https', hostname: 'a.test' }])
+    end
+
     it 'is nil when nothing literal is left' do
       expect(matcher.new(/x/).intercept_patterns).to be_nil
       expect(matcher.new('**').intercept_patterns).to be_nil
@@ -223,7 +232,7 @@ RSpec.describe 'NetworkHelper::Router' do
     emit
     params = bidi.named('network.provideResponse').first
     expect(params).to include(request: 'r1', statusCode: 200, reasonPhrase: 'OK')
-    expect(header_pairs(params)).to eq('Content-Type' => 'application/json')
+    expect(header_pairs(params)).to eq('Content-Type' => 'application/json', 'Access-Control-Allow-Origin' => '*')
     expect(params[:body]).to eq(type: 'base64', value: ['{"users":[]}'].pack('m0'))
   end
 
@@ -233,8 +242,8 @@ RSpec.describe 'NetworkHelper::Router' do
     emit(url: 'https://a.test/a')
     emit(id: 'r2', url: 'https://a.test/b', intercepts: ['i-2'])
     first, second = bidi.named('network.provideResponse')
-    expect(header_pairs(first)).to eq('content-type' => 'application/vnd.api+json')
-    expect(header_pairs(second)).to eq('Content-Type' => 'text/x-json')
+    expect(header_pairs(first)).to include('content-type' => 'application/vnd.api+json')
+    expect(header_pairs(second)).to include('Content-Type' => 'text/x-json')
     expect(second).to include(statusCode: 201, reasonPhrase: 'Created')
   end
 
@@ -244,6 +253,13 @@ RSpec.describe 'NetworkHelper::Router' do
     params = bidi.named('network.provideResponse').first
     expect(params[:body][:value].unpack1('m0')).to eq("\xFF\x00é".b)
     expect(params[:reasonPhrase]).to eq('Created')
+  end
+
+  it 'rejects a block given together with a response' do
+    [{ status: 500 }, { json: {} }, { body: 'x' }, { headers: { 'a' => 'b' } }, { content_type: 'text/plain' }].each do |options|
+      expect { host.mock_request('**/a', **options) { :continue } }.to raise_error(ArgumentError, /either a block or a response/)
+    end
+    expect { host.mock_request('**/a') { :continue } }.not_to raise_error
   end
 
   it 'rejects a status outside 100..599' do
@@ -374,6 +390,25 @@ RSpec.describe 'NetworkHelper::Router' do
       expect { host.clear_mocks }.to raise_error(NetworkHelper::MockError, /returned 42/)
     end
 
+    it 'with a stored error fails a matching request but continues an unmatched one' do
+      host.mock_request('https://a.test/api/users') { raise 'boom' }
+      emit
+      emit(id: 'r2', url: 'https://a.test/other')
+      emit(id: 'r3', url: 'https://a.test/api/users')
+      expect(bidi.named('network.failRequest').map { |p| p[:request] }).to eq(%w[r1 r3])
+      expect(bidi.named('network.continueRequest')).to eq([{ request: 'r2' }])
+    end
+
+    it 'turns a returned Hash with bad types into a MockError' do
+      [{ headers: nil }, { headers: 'x' }, { status: 'abc' }, { continue: { headers: 'x' } }].each_with_index do |result, n|
+        host.mock_request("**/bad#{n}") { result }
+        emit(id: "b#{n}", url: "https://a.test/bad#{n}", intercepts: ['i-1'])
+        expect(bidi.named('network.failRequest').map { |p| p[:request] }).to include("b#{n}")
+        expect { host.clear_mocks }.to raise_error(NetworkHelper::MockError, /returned/)
+        NetworkHelper.finish(fake_driver)
+      end
+    end
+
     it 'keeps only the first error and fails later requests' do
       host.mock_request('**/api/users') { 42 }
       emit
@@ -412,6 +447,28 @@ RSpec.describe 'NetworkHelper::Router' do
       expect(header_pairs(bidi.named('network.provideResponse').first)).to include(
         'Access-Control-Allow-Origin' => 'https://app.test'
       )
+    end
+
+    it 'sends Allow-Origin * without credentials when no Origin or Referer is known' do
+      host.mock_request('**/api/users', json: {})
+      emit
+      pairs = header_pairs(bidi.named('network.provideResponse').first)
+      expect(pairs).to include('Access-Control-Allow-Origin' => '*')
+      expect(pairs.keys).not_to include('Access-Control-Allow-Credentials')
+    end
+
+    it 'keeps the mock Allow-Origin when no origin is known' do
+      host.mock_request('**/api/users', json: {}, headers: { 'access-control-allow-origin' => 'https://x.test' })
+      emit
+      expect(header_pairs(bidi.named('network.provideResponse').first).keys).to eq(%w[access-control-allow-origin Content-Type])
+    end
+
+    it 'answers a preflight with * and no credentials when no origin is known' do
+      host.mock_request('**/api/users', json: {})
+      emit(http_method: 'OPTIONS', headers: sent('Access-Control-Request-Method' => 'GET'))
+      pairs = header_pairs(bidi.named('network.provideResponse').first)
+      expect(pairs).to include('Access-Control-Allow-Origin' => '*', 'Access-Control-Allow-Methods' => 'GET')
+      expect(pairs.keys).not_to include('Access-Control-Allow-Credentials')
     end
 
     it 'adds none when the Referer is same-origin' do

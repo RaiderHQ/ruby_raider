@@ -46,6 +46,9 @@ module NetworkHelper
       pattern.empty? ? nil : [{ type: 'pattern' }.merge(pattern)]
     end
 
+    # Characters a BiDi URL pattern pathname accepts as literals; anything else is left to the matcher.
+    SAFE_PATH = %r{\A[A-Za-z0-9._~!$&'+,;=:@/%-]*\z}.freeze
+
     private
 
     def glob_to_regexp(glob)
@@ -67,6 +70,8 @@ module NetworkHelper
       return {} unless scheme
 
       hostport, path = glob.delete_prefix("#{scheme}://").split(%r{(?=/)}, 2)
+      return {} if hostport.to_s.match?(/[\[@]/)
+
       host, port = hostport.to_s.split(':', 2)
       return {} if [host, port].compact.any? { |part| part.empty? || part.include?('*') }
 
@@ -74,7 +79,7 @@ module NetworkHelper
     end
 
     def literal_path(path)
-      path unless path.nil? || path.include?('*')
+      path if path&.match?(SAFE_PATH)
     end
   end
 
@@ -218,10 +223,10 @@ module NetworkHelper
     def decide(raw)
       request = build_request(raw)
       mocks, error = @lock.synchronize { [@mocks.reverse, @error] }
-      return [:fail] if error
-
       mock = mocks.find { |m| m.matcher.match?(request.url, request.method) }
-      return preflight_answer(request) if preflight?(request, mocks)
+      preflight = preflight?(request, mocks)
+      return (mock || preflight ? [:fail] : [:continue, nil]) if error
+      return preflight_answer(request) if preflight
       return [:continue, nil] unless mock
 
       mock.record(request)
@@ -248,10 +253,13 @@ module NetworkHelper
     # Adds Allow-Origin and Allow-Credentials for a cross-origin request unless the mock set them.
     def with_cors(request, response, force: false)
       origin = request_origin(request)
-      return response unless origin && (force || cross_origin?(origin, request.url))
+      return response if origin && !(force || cross_origin?(origin, request.url))
 
       headers = response[:headers].dup
-      { 'Access-Control-Allow-Origin' => origin, 'Access-Control-Allow-Credentials' => 'true' }.each do |name, value|
+      # Without a known origin (Referrer-Policy no-referrer) a wildcard passes, but never with credentials.
+      allowed = { 'Access-Control-Allow-Origin' => origin || '*' }
+      allowed['Access-Control-Allow-Credentials'] = 'true' if origin
+      allowed.each do |name, value|
         headers << [name, value] if headers.none? { |existing, _| existing.casecmp?(name) }
       end
       response.merge(headers: headers)
@@ -316,7 +324,7 @@ module NetworkHelper
       return continue_with(mock, result, raw_headers) if result.key?(:continue)
 
       [:fulfil, NetworkHelper.build_response(**result)]
-    rescue ArgumentError, TypeError => e
+    rescue ArgumentError, TypeError, NoMethodError => e
       junk(mock, result, e.message)
     end
 
@@ -482,6 +490,9 @@ module NetworkHelper
   def mock_request(url, status: 200, json: nil, body: nil, headers: {}, content_type: nil, method: nil, &block)
     matcher = Matcher.new(url, method: method)
     response = nil
+    given = status != 200 || !json.nil? || !body.nil? || !headers.empty? || content_type
+    raise ArgumentError, 'give either a block or a response, not both' if block && given
+
     unless block
       response = NetworkHelper.build_response(status: status, json: json, body: body,
                                               headers: headers, content_type: content_type)
