@@ -1,11 +1,13 @@
 <%- if web? -%>
 
   def full_url(*page)
-    "#{base_url}#{url(*page)}"
+    "#{base_url}#{url(*page).to_s.delete_prefix('/')}"
   end
 
+  # The configured url with a trailing slash, so page paths never run into its last segment.
   def base_url
-    YAML.load_file('config/config.yml')['url']
+    base = YAML.load_file('config/config.yml')['url'].to_s
+    base.end_with?('/') ? base : "#{base}/"
   end
 
   def url(_page)
