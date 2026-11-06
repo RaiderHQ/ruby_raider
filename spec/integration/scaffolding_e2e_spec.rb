@@ -150,7 +150,7 @@ describe 'Scaffolding E2E' do
     end
 
     it 'has before block with navigation' do
-      expect(spec_content).to include('before do')
+      expect(spec_content).to include('before { page.visit }')
     end
   end
 
@@ -159,8 +159,9 @@ describe 'Scaffolding E2E' do
       expect(spec_content).to include('CheckoutPage.new(driver)')
     end
 
-    it 'navigates with driver' do
-      expect(spec_content).to include('driver.navigate.to')
+    it 'visits through the page object, which joins the config url and the page path' do
+      expect(spec_content).to include('before { page.visit }')
+      expect(spec_content).not_to include('project_config', 'driver.navigate.to')
     end
 
     it 'does not use capybara visit' do
@@ -173,8 +174,9 @@ describe 'Scaffolding E2E' do
       expect(spec_content).to include('CheckoutPage.new(browser)')
     end
 
-    it 'navigates with browser.goto' do
-      expect(spec_content).to include('browser.goto')
+    it 'visits through the page object, which joins the config url and the page path' do
+      expect(spec_content).to include('before { page.visit }')
+      expect(spec_content).not_to include('project_config', 'browser.goto')
     end
   end
 

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'yaml'
 require_relative 'content_helper'
 
 describe 'Page object content' do
@@ -98,6 +99,39 @@ describe 'Page object content' do
 
     it 'defines to_s method' do
       expect(page).to match(/def to_s/)
+    end
+
+    describe 'full_url' do
+      # The generated full_url and base_url, loaded without the helpers the abstract page requires.
+      let(:page_class) do
+        methods = page[/^  def full_url.*?^  end\n\n(?:  #.*\n)*  def base_url.*?^  end\n/m]
+        expect(methods).not_to be_nil
+        Class.new { def url(_page) = 'index.php?rt=account/login' }.tap { |klass| klass.class_eval(methods) }
+      end
+
+      def full_url_with(base_url, path = nil)
+        allow(YAML).to receive(:load_file).with('config/config.yml').and_return('url' => base_url)
+        klass = page_class
+        klass.define_method(:url) { |_page| path } if path
+        klass.new.full_url(nil)
+      end
+
+      it 'adds the missing slash between a base url with a path and the page path' do
+        expect(full_url_with('https://example.org/login')).to eq('https://example.org/login/index.php?rt=account/login')
+      end
+
+      it 'keeps a single slash when the base url already ends with one' do
+        expect(full_url_with('https://example.org/login/')).to eq('https://example.org/login/index.php?rt=account/login')
+      end
+
+      it 'does not double the slash when the page path starts with one' do
+        expect(full_url_with('https://example.org', '/index.php')).to eq('https://example.org/index.php')
+      end
+
+      it 'returns the page path alone when the config has no url' do
+        expect(full_url_with(nil, 'https://other.example/index.php')).to eq('https://other.example/index.php')
+        expect(full_url_with(nil, '/index.php')).to eq('/index.php')
+      end
     end
   end
 

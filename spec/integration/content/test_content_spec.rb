@@ -231,7 +231,8 @@ end
 # then apply only the Readme deprecation-line delta (the `> **Deprecated:**` line under the heading block) and
 # the 3.12.1 changes: RuboCop lint fixes (page.rb loses its extra blank lines, login_steps.rb ends with a newline)
 # plus the frozen_string_literal comments the syntax spec requires (Style/FrozenStringLiteralComment is disabled
-# in the generated .rubocop.yml, so RuboCop does not ask for them) on the Watir page, world and user_factory files.
+# in the generated .rubocop.yml, so RuboCop does not ask for them) on the Watir page, world and user_factory files,
+# and the 3.15.0 base-url fix (page.rb joins the configured url and the page path with exactly one slash).
 describe 'Watir example output' do
   snapshots = File.expand_path('../../fixtures/watir_master', __dir__)
 

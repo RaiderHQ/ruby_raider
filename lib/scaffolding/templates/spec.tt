@@ -10,13 +10,7 @@ describe '<%= page_class_name %>' do
 <%- end -%>
 <%- if project_config['url'] -%>
 
-  before do
-<%- if selenium? -%>
-    driver.navigate.to "\#{project_config['url']}/<%= normalized_name %>"
-<%- elsif watir? -%>
-    browser.goto "\#{project_config['url']}/<%= normalized_name %>"
-<%- end -%>
-  end
+  before { page.visit }
 <%- end -%>
 
   it 'loads successfully' do

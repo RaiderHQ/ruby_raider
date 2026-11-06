@@ -113,7 +113,9 @@ module TemplateRenderer
 
     # Compile an ERB template
     def compile_template(path, trim_mode)
-      content = File.read(path)
+      # Templates are UTF-8 whatever the locale: a plain File.read follows Encoding.default_external, and a
+      # US-ASCII locale (no LANG, as macOS gives GUI apps) then made ERB fail on any non-ASCII byte.
+      content = File.read(path, encoding: 'UTF-8')
       ERB.new(content, trim_mode:)
     end
 

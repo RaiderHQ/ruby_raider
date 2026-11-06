@@ -1,6 +1,11 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+# Read and write UTF-8 whatever the locale: a shell with no LANG (macOS GUI apps) defaults Ruby to US-ASCII,
+# which broke the generator templates and any command that edits a generated file.
+Encoding.default_external = Encoding::UTF_8
+Encoding.default_internal = Encoding::UTF_8
+
 require_relative '../lib/ruby_raider'
 
 RubyRaider::Raider.start
