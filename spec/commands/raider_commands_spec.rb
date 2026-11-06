@@ -170,18 +170,21 @@ RSpec.describe RubyRaider::Raider do # rubocop:disable RSpec/FilePath
 
     describe 'raider new under a US-ASCII locale' do
       # macOS gives GUI apps no LANG, so a shell spawned by the desktop runs Ruby with a US-ASCII
-      # default_external; the templates hold UTF-8 bytes and must still render.
-      { 'LC_ALL=C' => { 'LANG' => nil, 'LC_CTYPE' => nil, 'LC_ALL' => 'C' },
-        'no locale variables' => { 'LANG' => nil, 'LC_CTYPE' => nil, 'LC_ALL' => nil } }.each do |label, env|
+      # default_external; the templates hold UTF-8 bytes and must still render. Watir keeps the em dash in
+      # its timeout comment, so the rendered file proves the bytes came through. RUBYOPT is unset so a
+      # -E or -K flag from the outer environment cannot hide the locale.
+      { 'LC_ALL=C' => { 'LANG' => nil, 'LC_CTYPE' => nil, 'LC_ALL' => 'C', 'RUBYOPT' => nil },
+        'no locale variables' => { 'LANG' => nil, 'LC_CTYPE' => nil, 'LC_ALL' => nil, 'RUBYOPT' => nil } }
+        .each do |label, env|
         it "renders the config under #{label}" do
           Dir.mktmpdir do |dir|
-            _out, err, status = run_raider('new', 'x', '-p', 'framework:rspec', 'automation:selenium',
+            _out, err, status = run_raider('new', 'x', '-p', 'framework:rspec', 'automation:watir',
                                            chdir: dir, env:)
 
             expect(err).not_to include('invalid multibyte')
             expect(status.exitstatus).to eq(0)
             config = File.read(File.join(dir, 'x/config/config.yml'), encoding: 'UTF-8')
-            expect(config).to include('timeout: 10 # seconds that actions and eventually wait before failing')
+            expect(config).to include("timeout: 10 # seconds \u2014 used for implicit waits and max wait time")
             expect(YAML.safe_load(config, permitted_classes: [Symbol])['url']).to include('http')
           end
         end

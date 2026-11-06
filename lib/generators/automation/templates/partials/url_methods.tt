@@ -7,7 +7,9 @@
   # The configured url with a trailing slash, so page paths never run into its last segment.
   def base_url
     base = YAML.load_file('config/config.yml')['url'].to_s
-    base.end_with?('/') ? base : "#{base}/"
+    return base if base.empty? || base.end_with?('/')
+
+    "#{base}/"
   end
 
   def url(_page)

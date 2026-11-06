@@ -12,9 +12,9 @@ describe '<%= page_class_name %>' do
 
   before do
 <%- if selenium? -%>
-    driver.navigate.to "\#{project_config['url']}/<%= normalized_name %>"
+    driver.navigate.to "#{project_config['url'].chomp('/')}/<%= normalized_name %>"
 <%- elsif watir? -%>
-    browser.goto "\#{project_config['url']}/<%= normalized_name %>"
+    browser.goto "#{project_config['url'].chomp('/')}/<%= normalized_name %>"
 <%- end -%>
   end
 <%- end -%>

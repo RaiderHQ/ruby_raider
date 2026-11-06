@@ -127,6 +127,10 @@ describe 'Page object content' do
       it 'does not double the slash when the page path starts with one' do
         expect(full_url_with('https://example.org', '/index.php')).to eq('https://example.org/index.php')
       end
+
+      it 'returns the page path alone when the config has no url' do
+        expect(full_url_with(nil, 'https://other.example/index.php')).to eq('https://other.example/index.php')
+      end
     end
   end
 

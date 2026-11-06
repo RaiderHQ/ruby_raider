@@ -159,8 +159,8 @@ describe 'Scaffolding E2E' do
       expect(spec_content).to include('CheckoutPage.new(driver)')
     end
 
-    it 'navigates with driver' do
-      expect(spec_content).to include('driver.navigate.to')
+    it 'navigates with driver to the url without doubling its trailing slash' do
+      expect(spec_content).to include(%q(driver.navigate.to "#{project_config['url'].chomp('/')}/checkout"))
     end
 
     it 'does not use capybara visit' do
@@ -173,8 +173,8 @@ describe 'Scaffolding E2E' do
       expect(spec_content).to include('CheckoutPage.new(browser)')
     end
 
-    it 'navigates with browser.goto' do
-      expect(spec_content).to include('browser.goto')
+    it 'navigates with browser.goto to the url without doubling its trailing slash' do
+      expect(spec_content).to include(%q(browser.goto "#{project_config['url'].chomp('/')}/checkout"))
     end
   end
 
