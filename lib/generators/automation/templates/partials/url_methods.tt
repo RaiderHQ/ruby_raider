@@ -1,7 +1,9 @@
 <%- if web? -%>
 
   def full_url(*page)
-    "#{base_url}#{url(*page).to_s.delete_prefix('/')}"
+    path = url(*page).to_s
+    base = base_url
+    base.empty? ? path : "#{base}#{path.delete_prefix('/')}"
   end
 
   # The configured url with a trailing slash, so page paths never run into its last segment.

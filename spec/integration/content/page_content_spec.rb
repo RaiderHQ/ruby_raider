@@ -130,6 +130,7 @@ describe 'Page object content' do
 
       it 'returns the page path alone when the config has no url' do
         expect(full_url_with(nil, 'https://other.example/index.php')).to eq('https://other.example/index.php')
+        expect(full_url_with(nil, '/index.php')).to eq('/index.php')
       end
     end
   end
