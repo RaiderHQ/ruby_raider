@@ -1,0 +1,18 @@
+module Raider
+  module Wait
+    DEADLINE_KEY: Symbol
+
+    def self.deadline: () -> Float?
+    def self.until: [T] (?timeout: Numeric?, ?interval: Numeric) { () -> T } -> T
+    def self.eventually: [T] (?timeout: Numeric?) { () -> T } -> T
+
+    # private singleton helpers
+    def self.retried_errors: () -> Array[untyped]
+    def self.limits: (Numeric? timeout) -> [Float, Float]
+    def self.within: [T] (Float limit) { () -> T } -> T
+    def self.pause: (Float limit, Numeric interval) -> void
+    def self.now: () -> Float
+  end
+
+  def self.eventually: [T] (?timeout: Numeric?) { () -> T } -> T
+end

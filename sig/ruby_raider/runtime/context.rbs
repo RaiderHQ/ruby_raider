@@ -1,0 +1,11 @@
+module Raider
+  module Context
+    NATIVE: String
+
+    def self.web?: (untyped bridge) -> bool
+    def self.web_for?: (untyped search_context) -> bool
+
+    # private singleton helper
+    def self.appium?: (untyped bridge) -> bool
+  end
+end

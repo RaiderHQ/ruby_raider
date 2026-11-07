@@ -1,0 +1,23 @@
+module Raider
+  module Locator
+    def self.describe: (Array[untyped] args) -> String
+    def self.from_hash: (Hash[untyped, untyped] hash) -> String
+    def self.role_arguments: (untyped value) -> String
+    def self.plain_arguments: (untyped value) -> String
+    def self.render_options: (untyped options) -> Array[String]
+
+    def describe: (Array[untyped] args) -> String
+    def from_hash: (Hash[untyped, untyped] hash) -> String
+    def role_arguments: (untyped value) -> String
+    def plain_arguments: (untyped value) -> String
+    def render_options: (untyped options) -> Array[String]
+  end
+
+  module StrictFinder
+    def find_element: (*untyped) -> Selenium::WebDriver::Element
+  end
+
+  module StrictFirst
+    def first: (*untyped) -> Selenium::WebDriver::Element
+  end
+end
