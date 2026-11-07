@@ -1,0 +1,20 @@
+module Raider
+  module Selectors
+    ATTRIBUTE_NAME: Regexp
+    LABEL_CONTROLS: String
+
+    def self.xpath_literal: (untyped string) -> String
+    def self.label: (untyped value, exact: bool) -> String
+    def self.text: (untyped value, exact: bool) -> String
+    def self.attribute_css: (String name, untyped value, exact: bool) -> String
+    def self.test_id: (untyped value) -> String
+    def self.match: (String expression, String literal, bool exact) -> String
+
+    def xpath_literal: (untyped string) -> String
+    def label: (untyped value, exact: bool) -> String
+    def text: (untyped value, exact: bool) -> String
+    def attribute_css: (String name, untyped value, exact: bool) -> String
+    def test_id: (untyped value) -> String
+    def match: (String expression, String literal, bool exact) -> String
+  end
+end

@@ -1,0 +1,71 @@
+# Minimal Selenium WebDriver stubs for type checking (covers only what Raider's runtime touches)
+module Selenium
+  module WebDriver
+    VERSION: String
+
+    module Error
+      class WebDriverError < StandardError
+      end
+      class ElementNotInteractableError < WebDriverError
+      end
+      class UnsupportedOperationError < WebDriverError
+      end
+      class TimeoutError < WebDriverError
+      end
+      class NoSuchElementError < WebDriverError
+      end
+      class StaleElementReferenceError < WebDriverError
+      end
+    end
+
+    module SearchContext
+      FINDERS: Hash[Symbol, String]
+
+      def self.extra_finders: () -> Hash[Symbol, String]?
+      def self.extra_finders=: (Hash[Symbol, String]?) -> Hash[Symbol, String]?
+      def self.finders: () -> Hash[Symbol, String]
+
+      def bridge: () -> untyped
+      def find_element: (*untyped) -> Element
+      def find_elements: (*untyped) -> Array[Element]
+    end
+
+    class Element
+      include SearchContext
+
+      def initialize: (untyped bridge, String id) -> void
+      def tag_name: () -> String
+      def attribute: (String) -> String?
+      def text: () -> String
+      def displayed?: () -> bool
+      def enabled?: () -> bool
+      def ref: () -> [Symbol, String?]
+      def click: () -> void
+      def send_keys: (*untyped) -> void
+      def clear: () -> void
+      def submit: () -> void
+    end
+
+    class Driver
+      include SearchContext
+
+      def ref: () -> [Symbol, String?]
+    end
+
+    module Remote
+      class Bridge
+        class LocatorConverter
+          def convert: (String | Symbol, untyped) -> [String, untyped]
+        end
+
+        def self.locator_converter: () -> untyped
+        def self.locator_converter=: (untyped) -> untyped
+
+        def find_element_by: (*untyped) -> untyped
+        def find_elements_by: (*untyped) -> untyped
+        def execute_script: (String, *untyped) -> untyped
+        def current_context: () -> String
+      end
+    end
+  end
+end

@@ -1,0 +1,38 @@
+module Raider
+  class Error < StandardError
+  end
+
+  module Describe
+    TEXT_LIMIT: Integer
+    CLASS_LIMIT: Integer
+
+    def self.seconds: (Numeric value) -> Numeric
+    def self.element: (Selenium::WebDriver::Element element) -> String
+    def self.attribute_part: (String name, String value) -> String
+
+    def seconds: (Numeric value) -> Numeric
+    def element: (Selenium::WebDriver::Element element) -> String
+    def attribute_part: (String name, String value) -> String
+  end
+
+  class AmbiguousMatch < Selenium::WebDriver::Error::WebDriverError
+    SHOWN: Integer
+
+    attr_reader elements: Array[Selenium::WebDriver::Element]
+
+    def initialize: (String locator_description, Array[Selenium::WebDriver::Element] elements) -> void
+  end
+
+  class NotActionable < Selenium::WebDriver::Error::ElementNotInteractableError
+    attr_reader check: String
+    attr_reader covering: Hash[Symbol, untyped]?
+
+    def initialize: (String element_description, String check, ?covering: Hash[Symbol, untyped]?) -> void
+  end
+
+  class NotSupported < Selenium::WebDriver::Error::UnsupportedOperationError
+  end
+
+  class TimeoutError < Selenium::WebDriver::Error::TimeoutError
+  end
+end

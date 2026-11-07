@@ -1,0 +1,21 @@
+module Raider
+  CONFIG_FILE: String
+  FALSY: Array[String]
+
+  def self.strict: () -> bool
+  def self.actionability: () -> bool
+  def self.timeout: () -> Numeric
+  def self.test_id_attribute: () -> String
+  def self.strict=: (bool?) -> bool?
+  def self.actionability=: (bool?) -> bool?
+  def self.timeout=: (Numeric?) -> Numeric?
+  def self.test_id_attribute=: (String?) -> String?
+  def self.reset: () -> void
+
+  # private singleton helpers
+  def self.resolve: (Symbol key, String env_name, untyped default) { (untyped) -> untyped } -> untyped
+  def self.file_config: () -> Hash[String, untyped]
+  def self.load_file: () -> Hash[String, untyped]
+  def self.truthy?: (untyped value) -> bool
+  def self.number: (untyped value) -> Numeric
+end

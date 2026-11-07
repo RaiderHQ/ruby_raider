@@ -1,0 +1,21 @@
+module Raider
+  class LocatorConverter
+    XPATH: Hash[String, Symbol]
+    ATTRIBUTES: Hash[String, String]
+    TEST_ID: String
+    ROLE: String
+
+    attr_reader inner: untyped
+
+    def initialize: (untyped inner) -> void
+    def convert: (String | Symbol how, untyped what) -> [String, untyped]
+
+    private
+
+    def owns?: (String key) -> bool
+    def translate: (String key, untyped value, bool exact) -> [String, String]
+    def split: (String key, untyped what) -> [untyped, bool]
+    def valid_pair?: (untyped pair) -> bool
+    def label_for: (String key) -> String
+  end
+end
