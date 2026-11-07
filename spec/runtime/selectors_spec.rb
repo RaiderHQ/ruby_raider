@@ -8,6 +8,10 @@ RSpec.describe 'Raider::Selectors' do
     'self::input or self::textarea or self::select or self::button or ' \
       'self::meter or self::output or self::progress'
   end
+  let(:excluded) do
+    'not(self::script or self::style or self::noscript or self::template or self::title or self::head) ' \
+      'and not(ancestor::head)'
+  end
 
   describe '.xpath_literal' do
     it 'single-quotes a value without single quotes' do
@@ -65,22 +69,23 @@ RSpec.describe 'Raider::Selectors' do
   describe '.text' do
     it 'builds the innermost-match xpath' do
       expect(Raider::Selectors.text('Sign in', exact: false)).to eq(
-        ".//*[contains(normalize-space(.), 'Sign in') and " \
-        "not(.//*[contains(normalize-space(.), 'Sign in')])]"
+        ".//*[#{excluded} and contains(normalize-space(.), 'Sign in') and " \
+        "not(.//*[#{excluded} and contains(normalize-space(.), 'Sign in')])]"
       )
     end
 
     it 'uses equality with exact: true' do
       expect(Raider::Selectors.text('Sign in', exact: true)).to eq(
-        ".//*[normalize-space(.) = 'Sign in' and not(.//*[normalize-space(.) = 'Sign in'])]"
+        ".//*[#{excluded} and normalize-space(.) = 'Sign in' and " \
+        "not(.//*[#{excluded} and normalize-space(.) = 'Sign in'])]"
       )
     end
 
     it 'uses concat for a value with both quote kinds' do
       literal = %q(concat('O', "'", 'Neil "the" boss'))
       expect(Raider::Selectors.text(%q(O'Neil "the" boss), exact: false)).to eq(
-        ".//*[contains(normalize-space(.), #{literal}) and " \
-        "not(.//*[contains(normalize-space(.), #{literal})])]"
+        ".//*[#{excluded} and contains(normalize-space(.), #{literal}) and " \
+        "not(.//*[#{excluded} and contains(normalize-space(.), #{literal})])]"
       )
     end
 

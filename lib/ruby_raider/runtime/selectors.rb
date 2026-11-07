@@ -10,6 +10,8 @@ module Raider
     ATTRIBUTE_NAME = /\A[A-Za-z_][\w-]*\z/
     LABEL_CONTROLS = %w[input textarea select button meter output progress]
                      .map { |tag| "self::#{tag}" }.join(' or ').freeze
+    EXCLUDED_TEXT = 'not(self::script or self::style or self::noscript or self::template or self::title or self::head) ' \
+                    'and not(ancestor::head)'
 
     module_function
 
@@ -34,7 +36,8 @@ module Raider
 
     def text(value, exact:)
       matcher = match('.', xpath_literal(value), exact)
-      ".//*[#{matcher} and not(.//*[#{matcher}])]"
+      candidate = "#{EXCLUDED_TEXT} and #{matcher}"
+      ".//*[#{candidate} and not(.//*[#{candidate}])]"
     end
 
     def attribute_css(name, value, exact:)

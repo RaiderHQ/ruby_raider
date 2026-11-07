@@ -81,6 +81,10 @@ RSpec.describe 'Raider finders in a real browser', :browser do
       expect(id_of(driver.find_element(text: 'Sign in'))).to eq('sign-in')
     end
 
+    it 'ignores the title and script elements that contain the text' do
+      expect(driver.find_elements(text: 'Sign in').size).to eq(1)
+    end
+
     it 'raises AmbiguousMatch naming three buttons' do
       expect { driver.find_element(text: 'Save') }.to raise_error(Raider::AmbiguousMatch) { |error|
         expect(error.message).to include('matched 3 elements', '(+0 more)')
