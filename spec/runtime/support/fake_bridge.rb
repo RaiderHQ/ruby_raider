@@ -51,7 +51,10 @@ module Raider
 
       def execute_script(script, *args)
         script_calls << [script, *args]
-        script_results.shift
+        result = script_results.shift
+        raise result if result.is_a?(Exception)
+
+        result
       end
 
       def click_element(id)

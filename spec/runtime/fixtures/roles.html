@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" id="r-html">
+<head><meta charset="utf-8"><title>Roles fixture</title></head>
+<body>
+<h1 id="r-h1">Roles</h1><h2 id="r-h2">Two</h2><h3 id="r-h3">Three</h3><h4 id="r-h4">Four</h4><h5 id="r-h5">Five</h5><h6 id="r-h6">Six</h6>
+
+<!-- implicit roles -->
+<a id="r-link" href="#x">Link</a>
+<a id="r-anchor" name="x">Anchor</a>
+<map name="m"><area id="r-area" href="#x" alt="Area alt" shape="rect" coords="0,0,1,1"></map>
+<article id="r-article">Article <header id="r-header-in-article">Inner header</header><footer id="r-footer-in-article">Inner footer</footer></article>
+<aside id="r-aside">Aside</aside>
+<button id="r-button">Plain button</button>
+<datalist id="r-datalist"><option value="a"></option></datalist>
+<details id="r-details"><summary id="r-summary">Summary</summary>Body</details>
+<dialog id="r-dialog">Dialog</dialog>
+<fieldset id="r-fieldset"><legend>Group</legend></fieldset>
+<figure id="r-figure">Figure</figure>
+<header id="r-header">Top header</header>
+<footer id="r-footer">Bottom footer</footer>
+<form id="r-form"></form>
+<hr id="r-hr">
+<img id="r-img" src="data:," alt="Photo">
+<img id="r-img-empty-alt" src="data:," alt="">
+<img id="r-img-presentation" src="data:," alt="Decor" role="presentation">
+<input id="r-in-button" type="button" value="B">
+<input id="r-in-image" type="image" alt="I" src="data:,">
+<input id="r-in-reset" type="reset">
+<input id="r-in-submit" type="submit" value="S">
+<input id="r-in-checkbox" type="checkbox">
+<input id="r-in-radio" type="radio">
+<input id="r-in-range" type="range">
+<input id="r-in-number" type="number">
+<input id="r-in-search" type="search">
+<input id="r-in-search-list" type="search" list="r-datalist">
+<input id="r-in-email" type="email">
+<input id="r-in-tel" type="tel">
+<input id="r-in-text" type="text">
+<input id="r-in-url" type="url">
+<input id="r-in-password" type="password">
+<input id="r-in-default">
+<input id="r-in-text-list" type="text" list="r-datalist">
+<input id="r-in-hidden" type="hidden">
+<ul id="r-ul"><li id="r-li">Item</li></ul>
+<ol id="r-ol"><li>One</li></ol>
+<menu id="r-menu"><li>M</li></menu>
+<li id="r-li-orphan">Orphan</li>
+<main id="r-main">Main</main>
+<math id="r-math"><mi>x</mi></math>
+<meter id="r-meter" value="0.5"></meter>
+<nav id="r-nav">Nav</nav>
+<select id="r-select"><option id="r-option" value="1">One</option></select>
+<select id="r-select-multiple" multiple><option>One</option></select>
+<select id="r-select-size" size="3"><option>One</option></select>
+<output id="r-output">0</output>
+<progress id="r-progress" value="1" max="2"></progress>
+<section id="r-section">Unnamed section</section>
+<section id="r-section-label" aria-label="Named section">Named</section>
+<span id="r-lb-target">Heading words</span>
+<section id="r-section-labelledby" aria-labelledby="r-lb-target">Named by id</section>
+<table id="r-table">
+  <caption id="r-caption">Cap</caption>
+  <thead id="r-thead"><tr id="r-tr"><th id="r-th-col">Name</th><th id="r-th-colscope" scope="col">Age</th></tr></thead>
+  <tbody id="r-tbody">
+    <tr><th id="r-th-first">Row one</th><td id="r-td">Cell</td></tr>
+    <tr><td>x</td><th id="r-th-second">Late th</th><th id="r-th-scoperow" scope="row">Scoped row</th></tr>
+  </tbody>
+  <tfoot id="r-tfoot"><tr><td>f</td></tr></tfoot>
+</table>
+<table><tbody><tr><th id="r-th-only-1">Name</th><th id="r-th-only-2">Age</th></tr></tbody></table>
+<table role="grid"><tbody><tr><td id="r-td-grid">Grid cell</td></tr></tbody></table>
+<div role="grid"><div role="row"><table><tbody><tr><td id="r-td-grid-ancestor">Deep</td></tr></tbody></table></div></div>
+<textarea id="r-textarea"></textarea>
+<div id="r-div">Div</div>
+<span id="r-span">Span</span>
+<div id="r-div-button" role="button">Div button</div>
+<div id="r-role-tokens" role="bogus button">Tokens</div>
+<button id="r-bad-role" role="bogus">Bad role</button>
+<a id="r-explicit-over-implicit" href="#x" role="button">Link as button</a>
+
+<p id="r-p">Para</p><blockquote id="r-blockquote">Quote</blockquote><code id="r-code">c</code><em id="r-em">e</em>
+<strong id="r-strong">s</strong><del id="r-del">d</del><ins id="r-ins">i</ins><sub id="r-sub">b</sub><sup id="r-sup">p</sup>
+<time id="r-time">now</time><dfn id="r-dfn">term</dfn><dl><dt id="r-dt">T</dt><dd id="r-dd">D</dd></dl>
+<search id="r-search">Search</search><address id="r-address">Addr</address>
+<select id="o-select"><optgroup id="r-optgroup" label="G"><option id="o-option">Pick me</option></optgroup><option id="o-other">Other</option></select>
+<div style="display:contents"><button id="dc-button" style="display:contents">Contents button</button></div>
+<div id="lv-aria" role="heading" aria-level="2">Aria two</div>
+<div id="shadow-host"></div>
+<script>
+  document.getElementById('shadow-host').attachShadow({ mode: 'open' }).innerHTML =
+    '<span id="sl">Labelled inner</span><button>Shadow inner</button><button aria-labelledby="sl">x</button>';
+</script>
+
+<!-- accessible names -->
+<input id="n-placeholder" placeholder="Email address">
+<input id="n-placeholder-title" title="Title wins" placeholder="Ignored">
+<textarea id="n-placeholder-area" placeholder="Say more"></textarea>
+<span id="n-ll1">First</span>
+<span id="n-ll2" aria-label="Second label">ignored text</span>
+<button id="n-labelledby" aria-labelledby="n-ll1 n-ll2">own text</button>
+<span id="n-hid" style="display:none">Hidden <b>label</b></span>
+<button id="n-lb-hidden" aria-labelledby="n-hid">own</button>
+<span id="n-nest" aria-labelledby="n-ll1">Nest text</span>
+<button id="n-lb-nested" aria-labelledby="n-nest">own</button>
+<button id="n-lb-missing" aria-labelledby="nope-nothing">Falls back</button>
+<button id="n-arialabel" aria-label="Close dialog">X</button>
+<label for="n-labelfor">Email
+   address</label><input id="n-labelfor" type="text">
+<label>Wrapped label <input id="n-wrapped" type="text"></label>
+<img id="n-img" src="data:," alt="Company logo">
+<input id="n-input-image" type="image" src="data:," alt="Go">
+<map name="m2"><area id="n-area" href="#x" alt="Area name" shape="rect" coords="0,0,1,1"></map>
+<input id="n-submit" type="submit" value="Send">
+<input id="n-input-button" type="button" value="Plain value">
+<input id="n-reset" type="reset" value="Clear">
+<input id="n-submit-empty" type="submit">
+<table id="n-table"><caption>Sales</caption><tbody><tr><td>1</td></tr></tbody></table>
+<fieldset id="n-fieldset"><legend>Contact</legend><input type="text"></fieldset>
+<figure id="n-figure"><img src="data:," alt=""><figcaption>Chart caption</figcaption></figure>
+<button id="n-title" title="Tooltip only"></button>
+<a id="n-title-fallback" href="#x" title="ignored title">Text wins</a>
+<a id="n-embedded" href="#x">Search for <input type="text" value="cats"></a>
+<a id="n-slider" href="#x">Rate <input type="range" min="0" max="10" value="7"> stars</a>
+<a id="n-select" href="#x">Pick <select><option>One</option><option selected>Two</option></select></a>
+<button id="n-content">Go <img src="data:," alt="icon"> now</button>
+<a id="n-blocks" href="#x"><div>One</div><div>Two</div></a>
+<a id="n-inline" href="#x"><span>Ab</span><span>cd</span></a>
+<h2 id="n-heading">  Spaced
+   title </h2>
+<button id="n-hidden-child">Visible<span style="display:none"> secret</span><span aria-hidden="true"> aria</span></button>
+<div id="n-div-button" role="button">Div button</div>
+<div id="n-generic">Generic text</div>
+<ul><li id="n-li">Item text</li></ul>
+<button id="n-unreferenced-hidden" style="display:none">Nope</button>
+<input id="n-unlabelled" type="text">
+
+<section id="cy-self" aria-labelledby="cy-self">Self</section>
+<section id="cy-a" aria-labelledby="cy-b">A</section>
+<section id="cy-b" aria-labelledby="cy-a">B</section>
+<button id="cy-button" aria-labelledby="cy-button">Self button</button>
+
+<!-- hidden cases -->
+<button id="h-visible">Shown</button>
+<button id="h-aria-hidden" aria-hidden="true">Aria hidden</button>
+<div aria-hidden="true"><button id="h-anc-aria">Under aria-hidden</button></div>
+<div style="display:none"><button id="h-anc-none">Under display none</button></div>
+<button id="h-display-none" style="display:none">Display none</button>
+<button id="h-attr" hidden>Hidden attribute</button>
+<button id="h-visibility" style="visibility:hidden">Visibility hidden</button>
+<div style="visibility:hidden"><button id="h-vis-parent-child" style="visibility:visible">Visible child</button><button id="h-vis-inherit">Inherits hidden</button></div>
+
+<!-- queries -->
+<div id="saves">
+  <button id="save-1">Save</button>
+  <button id="save-2">Save as</button>
+  <button id="save-3">save</button>
+  <button id="save-hidden" style="display:none">Save later</button>
+</div>
+<div id="scope"><button id="scope-save">Save</button></div>
+<div id="scope-button" role="button"><button id="scope-inner">Inner</button></div>
+</body>
+</html>

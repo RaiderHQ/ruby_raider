@@ -95,12 +95,30 @@ RSpec.describe 'Raider strict find_element' do
         bridge.enqueue(%w[a b])
         expect { driver.find_element(id: 'x') }.to raise_error(Raider::AmbiguousMatch)
       end
+
+      it 'asks for the context once on a strict role find' do
+        bridge.script_results << ['a']
+        allow(bridge).to receive(:current_context).and_call_original
+        driver.find_element(role: 'button')
+        expect(bridge).to have_received(:current_context).once
+      end
+
+      it 'asks for the context once on a strict css find' do
+        bridge.enqueue(['a'])
+        allow(bridge).to receive(:current_context).and_call_original
+        driver.find_element(css: 'x')
+        expect(bridge).to have_received(:current_context).once
+      end
     end
   end
 
   describe Raider::Locator do
     it 'describes a role with options as by_role' do
       expect(described_class.describe([{ role: ['button', { name: 'Save' }] }])).to eq("by_role('button', name: \"Save\")")
+    end
+
+    it 'shows the heading level' do
+      expect(described_class.describe([Raider.by_role('heading', level: 2)])).to eq("by_role('heading', level: 2)")
     end
 
     it 'describes a role without options' do

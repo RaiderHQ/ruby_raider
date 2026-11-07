@@ -30,7 +30,7 @@ module Raider
     def convert(how, what)
       key = how.to_s
       return inner.convert(how, what) unless owns?(key)
-      raise NotSupported, 'role locators need the Raider role engine, which is not in this release yet' if key == ROLE
+      raise NotSupported, 'internal error: the role finder did not intercept this role locator' if key == ROLE
 
       value, exact = split(key, what)
       raise ArgumentError, "#{label_for(key)}: needs a non-empty value" if value.to_s.strip.empty?

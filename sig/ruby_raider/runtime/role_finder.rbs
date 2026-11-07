@@ -1,0 +1,18 @@
+module Raider
+  module RoleFinder
+    ENGINE: String
+    QUERY: String
+    NATIVE_MESSAGE: String
+
+    def find_elements: (*untyped args) -> Array[untyped]
+    def find_element: (*untyped args) -> untyped
+    def self.role_args?: (Array[untyped] args) -> bool
+    def self.validated: (untyped role) -> String
+    def self.parse: (Array[untyped] args) -> [String, Hash[Symbol, untyped]]?
+  end
+
+  module RoleQuery
+    def self.run: (untyped bridge, untyped scope, String role, Hash[Symbol, untyped] options) -> Array[untyped]
+    def self.options_js: (Hash[Symbol, untyped] options) -> Hash[String, untyped]
+  end
+end
