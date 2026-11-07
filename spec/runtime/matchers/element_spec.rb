@@ -220,14 +220,37 @@ RSpec.describe 'Raider element matchers' do
       expect(matcher.failure_message).to include('to be hidden')
     end
 
-    it 'supports the block form of or' do
+    it 'passes the block form of or when one side holds' do
       expect { element }.to have_text('zzz', wait: 0.1).or be_visible(wait: 0.1)
+    end
+
+    it 'fails the block form of or when neither holds' do
       matcher = have_text('zzz', wait: 0.1).or be_hidden(wait: 0.1)
       expect(matcher.matches?(proc { element })).to be(false)
     end
 
+    it 'passes a three-way block chain when all hold' do
+      bridge.answer(:element_enabled?, true)
+      expect { element }.to have_text('a', wait: 1).and(be_visible(wait: 1)).and be_enabled(wait: 1)
+    end
+
+    it 'fails a three-way block chain when the last does not hold' do
+      bridge.answer(:element_enabled?, false)
+      matcher = have_text('a', wait: 0.1).and(be_visible(wait: 0.1)).and be_enabled(wait: 0.1)
+      expect(matcher.matches?(proc { element })).to be(false)
+      expect(matcher.failure_message).to include('to be enabled')
+    end
+
+    it 'mixes or into a block chain' do
+      expect { element }.to have_text('zzz', wait: 0.1).or(be_hidden(wait: 0.1)).or be_visible(wait: 0.1)
+    end
+
     it 'keeps the value form working' do
       expect(element).to have_text('a', wait: 1) & be_visible(wait: 1)
+    end
+
+    it 'keeps the value form of or working' do
+      expect(element).to have_text('zzz', wait: 0.1) | be_visible(wait: 0.1)
     end
   end
 

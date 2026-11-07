@@ -13,9 +13,27 @@ module Raider
     class Base
       include RSpec::Matchers::Composable
 
+      # `and` / `or` that build the sequential compounds, so every link of a chain
+      # stays sequential.
+      module Chaining
+        def and(other)
+          Base::And.new(self, other)
+        end
+        alias & and
+
+        def or(other)
+          Base::Or.new(self, other)
+        end
+        alias | or
+      end
+
+      include Chaining
+
       # Compound evaluation that hands each matcher the actual as is, so a block
       # actual is resolved by each matcher itself rather than nested.
       module Sequential
+        include Chaining
+
         private
 
         def evaluate(actual)
@@ -80,16 +98,6 @@ module Raider
       def failure_message_when_negated
         message('not to')
       end
-
-      def and(other)
-        And.new(self, other)
-      end
-      alias & and
-
-      def or(other)
-        Or.new(self, other)
-      end
-      alias | or
 
       def supports_block_expectations?
         true

@@ -1,6 +1,13 @@
 module Raider
   module Matchers
     class Base
+      module Chaining
+        def and: (untyped other) -> untyped
+        def or: (untyped other) -> untyped
+        def &: (untyped other) -> untyped
+        def |: (untyped other) -> untyped
+      end
+
       STALE_HINT: String
 
       class StaleActual < StandardError
