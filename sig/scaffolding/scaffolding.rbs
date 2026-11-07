@@ -6,10 +6,8 @@ class Scaffolding < Thor::Group
 
   # Generation methods
   def generate_page: () -> void
-  def generate_feature: () -> void
   def generate_spec: () -> void
   def generate_helper: () -> void
-  def generate_steps: () -> void
   def generate_component: () -> void
   def generate_config: () -> void
 
@@ -21,11 +19,8 @@ class Scaffolding < Thor::Group
   def module_parts: () -> Array[String]
   def leaf_name: () -> String
   def automation_type: () -> String
-  def framework_type: () -> String
   def project_config: () -> Hash[String, untyped]
   def selenium?: () -> bool
-  def watir?: () -> bool
-  def refuse_watir: () -> void
   def wait_helper?: () -> bool
   def default_path: (String standard_path, String file_type) -> String
 end

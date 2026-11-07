@@ -12,6 +12,11 @@ RSpec.describe NameNormalizer do
       expect(described_class.normalize('login_spec')).to eq('login')
     end
 
+    it 'keeps a _steps or _feature ending' do
+      expect(described_class.normalize('login_steps')).to eq('login_steps')
+      expect(described_class.normalize('login_feature')).to eq('login_feature')
+    end
+
     it 'strips _helper suffix' do
       expect(described_class.normalize('login_helper')).to eq('login')
     end

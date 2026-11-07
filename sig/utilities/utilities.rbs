@@ -5,7 +5,6 @@ module Utilities
   def self?.browser=: (String browser) -> void
   def self?.page_path=: (String path) -> void
   def self?.spec_path=: (String path) -> void
-  def self?.feature_path=: (String path) -> void
   def self?.helper_path=: (String path) -> void
   def self?.url=: (String url) -> void
   def self?.timeout=: (String | Integer seconds) -> void

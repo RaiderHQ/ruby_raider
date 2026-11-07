@@ -7,8 +7,6 @@ class UtilityCommands < Thor
   def self.exit_on_failure? = true
 
   desc 'path [PATH]', 'Sets the default path for scaffolding'
-  option :feature,
-         type: :boolean, required: false, desc: 'The default path for your features', aliases: '-f'
   option :helper,
          type: :boolean, required: false, desc: 'The default path for your helpers', aliases: '-h'
   option :spec,
