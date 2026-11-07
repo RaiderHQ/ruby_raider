@@ -24,6 +24,17 @@ RSpec.describe 'Raider::RoleQuery' do
     expect(bridge.script_calls.last.first).to end_with(Raider::RoleFinder::QUERY)
   end
 
+  it 'installs the engine on the Chromium-style missing-engine error' do
+    bridge.script_results.push(Selenium::WebDriver::Error::JavascriptError.new('javascript error: __raider not installed'),
+                               elements)
+    expect(Raider::RoleQuery.run(bridge, nil, 'button', {})).to eq(elements)
+    expect(bridge.script_calls.length).to eq(2)
+  end
+
+  it 'guards the query so a missing engine throws a fixed message' do
+    expect(Raider::RoleFinder::QUERY).to include('__raider not installed')
+  end
+
   it 'does not retry beyond the install run' do
     bridge.script_results.push(missing, missing)
     expect { Raider::RoleQuery.run(bridge, nil, 'button', {}) }

@@ -6,7 +6,8 @@ module Raider
   # The in-page role engine and the query that calls it.
   module RoleFinder
     ENGINE = File.read(File.join(__dir__, 'js', 'role_engine.js')).freeze
-    QUERY = 'return window.__raider.role(arguments[0] || document, arguments[1], arguments[2])'
+    QUERY = "if (!(window.__raider && window.__raider.role)) throw new Error('__raider not installed'); " \
+            'return window.__raider.role(arguments[0] || document, arguments[1], arguments[2])'
   end
 
   # Runs a role query through the bridge, installing the engine on first use.
