@@ -126,8 +126,7 @@ RSpec.describe 'Raider finders' do
     end
 
     it 'gives a BiDi bridge instance the Raider converter' do
-      bidi = Selenium::WebDriver::Remote::BiDiBridge.allocate
-      bidi.send(:initialize, http_client: Object.new)
+      bidi = Raider::Spec.real_bridge(Selenium::WebDriver::Remote::BiDiBridge)
       expect(bidi.instance_variable_get(:@locator_converter)).to be_a(Raider::LocatorConverter)
     end
 
