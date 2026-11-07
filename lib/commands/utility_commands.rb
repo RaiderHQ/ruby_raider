@@ -53,6 +53,22 @@ class UtilityCommands < Thor
     say "Headless mode #{state}", :green
   end
 
+  desc 'strict [on/off]', 'Toggles strict find_element (fails when a locator matches more than one element)'
+
+  def strict(toggle)
+    enabled = %w[on true 1 yes].include?(toggle.downcase)
+    Utilities.strict = enabled
+    say "Strict mode #{enabled ? 'enabled' : 'disabled'}", :green
+  end
+
+  desc 'actionability [on/off]', 'Toggles the actionability wait before element actions'
+
+  def actionability(toggle)
+    enabled = %w[on true 1 yes].include?(toggle.downcase)
+    Utilities.actionability = enabled
+    say "Actionability #{enabled ? 'enabled' : 'disabled'}", :green
+  end
+
   desc 'raid', 'It runs all the tests in a project'
   option :parallel,
          type: :boolean, required: false, desc: 'It runs the tests in parallel', aliases: '-p'

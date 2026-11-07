@@ -14,7 +14,7 @@ gem 'chunky_png'
 <%- end -%>
 gem 'parallel_split_test'
 gem 'parallel_tests'
-gem 'raider_reporter', '~> 0.12'
+gem 'raider_reporter', '~> 1.0'
 gem 'rake'
 gem 'reek'
 gem 'rspec'

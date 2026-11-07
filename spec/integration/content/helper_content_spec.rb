@@ -36,6 +36,11 @@ describe 'Helper file content' do
       expect(helper).to include("require 'selenium-webdriver'")
     end
 
+    it 'requires the runtime right after selenium-webdriver' do
+      lines = helper.lines.map(&:chomp)
+      expect(lines[lines.index("require 'selenium-webdriver'") + 1]).to eq("require 'ruby_raider/runtime'")
+    end
+
     it 'does not reference Capybara' do
       expect(helper).not_to include('Capybara')
     end
@@ -118,6 +123,11 @@ describe 'Helper file content' do
 
     it 'configures RSpec' do
       expect(helper).to include('RSpec.configure')
+    end
+
+    it 'requires the rspec runtime and includes the Raider matchers and helpers' do
+      expect(helper).to include("require 'ruby_raider/runtime/rspec'", 'config.include(Raider::Matchers)',
+                                'config.include(Raider::Helpers)')
     end
   end
 
@@ -509,6 +519,26 @@ describe 'ScreenshotHelper reset between tests' do
     expect(selenium[/config\.before\(:each\) do.*?^    end$/m]).to include('ScreenshotHelper.reset')
     %w[rspec_ios rspec_android].each do |project|
       expect(read_generated(project, 'helpers/spec_helper.rb')).not_to include('ScreenshotHelper')
+    end
+  end
+end
+
+describe 'Runtime wiring in generated helpers' do
+  { 'selenium' => "require 'selenium-webdriver'", 'ios' => "require 'appium_lib'",
+    'android' => "require 'appium_lib'", 'cross_platform' => "require 'appium_lib'" }.each do |automation, anchor|
+    context "with rspec and #{automation}" do
+      let(:name) { "#{FrameworkIndex::RSPEC}_#{automation}" }
+
+      it "requires the runtime right after #{anchor}" do
+        lines = read_generated(name, 'helpers/driver_helper.rb').lines.map(&:chomp)
+        expect(lines[lines.index(anchor) + 1]).to eq("require 'ruby_raider/runtime'")
+      end
+
+      it 'requires the rspec runtime and includes the matchers and helpers in spec_helper' do
+        expect(read_generated(name, 'helpers/spec_helper.rb'))
+          .to include("require 'ruby_raider/runtime/rspec'", 'config.include(Raider::Matchers)',
+                      'config.include(Raider::Helpers)')
+      end
     end
   end
 end

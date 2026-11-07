@@ -6,6 +6,7 @@ require 'axe-rspec'
 require 'rspec'
 require 'rspec/retry'
 require 'raider_reporter/rspec'
+require 'ruby_raider/runtime/rspec'
 require 'tmpdir'
 require_relative 'driver_helper'
 require_relative 'video_helper'
@@ -34,6 +35,8 @@ module SpecHelper
     config.add_formatter(RaiderReporter::RSpec::Formatter)
     config.include(DriverHelper)
     config.include(WaitHelper)
+    config.include(Raider::Matchers)
+    config.include(Raider::Helpers)
     <%- if network_helper? -%>
     config.include(NetworkHelper)
     <%- end -%>

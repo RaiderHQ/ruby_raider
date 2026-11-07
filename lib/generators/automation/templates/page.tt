@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'ruby_raider/runtime'
 <%- if web? && examples? -%>
 require_relative '../components/header'
 <%- end -%>
@@ -16,6 +17,7 @@ class Page
   include AppiumHelper
 <%- end -%>
   include WaitHelper
+  include Raider::Helpers
 <%- if network_helper? -%>
   include NetworkHelper
 <%- end -%>

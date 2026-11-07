@@ -64,6 +64,14 @@ module Utilities
       set('headless', enabled)
     end
 
+    def strict=(enabled)
+      set('strict', enabled)
+    end
+
+    def actionability=(enabled)
+      set('actionability', enabled)
+    end
+
     def video_enabled=(enabled)
       reload_config
       video = @config['video']

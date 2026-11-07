@@ -4,6 +4,7 @@ require 'yaml'
 <%- if selenium_based? -%>
 require 'active_support/inflector'
 require 'selenium-webdriver'
+require 'ruby_raider/runtime'
 require_relative 'video_helper'
 <%- if network_helper? -%>
 require_relative 'network_helper'
@@ -16,6 +17,7 @@ require_relative 'trace_helper'
 <%- end -%>
 <%- else -%>
 require 'appium_lib'
+require 'ruby_raider/runtime'
 <%- end -%>
 
 module DriverHelper

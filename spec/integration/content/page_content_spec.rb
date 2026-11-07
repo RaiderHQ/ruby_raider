@@ -221,3 +221,12 @@ describe 'Example pages on the wait helper' do
     end
   end
 end
+
+describe 'Page runtime wiring' do
+  AUTOMATION_TYPES.each do |automation|
+    it "requires the runtime and includes Raider::Helpers in #{automation}" do
+      page = read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'page_objects/abstract/page.rb')
+      expect(page).to include("require 'ruby_raider/runtime'", 'include Raider::Helpers')
+    end
+  end
+end

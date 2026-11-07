@@ -211,6 +211,8 @@ raider u url [URL]              # Set default project URL
 raider u browser [BROWSER]      # Set default browser
 raider u browser_options [OPTS] # Set browser arguments (e.g., no-sandbox, headless)
 raider u headless [on/off]      # Toggle headless mode
+raider u strict [on/off]        # Toggle strict find_element (fail on multiple matches)
+raider u actionability [on/off] # Toggle the actionability wait before element actions
 raider u raid                   # Run all tests (-p for parallel)
 raider u timeout [SECONDS]      # Set test timeout
 raider u viewport [DIMENSIONS]  # Set viewport size (e.g., 1920x1080)

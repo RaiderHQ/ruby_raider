@@ -4,6 +4,8 @@ class UtilityCommands < Thor
   def url: (String default_url) -> void
   def browser: (?String? default_browser) -> void
   def browser_options: (*String opts) -> void
+  def strict: (String toggle) -> void
+  def actionability: (String toggle) -> void
   def raid: () -> void
   def timeout: (String seconds) -> void
   def viewport: (String dimensions) -> void
