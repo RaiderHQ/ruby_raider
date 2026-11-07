@@ -48,7 +48,8 @@ RSpec.describe 'The in-page role engine', :browser do
     'r-section' => 'generic', 'r-section-label' => 'region', 'r-section-labelledby' => 'region',
     'r-table' => 'table', 'r-thead' => 'rowgroup', 'r-tbody' => 'rowgroup', 'r-tfoot' => 'rowgroup',
     'r-tr' => 'row', 'r-th-col' => 'columnheader', 'r-th-colscope' => 'columnheader',
-    'r-th-first' => 'rowheader', 'r-th-second' => 'columnheader', 'r-th-scoperow' => 'rowheader',
+    'r-th-first' => 'rowheader', 'r-th-only-1' => 'columnheader', 'r-th-only-2' => 'columnheader',
+    'cy-self' => 'region', 'cy-a' => 'region', 'cy-b' => 'region', 'cy-button' => 'button', 'r-th-second' => 'columnheader', 'r-th-scoperow' => 'rowheader',
     'r-td' => 'cell', 'r-td-grid' => 'gridcell', 'r-td-grid-ancestor' => 'gridcell', 'r-textarea' => 'textbox',
     'r-div' => 'generic', 'r-span' => 'generic', 'r-div-button' => 'button', 'r-role-tokens' => 'button',
     'r-bad-role' => 'button', 'r-explicit-over-implicit' => 'button'
@@ -65,7 +66,7 @@ RSpec.describe 'The in-page role engine', :browser do
     'n-title-fallback' => 'Text wins', 'n-embedded' => 'Search for cats', 'n-slider' => 'Rate 7 stars',
     'n-select' => 'Pick Two', 'n-content' => 'Go icon now', 'n-blocks' => 'One Two', 'n-inline' => 'Abcd',
     'n-heading' => 'Spaced title', 'n-hidden-child' => 'Visible', 'n-div-button' => 'Div button',
-    'n-generic' => '', 'n-li' => '', 'n-unreferenced-hidden' => '', 'n-unlabelled' => ''
+    'n-generic' => '', 'n-li' => '', 'n-unreferenced-hidden' => '', 'n-unlabelled' => '', 'cy-self' => '', 'cy-a' => 'B', 'cy-b' => 'A', 'cy-button' => 'Self button'
   }.freeze
 
   hidden_cases = {
@@ -126,6 +127,12 @@ RSpec.describe 'The in-page role engine', :browser do
 
     it 'finds by an explicit role on a div' do
       expect(ids(query(element('scope-button'), 'button', 'name' => 'inner'))).to eq(['scope-inner'])
+    end
+
+    it 'still answers every role query with labelledby cycles on the page' do
+      expect(ids(query(element('cy-button').find_element(xpath: '..'), 'button', 'name' => 'Self button')))
+        .to include('cy-button')
+      expect(query(nil, 'button')).not_to be_empty
     end
 
     it 'writes nothing to the page but window.__raider' do

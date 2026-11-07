@@ -67,6 +67,7 @@
   </tbody>
   <tfoot id="r-tfoot"><tr><td>f</td></tr></tfoot>
 </table>
+<table><tbody><tr><th id="r-th-only-1">Name</th><th id="r-th-only-2">Age</th></tr></tbody></table>
 <table role="grid"><tbody><tr><td id="r-td-grid">Grid cell</td></tr></tbody></table>
 <div role="grid"><div role="row"><table><tbody><tr><td id="r-td-grid-ancestor">Deep</td></tr></tbody></table></div></div>
 <textarea id="r-textarea"></textarea>
@@ -116,6 +117,11 @@
 <ul><li id="n-li">Item text</li></ul>
 <button id="n-unreferenced-hidden" style="display:none">Nope</button>
 <input id="n-unlabelled" type="text">
+
+<section id="cy-self" aria-labelledby="cy-self">Self</section>
+<section id="cy-a" aria-labelledby="cy-b">A</section>
+<section id="cy-b" aria-labelledby="cy-a">B</section>
+<button id="cy-button" aria-labelledby="cy-button">Self button</button>
 
 <!-- hidden cases -->
 <button id="h-visible">Shown</button>
