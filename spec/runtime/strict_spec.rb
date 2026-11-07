@@ -86,14 +86,14 @@ RSpec.describe 'Raider strict find_element' do
     it 'raises NoSuchElementError naming the wait when nothing ever matches' do
       Raider.timeout = 0.3
       expect { driver.find_element(id: 'x') }
-        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /no such element: \{ id: "x" \} \(waited 0\.3s\)/)
+        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /no such element: \{ id: "x" \} \(waited 0\.3\d?s\)/)
     end
 
     it 'waits the same way when strict is off' do
       Raider.strict = false
       Raider.timeout = 0.3
       expect { driver.find_element(id: 'x') }
-        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /\(waited 0\.3s\)/)
+        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /\(waited 0\.3\d?s\)/)
       expect(find_calls(:find_element_by)).to be >= 3
     end
 
@@ -160,8 +160,14 @@ RSpec.describe 'Raider strict find_element' do
       bridge.enqueue(['a'])
       expect(driver.find_element(id: 'x')).to be_a(Selenium::WebDriver::Element)
       expect { driver.find_element(id: 'gone') }
-        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /\(waited 0\.3s\)/)
+        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /\(waited 0\.3\d?s\)/)
       expect(driver.find_elements(id: 'gone')).to eq([])
+    end
+
+    it 'reports the elapsed wait, not the timeout, inside a shorter enclosing wait' do
+      Raider.timeout = 5
+      expect { Raider::Wait.until(timeout: 0.2) { driver.find_element(id: 'x') } }
+        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /\(waited 0\.2\d?s\)/)
     end
 
     it 'raises NotSupported at once for a role find on NATIVE_APP' do
@@ -183,6 +189,28 @@ RSpec.describe 'Raider strict find_element' do
         bridge.script_results << ['a']
         allow(bridge).to receive(:current_context).and_call_original
         driver.find_element(role: 'button')
+        expect(bridge).to have_received(:current_context).once
+      end
+
+      it 'asks for the context once on a strict role find that waits several polls' do
+        bridge.script_results.push([], [], ['a'])
+        allow(bridge).to receive(:current_context).and_call_original
+        driver.find_element(role: 'button')
+        expect(bridge).to have_received(:current_context).once
+      end
+
+      it 'asks for the context once on a non-strict role find that waits several polls' do
+        Raider.strict = false
+        bridge.script_results.push([], [], ['a'])
+        allow(bridge).to receive(:current_context).and_call_original
+        driver.find_element(role: 'button')
+        expect(bridge).to have_received(:current_context).once
+      end
+
+      it 'asks for the context once on a role find_elements that waits several polls' do
+        bridge.script_results.push([], [], ['a'])
+        allow(bridge).to receive(:current_context).and_call_original
+        expect(driver.find_elements(role: 'button').size).to eq(1)
         expect(bridge).to have_received(:current_context).once
       end
 

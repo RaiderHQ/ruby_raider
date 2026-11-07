@@ -9,6 +9,7 @@ module Raider
   # (the same key the generated wait helper uses).
   module Wait
     DEADLINE_KEY = :raider_wait_deadline
+    # Like DEADLINE_KEY, fiber-scoped on purpose (Thread.current[] is per fiber).
     IMMEDIATE_KEY = :raider_wait_immediate
 
     class << self
