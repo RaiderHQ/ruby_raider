@@ -123,11 +123,11 @@ languages call a function (it starts with `def` and ends with `end`).
 <%- if examples? -%>
 - `page_objects/pages/`: one class per page of the site. `login.rb` is the login page and `account.rb` the account
   page. A page holds the locators of its elements and the actions a test can do on that page.
-- `page_objects/components/`: parts that appear on many pages, such as a header. Add one with `raider g component`.
+- `page_objects/components/`: parts that appear on many pages. Create one with `raider g component`.
 <%- else -%>
 - `page_objects/pages/`: one class per page of the site, empty for now. A page holds the locators of its elements
   and the actions a test can do on that page.
-- `page_objects/components/`: parts that appear on many pages, such as a header. Add one with `raider g component`.
+- `page_objects/components/`: parts that appear on many pages. Create one with `raider g component`.
 <%- end -%>
 - `page_objects/abstract/`: `page.rb` and `component.rb`, the base classes every page and component builds on.
   `page.rb` requires the Raider runtime and gives each page `by_role`.
@@ -193,8 +193,7 @@ actionability: true
 <%- else -%>
 - `url`: the address of the site under test. Each page adds its own path to it. Change it to your site.
 <%- end -%>
-- `timeout`: how many seconds finds, actions and assertions wait before the test fails (10). `RAIDER_TIMEOUT`, `RAIDER_STRICT` and
-  `RAIDER_ACTIONABILITY` override `timeout`, `strict` and `actionability` for one run.
+- `timeout`: how many seconds finds, actions and assertions wait before the test fails (10).
 - `strict`: `true` makes `find_element` fail when a locator matches more than one element. `false` returns the first.
   `raider u strict off` sets it.
 - `actionability`: `true` makes actions wait until the element is ready, see
@@ -374,8 +373,9 @@ Pages load at their own speed, so the runtime waits for you. It checks every 0.1
 - If the element is not ready in time, the action raises `Raider::NotActionable`, which names the check that failed and how
   long it waited. If the locator matches several elements, `Raider::AmbiguousMatch` lists them.
 - `force: true` skips the checks for one call: `login_button.click(force: true)`. The element must still be on the page.
-- `Selenium::WebDriver::Support::Select#select_by` waits `timeout` before it raises when the option never shows up, like any
-  other missing element.
+- Third-party code that calls `find_elements` for an optional lookup waits `timeout` too, unless you wrap it in
+  `Raider::Wait.immediately { }`. Examples are axe-core's frame scan and the option lookup of
+  `Selenium::WebDriver::Support::Select`, so `select_by` waits `timeout` before it raises when the option never shows up.
 - Set no implicit wait on the driver. It makes the checks that something is **not**
   on the page wait too.
 - `timeout`, `strict` and `actionability` are set under [Settings](#settings) and in the environment:

@@ -73,6 +73,17 @@ describe 'Test file content' do
   end
 end
 
+describe 'Accessibility spec' do
+  it 'wraps the axe check in an immediate find' do
+    name = 'content_axe_rspec_selenium'
+    InvokeGenerators.generate_framework(automation: 'selenium', framework: 'rspec', name:, accessibility: true)
+    expect(read_generated(name, 'spec/accessibility_spec.rb'))
+      .to include('Raider::Wait.immediately { expect(driver).to be_axe_clean }')
+  ensure
+    FileUtils.rm_rf(name)
+  end
+end
+
 describe 'Example tests' do
   it 'asserts the selenium rspec spec with have_text and no eventually' do
     spec = read_generated('rspec_selenium', 'spec/login_page_spec.rb')

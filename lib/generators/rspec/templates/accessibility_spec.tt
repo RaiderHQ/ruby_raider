@@ -8,6 +8,6 @@ describe 'Accessibility' do
   end
 
   it 'has no accessibility violations on the page' do
-    expect(driver).to be_axe_clean
+    Raider::Wait.immediately { expect(driver).to be_axe_clean }
   end
 end

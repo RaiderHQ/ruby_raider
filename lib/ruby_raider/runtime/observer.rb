@@ -36,9 +36,9 @@ module Raider
       def initialize(element, action, args)
         @element = element
         @action = action
-        @args = args
+        @args = args&.dup&.freeze # an observer can read the keys, never change what gets typed
         @retries = 0
-        @token = Raider.report(:action_started) { Observer.started(element, action, args) }
+        @token = Raider.report(:action_started) { Observer.started(element, action, @args) }
         @started = Observer.clock
       end
 
@@ -146,7 +146,8 @@ module Raider
       def describe(args, parent)
         how, what = args.size == 1 && args.first.is_a?(Hash) ? args.first.first : args
         strategy = how.to_s
-        { strategy: STRATEGIES.fetch(strategy, strategy), selector: selector(strategy, what, args), within: chain(parent) }
+        { strategy: -STRATEGIES.fetch(strategy, strategy).to_s, selector: -selector(strategy, what, args),
+          within: chain(parent) }
       end
 
       def selector(strategy, what, args)

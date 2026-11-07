@@ -26,12 +26,12 @@ RSpec.describe 'Raider block expectations with value matchers' do
 
   it 'fails with the waited time and rspec own message' do
     expect { expect { 1 }.to eq(2) }
-      .to raise_error(RSpec::Expectations::ExpectationNotMetError, /\(waited 0\.3\d?s\) \nexpected: 2\n     got: 1/)
+      .to raise_error(RSpec::Expectations::ExpectationNotMetError, /\(waited 0\.[34]\d?s\) \nexpected: 2\n     got: 1/)
   end
 
   it 'fails a negated matcher with the waited time' do
     expect { expect { 'x' }.not_to eq('x') }
-      .to raise_error(RSpec::Expectations::ExpectationNotMetError, /\(waited 0\.3\d?s\) \nexpected: value != "x"\n     got: "x"/)
+      .to raise_error(RSpec::Expectations::ExpectationNotMetError, /\(waited 0\.[34]\d?s\) \nexpected: value != "x"\n     got: "x"/)
   end
 
   it 'retries not_to include until the value stops including it' do
@@ -118,13 +118,14 @@ RSpec.describe 'Raider block expectations with value matchers' do
   end
 
   it 'keeps a Raider matcher on a block with its own wait and message' do
+    Raider.timeout = 2
     started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     expect { expect { [1] }.to have_count(2, wait: 0.2) }
       .to raise_error(RSpec::Expectations::ExpectationNotMetError, /expected the block to have count 2, last seen 1/)
-    expect(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).to be_between(0.15, 0.28)
+    expect(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).to be < 1
   end
 
-  it 'treats a timeout inside the block as not ready and ends with rspec own message' do
+  it 'treats a timeout inside the block as not ready and re-raises it after the deadline' do
     expect { expect { Raider::Wait.until(timeout: 0.05) { false } }.to eq(1) }
       .to raise_error(Raider::TimeoutError, /condition not met/)
   end

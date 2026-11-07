@@ -563,6 +563,7 @@ describe 'End-to-End Project Generation and Execution' do
     def expect_runtime_steps(steps)
       by_id = ->(step) { step['locator'].is_a?(Hash) && step['locator']['strategy'] == 'id' && step['locator']['selector'].is_a?(String) }
       expect(steps.select { |step| step['action'] == 'click' }).to all(satisfy(&by_id)).and(be_any)
+      expect(steps.select { |step| step['action'] == 'click' }.first['source']['file']).to end_with('spec/trace_replay_spec.rb')
       typed = steps.select { |step| step['action'] == 'send_keys' }
       expect(typed).to all(satisfy(&by_id))
       expect(typed.last['locator']['within']).to be_a(Array).and(be_any)
@@ -824,12 +825,12 @@ describe 'End-to-End Project Generation and Execution' do
             expect { driver.find_element(id: 'echo-out') }.to have_text('echo yes', wait: 5)
             driver.find_element(id: 'cors').click
             expect { driver.find_element(id: 'cors-out') }.to have_text('cors true', wait: 5)
-            expect(users.calls.size).to eq(1)
-            expect(users).to be_called
+            expect { users.calls.size }.to eq(1)
+            expect { users.called? }.to be(true)
             remove_mock(users)
             driver.find_element(id: 'users').click
             expect { driver.find_element(id: 'users-out') }.to have_text('real', wait: 5)
-            expect(users.calls.size).to eq(1)
+            expect { users.calls.size }.to eq(1)
             puts 'NETWORK_MOCKING_#{browser.upcase}_DONE'
           end
         BODY

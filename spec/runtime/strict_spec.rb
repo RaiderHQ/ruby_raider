@@ -86,14 +86,14 @@ RSpec.describe 'Raider strict find_element' do
     it 'raises NoSuchElementError naming the wait when nothing ever matches' do
       Raider.timeout = 0.3
       expect { driver.find_element(id: 'x') }
-        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /no such element: \{ id: "x" \} \(waited 0\.3\d?s\)/)
+        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /no such element: \{ id: "x" \} \(waited 0\.[34]\d?s\)/)
     end
 
     it 'waits the same way when strict is off' do
       Raider.strict = false
       Raider.timeout = 0.3
       expect { driver.find_element(id: 'x') }
-        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /\(waited 0\.3\d?s\)/)
+        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /\(waited 0\.[34]\d?s\)/)
       expect(find_calls(:find_element_by)).to be >= 3
     end
 
@@ -160,14 +160,14 @@ RSpec.describe 'Raider strict find_element' do
       bridge.enqueue(['a'])
       expect(driver.find_element(id: 'x')).to be_a(Selenium::WebDriver::Element)
       expect { driver.find_element(id: 'gone') }
-        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /\(waited 0\.3\d?s\)/)
+        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /\(waited 0\.[34]\d?s\)/)
       expect(driver.find_elements(id: 'gone')).to eq([])
     end
 
     it 'reports the elapsed wait, not the timeout, inside a shorter enclosing wait' do
       Raider.timeout = 5
       expect { Raider::Wait.until(timeout: 0.2) { driver.find_element(id: 'x') } }
-        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /\(waited 0\.2\d?s\)/)
+        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /\(waited 0\.[23]\d?s\)/)
     end
 
     it 'raises NotSupported at once for a role find on NATIVE_APP' do

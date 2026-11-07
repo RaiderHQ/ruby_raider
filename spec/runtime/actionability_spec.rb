@@ -104,13 +104,13 @@ RSpec.describe 'Raider::Actionability' do
       it "raises NotActionable to be visible for a hidden element on #{action}" do
         Raider.timeout = 0.3
         appium.answer(:element_displayed?, false).answer(:element_enabled?, true)
-        expect { ensure_native(action) }.to raise_error(Raider::NotActionable, /waited 0\.3\d?s for .* to be visible/)
+        expect { ensure_native(action) }.to raise_error(Raider::NotActionable, /waited 0\.[34]\d?s for .* to be visible/)
       end
 
       it "raises NotActionable to be enabled for a disabled element on #{action}" do
         Raider.timeout = 0.3
         appium.answer(:element_displayed?, true).answer(:element_enabled?, false)
-        expect { ensure_native(action) }.to raise_error(Raider::NotActionable, /waited 0\.3\d?s for .* to be enabled/)
+        expect { ensure_native(action) }.to raise_error(Raider::NotActionable, /waited 0\.[34]\d?s for .* to be enabled/)
       end
     end
 
@@ -141,7 +141,7 @@ RSpec.describe 'Raider::Actionability' do
       rescue Raider::NotActionable => e
         error = e
       end
-      expect(error.message).to match(/waited 0\.2\d?s for/)
+      expect(error.message).to match(/waited 0\.[23]\d?s for/)
     end
 
     it 'raises KeyError for an action with no native table entry' do

@@ -188,10 +188,12 @@ describe 'Example pages' do
         let(:home) { read_generated("#{framework}_#{automation}", 'page_objects/pages/home.rb') }
         let(:pdp) { read_generated("#{framework}_#{automation}", 'page_objects/pages/pdp.rb') }
 
-        it 'taps the first product and reads the add to cart text through the wait helper' do
-          expect(home).to include('tap(first_product)')
-          expect(pdp).to include('text(add_to_cart_button)')
-          expect(home + pdp).not_to include('driver.wait', 'driver.find_element')
+        it 'clicks the first product and exposes the add to cart button as plain Appium' do
+          finder = automation == 'cross_platform' ? 'element(' : 'driver.find_element('
+          expect(home).to include('first_product.click', "  private\n", "def first_product\n    #{finder}")
+          expect(pdp).to include('def add_to_cart_button')
+          expect(pdp).not_to include('add_to_cart_text', 'private')
+          expect(home + pdp).not_to include('tap(', 'text(', 'driver.wait')
         end
 
         it 'returns locator hashes from the element methods' do
@@ -215,6 +217,18 @@ describe 'Example pages' do
 end
 
 describe 'Page runtime wiring' do
+  it 'requires the appium helper that the cross platform page includes' do
+    page = read_generated("#{FrameworkIndex::RSPEC}_cross_platform", 'page_objects/abstract/page.rb')
+    expect(page).to include("require_relative '../../helpers/appium_helper'", 'include AppiumHelper')
+  end
+
+  it 'leaves the appium helper out of the other pages' do
+    %w[selenium ios android].each do |automation|
+      page = read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'page_objects/abstract/page.rb')
+      expect(page).not_to include('appium_helper')
+    end
+  end
+
   AUTOMATION_TYPES.each do |automation|
     it "requires the runtime and includes Raider::Helpers in #{automation}" do
       page = read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'page_objects/abstract/page.rb')

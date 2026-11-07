@@ -18,4 +18,8 @@ class UtilityCommands < Thor
   def video_toggle: (bool enabled) -> void
   def trace: (String action) -> void
   def trace_toggle: (bool enabled) -> void
+
+  private
+
+  def on?: (String toggle) -> bool
 end

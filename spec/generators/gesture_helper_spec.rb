@@ -100,7 +100,9 @@ describe 'gesture_helper template' do
 
     it 'scrolls between tries until the element appears' do
       attempts = 0
+      immediate = []
       allow(driver).to receive(:find_element).with(locator) do
+        immediate << Raider::Wait.immediate?
         attempts += 1
         raise Selenium::WebDriver::Error::NoSuchElementError, 'gone' if attempts < 3
 
@@ -108,6 +110,7 @@ describe 'gesture_helper template' do
       end
       expect(driver).to receive(:execute_script).twice
       expect(page.scroll_to(locator, direction: 'up')).to eq(element)
+      expect(immediate).to eq([true, true, true])
     end
 
     it 'gives up after max_scrolls and names the locator' do

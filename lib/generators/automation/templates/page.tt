@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 require 'ruby_raider/runtime'
+<%- if cross_platform? -%>
+require_relative '../../helpers/appium_helper'
+<%- end -%>
 <%- if mobile? -%>
 require_relative '../../helpers/gesture_helper'
 <%- end -%>

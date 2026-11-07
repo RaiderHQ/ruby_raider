@@ -50,6 +50,16 @@ RSpec.describe 'Raider::Observer' do
     expect(done[2][:waited_ms]).to be_a(Integer)
   end
 
+  it 'hands the observer a frozen copy of the keys so it cannot change what is typed' do
+    keys = ['a']
+    seen = nil
+    recorder.define_singleton_method(:action_started) { |**details| (seen = details[:args]) << 'evil' }
+    bridge.enqueue(['f'])
+    driver.find_element(id: 'x').send_keys(*keys)
+    expect(seen).to be_frozen
+    expect(bridge.calls.select { |call| call.first == :send_keys_to_element }.map(&:last)).to eq([['a']])
+  end
+
   it 'reports a nested send_keys with its within chain and keys' do
     bridge.enqueue(['f'])
     form = driver.find_element(css: 'form')
@@ -212,6 +222,16 @@ RSpec.describe 'Raider::Observer' do
       expect([stamps.first.frozen?, stamps.first[:within].frozen?]).to eq([true, true])
     end
 
+    it 'deep-freezes the stamp and keeps the caller string out of it' do
+      bridge.enqueue(['a'])
+      selector = +'#login'
+      stamp = driver.find_element(css: selector).instance_variable_get(:@raider_locator)
+      expect([stamp[:strategy].frozen?, stamp[:selector].frozen?]).to eq([true, true])
+      expect(stamp[:selector]).not_to equal(selector)
+      selector << '-changed'
+      expect(stamp[:selector]).to eq('#login')
+    end
+
     it 'leaves a frozen element unstamped without raising' do
       element = Selenium::WebDriver::Element.new(bridge, 'a').freeze
       expect(Raider::Observer.stamp(element, [{ id: 'x' }], driver)).to equal(element)
@@ -219,7 +239,7 @@ RSpec.describe 'Raider::Observer' do
     end
 
     it 'chains three levels, outermost first' do
-      %w[m f i].each_with_index { |id, _| bridge.enqueue([id]) }
+      %w[m f i].each { |id| bridge.enqueue([id]) }
       field = driver.find_element(css: 'main').find_element(css: 'form').find_element(id: 'email')
       expect(Raider::Observer.locator_of(field)[:within]).to eq(
         [{ strategy: 'css', selector: 'main' }, { strategy: 'css', selector: 'form' }]
