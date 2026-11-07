@@ -34,8 +34,6 @@ class CommonGenerator < Generator
   end
 
   def generate_rspec_file
-    return unless rspec?
-
     template('common/rspec.tt', "#{name}/.rspec")
   end
 end

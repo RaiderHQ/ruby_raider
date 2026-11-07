@@ -61,30 +61,55 @@ describe InvokeGenerators do
     end
   end
 
-  context 'with the removed Watir automation' do
+  context 'with an unsupported automation' do
     it 'lists the supported automations only' do
       expect(described_class::AUTOMATIONS).to eq(%w[selenium ios android cross_platform])
     end
 
-    it 'raises a Thor::Error with the removal message and writes nothing' do
+    it 'raises the Invalid automation error and writes nothing' do
       expect { described_class.generate_framework(framework: 'rspec', automation: 'watir', name: 'case_watir') }
-        .to raise_error(Thor::Error, described_class::WATIR_REMOVED)
+        .to raise_error(Thor::Error, 'Invalid automation "watir". Allowed values: selenium, ios, android, cross_platform')
       expect(File).not_to exist('case_watir')
     end
+  end
 
-    it 'refuses it in any case' do
-      expect { described_class.generate_framework(framework: 'rspec', automation: 'WATIR', name: 'case_watir_up') }
-        .to raise_error(Thor::Error, described_class::WATIR_REMOVED)
+  context 'with the RSpec-only framework choice' do
+    it 'lists rspec as the only framework' do
+      expect(described_class::FRAMEWORKS).to eq(%w[rspec])
     end
 
-    it 'exits 1 for raider new, prints the message and leaves no directory' do
+    it 'rejects framework minitest with the allowed values' do
+      expect { described_class.generate_framework(framework: 'minitest', automation: 'selenium', name: 'case_min') }
+        .to raise_error(Thor::Error, 'Invalid framework "minitest". Allowed values: rspec')
+    end
+
+    it 'rejects framework cucumber like any unknown framework' do
+      expect { described_class.generate_framework(framework: 'Cucumber', automation: 'selenium', name: 'case_cuke') }
+        .to raise_error(Thor::Error, 'Invalid framework "cucumber". Allowed values: rspec')
+      expect(File).not_to exist('case_cuke')
+    end
+
+    %w[framework:cucumber framework:Cucumber].each do |arg|
+      it "exits 1 for raider new with #{arg} and leaves no directory" do
+        root = File.expand_path('../../..', __dir__)
+        Dir.mktmpdir do |dir|
+          _out, err, status = Open3.capture3('ruby', "#{root}/bin/raider", 'new', 'x', '-p', arg,
+                                             'automation:selenium', chdir: dir)
+          expect(status.exitstatus).to eq(1)
+          expect(err).to include('Invalid framework "cucumber". Allowed values: rspec')
+          expect(File).not_to exist(File.join(dir, 'x'))
+        end
+      end
+    end
+
+    it 'defaults to rspec when no framework is given' do
       root = File.expand_path('../../..', __dir__)
       Dir.mktmpdir do |dir|
-        _out, err, status = Open3.capture3('ruby', "#{root}/bin/raider", 'new', 'x', '-p',
-                                           'framework:rspec', 'automation:watir', chdir: dir)
-        expect(status.exitstatus).to eq(1)
-        expect(err).to include(described_class::WATIR_REMOVED)
-        expect(File).not_to exist(File.join(dir, 'x'))
+        _out, _err, status = Open3.capture3('ruby', "#{root}/bin/raider", 'new', 'x', '-p',
+                                            'automation:selenium', chdir: dir)
+        expect(status.exitstatus).to eq(0)
+        expect(File).to exist(File.join(dir, 'x/spec'))
+        expect(File).not_to exist(File.join(dir, 'x/features'))
       end
     end
   end
