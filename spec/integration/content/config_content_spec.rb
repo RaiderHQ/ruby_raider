@@ -111,15 +111,6 @@ describe 'Config file content' do
     include_examples 'login state config', name
   end
 
-  context 'with cucumber and selenium' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-    include_examples 'valid web config', name
-    include_examples 'selenium config with timeout', name
-    include_examples 'trace config', name
-    include_examples 'screenshots config', name
-    include_examples 'login state config', name
-  end
-
   # --- Mobile config ---
 
   # Single-platform Appium projects have no config.yml; VideoHelper falls back to its defaults.
@@ -143,7 +134,7 @@ describe 'Config file content' do
   end
 
   # appium_lib connects to http://127.0.0.1:4723 and ignores a url capability, so none is generated.
-  %w[rspec cucumber].product(%w[android ios cross_platform]).each do |framework, automation|
+  FRAMEWORKS.product(%w[android ios cross_platform]).each do |framework, automation|
     it "has no unused url capability or /wd/hub path in #{framework} #{automation} capabilities" do
       caps = read_generated("#{framework}_#{automation}", 'config/capabilities.yml')
       local = caps.split(/^browserstack:/).first
@@ -169,7 +160,7 @@ describe 'Config file content' do
 end
 
 describe 'Config timeout wiring' do
-  %w[rspec cucumber].each do |framework|
+  FRAMEWORKS.each do |framework|
     # Single-platform Appium projects have no config.yml; WaitHelper falls back to its default of 10.
     %w[selenium cross_platform].each do |automation|
       it "sets timeout 10 in #{framework} #{automation}" do

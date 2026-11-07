@@ -42,28 +42,8 @@ describe 'Gemfile content' do
       expect(gemfile).to include("gem 'rubocop-rspec'")
     end
 
-    it 'does not include cucumber' do
-      expect(gemfile).not_to include("gem 'cucumber'")
-    end
-
     it 'does not include minitest' do
       expect(gemfile).not_to include("gem 'minitest'\n")
-    end
-  end
-
-  shared_examples 'contains cucumber gems' do |project_name|
-    subject(:gemfile) { read_generated(project_name, 'Gemfile') }
-
-    it 'includes cucumber' do
-      expect(gemfile).to include("gem 'cucumber'")
-    end
-
-    it 'does not include allure-cucumber' do
-      expect(gemfile).not_to include('allure')
-    end
-
-    it 'includes rspec as cucumber dependency' do
-      expect(gemfile).to include("gem 'rspec'")
     end
   end
 
@@ -79,13 +59,6 @@ describe 'Gemfile content' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'contains common gems', name
     include_examples 'contains rspec gems', name
-    include_examples 'contains selenium gems', name
-  end
-
-  context 'with cucumber and selenium' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-    include_examples 'contains common gems', name
-    include_examples 'contains cucumber gems', name
     include_examples 'contains selenium gems', name
   end
 
@@ -114,26 +87,6 @@ describe 'Gemfile content' do
 
         it 'pins ruby_raider to the 4.0 release line' do
           expect(gemfile).to include("gem 'ruby_raider', '~> 4.0'")
-        end
-      end
-
-      context "with cucumber and #{automation}" do
-        let(:gemfile) { read_generated("#{FrameworkIndex::CUCUMBER}_#{automation}", 'Gemfile') }
-
-        it 'includes raider_reporter' do
-          expect(gemfile).to include("gem 'raider_reporter', '~> 0.12'")
-        end
-
-        it "#{automation == 'selenium' ? 'includes' : 'leaves out'} chunky_png" do
-          expect(gemfile.include?("gem 'chunky_png'")).to eq(automation == 'selenium')
-        end
-
-        it 'drops allure-cucumber' do
-          expect(gemfile).not_to include('allure')
-        end
-
-        it 'pins ruby_raider to the generator major.minor' do
-          expect(gemfile).to include("gem 'ruby_raider', '~> #{major_minor}'")
         end
       end
     end

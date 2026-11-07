@@ -384,14 +384,6 @@ describe 'Helper file content' do
     it_behaves_like 'selenium spec helper', name
   end
 
-  # --- Cucumber + automation contexts (no spec_helper/test_helper) ---
-
-  context 'with cucumber and selenium' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-    it_behaves_like 'valid driver helper', name
-    it_behaves_like 'selenium driver helper', name
-  end
-
   # --- Raider reporter wiring (every rspec automation) ---
 
   AUTOMATION_TYPES.each do |automation|
@@ -408,12 +400,6 @@ describe 'Helper file content' do
       else
         it_behaves_like 'no trace wiring', name, 'helpers/spec_helper.rb'
         it_behaves_like 'no network mock wiring', name
-      end
-    end
-
-    context "with cucumber and #{automation}" do
-      it 'does not generate the allure helper' do
-        expect(File).not_to exist("#{FrameworkIndex::CUCUMBER}_#{automation}/helpers/allure_helper.rb")
       end
     end
   end
@@ -473,7 +459,7 @@ describe 'Auto-waiting helper wiring' do
   end
 
   %w[ios android cross_platform].each do |automation|
-    %w[rspec cucumber].each do |framework|
+    FRAMEWORKS.each do |framework|
       it "does not pass a wait to appium_lib in #{framework} #{automation}" do
         driver = read_generated("#{framework}_#{automation}", 'helpers/driver_helper.rb')
         expect(driver).not_to match(/\bwait:/)
@@ -481,7 +467,7 @@ describe 'Auto-waiting helper wiring' do
     end
   end
 
-  %w[rspec cucumber].each do |framework|
+  FRAMEWORKS.each do |framework|
     it "returns the new driver without a redundant assignment in #{framework} selenium" do
       driver = read_generated("#{framework}_selenium", 'helpers/driver_helper.rb')
       expect(driver).to include("    Selenium::WebDriver.for(browser.to_sym, **arguments)\n  end")
@@ -507,22 +493,6 @@ describe 'Auto-waiting helper wiring' do
           expect(helper).to have_valid_ruby_syntax
         end
       end
-
-      context "with cucumber and #{automation}" do
-        let(:name) { ensure_project(framework: 'cucumber', automation:, examples: false) }
-
-        it 'names no example class or hook in the env and the World' do
-          %w[env.rb world.rb].each do |file|
-            expect(read_generated(name, "features/support/#{file}")).not_to match(/Login|Account|logged_in|factory/)
-          end
-        end
-
-        it 'has a valid env and World' do
-          %w[env.rb world.rb].each do |file|
-            expect(read_generated(name, "features/support/#{file}")).to have_valid_ruby_syntax
-          end
-        end
-      end
     end
 
     it 'keeps the session state require in the selenium rspec spec helper' do
@@ -540,10 +510,5 @@ describe 'ScreenshotHelper reset between tests' do
     %w[rspec_ios rspec_android].each do |project|
       expect(read_generated(project, 'helpers/spec_helper.rb')).not_to include('ScreenshotHelper')
     end
-  end
-
-  it 'resets in the Cucumber Before of Selenium web projects only' do
-    selenium = read_generated('cucumber_selenium', 'features/support/env.rb')
-    expect(selenium[/^Before do.*?^end$/m]).to include('ScreenshotHelper.reset')
   end
 end

@@ -37,14 +37,6 @@ describe 'CI pipeline content' do
     end
   end
 
-  shared_examples 'github cucumber pipeline' do |project_name|
-    subject(:pipeline) { read_generated(project_name, '.github/workflows/test_pipeline.yml') }
-
-    it 'runs cucumber' do
-      expect(pipeline).to include('cucumber')
-    end
-  end
-
   shared_examples 'github triggers' do |project_name, file|
     subject(:pipeline) { read_generated(project_name, ".github/workflows/#{file}") }
 
@@ -257,18 +249,6 @@ describe 'CI pipeline content' do
     include_examples 'github without allure steps', name
   end
 
-  context 'with cucumber and selenium' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-    include_examples 'github ffmpeg cache', name, 'test_pipeline.yml', %w[build], 'cucumber'
-    include_examples 'valid github pipeline', name
-    include_examples 'github cucumber pipeline', name
-    include_examples 'github triggers', name, 'test_pipeline.yml'
-    include_examples 'github raider wiring', name, 'test_pipeline.yml', 'cucumber'
-    include_examples 'github raider-comment job', name, 'test_pipeline.yml', %w[build]
-    include_examples 'github raider-gate job', name, 'test_pipeline.yml', %w[build]
-    include_examples 'github without allure steps', name
-  end
-
   appium_jobs = { 'android' => %w[android-tests], 'ios' => %w[ios-tests],
                   'cross_platform' => %w[ios-tests android-tests] }
 
@@ -283,16 +263,6 @@ describe 'CI pipeline content' do
       include_examples 'github raider-gate job', name, 'appium_pipeline.yml', test_jobs
       include_examples 'github triggers', name, 'appium_pipeline.yml'
       include_examples 'github raider wiring', name, 'appium_pipeline.yml'
-    end
-
-    context "with cucumber and #{automation}" do
-      name = "#{FrameworkIndex::CUCUMBER}_#{automation}"
-      include_examples 'github appium shards', name, 'cucumber', appium_shards[automation]
-      include_examples 'github ffmpeg cache', name, 'appium_pipeline.yml', test_jobs, 'cucumber'
-      include_examples 'github triggers', name, 'appium_pipeline.yml'
-      include_examples 'github raider wiring', name, 'appium_pipeline.yml', 'cucumber'
-      include_examples 'github raider-comment job', name, 'appium_pipeline.yml', test_jobs
-      include_examples 'github raider-gate job', name, 'appium_pipeline.yml', test_jobs
     end
   end
 

@@ -37,40 +37,6 @@ describe 'Common file content' do
     it 'sets default task to spec' do
       expect(rakefile).to include('task default: :spec')
     end
-
-    it 'does not include cucumber tasks' do
-      expect(rakefile).not_to include('Cucumber::Rake::Task')
-    end
-  end
-
-  shared_examples 'cucumber rakefile with tag tasks' do |project_name|
-    subject(:rakefile) { read_generated(project_name, 'Rakefile') }
-
-    it 'requires cucumber/rake/task' do
-      expect(rakefile).to include("require 'cucumber/rake/task'")
-    end
-
-    it 'defines features task' do
-      expect(rakefile).to include('Rake::Task.new(:features)')
-    end
-
-    it 'defines smoke task' do
-      expect(rakefile).to include('Rake::Task.new(:smoke)')
-      expect(rakefile).to include("'--tags @smoke'")
-    end
-
-    it 'defines regression task' do
-      expect(rakefile).to include('Rake::Task.new(:regression)')
-      expect(rakefile).to include("'--tags @regression'")
-    end
-
-    it 'sets default task to features' do
-      expect(rakefile).to include('task default: :features')
-    end
-
-    it 'does not include rspec tasks' do
-      expect(rakefile).not_to include('RSpec::Core::RakeTask')
-    end
   end
 
   # --- .rspec file ---
@@ -95,12 +61,6 @@ describe 'Common file content' do
     end
   end
 
-  shared_examples 'no rspec dotfile' do |project_name|
-    it 'does not have .rspec file' do
-      expect(File).not_to exist(File.join(project_name, '.rspec'))
-    end
-  end
-
   # --- .gitignore ---
 
   shared_examples 'rspec gitignore' do |project_name|
@@ -116,26 +76,6 @@ describe 'Common file content' do
 
     it 'includes raider-results' do
       expect(gitignore).to include('raider-results')
-    end
-  end
-
-  shared_examples 'non-rspec gitignore' do |project_name|
-    subject(:gitignore) { read_generated(project_name, '.gitignore') }
-
-    it 'does not include allure-results' do
-      expect(gitignore).not_to include('allure-results')
-    end
-
-    it 'does not include spec/examples.txt' do
-      expect(gitignore).not_to include('spec/examples.txt')
-    end
-
-    it 'includes raider-results' do
-      expect(gitignore).to include('raider-results')
-    end
-
-    it 'includes rerun.txt' do
-      expect(gitignore).to include('rerun.txt')
     end
   end
 
@@ -190,28 +130,6 @@ describe 'Common file content' do
     end
   end
 
-  shared_examples 'gemfile without rspec-retry' do |project_name|
-    subject(:gemfile) { read_generated(project_name, 'Gemfile') }
-
-    it 'does not include rspec-retry gem' do
-      expect(gemfile).not_to include("gem 'rspec-retry'")
-    end
-  end
-
-  # --- Cucumber retry config (C4) ---
-
-  shared_examples 'cucumber config with retry' do |project_name|
-    subject(:cucumber_yml) { read_generated(project_name, 'cucumber.yml') }
-
-    it 'includes --retry flag' do
-      expect(cucumber_yml).to include('--retry')
-    end
-
-    it 'writes failed scenarios to rerun.txt for Re-run Failed' do
-      expect(cucumber_yml).to include('--format rerun --out rerun.txt')
-    end
-  end
-
   # --- RSpec contexts ---
 
   context 'with rspec and selenium' do
@@ -225,21 +143,8 @@ describe 'Common file content' do
     it_behaves_like 'web gitignore for saved logins', name
   end
 
-  # --- Cucumber contexts ---
-
-  context 'with cucumber and selenium' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-    it_behaves_like 'valid rakefile', name
-    it_behaves_like 'cucumber rakefile with tag tasks', name
-    it_behaves_like 'no rspec dotfile', name
-    it_behaves_like 'non-rspec gitignore', name
-    it_behaves_like 'gemfile without rspec-retry', name
-    it_behaves_like 'cucumber config with retry', name
-    it_behaves_like 'web gitignore for saved logins', name
-  end
-
   %w[android ios cross_platform].each do |automation|
-    %w[rspec cucumber].each do |framework|
+    FRAMEWORKS.each do |framework|
       context "with #{framework} and #{automation}" do
         it_behaves_like 'mobile gitignore without saved logins', "#{framework}_#{automation}"
       end
