@@ -19,10 +19,6 @@ RSpec.describe TemplateRenderer do
         true
       end
 
-      def watir?
-        false
-      end
-
       def mobile?
         false
       end

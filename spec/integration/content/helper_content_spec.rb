@@ -36,10 +36,6 @@ describe 'Helper file content' do
       expect(helper).to include("require 'selenium-webdriver'")
     end
 
-    it 'does not require watir' do
-      expect(helper).not_to include("require 'watir'")
-    end
-
     it 'does not reference Capybara' do
       expect(helper).not_to include('Capybara')
     end
@@ -90,16 +86,8 @@ describe 'Helper file content' do
       expect(helper).to match(/module BrowserHelper/)
     end
 
-    it 'requires watir' do
-      expect(helper).to include("require 'watir'")
-    end
-
     it 'defines browser method' do
       expect(helper).to match(/def browser/)
-    end
-
-    it 'creates Watir::Browser' do
-      expect(helper).to include('Watir::Browser.new')
     end
 
     it 'does not require selenium-webdriver' do
@@ -282,22 +270,6 @@ describe 'Helper file content' do
     end
   end
 
-  shared_examples 'watir spec helper' do |project_name|
-    subject(:helper) { read_generated(project_name, 'helpers/spec_helper.rb') }
-
-    it 'includes BrowserHelper' do
-      expect(helper).to include('include(BrowserHelper)')
-    end
-
-    it 'requires browser_helper' do
-      expect(helper).to include("require_relative 'browser_helper'")
-    end
-
-    it 'maximizes window via browser' do
-      expect(helper).to include('browser.window.maximize')
-    end
-  end
-
   # --- Video helper ---
 
   shared_examples 'valid video helper' do |project_name|
@@ -388,13 +360,6 @@ describe 'Helper file content' do
     it_behaves_like 'video listener wiring', name, 'driver_helper.rb'
   end
 
-  context 'with cucumber and watir video' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
-    it_behaves_like 'valid video helper', name
-    it_behaves_like 'web video helper', name
-    it_behaves_like 'video listener wiring', name, 'browser_helper.rb'
-  end
-
   context 'with rspec and ios video' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
     it_behaves_like 'valid video helper', name
@@ -419,13 +384,6 @@ describe 'Helper file content' do
     it_behaves_like 'selenium spec helper', name
   end
 
-  context 'with rspec and watir' do
-    name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-    it_behaves_like 'valid browser helper', name
-    it_behaves_like 'valid spec helper', name
-    it_behaves_like 'watir spec helper', name
-  end
-
   # --- Cucumber + automation contexts (no spec_helper/test_helper) ---
 
   context 'with cucumber and selenium' do
@@ -434,23 +392,16 @@ describe 'Helper file content' do
     it_behaves_like 'selenium driver helper', name
   end
 
-  context 'with cucumber and watir' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
-    it_behaves_like 'valid browser helper', name
-  end
-
   # --- Raider reporter wiring (every rspec automation) ---
 
   AUTOMATION_TYPES.each do |automation|
     context "with rspec and #{automation} raider reporter wiring" do
       name = "#{FrameworkIndex::RSPEC}_#{automation}"
       screenshot_call = {
-        'selenium' => 'driver.save_screenshot(screenshot_path)',
-        'watir' => 'browser.screenshot.save(screenshot_path)'
+        'selenium' => 'driver.save_screenshot(screenshot_path)'
       }.fetch(automation, 'driver.screenshot(screenshot_path)')
       it_behaves_like 'raider reporter spec helper', name, screenshot_call
-      it_behaves_like 'video spec helper wiring', name, automation == 'watir' ? 'browser' : 'driver',
-                      %w[selenium watir].include?(automation) ? ':webm' : ':mp4'
+      it_behaves_like 'video spec helper wiring', name, 'driver', automation == 'selenium' ? ':webm' : ':mp4'
       if automation == 'selenium'
         it_behaves_like 'trace spec helper wiring', name
         it_behaves_like 'network mock after hook', name
@@ -469,7 +420,7 @@ describe 'Helper file content' do
 
   # --- Opt-in login reuse ---
 
-  { 'selenium' => 'driver', 'watir' => 'browser.driver' }.each do |automation, target|
+  { 'selenium' => 'driver' }.each do |automation, target|
     context "with rspec and #{automation} login reuse" do
       subject(:helper) { read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'helpers/spec_helper.rb') }
 
@@ -541,14 +492,6 @@ describe 'Auto-waiting helper wiring' do
       driver = read_generated("#{framework}_selenium", 'helpers/driver_helper.rb')
       expect(driver).not_to include('implicit_wait')
     end
-
-    it "keeps Watir untouched in #{framework} watir" do
-      project = "#{framework}_watir"
-      expect(File.exist?(File.join(project, 'helpers/wait_helper.rb'))).to be(false)
-      expect(read_generated(project, 'helpers/browser_helper.rb')).to include('Watir.default_timeout')
-      files = Dir.glob(File.join(project, '**/*.rb')).map { |f| File.read(f) }
-      expect(files.grep(/WaitHelper/)).to be_empty
-    end
   end
 
   describe 'without example tests' do
@@ -594,7 +537,7 @@ describe 'ScreenshotHelper reset between tests' do
   it 'resets in the RSpec before(:each) of Selenium web projects only' do
     selenium = read_generated('rspec_selenium', 'helpers/spec_helper.rb')
     expect(selenium[/config\.before\(:each\) do.*?^    end$/m]).to include('ScreenshotHelper.reset')
-    %w[rspec_watir rspec_ios rspec_android].each do |project|
+    %w[rspec_ios rspec_android].each do |project|
       expect(read_generated(project, 'helpers/spec_helper.rb')).not_to include('ScreenshotHelper')
     end
   end
@@ -602,6 +545,5 @@ describe 'ScreenshotHelper reset between tests' do
   it 'resets in the Cucumber Before of Selenium web projects only' do
     selenium = read_generated('cucumber_selenium', 'features/support/env.rb')
     expect(selenium[/^Before do.*?^end$/m]).to include('ScreenshotHelper.reset')
-    expect(read_generated('cucumber_watir', 'features/support/env.rb')).not_to include('ScreenshotHelper')
   end
 end

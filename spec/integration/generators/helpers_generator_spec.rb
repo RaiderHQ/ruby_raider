@@ -28,17 +28,6 @@ describe HelpersGenerator do
     end
   end
 
-  shared_examples 'creates watir helpers' do |name|
-    it 'creates a browser helper file' do
-      expect(File).to exist("#{name}/helpers/browser_helper.rb")
-    end
-
-    it 'does not create the wait helper or the element wrapper' do
-      expect(File).not_to exist("#{name}/helpers/wait_helper.rb")
-      expect(File).not_to exist("#{name}/helpers/raider_element.rb")
-    end
-  end
-
   shared_examples 'creates the wait helper' do |name|
     it 'creates the wait helper and the element wrapper' do
       expect(File).to exist("#{name}/helpers/wait_helper.rb")
@@ -111,16 +100,6 @@ describe HelpersGenerator do
     include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
   end
 
-  context 'with rspec and watir' do
-    include_examples 'creates common helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-    include_examples 'skips the trace helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-    include_examples 'skips the network helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-    include_examples 'skips the screenshot helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-    include_examples 'creates a session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-    include_examples 'creates watir helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-    include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-  end
-
   context 'with cucumber and selenium' do
     include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates the trace helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
@@ -130,16 +109,6 @@ describe HelpersGenerator do
     include_examples 'creates selenium helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates the wait helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates cucumber helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-  end
-
-  context 'with cucumber and watir' do
-    include_examples 'creates common helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
-    include_examples 'skips the trace helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
-    include_examples 'skips the network helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
-    include_examples 'skips the screenshot helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
-    include_examples 'creates a session state helper', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
-    include_examples 'creates watir helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
-    include_examples 'creates cucumber helpers', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
   end
 
   context 'with rspec and appium android' do

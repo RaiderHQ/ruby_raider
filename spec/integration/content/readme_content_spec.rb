@@ -8,7 +8,7 @@ describe 'Generated Readme content' do
       subject(:section) { readme[/^### Video replay\n.*?(?=^##)/m]&.gsub(/\s+/, ' ') }
 
       let(:readme) { read_generated("#{framework}_#{automation}", 'Readme.md') }
-      let(:web) { %w[selenium watir].include?(automation) }
+      let(:web) { automation == 'selenium' }
 
       it 'exists and covers the defaults, VIDEO=off, the install commands and the cache' do
         expect(section).not_to be_nil
@@ -211,11 +211,11 @@ describe 'Generated Readme content' do
     context "with #{framework} and #{automation}, the login reuse section" do
       subject(:readme) { read_generated("#{framework}_#{automation}", 'Readme.md') }
 
-      if %w[selenium watir].include?(automation)
+      if automation == 'selenium'
         it 'documents the tags, other roles, max_age, the env switch and the secrets warning' do
           section = readme[/^## Reusing the login\n.*?(?=^##)/m].gsub(/\s+/, ' ')
           expect(section).to include('`:logged_in`', '`@logged_in`', "SessionState.new(driver, name: 'admin')",
-                                     'browser.driver', 'login_state', 'max_age', 'RAIDER_LOGIN_STATE=off',
+                                     'login_state', 'max_age', 'RAIDER_LOGIN_STATE=off',
                                      'RAIDER_LOGIN_STATE=refresh', '.raider/auth/', 'git-ignored',
                                      'live session tokens', 'must not be committed, cached or uploaded')
         end
@@ -311,17 +311,6 @@ describe 'Generated Readme: How the framework works' do
           expect(settings).to include('under the `ios:` and `android:` parts') if automation == 'cross_platform'
         end
       end
-    end
-
-    it "marks the #{framework} watir Readme as deprecated and not the selenium one" do
-      watir = read_generated("#{framework}_watir", 'Readme.md')
-      expect(watir).to include('> **Deprecated:** Watir is deprecated', 'only available through `-p automation:watir`',
-                               'https://github.com/RaiderHQ/ruby_raider#migrating-from-watir')
-      expect(read_generated("#{framework}_selenium", 'Readme.md')).not_to include('**Deprecated:**')
-    end
-
-    it "has no such section for #{framework} and watir" do
-      expect(read_generated("#{framework}_watir", 'Readme.md')).not_to include('How the framework works')
     end
   end
 

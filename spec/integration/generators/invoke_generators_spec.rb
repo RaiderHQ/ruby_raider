@@ -15,7 +15,7 @@ describe InvokeGenerators do
     end
 
     it 'accepts upper-case values' do
-      described_class.generate_framework(framework: 'RSPEC', automation: 'WATIR', name: 'case_upper')
+      described_class.generate_framework(framework: 'RSPEC', automation: 'SELENIUM', name: 'case_upper')
       expect(File).to exist('case_upper/.rspec')
     end
 
@@ -59,41 +59,33 @@ describe InvokeGenerators do
     it 'keeps the examples by default' do
       expect(described_class.collect_flags(automation: 'selenium')).not_to include('no_examples')
     end
-
-    it 'keeps the examples for watir, whose templates are frozen' do
-      expect(described_class.collect_flags(automation: 'watir', examples: false)).not_to include('no_examples')
-    end
   end
 
-  context 'with the Watir deprecation notice' do
-    let(:notice) do
-      'Watir is deprecated and will be removed in the next major version of ruby_raider; new projects should use Selenium.'
+  context 'with the removed Watir automation' do
+    it 'lists the supported automations only' do
+      expect(described_class::AUTOMATIONS).to eq(%w[selenium ios android cross_platform])
     end
 
-    it 'prints it for watir' do
-      expect { described_class.generate_framework(framework: 'rspec', automation: 'watir', name: 'case_dep') }
-        .to output(/#{Regexp.escape(notice)}/).to_stdout
+    it 'raises a Thor::Error with the removal message and writes nothing' do
+      expect { described_class.generate_framework(framework: 'rspec', automation: 'watir', name: 'case_watir') }
+        .to raise_error(Thor::Error, described_class::WATIR_REMOVED)
+      expect(File).not_to exist('case_watir')
     end
 
-    it 'does not print it for selenium' do
-      expect { described_class.generate_framework(framework: 'rspec', automation: 'selenium', name: 'case_nodep') }
-        .not_to output(/Watir is deprecated/).to_stdout
+    it 'refuses it in any case' do
+      expect { described_class.generate_framework(framework: 'rspec', automation: 'WATIR', name: 'case_watir_up') }
+        .to raise_error(Thor::Error, described_class::WATIR_REMOVED)
     end
 
-    it 'still prints it for raider new with automation:watir' do
+    it 'exits 1 for raider new, prints the message and leaves no directory' do
       root = File.expand_path('../../..', __dir__)
-      out, status = Open3.capture2e('ruby', "#{root}/bin/raider", 'new', 'case_cli_watir', '-p',
-                                    'framework:rspec', 'automation:watir')
-      expect(status.success?).to be(true)
-      expect(out).to include(notice)
-      expect(File).to exist('case_cli_watir/.rspec')
-    end
-  end
-
-  context 'with examples false for watir' do
-    it 'says the examples are kept' do
-      expect { described_class.generate_framework(framework: 'rspec', automation: 'watir', name: 'case_watir', examples: false) }
-        .to output(/Watir projects always include the example tests/).to_stdout
+      Dir.mktmpdir do |dir|
+        _out, err, status = Open3.capture3('ruby', "#{root}/bin/raider", 'new', 'x', '-p',
+                                           'framework:rspec', 'automation:watir', chdir: dir)
+        expect(status.exitstatus).to eq(1)
+        expect(err).to include(described_class::WATIR_REMOVED)
+        expect(File).not_to exist(File.join(dir, 'x'))
+      end
     end
   end
 end
@@ -113,13 +105,6 @@ describe 'Projects named like a generator option' do
     expect(File.read('watir/features/support/env.rb')).not_to include('Watir')
     expect(File.read('watir/page_objects/abstract/page.rb')).to include('include WaitHelper')
   end
-
-  it 'keeps a Watir project named selenium on Watir' do
-    InvokeGenerators.generate_framework(automation: 'watir', framework: 'rspec', name: 'selenium')
-    expect(File).not_to exist('selenium/helpers/wait_helper.rb')
-    expect(File.read('selenium/page_objects/abstract/page.rb')).to include('browser.element')
-    expect(File.read('selenium/page_objects/abstract/page.rb')).not_to include('find_element')
-  end
 end
 
 describe 'Option-named projects generate what a neutral name generates' do
@@ -128,7 +113,6 @@ describe 'Option-named projects generate what a neutral name generates' do
     { automation: 'selenium', framework: 'rspec' },
     { automation: 'selenium', framework: 'cucumber', accessibility: true },
     { automation: 'selenium', framework: 'rspec', examples: false, ci: 'azure' },
-    { automation: 'watir', framework: 'cucumber' },
     { automation: 'ios', framework: 'rspec' },
     { automation: 'android', framework: 'cucumber' },
     { automation: 'cross_platform', framework: 'rspec' }

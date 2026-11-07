@@ -5,8 +5,6 @@ require_relative '../../page_objects/pages/<%= normalized_name %>'
 Given('I am on the <%= normalized_name.tr("_", " ") %> page') do
 <%- if selenium? -%>
   @page = <%= page_class_name %>.new(driver)
-<%- elsif watir? -%>
-  @page = <%= page_class_name %>.new(browser)
 <%- end -%>
 end
 

@@ -1,0 +1,38 @@
+module Raider
+  module Matchers
+    module Page
+      class HaveCount < Base
+        def verb: () -> String
+        def read: (untyped subject) -> Integer
+        def pass?: (untyped value) -> bool
+
+        private
+
+        def wait_for: (untyped actual) -> Numeric
+        def target: () -> String
+      end
+
+      class Driver < Base
+        def pass?: (untyped value) -> bool
+
+        private
+
+        def target: () -> String
+      end
+
+      class HaveTitle < Driver
+        def verb: () -> String
+        def read: (untyped subject) -> untyped
+      end
+
+      class HaveUrl < Driver
+        def verb: () -> String
+        def read: (untyped subject) -> untyped
+      end
+    end
+
+    def have_count: (Integer count, ?wait: Numeric?) -> Page::HaveCount
+    def have_title: (String | Regexp expected, ?wait: Numeric?) -> Page::HaveTitle
+    def have_url: (String | Regexp expected, ?wait: Numeric?) -> Page::HaveUrl
+  end
+end

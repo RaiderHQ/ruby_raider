@@ -40,16 +40,8 @@ describe AutomationGenerator do
     include_examples 'creates web automation framework', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
   end
 
-  context 'with rspec and watir' do
-    include_examples 'creates web automation framework', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-  end
-
   context 'with cucumber and selenium' do
     include_examples 'creates web automation framework', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-  end
-
-  context 'with cucumber and watir' do
-    include_examples 'creates web automation framework', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
   end
 
   context 'with rspec and appium android' do
@@ -108,16 +100,6 @@ describe AutomationGenerator do
 
       it 'keeps the components folder with a .keep and no example component' do
         expect(Dir.children("#{name}/page_objects/components")).to eq(['.keep'])
-      end
-    end
-
-    context 'with watir' do
-      it 'still creates the examples, because the Watir templates are frozen' do
-        InvokeGenerators.generate_framework(framework: 'rspec', automation: 'watir', name: 'skeleton_watir',
-                                            examples: false)
-        expect(File).to exist('skeleton_watir/page_objects/pages/login.rb')
-      ensure
-        FileUtils.rm_rf('skeleton_watir')
       end
     end
   end

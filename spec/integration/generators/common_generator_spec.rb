@@ -48,22 +48,10 @@ describe CommonGenerator do
     include_examples 'creates a gitignore file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
   end
 
-  context 'with rspec and watir' do
-    include_examples 'creates common files', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-    include_examples 'creates a config file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-    include_examples 'creates a gitignore file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-  end
-
   context 'with cucumber and selenium' do
     include_examples 'creates common files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates a config file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates a gitignore file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-  end
-
-  context 'with cucumber and watir' do
-    include_examples 'creates common files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
-    include_examples 'creates a config file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
-    include_examples 'creates a gitignore file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
   end
 
   context 'with rspec and appium android' do

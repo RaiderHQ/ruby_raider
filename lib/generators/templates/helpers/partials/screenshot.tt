@@ -1,7 +1,5 @@
 <% if selenium_based? %>
   driver.save_screenshot(screenshot_path)
-<% elsif watir? %>
-  browser.screenshot.save(screenshot_path)
 <% else %>
   driver.screenshot(screenshot_path)
 <% end %>

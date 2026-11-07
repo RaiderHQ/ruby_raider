@@ -2,6 +2,12 @@
 
 ## Release Notes
 
+### 4.0.0
+
+- Watir is removed: `automation:watir` refuses with a message. See Migrating from Watir in the README.
+- ruby_raider now depends on selenium-webdriver >= 4.30.
+- Existing projects pin `gem 'ruby_raider', '~> 3.15'` (or an older `~> 3.x`) in their Gemfile, so `bundle update` never moves them to 4.0; to upgrade, change the pin to `~> 4.0` and run `bundle update ruby_raider`.
+
 ### 3.7.0
 
 - Generated RSpec projects no longer include Allure: the `allure-rspec` and `allure-ruby-commons` gems, `helpers/allure_helper.rb`, the `allure-results` folder and `.gitignore` entry, and the Allure report and gh-pages steps in the GitHub Actions workflow are gone. `raider_reporter` is now the only reporter.

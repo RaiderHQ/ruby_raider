@@ -24,6 +24,7 @@ RSpec.describe 'Raider::Actionability' do
   end
 
   it 'makes no script call but one tag_name command when forced' do
+    bridge.answer(:element_tag_name, 'div')
     Raider::Actionability.ensure(element, :click, force: true)
     expect([bridge.script_calls, bridge.calls]).to eq([[], [[:element_tag_name, 'e1']]])
   end

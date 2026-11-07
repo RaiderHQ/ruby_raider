@@ -340,15 +340,6 @@ describe 'Generated VideoHelper' do
       expect(warnings).to eq(["[video] first reason; recording disabled for this run\n"])
     end
 
-    it 'records frames of a Watir browser through its Selenium driver' do
-      browser = double('browser', wd: driver)
-      recorder = VideoHelper.recorder_for(browser)
-      recorder.start
-
-      expect(recorder.stop(keep: true)).to end_with('video.webm')
-      expect(shots.size).to eq(1)
-    end
-
     context 'when the ruby_raider gem has no ffmpeg support' do
       it 'disables video with an update hint' do
         allow(VideoHelper).to receive(:require).with('ruby_raider/ffmpeg').and_raise(LoadError)

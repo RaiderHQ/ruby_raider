@@ -6,7 +6,7 @@ require 'stringio'
 require 'tmpdir'
 require_relative 'content_helper'
 
-RUBOCOP_WEB_AUTOMATIONS = %w[selenium watir].freeze
+RUBOCOP_WEB_AUTOMATIONS = %w[selenium].freeze
 
 # Every generated project must pass the RuboCop it ships: its own .rubocop.yml, run in-process with
 # this gem's bundle. The project is linted from a copy outside this repo, so RuboCop resolves the

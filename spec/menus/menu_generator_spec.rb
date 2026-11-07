@@ -108,26 +108,6 @@ RSpec.describe MenuGenerator do
     end
   end
 
-  describe 'full flow: watir + cucumber' do
-    it 'calls set_up_framework with correct options' do
-      allow(menu_generator).to receive(:generate_framework)
-      allow(menu_generator).to receive(:system)
-      allow(prompt).to receive(:say)
-      allow(prompt).to receive(:yes?).and_return(false)
-
-      menu_generator.send(:create_framework, 'Cucumber', 'watir')
-
-      expect(menu_generator).to have_received(:generate_framework).with(
-        hash_including(
-          automation: 'watir',
-          framework: 'cucumber',
-          accessibility: false,
-          name: 'test_project'
-        )
-      )
-    end
-  end
-
   describe 'full flow: selenium + rspec + accessibility' do
     it 'passes accessibility flag through' do
       allow(menu_generator).to receive(:generate_framework)

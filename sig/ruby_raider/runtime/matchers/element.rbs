@@ -1,0 +1,78 @@
+module Raider
+  module Matchers
+    module Element
+      def self.normalise: (untyped text) -> String
+
+      class HaveText < Base
+        def initialize: (String | Regexp text, ?exact: bool, ?wait: Numeric?) -> void
+        def verb: () -> String
+        def read: (untyped subject) -> untyped
+        def pass?: (untyped value) -> bool
+      end
+
+      class HaveValue < Base
+        def verb: () -> String
+        def read: (untyped subject) -> untyped
+        def pass?: (untyped value) -> bool
+      end
+
+      class HaveAttribute < Base
+        PRESENT: Symbol
+
+        def initialize: (String name, ?untyped value, ?wait: Numeric?) -> void
+        def verb: () -> String
+        def read: (untyped subject) -> untyped
+        def pass?: (untyped value) -> bool
+      end
+
+      class State < Base
+        LABELS: Array[String]
+
+        def initialize: (?wait: Numeric?) -> void
+        def pass?: (untyped value) -> bool
+
+        private
+
+        def show: (untyped value) -> String
+      end
+
+      class BeVisible < State
+        def verb: () -> String
+        def read: (untyped subject) -> untyped
+
+        private
+
+        def negated_absent_passes?: () -> bool
+      end
+
+      class BeHidden < State
+        def verb: () -> String
+        def read: (untyped subject) -> bool
+      end
+
+      class BeEnabled < State
+        def verb: () -> String
+        def read: (untyped subject) -> untyped
+      end
+
+      class BeDisabled < State
+        def verb: () -> String
+        def read: (untyped subject) -> bool
+      end
+
+      class BeChecked < State
+        def verb: () -> String
+        def read: (untyped subject) -> untyped
+      end
+    end
+
+    def have_text: (String | Regexp text, ?exact: bool, ?wait: Numeric?) -> Element::HaveText
+    def have_value: (String | Regexp value, ?wait: Numeric?) -> Element::HaveValue
+    def have_attribute: (String name, ?untyped value, ?wait: Numeric?) -> Element::HaveAttribute
+    def be_visible: (?wait: Numeric?) -> Element::BeVisible
+    def be_hidden: (?wait: Numeric?) -> Element::BeHidden
+    def be_enabled: (?wait: Numeric?) -> Element::BeEnabled
+    def be_disabled: (?wait: Numeric?) -> Element::BeDisabled
+    def be_checked: (?wait: Numeric?) -> Element::BeChecked
+  end
+end

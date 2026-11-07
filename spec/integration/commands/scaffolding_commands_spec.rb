@@ -135,12 +135,5 @@ describe ScaffoldingCommands do
       scaffold_in_project('selenium-webdriver', :component, wait_helper: false)
       expect(File.read("#{tmp_dir}/page_objects/components/foo.rb")).to include("driver.find_element(css: '.selector')")
     end
-
-    it 'leaves Watir output unchanged even with a wait helper present' do
-      scaffold_in_project('watir', :page, wait_helper: true)
-      content = File.read("#{tmp_dir}/page_objects/pages/foo.rb")
-      expect(content).to include("browser.text_field(id: 'element_id')")
-      expect(content).not_to include(waiting_example)
-    end
   end
 end

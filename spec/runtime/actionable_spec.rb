@@ -32,6 +32,7 @@ RSpec.describe 'Raider::Actionable' do
   end
 
   it 'clicks after one tag_name command when forced' do
+    bridge.answer(:element_tag_name, 'div')
     element.click(force: true)
     expect([bridge.script_calls, bridge.calls]).to eq([[], [[:element_tag_name, 'e1'], [:click_element, 'e1']]])
   end
@@ -49,6 +50,7 @@ RSpec.describe 'Raider::Actionable' do
   end
 
   it 'sends keys when forced without leaking the keyword' do
+    bridge.answer(:element_tag_name, 'div')
     element.send_keys('a', :enter, force: true)
     expect(bridge.calls.last).to eq([:send_keys_to_element, 'e1', keys])
   end

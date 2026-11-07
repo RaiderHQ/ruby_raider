@@ -8,7 +8,7 @@ require_relative '../spec_helper'
 
 describe AzureGenerator do
   mobile_notice = "Azure Pipelines template for mobile projects is not available yet; see the README.\n"
-  web = FRAMEWORKS.product(%w[selenium watir], [false, true])
+  web = FRAMEWORKS.product(%w[selenium], [false, true])
   mobile = FRAMEWORKS.product(%w[ios android cross_platform])
 
   after(:all) do # rubocop:disable RSpec/BeforeAfterAll

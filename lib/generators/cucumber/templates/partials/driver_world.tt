@@ -1,7 +1,5 @@
 require_relative '../../helpers/driver_helper'
-<%- if wait_helper? -%>
 require_relative '../../helpers/wait_helper'
-<%- end -%>
 <%- if selenium_based? -%>
 <%- if network_helper? -%>
 require_relative '../../helpers/network_helper'
@@ -24,7 +22,5 @@ World(ScreenshotHelper)
 <%- else -%>
 
 World(DriverHelper)
-<%- if wait_helper? -%>
 World(WaitHelper)
-<%- end -%>
 <%- end -%>
