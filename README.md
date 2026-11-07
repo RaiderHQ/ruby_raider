@@ -33,12 +33,12 @@ Ruby Raider is a CLI gem for scaffolding and generating UI test automation frame
 
 ### Web Testing
 
-| Test Framework | Selenium | Watir (deprecated) |
-|----------------|----------|--------------------|
-| RSpec          | ✅       | ✅                 |
-| Cucumber       | ✅       | ✅                 |
+| Test Framework | Selenium |
+|----------------|----------|
+| RSpec          | ✅       |
+| Cucumber       | ✅       |
 
-Watir is deprecated and will be removed in the next major version of ruby_raider (4.0); new projects should use Selenium. It is no longer offered in the interactive menu and is available only through `-p automation:watir` until 4.0. See [Migrating from Watir](#migrating-from-watir).
+Watir was removed in ruby_raider 4.0; see [Migrating from Watir](#migrating-from-watir).
 
 ### Mobile Testing (Appium)
 
@@ -65,8 +65,8 @@ Every generated project comes with:
 - **Raider reporting** — RSpec and Cucumber projects include [raider_reporter](https://github.com/RaiderHQ/raider_reporter), which writes results to `raider-results/` and uploads runs to your Raider Hideout server when `RAIDER_TOKEN` and `RAIDER_ENDPOINT` are set; generated CI runs the suite through `raider-reporter exec` with `RAIDER_QUARANTINE`, so quarantined tests do not fail the build; an opt-in `raider-gate` job (`RAIDER_GATE=1`) fails CI when the Raider quality gate fails
 - **Waiting** — generated Selenium and Appium projects wait for elements by themselves (`WaitHelper` and `RaiderElement`): `click`, `send_keys`, `text` and the rest poll until the element is ready, and `eventually { … }` retries assertions, so there is no implicit wait and no `sleep`; `timeout` in `config.yml` sets how long to wait
 - **Example tests or a skeleton (`examples:false`)** — start from the working login examples, or pass `examples:false` for an empty skeleton with the helpers, config, CI and README (see [Getting Started](#getting-started))
-- **Login reuse** — generated web projects (Selenium or Watir) log in once and restore the saved session for examples tagged `:logged_in` (RSpec) or `@logged_in` (Cucumber); `RAIDER_LOGIN_STATE=off|refresh` and `login_state: max_age:` control it, and the state stays in git-ignored `.raider/auth/`
-- **Failure video replay** — Every test is recorded and the video is kept only for failing tests, attached to the report as `video` (WebM from page screenshots for Selenium and Watir, Appium's own MP4 for mobile, which needs `ffmpeg` on the Appium server host for iOS and for Android recordings over 180 s). Turn it off per run with `VIDEO=off`, or per project with `raider u video off`; ffmpeg is downloaded once, SHA-256 checked and cached in `~/.cache/raider`. The RaiderHQ `ffmpeg-7.1` build that the download uses is not published yet, so for now set `RAIDER_FFMPEG_PATH` to an ffmpeg with libvpx to get web videos
+- **Login reuse** — generated web projects (Selenium) log in once and restore the saved session for examples tagged `:logged_in` (RSpec) or `@logged_in` (Cucumber); `RAIDER_LOGIN_STATE=off|refresh` and `login_state: max_age:` control it, and the state stays in git-ignored `.raider/auth/`
+- **Failure video replay** — Every test is recorded and the video is kept only for failing tests, attached to the report as `video` (WebM from page screenshots for Selenium, Appium's own MP4 for mobile, which needs `ffmpeg` on the Appium server host for iOS and for Android recordings over 180 s). Turn it off per run with `VIDEO=off`, or per project with `raider u video off`; ffmpeg is downloaded once, SHA-256 checked and cached in `~/.cache/raider`. The RaiderHQ `ffmpeg-7.1` build that the download uses is not published yet, so for now set `RAIDER_FFMPEG_PATH` to an ffmpeg with libvpx to get web videos
 - **Failure trace replay** (Selenium with RSpec or Cucumber) — Failing tests keep a step-by-step trace: each action with its locator and wait time, a screenshot and the page HTML after every step that changes the page, plus network requests and console messages on Chrome, Edge and Firefox. It is saved as `raider-results/attachments/<n>-trace.zip`, attached to the report as `trace` and opened in Raider Desktop or on Hideout. `TRACE=on` keeps passing tests too, `TRACE=off` captures nothing, and `raider u trace on|off` sets it for the project. Typed values in password fields and `RAIDER_SECRET_*` values are hidden; other typed values, page text and URLs are kept, so treat a trace like the video. Request headers, cookies and bodies are never captured
 - **Network mocking** (Selenium with RSpec or Cucumber) — Answer a request with your own response or block it, from the test: `mock_request('**/api/users', json: { users: [] })`, `mock_request(url, status: 500)` and `block_request('**/*.png')`, with `calls` to check what the page asked for. It uses WebDriver BiDi on Chrome, Edge and Firefox (Safari and `BIDI=off` raise `NetworkHelper::Unavailable`), handles CORS for cross-origin mocks, clears mocks after each test, and marks mocked requests in the trace
 - **Screenshot comparison** (Selenium with RSpec or Cucumber) — `match_screenshot('home')` compares the page, or an element with `element:`, with a baseline in `screenshots/baselines/<browser>/`. The first run saves the baseline; later runs fail on a difference and attach the expected, actual and diff pictures to the report and the trace. `SCREENSHOTS=update` rewrites baselines, a missing baseline fails on CI, and tolerances (`threshold`, `max_diff_pixels`, `max_diff_ratio`) go in `config/config.yml` under `screenshots:`. Generate baselines where CI runs: a Retina laptop makes 2x pictures
@@ -131,11 +131,11 @@ Generate an empty skeleton, without the example pages and tests (the menu asks `
 raider new my_project -p framework:rspec automation:selenium examples:false
 ```
 
-The skeleton keeps the helpers, config, CI and README, and its empty suite passes; grow it with `raider g`. Watir projects always include the examples.
+The skeleton keeps the helpers, config, CI and README, and its empty suite passes; grow it with `raider g`.
 
 ## Migrating from Watir
 
-Watir is deprecated; to move a Watir project to Selenium, generate a Selenium project and port your pages. The common mappings:
+Watir was removed in ruby_raider 4.0. To move a Watir project to Selenium, generate a Selenium project and port your pages. The common mappings:
 
 | Watir | Selenium project (waiting layer) |
 |-------|----------------------------------|

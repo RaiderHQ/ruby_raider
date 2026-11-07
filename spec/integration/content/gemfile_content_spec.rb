@@ -111,6 +111,10 @@ describe 'Gemfile content' do
         it 'pins ruby_raider to the generator major.minor' do
           expect(gemfile).to include("gem 'ruby_raider', '~> #{major_minor}'")
         end
+
+        it 'pins ruby_raider to the 4.0 release line' do
+          expect(gemfile).to include("gem 'ruby_raider', '~> 4.0'")
+        end
       end
 
       context "with cucumber and #{automation}" do
