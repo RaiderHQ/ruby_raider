@@ -12,7 +12,7 @@ describe 'Axe accessibility addon generation' do
   before(:all) do
     @axe_projects = []
     %w[rspec cucumber].each do |framework|
-      %w[selenium watir].each do |automation|
+      %w[selenium].each do |automation|
         name = "axe_#{framework}_#{automation}"
         @axe_projects << name
         InvokeGenerators.generate_framework(
@@ -59,22 +59,6 @@ describe 'Axe accessibility addon generation' do
     it 'includes axe gems in Gemfile' do
       gemfile = File.read("#{name}/Gemfile")
       expect(gemfile).to include('axe')
-    end
-  end
-
-  context 'with rspec and watir' do
-    let(:name) { 'axe_rspec_watir' }
-
-    it 'creates accessibility_spec.rb' do
-      expect(File).to exist("#{name}/spec/accessibility_spec.rb")
-    end
-  end
-
-  context 'with cucumber and watir' do
-    let(:name) { 'axe_cucumber_watir' }
-
-    it 'creates accessibility.feature' do
-      expect(File).to exist("#{name}/features/accessibility.feature")
     end
   end
 

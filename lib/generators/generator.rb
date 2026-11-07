@@ -59,23 +59,14 @@ class Generator < Thor::Group
     !azure?
   end
 
-  # The automation arg only, so a project named "watir" or "selenium" keeps its own automation
+  # The automation arg only, so a project named "selenium" keeps its own automation
   def selenium?
     automation == 'selenium'
   end
 
-  def watir?
-    automation == 'watir'
-  end
-
-  # Selenium and Appium projects get the auto-waiting WaitHelper; Watir keeps its own waits
-  def wait_helper?
-    !watir?
-  end
-
-  # Selenium web projects record a trace per test; it needs WaitHelper's actions, and mobile has none yet
+  # Selenium web projects record a trace per test; mobile has none yet
   def trace_helper?
-    wait_helper? && !mobile?
+    !mobile?
   end
 
   # Network mocking needs the same Selenium web projects (WebDriver BiDi, no mobile)
@@ -94,7 +85,7 @@ class Generator < Thor::Group
   end
 
   def web?
-    selenium? || watir?
+    selenium?
   end
 
   def axe_addon?

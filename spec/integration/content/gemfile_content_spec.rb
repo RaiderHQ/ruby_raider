@@ -73,22 +73,6 @@ describe 'Gemfile content' do
     it 'includes selenium-webdriver' do
       expect(gemfile).to include("gem 'selenium-webdriver'")
     end
-
-    it 'does not include watir' do
-      expect(gemfile).not_to include("gem 'watir'")
-    end
-  end
-
-  shared_examples 'contains watir gems' do |project_name|
-    subject(:gemfile) { read_generated(project_name, 'Gemfile') }
-
-    it 'includes watir' do
-      expect(gemfile).to include("gem 'watir'")
-    end
-
-    it 'does not include selenium-webdriver' do
-      expect(gemfile).not_to include("gem 'selenium-webdriver'")
-    end
   end
 
   context 'with rspec and selenium' do
@@ -98,25 +82,11 @@ describe 'Gemfile content' do
     include_examples 'contains selenium gems', name
   end
 
-  context 'with rspec and watir' do
-    name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-    include_examples 'contains common gems', name
-    include_examples 'contains rspec gems', name
-    include_examples 'contains watir gems', name
-  end
-
   context 'with cucumber and selenium' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'contains common gems', name
     include_examples 'contains cucumber gems', name
     include_examples 'contains selenium gems', name
-  end
-
-  context 'with cucumber and watir' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
-    include_examples 'contains common gems', name
-    include_examples 'contains cucumber gems', name
-    include_examples 'contains watir gems', name
   end
 
   describe 'raider_reporter and ruby_raider pin' do

@@ -315,20 +315,12 @@ describe 'End-to-End Project Generation and Execution' do
       end
     end
 
-    describe 'Watir + RSpec' do
-      include_examples 'executable rspec project', 'rspec_watir'
-    end
-
     describe 'Selenium + Cucumber' do
       include_examples 'executable cucumber project', 'cucumber_selenium'
 
       it 'passes its own RuboCop with its bundled gems', :slow do
         expect_project_rubocop_clean('cucumber_selenium')
       end
-    end
-
-    describe 'Watir + Cucumber' do
-      include_examples 'executable cucumber project', 'cucumber_watir'
     end
   end
 
@@ -632,30 +624,6 @@ describe 'End-to-End Project Generation and Execution' do
         expect(video_lines.first).to include('no ffmpeg available for this platform yet')
         expect(video_files(project)).to be_empty
         expect(Dir.glob(File.join(cache_dir, '**', '*'))).to be_empty
-      end
-    end
-
-    describe 'Watir + Cucumber on headless Firefox' do
-      let(:project) { 'video_cucumber_watir' }
-      let(:firefox_binary) { ENV.fetch('FIREFOX_BINARY', nil) }
-
-      before do
-        skip_unless_video_prerequisites('firefox')
-        generate_video_project('cucumber', 'watir')
-        add_cucumber_video_feature(project, firefox_binary)
-      end
-
-      after do
-        FileUtils.rm_f(File.join(project, 'features/video_replay.feature'))
-        FileUtils.rm_f(File.join(project, 'features/step_definitions/video_replay_steps.rb'))
-      end
-
-      it 'attaches video.webm to the failing scenario only and plays it in index.html', :aggregate_failures do
-        result = run_in_project(project, 'bundle exec cucumber features/video_replay.feature',
-                                env: video_env('FIREFOX_BINARY' => firefox_binary), timeout: 240)
-        expect(result[:exit_code]).to eq(1), "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
-        expect(result[:stderr]).not_to include('[video]')
-        expect_video_for_failure_only(project, 'A failing scenario', result)
       end
     end
   end

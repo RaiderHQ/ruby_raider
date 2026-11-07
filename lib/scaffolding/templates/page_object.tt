@@ -23,8 +23,6 @@ require_relative '../abstract/page'
 <%- else -%>
 <%= '  ' * module_parts.size %>  # Example: driver.find_element(id: 'element_id')
 <%- end -%>
-<%- elsif watir? -%>
-<%= '  ' * module_parts.size %>  # Example: browser.text_field(id: 'element_id')
 <%- end -%>
 <%= '  ' * module_parts.size %>end
 <% module_parts.each_with_index do |_mod, i| -%>
@@ -49,8 +47,6 @@ class <%= page_class_name %> < Page
 <%- else -%>
   # Example: driver.find_element(id: 'element_id')
 <%- end -%>
-<%- elsif watir? -%>
-  # Example: browser.text_field(id: 'element_id')
 <%- end -%>
 end
 <% end -%>

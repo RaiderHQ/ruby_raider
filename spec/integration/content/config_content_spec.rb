@@ -111,15 +111,6 @@ describe 'Config file content' do
     include_examples 'login state config', name
   end
 
-  context 'with rspec and watir' do
-    name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-    include_examples 'valid web config', name
-    include_examples 'config without driver_options', name
-    include_examples 'no trace config', name
-    include_examples 'no screenshots config', name
-    include_examples 'login state config', name
-  end
-
   context 'with cucumber and selenium' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'valid web config', name
@@ -196,10 +187,5 @@ describe 'Config timeout wiring' do
   it 'describes the mobile timeout as an action and eventually wait' do
     expect(read_generated('rspec_cross_platform', 'config/config.yml'))
       .to include('timeout: 10 # seconds that actions and eventually wait before failing')
-  end
-
-  it 'leaves the watir timeout comment unchanged' do
-    expect(read_generated('rspec_watir', 'config/config.yml'))
-      .to include('timeout: 10 # seconds — used for implicit waits and max wait time')
   end
 end

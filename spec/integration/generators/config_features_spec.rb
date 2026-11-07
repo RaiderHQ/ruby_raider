@@ -8,7 +8,7 @@ describe 'Config features for generated projects' do
   include InvokeGenerators
 
   after(:all) do # rubocop:disable RSpec/BeforeAfterAll
-    %w[config_selenium_test config_watir_test].each do |name|
+    %w[config_selenium_test].each do |name|
       FileUtils.rm_rf(name)
     end
   end
@@ -48,29 +48,6 @@ describe 'Config features for generated projects' do
 
     it 'generates spec_helper with valid Ruby syntax' do
       helper = File.read('config_selenium_test/helpers/spec_helper.rb')
-      expect { RubyVM::InstructionSequence.compile(helper) }.not_to raise_error
-    end
-  end
-
-  describe 'timeout in Watir helper' do
-    before(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      InvokeGenerators.generate_framework(
-        automation: 'watir', framework: 'rspec', name: 'config_watir_test'
-      )
-    end
-
-    it 'sets Watir.default_timeout from config' do
-      helper = File.read('config_watir_test/helpers/browser_helper.rb')
-      expect(helper).to include("Watir.default_timeout = config.fetch('timeout', 10)")
-    end
-
-    it 'generates spec_helper with viewport-aware window setup' do
-      helper = File.read('config_watir_test/helpers/spec_helper.rb')
-      expect(helper).to include('viewport')
-    end
-
-    it 'generates spec_helper with valid Ruby syntax' do
-      helper = File.read('config_watir_test/helpers/spec_helper.rb')
       expect { RubyVM::InstructionSequence.compile(helper) }.not_to raise_error
     end
   end
