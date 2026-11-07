@@ -4,6 +4,7 @@ require 'chunky_png'
 require 'fileutils'
 require 'set'
 require 'rspec/expectations'
+require 'ruby_raider/runtime'
 require 'yaml'
 
 # Visual regression for the browser: match_screenshot('home') compares the page (or an element)
@@ -297,10 +298,10 @@ module ScreenshotHelper
 
     # One trace step per comparison, when the trace helper is watching. Never raises into the test.
     def self.traced(name:, status:, png:, error: nil)
-      return unless defined?(WaitHelper) && png
+      return unless png
 
-      WaitHelper.report(:screenshot_compared, name: name, status: status == :failed ? :failed : :passed, png: png,
-                                              error: error)
+      Raider.report(:screenshot_compared, name: name, status: status == :failed ? :failed : :passed, png: png,
+                                          error: error)
     end
 
     def self.attach_images(name, images)
@@ -344,7 +345,6 @@ module ScreenshotHelper
   # One match_screenshot call: capture until the page matches the baseline or time runs out. Internal.
   class Comparison
     PAUSE = 0.25
-    DEFAULT_TIMEOUT = 10
 
     def initialize(driver, name, element:, options:, timeout:)
       @driver = driver
@@ -416,7 +416,7 @@ module ScreenshotHelper
     # Capture and count until the page matches or the deadline passes; the deadline is checked after every
     # attempt, before the next capture. Cheap on every attempt: no diff picture.
     def capture_until_match(expected)
-      deadline = now + (@timeout || default_timeout)
+      deadline = now + (@timeout || Raider.timeout)
       attempt = attempt_once(expected)
       until within_limits?(attempt.last) || now >= deadline
         sleep([[PAUSE, deadline - now].min, 0].max)
@@ -429,10 +429,6 @@ module ScreenshotHelper
       png = capture
       actual = Diff.decode(png)
       [png, actual, Diff.count(expected, actual, threshold: @options[:threshold])]
-    end
-
-    def default_timeout
-      defined?(WaitHelper) ? WaitHelper.default_timeout : DEFAULT_TIMEOUT
     end
 
     def now

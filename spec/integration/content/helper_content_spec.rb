@@ -450,9 +450,9 @@ end
 describe 'Auto-waiting helper wiring' do
   %w[selenium ios android cross_platform].each do |automation|
     context "with rspec and #{automation}" do
-      it 'includes WaitHelper in the spec helper' do
+      it 'leaves the wait helper out of the spec helper' do
         helper = read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'helpers/spec_helper.rb')
-        expect(helper).to include("require_relative 'wait_helper'", 'config.include(WaitHelper)')
+        expect(helper).not_to include('wait_helper', 'WaitHelper')
       end
 
       it "#{automation == 'selenium' ? 'includes' : 'leaves out'} NetworkHelper in the spec helper" do

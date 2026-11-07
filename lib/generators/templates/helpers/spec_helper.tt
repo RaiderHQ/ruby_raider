@@ -10,7 +10,6 @@ require 'ruby_raider/runtime/rspec'
 require 'tmpdir'
 require_relative 'driver_helper'
 require_relative 'video_helper'
-require_relative 'wait_helper'
 <%- if network_helper? -%>
 require_relative 'network_helper'
 <%- end -%>
@@ -34,7 +33,6 @@ module SpecHelper
     config.default_retry_count = ENV.fetch('RETRY_COUNT', 0).to_i
     config.add_formatter(RaiderReporter::RSpec::Formatter)
     config.include(DriverHelper)
-    config.include(WaitHelper)
     config.include(Raider::Matchers)
     config.include(Raider::Helpers)
     <%- if network_helper? -%>

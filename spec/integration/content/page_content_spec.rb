@@ -144,15 +144,8 @@ describe 'Page object content' do
   end
 end
 
-describe 'Page WaitHelper wiring' do
+describe 'Page helper wiring' do
   FRAMEWORKS.each do |framework|
-    %w[selenium ios android cross_platform].each do |automation|
-      it "includes WaitHelper in #{framework} #{automation}" do
-        page = read_generated("#{framework}_#{automation}", 'page_objects/abstract/page.rb')
-        expect(page).to include("require_relative '../../helpers/wait_helper'", 'include WaitHelper')
-      end
-    end
-
     it "includes NetworkHelper only in #{framework} selenium" do
       %w[selenium ios android cross_platform].each do |automation|
         page = read_generated("#{framework}_#{automation}", 'page_objects/abstract/page.rb')

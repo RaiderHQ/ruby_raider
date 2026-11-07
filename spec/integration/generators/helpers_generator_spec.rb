@@ -28,10 +28,14 @@ describe HelpersGenerator do
     end
   end
 
-  shared_examples 'creates the wait helper' do |name|
-    it 'creates the wait helper and the element wrapper' do
-      expect(File).to exist("#{name}/helpers/wait_helper.rb")
-      expect(File).to exist("#{name}/helpers/raider_element.rb")
+  shared_examples 'has no wait helper' do |name|
+    it 'creates neither the wait helper nor the element wrapper, and no Ruby file mentions them' do
+      expect(File).not_to exist("#{name}/helpers/wait_helper.rb")
+      expect(File).not_to exist("#{name}/helpers/raider_element.rb")
+      files = Dir.glob("#{name}/{helpers,page_objects,spec,config}/**/*.rb")
+      expect(files).not_to be_empty
+      mentions = files.select { |file| File.read(file).match?(/WaitHelper|RaiderElement/) }
+      expect(mentions).to eq([])
     end
   end
 
@@ -90,7 +94,7 @@ describe HelpersGenerator do
     include_examples 'creates the screenshot helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates a session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
-    include_examples 'creates the wait helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
+    include_examples 'has no wait helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
     include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
   end
 
@@ -101,7 +105,7 @@ describe HelpersGenerator do
     include_examples 'skips the screenshot helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
     include_examples 'skips the session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
-    include_examples 'creates the wait helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
+    include_examples 'has no wait helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
     include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
   end
 
@@ -112,7 +116,7 @@ describe HelpersGenerator do
     include_examples 'skips the screenshot helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
     include_examples 'skips the session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
-    include_examples 'creates the wait helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
+    include_examples 'has no wait helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
     include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
   end
 
@@ -123,7 +127,7 @@ describe HelpersGenerator do
     include_examples 'skips the screenshot helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'skips the session state helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates selenium helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
-    include_examples 'creates the wait helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
+    include_examples 'has no wait helper', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates rspec helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates cross platform helpers', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
   end
@@ -133,10 +137,7 @@ describe HelpersGenerator do
       context "with #{framework} and #{automation}" do
         let(:name) { ensure_project(framework:, automation:, examples: false) }
 
-        it 'creates the wait helper and RaiderElement' do
-          expect(File).to exist("#{name}/helpers/wait_helper.rb")
-          expect(File).to exist("#{name}/helpers/raider_element.rb")
-        end
+        include_examples 'has no wait helper', "#{framework}_#{automation}"
 
         it "#{automation == 'selenium' ? 'creates' : 'skips'} the trace helper" do
           expect(File.exist?("#{name}/helpers/trace_helper.rb")).to eq(automation == 'selenium')

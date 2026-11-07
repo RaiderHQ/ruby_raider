@@ -124,11 +124,11 @@ describe 'Projects named like a generator option' do
     expect(File).to exist('no_examples/page_objects/pages/login.rb')
   end
 
-  it 'gives a Selenium project named watir the wait helper it wires in' do
+  it 'gives a Selenium project named watir the runtime helpers and no wait helper' do
     InvokeGenerators.generate_framework(automation: 'selenium', framework: 'rspec', name: 'watir')
-    expect(File).to exist('watir/helpers/wait_helper.rb')
+    expect(File).not_to exist('watir/helpers/wait_helper.rb')
     expect(File.read('watir/helpers/spec_helper.rb')).not_to include('Watir')
-    expect(File.read('watir/page_objects/abstract/page.rb')).to include('include WaitHelper')
+    expect(File.read('watir/page_objects/abstract/page.rb')).to include('include Raider::Helpers')
   end
 end
 
