@@ -1,0 +1,40 @@
+module Raider
+  module Matchers
+    class Base
+      NOT_FOUND: Object
+
+      class Poll < Struct[untyped]
+        attr_accessor actual: untyped
+        attr_accessor subject: untyped
+        attr_accessor value: untyped
+        attr_accessor waited: Numeric
+      end
+
+      attr_reader expected: untyped
+
+      def initialize: (untyped expected, ?wait: Numeric?, **untyped options) -> void
+      def matches?: (untyped actual) -> bool
+      def does_not_match?: (untyped actual) -> bool
+      def failure_message: () -> String
+      def failure_message_when_negated: () -> String
+      def supports_block_expectations?: () -> bool
+      def description: () -> String
+      def absent_passes?: () -> bool
+      def resolve: (untyped actual) -> untyped
+      def read_with_zero_wait: (untyped subject, Symbol method, *untyped args) -> untyped
+      def verb: () -> String
+      def read: (untyped subject) -> untyped
+      def pass?: (untyped value) -> bool
+
+      private
+
+      def poll: (untyped actual, negated: bool) -> bool
+      def settled?: (bool negated) -> bool
+      def retried_errors: () -> Array[untyped]
+      def accepts_timeout?: (untyped subject, Symbol method) -> bool
+      def message: (String polarity) -> String
+      def target: () -> String
+      def last_seen: () -> String
+    end
+  end
+end
