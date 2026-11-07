@@ -6,6 +6,7 @@ module Raider
   module Spec
     # A stand-in for Selenium's remote bridge: converts locators the way a real
     # bridge does, records what reaches the wire and answers from a script.
+    # :reek:TooManyInstanceVariables -- one slot per scripted answer channel
     class FakeBridge
       attr_reader :calls, :script_results
 

@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Matchers</title>
+</head>
+<body>
+  <h1 id="heading">Loading</h1>
+  <input id="name" type="text" value="Ann">
+  <button id="hide-me" type="button">Hide me</button>
+  <ul id="items"><li>One</li></ul>
+  <a id="finish" href="#">Finish</a>
+  <script>
+    setTimeout(function () { document.getElementById('heading').textContent = 'Ready'; }, 500);
+    document.getElementById('hide-me').addEventListener('click', function (event) {
+      setTimeout(function () { event.target.style.display = 'none'; }, 300);
+    });
+    setTimeout(function () {
+      var list = document.getElementById('items');
+      ['Two', 'Three'].forEach(function (text) {
+        var item = document.createElement('li');
+        item.textContent = text;
+        list.appendChild(item);
+      });
+    }, 400);
+    document.getElementById('finish').addEventListener('click', function (event) {
+      event.preventDefault();
+      document.title = 'Done';
+      location.hash = '#done';
+    });
+  </script>
+</body>
+</html>
