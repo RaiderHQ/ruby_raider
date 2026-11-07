@@ -4,9 +4,6 @@ require 'selenium-webdriver'
 require_relative 'config'
 
 module Raider
-  # Load-order and configuration mistakes.
-  class Error < StandardError; end
-
   # Formats elements and durations for error messages.
   module Describe
     TEXT_LIMIT = 30
