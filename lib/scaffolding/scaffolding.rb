@@ -100,8 +100,10 @@ class Scaffolding < Thor::Group
     automation_type == 'watir'
   end
 
-  def refuse_watir
-    raise Thor::Error, InvokeGenerators::WATIR_REMOVED if watir?
+  no_commands do
+    def refuse_watir
+      raise Thor::Error, InvokeGenerators::WATIR_REMOVED if watir?
+    end
   end
 
   def wait_helper?

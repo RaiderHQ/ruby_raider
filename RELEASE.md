@@ -6,6 +6,7 @@
 
 - Watir is removed: `automation:watir` refuses with a message. See Migrating from Watir in the README.
 - ruby_raider now depends on selenium-webdriver >= 4.30.
+- Existing projects pin `gem 'ruby_raider', '~> 3.15'` (or an older `~> 3.x`) in their Gemfile, so `bundle update` never moves them to 4.0; to upgrade, change the pin to `~> 4.0` and run `bundle update ruby_raider`.
 
 ### 3.7.0
 
