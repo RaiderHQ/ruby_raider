@@ -101,4 +101,16 @@ RSpec.describe 'Raider finders in a real browser', :browser do
       expect(id_of(driver.find_element(test_id: 'item-2'))).to eq('item-two')
     end
   end
+
+  describe 'with a BiDi session' do
+    let(:bidi_driver) { Raider::Spec::Browser.bidi_driver }
+
+    before(:all) { Raider::Spec::Browser.bidi_driver.navigate.to(Raider::Spec::Browser.fixture_url('locators.html')) } # rubocop:disable RSpec/BeforeAfterAll
+
+    after(:all) { Raider::Spec::Browser.quit_bidi } # rubocop:disable RSpec/BeforeAfterAll
+
+    it 'finds a field by label through the BiDi bridge' do
+      expect(id_of(bidi_driver.find_element(label: 'Password'))).to eq('password')
+    end
+  end
 end

@@ -14,8 +14,21 @@ module Raider
         @driver ||= Selenium::WebDriver.for(:chrome, options: options)
       end
 
+      def fixture_url(fixture)
+        "file://#{File.expand_path(fixture, FIXTURES_DIR)}"
+      end
+
       def open(fixture)
-        driver.navigate.to("file://#{File.expand_path(fixture, FIXTURES_DIR)}")
+        driver.navigate.to(fixture_url(fixture))
+      end
+
+      def bidi_driver
+        @bidi_driver ||= Selenium::WebDriver.for(:chrome, options: options.tap { |chrome| chrome.web_socket_url = true })
+      end
+
+      def quit_bidi
+        @bidi_driver&.quit
+        @bidi_driver = nil
       end
 
       def quit

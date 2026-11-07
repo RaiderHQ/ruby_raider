@@ -120,6 +120,27 @@ RSpec.describe 'Raider finders' do
     end
   end
 
+  describe 'BiDi bridges' do
+    it 'gives the Selenium BiDi bridge class the Raider converter' do
+      expect(Selenium::WebDriver::Remote::BiDiBridge.locator_converter).to be_a(Raider::LocatorConverter)
+    end
+
+    it 'gives a BiDi bridge instance the Raider converter' do
+      bidi = Selenium::WebDriver::Remote::BiDiBridge.allocate
+      bidi.send(:initialize, http_client: Object.new)
+      expect(bidi.instance_variable_get(:@locator_converter)).to be_a(Raider::LocatorConverter)
+    end
+
+    it 'wraps a late Appium BiDi bridge in ensure_registered' do
+      appium = stub_const('Appium::Core::Base::BiDiBridge', Class.new(Selenium::WebDriver::Remote::BiDiBridge))
+      inner = Selenium::WebDriver::Remote::Bridge::LocatorConverter.new
+      appium.locator_converter = inner
+      Raider::Finders.ensure_registered
+      expect(appium.locator_converter).to be_a(Raider::LocatorConverter)
+      expect(appium.locator_converter.inner).to equal(inner)
+    end
+  end
+
   describe '.guard' do
     it 'raises when a bridge already exists' do
       existing = Selenium::WebDriver::Remote::Bridge.allocate

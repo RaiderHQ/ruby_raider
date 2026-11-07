@@ -19,6 +19,8 @@ module Raider
   module Finders
     BRIDGE = 'Selenium::WebDriver::Remote::Bridge'
     SEARCH_CONTEXT = 'Selenium::WebDriver::SearchContext'
+    SELENIUM_BRIDGES = %w[Selenium::WebDriver::Remote::Bridge Selenium::WebDriver::Remote::BiDiBridge].freeze
+    APPIUM_BRIDGES = %w[Appium::Core::Base::Bridge Appium::Core::Base::BiDiBridge].freeze
 
     module_function
 
@@ -32,7 +34,7 @@ module Raider
     # the converter they copied; require the runtime before creating a driver.
     def ensure_registered
       register unless Selenium::WebDriver::SearchContext.finders.key?(:label)
-      install_converter(Appium::Core::Base::Bridge) if defined?(Appium::Core::Base::Bridge)
+      install_appium_converters
     end
 
     def install_converter(bridge_class)
@@ -43,8 +45,16 @@ module Raider
 
     def install
       register
-      install_converter(Selenium::WebDriver::Remote::Bridge)
-      install_converter(Appium::Core::Base::Bridge) if defined?(Appium::Core::Base::Bridge)
+      SELENIUM_BRIDGES.each { |name| install_converter(Object.const_get(name)) }
+      install_appium_converters
+    end
+
+    # Each bridge class keeps its own converter, so the BiDi subclasses need
+    # their own wrap. Appium classes are only touched when Appium is loaded.
+    def install_appium_converters
+      APPIUM_BRIDGES.each do |name|
+        install_converter(Object.const_get(name)) if Object.const_defined?(name)
+      end
     end
 
     def check_api
