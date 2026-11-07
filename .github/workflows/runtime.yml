@@ -1,0 +1,35 @@
+name: Runtime
+
+on: [pull_request]
+
+jobs:
+  runtime:
+    name: Runtime (Ruby ${{ matrix.ruby }}, selenium ${{ matrix.selenium || 'latest' }})
+    runs-on: ubuntu-latest
+    env:
+      SELENIUM_VERSION: ${{ matrix.selenium }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ['3.2', '3.4']
+        selenium: ['4.30.0', '4.44.0', '']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Run runtime unit specs
+        run: bundle exec rspec spec/runtime
+
+      - name: Run runtime browser specs
+        run: bundle exec rspec spec/runtime/browser --tag browser
