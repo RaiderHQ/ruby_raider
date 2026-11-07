@@ -28,7 +28,7 @@ RSpec.describe 'Raider actionability script in a real browser', :browser do
   end
 
   it 'passes a plain button once it has been polled twice' do
-    expect(run('plain', click)).to include('check' => 'stable')
+    expect(run('plain', click)).to eq('check' => 'stable', 'first' => true)
     expect(run('plain', click)).to be_nil
   end
 
@@ -71,6 +71,11 @@ RSpec.describe 'Raider actionability script in a real browser', :browser do
     expect(run('editable', send_keys)).to be_nil
   end
 
+  it 'passes editable for a button and the body, which keys such as Enter and Escape target' do
+    expect(run('plain', send_keys)).to be_nil
+    expect(driver.execute_script(Raider::Actionability::SCRIPT, driver.find_element(tag_name: 'body'), send_keys)).to be_nil
+  end
+
   it 'fails inert inside an [inert] region' do
     expect(run('in-inert', click)).to eq('check' => 'inert')
   end
@@ -82,7 +87,7 @@ RSpec.describe 'Raider actionability script in a real browser', :browser do
   end
 
   it 'reports a moving button as not stable on consecutive polls' do
-    expect(run('moving', click)).to eq('check' => 'stable')
+    expect(run('moving', click)).to eq('check' => 'stable', 'first' => true)
     sleep 0.1
     expect(run('moving', click)).to eq('check' => 'stable')
     sleep 0.1
@@ -90,7 +95,7 @@ RSpec.describe 'Raider actionability script in a real browser', :browser do
   end
 
   it 'reports an element moving vertically in a scrollable page as not stable' do
-    expect(run('bouncer', click)).to eq('check' => 'stable')
+    expect(run('bouncer', click)).to eq('check' => 'stable', 'first' => true)
     sleep 0.1
     expect(run('bouncer', click)).to eq('check' => 'stable')
     sleep 0.1
@@ -107,8 +112,25 @@ RSpec.describe 'Raider actionability script in a real browser', :browser do
     expect(run('choices', send_keys)).to be_nil
   end
 
-  it 'fails visible for a file input inside a display: none container' do
+  it 'fails visible for a file input inside a display: none container, except when typing a path' do
     expect(run('file-hidden', %w[visible])).to eq('check' => 'visible')
+    expect(run('file-hidden', click)).to eq('check' => 'visible')
+    expect(run('file-hidden', send_keys)).to be_nil
+  end
+
+  it 'fails visible for a zero-sized button' do
+    expect(run('zero', click)).to eq('check' => 'visible')
+  end
+
+  it 'scrolls a button clipped inside an overflow container into view' do
+    expect(settled('deep', click)).to be_nil
+  end
+
+  it 'passes inert for a button in a shadow root inside the open modal dialog' do
+    driver.execute_script("document.getElementById('dlg').showModal()")
+    button = driver.execute_script("return document.getElementById('shadow-host').shadowRoot.getElementById('shadow-button')")
+    driver.execute_script(Raider::Actionability::SCRIPT, button, click)
+    expect(driver.execute_script(Raider::Actionability::SCRIPT, button, click)).to be_nil
   end
 
   it 'skips stable and events for an option' do

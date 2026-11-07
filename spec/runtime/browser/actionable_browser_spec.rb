@@ -57,6 +57,15 @@ RSpec.describe 'Raider::Actionable in a real browser', :browser do
     expect(element('editable').text).to include('hello')
   end
 
+  it 'clicks a button clipped inside an overflow container' do
+    element('deep').click
+    expect(element('deep').attribute('data-clicked')).to eq('1')
+  end
+
+  it 'sends keys to the body' do
+    expect { driver.find_element(tag_name: 'body').send_keys(:escape) }.not_to raise_error
+  end
+
   it 'refuses a moving button' do
     expect { element('moving').click }.to raise_error(Raider::NotActionable, /to be stable/)
   end
@@ -71,17 +80,18 @@ RSpec.describe 'Raider::Actionable in a real browser', :browser do
     expect { element('covered').click }.to raise_error(Selenium::WebDriver::Error::ElementClickInterceptedError)
   end
 
-  it 'costs under 50 ms per click on a visible button', :slow do
+  it 'costs under 50 ms per first click on distinct visible buttons', :slow do
     mean_ms = lambda do
+      Raider::Spec::Browser.open('actionability.html')
       started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      20.times { element('plain').click }
-      (Process.clock_gettime(Process::CLOCK_MONOTONIC) - started) / 20 * 1000
+      10.times { |index| element("m#{index}").click }
+      (Process.clock_gettime(Process::CLOCK_MONOTONIC) - started) / 10 * 1000
     end
     Raider.actionability = true
     on_mean = mean_ms.call
     Raider.actionability = false
     off_mean = mean_ms.call
-    puts format('actionability on %<on>.1f ms, off %<off>.1f ms, difference %<diff>.1f ms per click',
+    puts format('actionability on %<on>.1f ms, off %<off>.1f ms, difference %<diff>.1f ms per first click',
                 on: on_mean, off: off_mean, diff: on_mean - off_mean)
     expect(on_mean - off_mean).to be < 50
   end

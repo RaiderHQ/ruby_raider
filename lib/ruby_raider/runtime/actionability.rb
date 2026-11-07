@@ -28,6 +28,7 @@ module Raider
     }.freeze
 
     SCRIPT = File.read(File.join(__dir__, 'js', 'actionability.js')).freeze
+    FIRST_POLL = { 'check' => 'stable', 'first' => true }.freeze
     NOTICE = '[raider] actionability on (Raider.actionability = false or force: true to skip)'
 
     class << self
@@ -60,13 +61,23 @@ module Raider
       def wait(element, action)
         last = nil
         Wait.until(timeout: Raider.timeout) do
-          last = check(element, action)
+          last = polled(element, action)
           throw :not_ready, last['check'] if last
           true
         end
         nil
       rescue TimeoutError
         raise not_actionable(element, last)
+      end
+
+      # The first poll only stores a rect for stable to compare with, so a short pause
+      # (inside the block; Wait.until's interval is fixed) replaces the full poll interval.
+      def polled(element, action)
+        result = check(element, action)
+        return result unless result == FIRST_POLL
+
+        sleep 0.02
+        check(element, action)
       end
 
       def not_actionable(element, last)

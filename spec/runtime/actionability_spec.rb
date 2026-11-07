@@ -34,6 +34,15 @@ RSpec.describe 'Raider::Actionability' do
     expect(bridge.script_calls.size).to eq(3)
   end
 
+  it 'pauses briefly and re-checks at once after a first stable poll' do
+    first = { 'check' => 'stable', 'first' => true }
+    bridge.script_results.push(first, nil)
+    allow(Raider::Actionability).to receive(:sleep)
+    Raider::Actionability.ensure(element, :click, force: false)
+    expect(Raider::Actionability).to have_received(:sleep).with(0.02).once
+    expect(bridge.script_calls.size).to eq(2)
+  end
+
   it 'passes the script and the action checks to the browser' do
     bridge.script_results.push(nil)
     Raider::Actionability.ensure(element, :submit, force: false)
