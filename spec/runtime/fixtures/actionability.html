@@ -11,6 +11,9 @@
     #hidden-display { display: none; }
     #hidden-visibility { visibility: hidden; }
     #moving { position: relative; animation: slide 60s linear forwards; }
+    #bouncer { position: absolute; top: 1200px; left: 600px; animation: fall 60s linear forwards; }
+    @keyframes fall { from { transform: translateY(0); } to { transform: translateY(2000px); } }
+    #hidden-box { display: none; }
     @keyframes slide { from { transform: translateX(0); } to { transform: translateX(3000px); } }
     #far { position: absolute; top: 3000px; left: 400px; }
     #sticky-zone { position: absolute; top: 4000px; left: 0; width: 100%; height: 2500px; }
@@ -45,6 +48,8 @@
     <label>File <input id="file" type="file"></label>
   </p>
 
+  <button id="bouncer">Bouncing</button>
+  <div id="hidden-box"><input id="file-hidden" type="file"></div>
   <button id="far">Far away</button>
   <div id="sticky-zone">
     <header id="top">Sticky header</header>

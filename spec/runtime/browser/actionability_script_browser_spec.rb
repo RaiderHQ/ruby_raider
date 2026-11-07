@@ -85,6 +85,30 @@ RSpec.describe 'Raider actionability script in a real browser', :browser do
     expect(run('moving', click)).to eq('check' => 'stable')
     sleep 0.1
     expect(run('moving', click)).to eq('check' => 'stable')
+    sleep 0.1
+    expect(run('moving', click)).to eq('check' => 'stable')
+  end
+
+  it 'reports an element moving vertically in a scrollable page as not stable' do
+    expect(run('bouncer', click)).to eq('check' => 'stable')
+    sleep 0.1
+    expect(run('bouncer', click)).to eq('check' => 'stable')
+    sleep 0.1
+    expect(run('bouncer', click)).to eq('check' => 'stable')
+  end
+
+  it 'passes a static button on the second poll' do
+    run('plain', click)
+    sleep 0.1
+    expect(run('plain', click)).to be_nil
+  end
+
+  it 'passes editable for a select' do
+    expect(run('choices', send_keys)).to be_nil
+  end
+
+  it 'fails visible for a file input inside a display: none container' do
+    expect(run('file-hidden', %w[visible])).to eq('check' => 'visible')
   end
 
   it 'skips stable and events for an option' do
