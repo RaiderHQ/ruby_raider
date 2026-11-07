@@ -9,15 +9,6 @@ RSpec.describe 'Raider::Selectors' do
       'self::meter or self::output or self::progress'
   end
 
-  def label_xpath(match)
-    [
-      ".//*[@id = (.//label[#{match.call('.')}]/@for)]",
-      ".//label[#{match.call('.')}]//*[#{controls}]",
-      ".//*[#{match.call('@aria-label')}]",
-      ".//*[@aria-labelledby and #{match.call('string(id(@aria-labelledby))')}]"
-    ].join(' | ')
-  end
-
   describe '.xpath_literal' do
     it 'single-quotes a value without single quotes' do
       expect(Raider::Selectors.xpath_literal('Sign in')).to eq("'Sign in'")
@@ -48,13 +39,21 @@ RSpec.describe 'Raider::Selectors' do
 
   describe '.label' do
     it 'builds the contains union by default' do
-      match = ->(x) { "contains(normalize-space(#{x}), 'Email')" }
-      expect(Raider::Selectors.label('Email', exact: false)).to eq(label_xpath(match))
+      expect(Raider::Selectors.label('Email', exact: false)).to eq(
+        ".//*[@id = //label[contains(normalize-space(.), 'Email')]/@for] | " \
+        ".//label[contains(normalize-space(.), 'Email')]//*[#{controls}] | " \
+        ".//*[contains(normalize-space(@aria-label), 'Email')] | " \
+        ".//*[@aria-labelledby and contains(normalize-space(string(id(@aria-labelledby))), 'Email')]"
+      )
     end
 
     it 'builds the equality union with exact: true' do
-      match = ->(x) { "normalize-space(#{x}) = 'Email'" }
-      expect(Raider::Selectors.label('Email', exact: true)).to eq(label_xpath(match))
+      expect(Raider::Selectors.label('Email', exact: true)).to eq(
+        ".//*[@id = //label[normalize-space(.) = 'Email']/@for] | " \
+        ".//label[normalize-space(.) = 'Email']//*[#{controls}] | " \
+        ".//*[normalize-space(@aria-label) = 'Email'] | " \
+        ".//*[@aria-labelledby and normalize-space(string(id(@aria-labelledby))) = 'Email']"
+      )
     end
 
     it 'does not let a quote break out of the literal' do
