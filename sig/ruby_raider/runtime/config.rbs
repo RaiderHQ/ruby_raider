@@ -2,6 +2,9 @@ module Raider
   CONFIG_FILE: String
   FALSY: Array[String]
 
+  class Error < StandardError
+  end
+
   def self.strict: () -> bool
   def self.actionability: () -> bool
   def self.timeout: () -> Numeric

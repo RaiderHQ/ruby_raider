@@ -8,6 +8,9 @@ module Raider
   CONFIG_FILE = 'config/config.yml'
   FALSY = %w[off false 0 no].freeze
 
+  # Load-order and configuration mistakes.
+  class Error < StandardError; end
+
   class << self
     def strict
       resolve(:strict, 'RAIDER_STRICT', true) { |value| truthy?(value) }
@@ -50,8 +53,10 @@ module Raider
     def load_file
       return {} unless File.exist?(CONFIG_FILE)
 
-      data = YAML.safe_load_file(CONFIG_FILE)
+      data = YAML.safe_load_file(CONFIG_FILE, permitted_classes: [Symbol])
       data.is_a?(Hash) ? data : {}
+    rescue Psych::Exception => e
+      raise Error, "cannot read #{CONFIG_FILE}: #{e.message}"
     end
 
     def truthy?(value)

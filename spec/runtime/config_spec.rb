@@ -60,6 +60,16 @@ RSpec.describe 'Raider configuration' do
     expect(Raider.timeout).to eq(10)
   end
 
+  it 'reads a file that holds a symbol value' do
+    write_config("platform: :ios\ntimeout: 7\n")
+    expect(Raider.timeout).to eq(7)
+  end
+
+  it 'raises Raider::Error naming the file for malformed YAML' do
+    write_config("timeout: [7\n")
+    expect { Raider.timeout }.to raise_error(Raider::Error, %r{config/config\.yml})
+  end
+
   it 're-reads the file after reset' do
     write_config("timeout: 4\n")
     expect(Raider.timeout).to eq(4)

@@ -1,7 +1,4 @@
 module Raider
-  class Error < StandardError
-  end
-
   module Describe
     TEXT_LIMIT: Integer
     CLASS_LIMIT: Integer
