@@ -144,6 +144,7 @@ RSpec.describe RubyRaider::Raider do # rubocop:disable RSpec/FilePath
 
         expect(status.exitstatus).not_to eq(0)
         expect(out + err).to include('framework', 'rspec')
+        expect(out + err).not_to include('cucumber')
         expect(File.exist?(File.join(dir, 'x'))).to be(false)
       end
     end
@@ -168,24 +169,13 @@ RSpec.describe RubyRaider::Raider do # rubocop:disable RSpec/FilePath
       end
     end
 
-    it 'refuses automation:watir with the removal message and creates nothing' do
+    it 'exits 1 with the Invalid automation message for automation:watir and creates nothing' do
       Dir.mktmpdir do |dir|
         out, err, status = run_raider('new', 'x', '-p', 'framework:rspec', 'automation:watir', chdir: dir)
 
         expect(status.exitstatus).to eq(1)
-        expect(out + err).to include(InvokeGenerators::WATIR_REMOVED)
+        expect(out + err).to include('Invalid automation "watir"')
         expect(File.exist?(File.join(dir, 'x'))).to be(false)
-      end
-    end
-
-    it 'refuses raider g page in a Watir project and writes no file' do
-      Dir.mktmpdir do |dir|
-        File.write(File.join(dir, 'Gemfile'), "gem 'watir'\ngem 'rspec'\n")
-        out, err, status = run_raider('g', 'page', 'home', chdir: dir)
-
-        expect(status.exitstatus).to eq(1)
-        expect(out + err).to include(InvokeGenerators::WATIR_REMOVED)
-        expect(Dir.glob('**/*', base: dir)).to eq(['Gemfile'])
       end
     end
 

@@ -22,7 +22,7 @@ class MenuGenerator
   def choose_test_framework(automation)
     return choose_mobile_platform if automation == 'appium'
 
-    select_test_framework(automation)
+    select_examples('Rspec', automation)
   end
 
   def set_up_framework(options)
@@ -66,14 +66,6 @@ class MenuGenerator
       prompt.ok("Downloaded to: #{result}")
     else
       prompt.warn('No release found for your platform. Visit: https://github.com/RaiderHQ/raider_desktop/releases')
-    end
-  end
-
-  def select_test_framework(automation)
-    prompt.select('Please select your test framework') do |menu|
-      menu.choice :Cucumber, -> { select_examples('Cucumber', automation) }
-      menu.choice :Rspec, -> { select_examples('Rspec', automation) }
-      menu.choice :Quit, -> { exit }
     end
   end
 

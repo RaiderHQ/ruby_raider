@@ -18,8 +18,6 @@ class HelpersGenerator < Generator
   private
 
   def generate_spec_helper
-    return if cucumber?
-
     template('helpers/spec_helper.tt', "#{name}/helpers/spec_helper.rb")
   end
 

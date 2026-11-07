@@ -3,22 +3,17 @@ require_relative 'infrastructure/github_generator'
 require_relative 'infrastructure/azure_generator'
 require_relative 'automation/automation_generator'
 require_relative 'common_generator'
-require_relative 'cucumber/cucumber_generator'
 require_relative 'helper_generator'
 require_relative 'rspec/rspec_generator'
 
 module InvokeGenerators
-  FRAMEWORKS = %w[rspec cucumber].freeze
+  FRAMEWORKS = %w[rspec].freeze
   AUTOMATIONS = %w[selenium ios android cross_platform].freeze
-
-  WATIR_REMOVED = 'Watir was removed in ruby_raider 4.0; generate a Selenium project and ' \
-                  'see "Migrating from Watir" in the README'.freeze
 
   module_function
 
   def generate_framework(structure = {})
     structure = normalise_options(structure)
-    refuse_watir(structure[:automation])
     validate_option(:framework, structure[:framework], FRAMEWORKS)
     validate_option(:automation, structure[:automation], AUTOMATIONS)
     validate_ci(structure[:ci])
@@ -41,7 +36,7 @@ module InvokeGenerators
 
   def normalise_options(structure)
     structure.merge(
-      framework: structure[:framework].to_s.downcase,
+      framework: structure[:framework].to_s.downcase.then { |f| f.empty? ? 'rspec' : f },
       automation: structure[:automation].to_s.downcase
     )
   end
@@ -62,10 +57,6 @@ module InvokeGenerators
     return unless structure[:ci].to_s == 'azure' && mobile_automation?(structure[:automation])
 
     puts 'Azure Pipelines template for mobile projects is not available yet; see the README.'
-  end
-
-  def refuse_watir(automation)
-    raise Thor::Error, WATIR_REMOVED if automation.to_s == 'watir'
   end
 
   def add_generator(generators, *gens)

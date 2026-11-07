@@ -1,5 +1,0 @@
-<%- if web? -%>
-<%= partial('web_steps', strip: true) %>
-<%- else -%>
-<%= partial('mobile_steps', strip: true) %>
-<%- end -%>
