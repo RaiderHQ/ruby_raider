@@ -40,6 +40,8 @@ Ruby Raider is a CLI gem for scaffolding and generating UI test automation frame
 
 Watir was removed in ruby_raider 4.0; see [Migrating from Watir](#migrating-from-watir).
 
+Existing projects pin `gem 'ruby_raider', '~> 3.15'` (or an older `~> 3.x`) in their Gemfile, so `bundle update` never moves them to 4.0; to upgrade, change the pin to `~> 4.0` and run `bundle update ruby_raider`.
+
 ### Mobile Testing (Appium)
 
 | Test Framework | iOS | Android | Cross-Platform |
@@ -80,7 +82,7 @@ Every generated project comes with:
 
 > **Upgrading from 3.9 or earlier:** existing projects are not changed automatically. To get failure videos, generate a
 > new project with the same options and copy `helpers/video_helper.rb`, the video lines in `helpers/spec_helper.rb`
-> (RSpec) or `features/support/env.rb` (Cucumber), the `listener:` in the driver or browser helper, the `video:` block
+> (RSpec) or `features/support/env.rb` (Cucumber), the `listener:` in the driver helper, the `video:` block
 > in `config/config.yml`, and the ffmpeg cache and install steps in your CI pipeline. raider_reporter 0.10 or later
 > adds the inline video player in `raider-results/index.html` and a larger size limit for video attachments.
 
