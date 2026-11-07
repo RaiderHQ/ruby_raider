@@ -1,1 +1,0 @@
-default: --format pretty --format rerun --out rerun.txt --publish-quiet --retry 0

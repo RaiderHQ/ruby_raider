@@ -14,7 +14,6 @@ class MenuGenerator
   private
 
   def offer_desktop_download: () -> void
-  def select_test_framework: (String automation) -> void
   def create_framework_options: (Hash[Symbol, untyped] params) -> untyped
   def select_accessibility: (String framework, String automation_type) -> void
   def mobile_automation?: (String automation_type) -> bool

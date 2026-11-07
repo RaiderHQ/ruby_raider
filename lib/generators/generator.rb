@@ -13,17 +13,13 @@ class Generator < Thor::Group
 
   def self.source_paths
     base_path = File.dirname(__FILE__)
-    %W[#{base_path}/automation/templates #{base_path}/cucumber/templates
+    %W[#{base_path}/automation/templates
        #{base_path}/rspec/templates
        #{base_path}/templates #{base_path}/infrastructure/templates ]
   end
 
   def args
     initializer.first
-  end
-
-  def cucumber?
-    framework == 'cucumber'
   end
 
   # The framework is cross platform when it supports Android and iOS
@@ -45,10 +41,6 @@ class Generator < Thor::Group
 
   def android?
     automation == 'android'
-  end
-
-  def rspec?
-    framework == 'rspec'
   end
 
   def azure?

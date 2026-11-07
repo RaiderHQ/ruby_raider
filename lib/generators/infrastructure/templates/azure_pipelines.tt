@@ -32,7 +32,7 @@ jobs:
       - script: bundle exec raider u video install
         displayName: Install ffmpeg for failure videos
         continueOnError: true
-      - script: <%- if cucumber? -%>bundle exec raider-reporter exec -- bundle exec cucumber features/ --format pretty<%- else -%>bundle exec raider-reporter exec -- bundle exec rspec spec/ --format documentation<%- end %>
+      - script: bundle exec raider-reporter exec -- bundle exec rspec spec/ --format documentation
         displayName: Run tests
         env:
           RAIDER_TOKEN: $(RAIDER_TOKEN)

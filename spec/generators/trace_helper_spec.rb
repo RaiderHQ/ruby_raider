@@ -248,29 +248,6 @@ describe 'Generated TraceHelper' do
     expect(names).to contain_exactly('trace.json', 'steps/0001.jpg', 'steps/0001.html')
   end
 
-  it 'records a Cucumber step as a cucumber_step group carrying its name, with the actions it ran as children' do
-    recorder = started_recorder
-    group = recorder.step_started(name: 'When I log in as admin', source: source)
-    act(recorder, :click, 'login')
-    recorder.step_finished(group, status: :passed, error: nil)
-    act(recorder, :click, 'outside')
-    steps = kept(recorder)['steps']
-
-    expect(steps.map { |step| step.values_at('index', 'parent_index', 'kind', 'action', 'status', 'name') })
-      .to eq([[1, nil, 'group', 'cucumber_step', 'passed', 'When I log in as admin'], [2, 1, 'action', 'click', 'passed', nil],
-              [3, nil, 'action', 'click', 'passed', nil]])
-    expect(steps[1..].map { |step| step.key?('name') }).to eq([false, false])
-  end
-
-  it 'records a failed Cucumber step with its error' do
-    recorder = started_recorder
-    group = recorder.step_started(name: 'Then I see the dashboard', source: source)
-    recorder.step_finished(group, status: :failed, error: RuntimeError.new('no dashboard'))
-    step = kept(recorder)['steps'].first
-
-    expect(step).to include('status' => 'failed', 'error' => { 'class' => 'RuntimeError', 'message' => 'no dashboard' })
-  end
-
   it 'keeps only the last pass of eventually as child steps and counts the earlier passes in retries' do
     recorder = started_recorder
     group = recorder.group_started(action: :eventually, source: source)

@@ -20,13 +20,6 @@ end
 # End-to-end scaffolding tests that verify the scaffold command creates the right
 # files with the right content across all automation × framework combinations.
 describe 'Scaffolding E2E' do
-  def self.scaffold_style(framework)
-    case framework
-    when 'rspec'    then :spec
-    when 'cucumber' then :feature
-    end
-  end
-
   # Build a minimal mock project that the scaffolding system can detect.
   def self.build_mock_project(automation, framework)
     dir = File.expand_path("tmp_scaffold_e2e_#{framework}_#{automation}")
@@ -38,20 +31,13 @@ describe 'Scaffolding E2E' do
     FileUtils.mkdir_p("#{dir}/config")
     FileUtils.mkdir_p("#{dir}/models/data")
 
-    case framework
-    when 'rspec'    then FileUtils.mkdir_p("#{dir}/spec")
-    when 'cucumber' then FileUtils.mkdir_p("#{dir}/features/step_definitions")
-                         FileUtils.mkdir_p("#{dir}/features/support")
-    end
+    FileUtils.mkdir_p("#{dir}/spec")
 
     gems = []
     case automation
     when 'selenium' then gems << "gem 'selenium-webdriver'"
     end
-    case framework
-    when 'rspec'    then gems << "gem 'rspec'"
-    when 'cucumber' then gems << "gem 'cucumber'"
-    end
+    gems << "gem 'rspec'"
     File.write("#{dir}/Gemfile", "#{gems.join("\n")}\n")
     File.write("#{dir}/config/config.yml", "browser: chrome\nurl: http://localhost:3000\n")
     File.write("#{dir}/page_objects/abstract/page.rb", "class Page; end\n")
@@ -147,64 +133,6 @@ describe 'Scaffolding E2E' do
   end
 
   # ──────────────────────────────────────────────
-  # Shared examples: Feature content (Cucumber)
-  # ──────────────────────────────────────────────
-
-  shared_examples 'valid scaffolded feature' do
-    it 'has Feature keyword' do
-      expect(feature_content).to include('Feature: Checkout')
-    end
-
-    it 'has Scenario keyword' do
-      expect(feature_content).to include('Scenario: Scenario name')
-    end
-
-    it 'has Given/When/Then steps' do
-      expect(feature_content).to include('Given I am on the checkout page')
-      expect(feature_content).to include('When I perform an action')
-      expect(feature_content).to include('Then I see the expected result')
-    end
-  end
-
-  # ──────────────────────────────────────────────
-  # Shared examples: Steps content (Cucumber)
-  # ──────────────────────────────────────────────
-
-  shared_examples 'valid scaffolded steps' do
-    it 'has frozen_string_literal' do
-      expect(steps_content).to have_frozen_string_literal
-    end
-
-    it 'has valid Ruby syntax' do
-      expect(steps_content).to have_valid_ruby_syntax
-    end
-
-    it 'requires the page object' do
-      expect(steps_content).to include("require_relative '../../page_objects/pages/checkout'")
-    end
-
-    it 'has Given/When/Then blocks' do
-      expect(steps_content).to include("Given('I am on the checkout page')")
-      expect(steps_content).to include("When('I perform an action')")
-      expect(steps_content).to include("Then('I see the expected result')")
-    end
-
-    it 'has pending steps' do
-      expect(steps_content).to include("pending 'implement step'")
-    end
-  end
-
-  shared_examples 'selenium scaffolded steps' do
-    it 'instantiates page with driver' do
-      expect(steps_content).to include('CheckoutPage.new(driver)')
-    end
-
-    it 'does not use capybara visit' do
-      expect(steps_content).not_to match(/^\s+visit '/)
-    end
-  end
-
-  # ──────────────────────────────────────────────
   # Shared examples: Helper content
   # ──────────────────────────────────────────────
 
@@ -267,9 +195,7 @@ describe 'Scaffolding E2E' do
   # ══════════════════════════════════════════════
 
   %w[selenium].each do |automation|
-    %w[rspec cucumber].each do |framework|
-      style = scaffold_style(framework)
-
+    %w[rspec].each do |framework|
       context "with #{framework} and #{automation}" do
         let(:scaffold) { ScaffoldingCommands }
 
@@ -298,56 +224,24 @@ describe 'Scaffolding E2E' do
           after do
             FileUtils.rm_f('page_objects/pages/checkout.rb')
             FileUtils.rm_f('spec/checkout_page_spec.rb')
-            if framework == 'cucumber'
-              FileUtils.rm_f('features/checkout.feature')
-              FileUtils.rm_f('features/step_definitions/checkout_steps.rb')
-            else
-              FileUtils.rm_rf('features')
-              FileUtils.rm_rf('spec') unless framework == 'rspec'
-            end
           end
 
-          # Page content validation
           let(:page_content) { File.read('page_objects/pages/checkout.rb') }
+          let(:spec_content) { File.read('spec/checkout_page_spec.rb') }
 
           it 'creates page object' do
             expect(Pathname.new('page_objects/pages/checkout.rb')).to be_file
           end
 
-          if style == :spec
-            it 'creates spec file' do
-              expect(Pathname.new('spec/checkout_page_spec.rb')).to be_file
-            end
-
-            it 'does not create feature file' do
-              expect(Pathname.new('features/checkout.feature')).not_to be_file
-            end
-          else # :feature
-            it 'creates feature file' do
-              expect(Pathname.new('features/checkout.feature')).to be_file
-            end
-
-            it 'creates steps file' do
-              expect(Pathname.new('features/step_definitions/checkout_steps.rb')).to be_file
-            end
+          it 'creates spec file' do
+            expect(Pathname.new('spec/checkout_page_spec.rb')).to be_file
           end
 
           include_examples 'valid scaffolded page'
           include_examples "#{automation} scaffolded page"
 
-          # Test content validation (depends on scaffold style)
-          if style == :spec
-            let(:spec_content) { File.read('spec/checkout_page_spec.rb') }
-            include_examples 'valid scaffolded spec'
-            include_examples "#{automation} scaffolded spec"
-          else # :feature
-            let(:feature_content) { File.read('features/checkout.feature') }
-            include_examples 'valid scaffolded feature'
-
-            let(:steps_content) { File.read('features/step_definitions/checkout_steps.rb') }
-            include_examples 'valid scaffolded steps'
-            include_examples "#{automation} scaffolded steps"
-          end
+          include_examples 'valid scaffolded spec'
+          include_examples "#{automation} scaffolded spec"
         end
 
         # ── Component scaffold ─────────────────
@@ -390,17 +284,13 @@ describe 'Scaffolding E2E' do
             %w[search filter].each do |name|
               FileUtils.rm_f("page_objects/pages/#{name}.rb")
               FileUtils.rm_f("spec/#{name}_page_spec.rb")
-              FileUtils.rm_f("features/#{name}.feature")
-              FileUtils.rm_f("features/step_definitions/#{name}_steps.rb")
             end
-            FileUtils.rm_rf('features') unless framework == 'cucumber'
-            FileUtils.rm_rf('spec') unless framework == 'rspec'
           end
 
           it 'generates multiple scaffolds at once' do
             scaffold.new.invoke(:scaffold, nil, %w[search filter])
             files = %w[search filter].flat_map do |name|
-              ["page_objects/pages/#{name}.rb", style == :spec ? "spec/#{name}_page_spec.rb" : "features/#{name}.feature"]
+              ["page_objects/pages/#{name}.rb", "spec/#{name}_page_spec.rb"]
             end
             expect(files.reject { |file| File.file?(file) }).to be_empty
           end

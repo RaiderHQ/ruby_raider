@@ -48,6 +48,25 @@ describe UtilityCommands do
       config = YAML.load_file('config/config.yml')
       expect(config['browser_arguments']['firefox']).to eql %w[headless start-maximized start-fullscreen]
     end
+
+    it 'changes the path for pages' do
+      utility.new.invoke(:path, nil, %W[#{path}])
+      config = YAML.load_file('config/config.yml')
+      expect(config['page_path']).to eql path
+    end
+
+    it 'deletes the browser arguments when passed with the delete parameter' do
+      utility.new.invoke(:browser, nil, %w[:firefox --opts headless --delete])
+      config = YAML.load_file('config/config.yml')
+      expect(config.dig('browser_arguments', 'firefox')).to eq([])
+    end
+
+    it 'deletes the browser arguments' do
+      utility.new.invoke(:browser, nil, %w[:firefox --opts headless])
+      utility.new.invoke(:browser, nil, %w[--delete])
+      config = YAML.load_file('config/config.yml')
+      expect(config.dig('browser_arguments', 'firefox')).to eq([])
+    end
   end
 
   context 'with timeout and viewport commands' do
@@ -67,47 +86,6 @@ describe UtilityCommands do
       utility.new.invoke(:viewport, nil, %w[375x812])
       config = YAML.load_file('config/config.yml')
       expect(config['viewport']).to eq({ 'width' => 375, 'height' => 812 })
-    end
-  end
-
-  context 'with a features folder' do
-    let(:new_path) { 'test_folder' }
-
-    path = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-
-    before do
-      Dir.chdir path
-    end
-
-    it 'changes the path for pages' do
-      utility.new.invoke(:path, nil, %W[#{path}])
-      config = YAML.load_file('config/config.yml')
-      expect(config['page_path']).to eql path
-    end
-
-    it 'changes the path for features' do
-      utility.new.invoke(:path, nil, %W[#{path} -f])
-      config = YAML.load_file('config/config.yml')
-      expect(config['feature_path']).to eql path
-    end
-
-    it 'updates the browser arguments for the current browser' do
-      utility.new.invoke(:browser, nil, %w[:firefox --opts headless])
-      config = YAML.load_file('config/config.yml')
-      expect(config['browser_arguments']['firefox']).to eql %w[headless]
-    end
-
-    it 'deletes the browser arguments when passed with the delete parameter' do
-      utility.new.invoke(:browser, nil, %w[:firefox --opts headless --delete])
-      config = YAML.load_file('config/config.yml')
-      expect(config.dig('browser_arguments', 'firefox')).to eq([])
-    end
-
-    it 'deletes the browser arguments' do
-      utility.new.invoke(:browser, nil, %w[:firefox --opts headless])
-      utility.new.invoke(:browser, nil, %w[--delete])
-      config = YAML.load_file('config/config.yml')
-      expect(config.dig('browser_arguments', 'firefox')).to eq([])
     end
   end
 

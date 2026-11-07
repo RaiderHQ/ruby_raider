@@ -28,20 +28,6 @@ RSpec.describe MenuGenerator do
   end
 
   describe '#choose_test_framework' do
-    context 'with a web automation' do
-      it 'presents test framework selection' do
-        menu = double('menu') # rubocop:disable RSpec/VerifiedDoubles
-        allow(menu).to receive(:choice)
-        allow(prompt).to receive(:select).with('Please select your test framework').and_yield(menu)
-
-        menu_generator.choose_test_framework('selenium')
-
-        expect(menu).to have_received(:choice).with(:Cucumber, anything)
-        expect(menu).to have_received(:choice).with(:Rspec, anything)
-        expect(menu).to have_received(:choice).with(:Quit, anything)
-      end
-    end
-
     context 'with appium' do
       it 'presents mobile platform selection' do
         menu = double('menu') # rubocop:disable RSpec/VerifiedDoubles
@@ -199,14 +185,23 @@ RSpec.describe MenuGenerator do
       allow(prompt).to receive(:yes?).and_return(false)
     end
 
-    it 'is asked after the test framework question' do
-      allow(prompt).to receive(:select).with('Please select your test framework').and_yield(menu)
-      allow(menu).to receive(:choice).with(:Rspec, anything) { |_, action| action.call }
+    it 'asks for example tests straight away, with no test framework question' do
+      allow(prompt).to receive(:select)
       allow(menu_generator).to receive(:select_examples)
 
       menu_generator.choose_test_framework('selenium')
 
       expect(menu_generator).to have_received(:select_examples).with('Rspec', 'selenium')
+      expect(prompt).not_to have_received(:select).with('Please select your test framework')
+    end
+
+    it 'prompts for example tests without ever offering Cucumber' do
+      allow(prompt).to receive(:select).with('Do you want example tests?').and_yield(menu)
+
+      menu_generator.choose_test_framework('selenium')
+
+      expect(menu).not_to have_received(:choice).with(:Cucumber, anything)
+      expect(menu).to have_received(:choice).with(:Yes, anything)
     end
 
     it 'offers Yes first, so yes is the default' do
@@ -241,10 +236,10 @@ RSpec.describe MenuGenerator do
       allow(prompt).to receive(:select).with('Do you want example tests?').and_yield(menu)
       allow(menu).to receive(:choice).with(:No, anything) { |_, action| action.call }
 
-      menu_generator.send(:select_examples, 'Cucumber', 'ios')
+      menu_generator.send(:select_examples, 'Rspec', 'ios')
 
       expect(menu_generator).to have_received(:generate_framework).with(
-        hash_including(automation: 'ios', framework: 'cucumber', examples: false)
+        hash_including(automation: 'ios', framework: 'rspec', examples: false)
       )
     end
   end

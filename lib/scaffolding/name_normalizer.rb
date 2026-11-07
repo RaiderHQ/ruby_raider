@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module NameNormalizer
-  SUFFIXES = %w[_page _spec _steps _helper _test _feature].freeze
+  SUFFIXES = %w[_page _spec _helper _test].freeze
 
   module_function
 

@@ -1,10 +1,8 @@
 # Type definitions for ScaffoldingCommands
 class ScaffoldingCommands < Thor
   def page: (String name) -> void
-  def feature: (String name) -> void
   def spec: (String name) -> void
   def helper: (String name) -> void
-  def steps: (String name) -> void
   def component: (String name) -> void
   def scaffold: (*String names) -> void
 

@@ -117,18 +117,12 @@ describe 'End-to-End Feature Validation' do
       expect(helper).to include('config.verbose_retry = true')
       expect(helper).to include("ENV.fetch('RETRY_COUNT', 0)")
     end
-
-    it 'cucumber projects have --retry in cucumber.yml' do
-      cucumber_yml = read_generated("#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}", 'cucumber.yml')
-      expect(cucumber_yml).to include('--retry')
-    end
   end
 
   # --- Feature: Tag-based rake tasks (C5) ---
 
   context 'Tag-based rake tasks' do
     let(:rspec_project) { "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}" }
-    let(:cucumber_project) { "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}" }
 
     it 'rspec Rakefile has smoke task' do
       rakefile = read_generated(rspec_project, 'Rakefile')
@@ -140,11 +134,6 @@ describe 'End-to-End Feature Validation' do
       rakefile = read_generated(rspec_project, 'Rakefile')
       expect(rakefile).to include('RakeTask.new(:regression)')
       expect(rakefile).to include("'--tag regression'")
-    end
-
-    it 'cucumber Rakefile has smoke task with cucumber tags' do
-      rakefile = read_generated(cucumber_project, 'Rakefile')
-      expect(rakefile).to include("'--tags @smoke'")
     end
 
     it 'rspec smoke rake task works', :slow do
@@ -159,7 +148,6 @@ describe 'End-to-End Feature Validation' do
 
   context 'Re-run failed tests' do
     let(:rspec_project) { "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}" }
-    let(:cucumber_project) { "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}" }
 
     it 'rspec projects have .rspec file' do
       expect(File).to exist("#{rspec_project}/.rspec")
@@ -179,10 +167,6 @@ describe 'End-to-End Feature Validation' do
       gitignore = read_generated(rspec_project, '.gitignore')
       expect(gitignore).to include('spec/examples.txt')
     end
-
-    it 'cucumber projects do not have .rspec file' do
-      expect(File).not_to exist("#{cucumber_project}/.rspec")
-    end
   end
 
   # --- Feature: Accessibility addon (axe) ---
@@ -193,14 +177,10 @@ describe 'End-to-End Feature Validation' do
         automation: 'selenium', framework: 'rspec', name: 'e2e_axe_rspec',
         accessibility: true
       )
-      InvokeGenerators.generate_framework(
-        automation: 'selenium', framework: 'cucumber', name: 'e2e_axe_cucumber',
-        accessibility: true
-      )
     end
 
     after(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      %w[e2e_axe_rspec e2e_axe_cucumber].each { |n| FileUtils.rm_rf(n) }
+      FileUtils.rm_rf('e2e_axe_rspec')
     end
 
     describe 'axe + RSpec' do
@@ -218,28 +198,6 @@ describe 'End-to-End Feature Validation' do
       it 'accessibility spec has valid Ruby syntax' do
         content = File.read('e2e_axe_rspec/spec/accessibility_spec.rb')
         expect { RubyVM::InstructionSequence.compile(content) }.not_to raise_error
-      end
-    end
-
-    describe 'axe + Cucumber' do
-      it 'creates accessibility.feature' do
-        expect(File).to exist('e2e_axe_cucumber/features/accessibility.feature')
-      end
-
-      it 'creates accessibility_steps.rb' do
-        expect(File).to exist('e2e_axe_cucumber/features/step_definitions/accessibility_steps.rb')
-      end
-
-      it 'includes axe gems in Gemfile' do
-        gemfile = File.read('e2e_axe_cucumber/Gemfile')
-        expect(gemfile).to include('axe')
-      end
-
-      it 'all Ruby files have valid syntax' do
-        ruby_files('e2e_axe_cucumber').each do |file|
-          content = File.read(file)
-          expect(content).to have_valid_ruby_syntax, "#{file} has invalid syntax"
-        end
       end
     end
   end

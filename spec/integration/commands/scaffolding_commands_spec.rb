@@ -48,45 +48,10 @@ describe ScaffoldingCommands do
       scaffold.new.invoke(:spec, nil, %W[#{name} --path #{new_path}])
       expect(Pathname.new("#{new_path}/#{name}_spec.rb")).to be_file
     end
-  end
-
-  context 'with a features folder' do
-    let(:new_path) { 'test_folder' }
-
-    path = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-
-    before do
-      Dir.chdir path
-    end
-
-    it 'scaffolds for cucumber creating a feature' do
-      scaffold.new.invoke(:scaffold, nil, %W[#{name}])
-      expect(Pathname.new("features/#{name}.feature")).to be_file
-    end
-
-    it 'scaffolds for cucumber creating a page' do
-      scaffold.new.invoke(:scaffold, nil, %W[#{name}])
-      expect(Pathname.new("page_objects/pages/#{name}.rb")).to be_file
-    end
-
-    it 'scaffolds for cucumber creating a steps definition' do
-      scaffold.new.invoke(:scaffold, nil, %W[#{name}])
-      expect(Pathname.new("features/step_definitions/#{name}_steps.rb")).to be_file
-    end
 
     it 'creates a helper' do
       scaffold.new.invoke(:helper, nil, %W[#{name}])
       expect(Pathname.new("helpers/#{name}_helper.rb")).to be_file
-    end
-
-    it 'creates a steps definition' do
-      scaffold.new.invoke(:steps, nil, %W[#{name}])
-      expect(Pathname.new("features/step_definitions/#{name}_steps.rb")).to be_file
-    end
-
-    it 'creates a feature' do
-      scaffold.new.invoke(:feature, nil, %W[#{name} --path #{new_path}])
-      expect(Pathname.new("#{new_path}/#{name}.feature")).to be_file
     end
 
     it 'creates a helper with a path' do

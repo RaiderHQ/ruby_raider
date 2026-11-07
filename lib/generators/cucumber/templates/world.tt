@@ -1,3 +1,0 @@
-# frozen_string_literal: true
-
-<%= partial('driver_world', strip: true) %>

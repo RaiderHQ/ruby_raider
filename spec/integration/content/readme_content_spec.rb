@@ -177,34 +177,6 @@ describe 'Generated Readme content' do
         expect(readme).not_to match(/allure/i)
       end
     end
-
-    context "with cucumber and #{automation}" do
-      subject(:readme) { read_generated("#{FrameworkIndex::CUCUMBER}_#{automation}", 'Readme.md') }
-
-      it 'has a Reporting section' do
-        expect(readme).to include('## Reporting')
-      end
-
-      it 'documents local results, upload settings, plugin mode and the raider_reporter README' do
-        expect(readme).to include('raider-results/', 'RAIDER_TOKEN', 'RAIDER_ENDPOINT', 'features/support/env.rb',
-                                  'https://github.com/RaiderHQ/raider_reporter')
-      end
-
-      it 'explains quarantine in CI' do
-        expect(readme).to include('### Quarantine', 'RAIDER_QUARANTINE', 'raider-reporter exec')
-      end
-
-      it 'explains the quality gate' do
-        expect(readme).to include('### Quality gate', 'RAIDER_GATE=1', 'Gate page', 'raider/gate',
-                                  'raider-reporter gate', 'raider-gate', 'exits 1 when the gate fails',
-                                  '2 when it gets no verdict', 'RAIDER_GATE_TIMEOUT', 'RAIDER_SHARD_TOTAL',
-                                  'RAIDER_SHARD_INDEX')
-      end
-
-      it 'does not mention Allure' do
-        expect(readme).not_to match(/allure/i)
-      end
-    end
   end
 
   FRAMEWORKS.product(AUTOMATION_TYPES).each do |framework, automation|
@@ -214,7 +186,7 @@ describe 'Generated Readme content' do
       if automation == 'selenium'
         it 'documents the tags, other roles, max_age, the env switch and the secrets warning' do
           section = readme[/^## Reusing the login\n.*?(?=^##)/m].gsub(/\s+/, ' ')
-          expect(section).to include('`:logged_in`', '`@logged_in`', "SessionState.new(driver, name: 'admin')",
+          expect(section).to include('`:logged_in`', "SessionState.new(driver, name: 'admin')",
                                      'login_state', 'max_age', 'RAIDER_LOGIN_STATE=off',
                                      'RAIDER_LOGIN_STATE=refresh', '.raider/auth/', 'git-ignored',
                                      'live session tokens', 'must not be committed, cached or uploaded')
@@ -315,7 +287,7 @@ describe 'Generated Readme: How the framework works' do
   end
 
   describe 'without example tests' do
-    %w[rspec cucumber].product(%w[selenium ios cross_platform]).each do |framework, automation|
+    FRAMEWORKS.product(%w[selenium ios cross_platform]).each do |framework, automation|
       context "with #{framework} and #{automation}" do
         subject(:readme) { read_generated(ensure_project(framework:, automation:, examples: false), 'Readme.md') }
 
@@ -335,7 +307,7 @@ describe 'Generated Readme: How the framework works' do
       end
     end
 
-    %w[rspec cucumber].each do |framework|
+    FRAMEWORKS.each do |framework|
       it "shows how to add the login hook for the project's own login page in #{framework}" do
         readme = read_generated(ensure_project(framework:, automation: 'selenium', examples: false), 'Readme.md')
         section = readme[/^## Reusing the login\n.*?(?=^## )/m]

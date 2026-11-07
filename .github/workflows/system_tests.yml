@@ -17,7 +17,7 @@ jobs:
           bundler-cache: true
 
   selenium:
-    name: Selenium frameworks
+    name: Selenium RSpec
     needs: setup
     runs-on: ubuntu-latest
     steps:
