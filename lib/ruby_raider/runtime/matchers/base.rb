@@ -64,6 +64,10 @@ module Raider
 
       private
 
+      def option(key)
+        @options[key]
+      end
+
       def poll(actual, negated:)
         @poll = Poll.new(actual, nil, NOT_FOUND, @wait || Raider.timeout)
         Raider::Wait.until(timeout: @poll.waited) { settled?(negated) }
@@ -103,7 +107,11 @@ module Raider
 
       def last_seen
         value = @poll.value
-        value.equal?(NOT_FOUND) ? 'last seen: not found' : "last seen #{value.inspect}"
+        value.equal?(NOT_FOUND) ? 'last seen: not found' : "last seen #{show(value)}"
+      end
+
+      def show(value)
+        value.inspect
       end
     end
   end

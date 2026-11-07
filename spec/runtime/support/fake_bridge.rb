@@ -14,6 +14,18 @@ module Raider
         @calls = []
         @queue = []
         @script_results = []
+        @answers = Hash.new { |hash, key| hash[key] = [] }
+      end
+
+      # Scripts per-poll answers for an element command; the last answer repeats.
+      # An Exception class or instance is raised instead of returned.
+      def answer(command, *values)
+        @answers[command].concat(values)
+        self
+      end
+
+      %i[element_text element_attribute element_displayed? element_enabled? element_selected?].each do |command|
+        define_method(command) { |*_args| next_answer(command) }
       end
 
       def enqueue(ids)
@@ -39,11 +51,24 @@ module Raider
         script_results.shift
       end
 
+      # Describe.element falls back to <element> when the tag cannot be read.
+      def element_tag_name(_ref)
+        raise Selenium::WebDriver::Error::WebDriverError, 'no tag'
+      end
+
       def element_class
         Selenium::WebDriver::Element
       end
 
       private
+
+      def next_answer(command)
+        queue = @answers[command]
+        value = queue.size > 1 ? queue.shift : queue.first
+        raise value, 'scripted' if value.is_a?(Class) && value <= Exception
+
+        value
+      end
 
       def wrap(id)
         Selenium::WebDriver::Element.new(self, id)

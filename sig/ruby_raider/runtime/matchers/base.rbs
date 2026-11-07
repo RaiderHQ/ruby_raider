@@ -28,6 +28,8 @@ module Raider
 
       private
 
+      def option: (Symbol key) -> untyped
+
       def poll: (untyped actual, negated: bool) -> bool
       def settled?: (bool negated) -> bool
       def retried_errors: () -> Array[untyped]
@@ -35,6 +37,7 @@ module Raider
       def message: (String polarity) -> String
       def target: () -> String
       def last_seen: () -> String
+      def show: (untyped value) -> String
     end
   end
 end
