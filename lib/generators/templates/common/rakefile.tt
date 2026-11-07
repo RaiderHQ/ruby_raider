@@ -2,7 +2,6 @@ desc 'Print Ruby Raider version'
 task :raider do
   system 'raider version'
 end
-<%- if rspec? -%>
 
 require 'rspec/core/rake_task'
 
@@ -15,17 +14,3 @@ RSpec::Core::RakeTask.new(:regression) do |t|
 end
 
 task default: :spec
-<%- elsif cucumber? -%>
-
-require 'cucumber/rake/task'
-
-Cucumber::Rake::Task.new(:features)
-Cucumber::Rake::Task.new(:smoke) do |t|
-  t.cucumber_opts = '--tags @smoke'
-end
-Cucumber::Rake::Task.new(:regression) do |t|
-  t.cucumber_opts = '--tags @regression'
-end
-
-task default: :features
-<%- end -%>

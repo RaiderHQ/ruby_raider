@@ -8,13 +8,11 @@ class Generator < Thor::Group
   def self.template_cache_stats: () -> Hash[Symbol, untyped]
 
   # Predicate methods for framework/automation detection
-  def cucumber?: () -> bool
   def cross_platform?: () -> bool
   def mobile?: () -> bool
   def single_platform?: () -> bool
   def ios?: () -> bool
   def android?: () -> bool
-  def rspec?: () -> bool
   def azure?: () -> bool
   def github_ci?: () -> bool
   def selenium?: () -> bool

@@ -27,11 +27,8 @@ Ruby Raider is a generator and scaffolding gem to make UI test automation easier
 
 | Web Testing Framework | Mobile Testing Framework           |
 |-----------------------|------------------------------------|
-| Cucumber and Selenium | Cucumber and Appium for iOS        |
 | RSpec and Selenium    | RSpec and Appium for iOS           |
-|                       | Cucumber and Appium for Android    |
 |                       | RSpec and Appium for Android       |
-|                       | Cucumber and Appium Cross-platform |
 |                       | RSpec and Appium Cross-platform    |
 
 **Optional add-on for web projects:**
@@ -77,12 +74,10 @@ Shortcuts: `g` (generate), `n` (new), `u` (utility), `v` (version)
 ```
 raider g page [NAME]      # Create page object
 raider g spec [NAME]      # Create RSpec test
-raider g feature [NAME]   # Create Cucumber feature
-raider g steps [NAME]     # Create step definitions
-raider g scaffold [NAME]  # Create page + test + steps
+raider g scaffold [NAME]  # Create page + test
 ```
 
-<%- test_cmd = rspec? ? 'rspec' : 'cucumber' -%>
+<%- test_cmd = 'rspec' -%>
 ## How the framework works
 
 This section walks through the project: where things live, how a test finds an element and acts on it, and how to
@@ -93,7 +88,7 @@ run the tests.
 
 This project was generated without example tests, so its <%= mobile? ? 'pages' : 'pages, components' %> and tests folders are empty.
 Grow it with the scaffolding commands above: `raider g scaffold checkout` writes a `Checkout` page and its
-<%= rspec? ? 'spec' : 'feature and steps' %>, and `raider g page`<%= rspec? ? ' and `raider g spec`' : ', `raider g feature` and `raider g steps`' %> write one file at a time. The code examples
+spec, and `raider g page` and `raider g spec` write one file at a time. The code examples
 below show what goes in them.
 <%- end -%>
 
@@ -116,21 +111,11 @@ languages call a function (it starts with `def` and ends with `end`).
 - `page_objects/abstract/`: `page.rb`, the base class every page builds on. It gives each page the wait helper.
 - `helpers/`: `driver_helper.rb` starts the Appium session, `wait_helper.rb` and `raider_element.rb` are the wait
   helper, and `video_helper.rb` records the screen<%= cross_platform? ? '. `appium_helper.rb` has `element(ios: …, android: …)`, a lookup that does not wait' : '' %>.
-<%- if rspec? -%>
   `spec_helper.rb` sets up RSpec: it starts the app before each test and closes it after.
 <%- if examples? -%>
 - `spec/`: the tests. `pdp_page_spec.rb` opens a product and checks its "Add to Cart" button.
 <%- else -%>
 - `spec/`: the tests, empty for now.
-<%- end -%>
-<%- elsif examples? -%>
-- `features/`: the tests. `home.feature` describes them in plain English, `step_definitions/home_steps.rb` holds the
-  Ruby code behind each step, and `support/` starts the app (`env.rb`) and makes the helpers available to the steps
-  (`world.rb`).
-<%- else -%>
-- `features/`: the tests, empty for now. A `.feature` file describes them in plain English, `step_definitions/` holds
-  the Ruby code behind each step, and `support/` starts the app (`env.rb`) and makes the helpers available to the
-  steps (`world.rb`).
 <%- end -%>
 <%- else -%>
   `config.yml` is described under "Settings" below.
@@ -147,24 +132,14 @@ languages call a function (it starts with `def` and ends with `end`).
   `page.rb` gives each page the wait helper.
 - `helpers/`: `driver_helper.rb` starts the browser, `wait_helper.rb` and `raider_element.rb` are the wait helper,
   `video_helper.rb` records failure videos and `session_state.rb` reuses the login.
-<%- if rspec? -%>
   `spec_helper.rb` sets up RSpec: it opens the browser before each test and closes it after.
+<%- if examples? -%>
+- `models/`: test data. `data/users.yml` holds the users, and `model_factory.rb` loads them.
 <%- end -%>
 <%- if examples? -%>
-- `models/`: test data. `data/users.yml` holds the users, and `model_factory.rb`<%= cucumber? ? ' and `user_factory.rb` load' : ' loads' %> them.
-<%- end -%>
-<%- if rspec? && examples? -%>
 - `spec/`: the tests. `login_page_spec.rb` logs in with the right password and with a wrong one.
-<%- elsif rspec? -%>
-- `spec/`: the tests, empty for now.
-<%- elsif examples? -%>
-- `features/`: the tests. `login.feature` describes them in plain English, `step_definitions/login_steps.rb` holds
-  the Ruby code behind each step, and `support/` opens the browser (`env.rb`) and makes the helpers available to the
-  steps (`world.rb`).
 <%- else -%>
-- `features/`: the tests, empty for now. A `.feature` file describes them in plain English, `step_definitions/`
-  holds the Ruby code behind each step, and `support/` opens the browser (`env.rb`) and makes the helpers available
-  to the steps (`world.rb`).
+- `spec/`: the tests, empty for now.
 <%- end -%>
 <%- end -%>
 <%- if azure? && !mobile? -%>
@@ -311,7 +286,7 @@ Waited 10s for {id: "loginFrm_loginname"} to be visible and enabled; last seen: 
 <%- end -%>
 ```
 
-You can use its methods in every page and in every <%= rspec? ? 'test' : 'step definition' %>:
+You can use its methods in every page and in every test:
 
 | Method | Waits until the element is | Then |
 |--------|----------------------------|------|
@@ -444,13 +419,8 @@ Install the gems once with `bundle install`. Then:
 <%- end -%>
 
 ```bash
-<%- if rspec? -%>
 bundle exec rspec                                 # every test
 bundle exec rspec spec/<%= examples? ? (mobile? ? 'pdp_page_spec.rb' : 'login_page_spec.rb') : 'checkout_page_spec.rb' %>          # one file
-<%- else -%>
-bundle exec cucumber                              # every scenario
-bundle exec cucumber features/<%= examples? ? (mobile? ? 'home.feature' : 'login.feature') : 'checkout.feature' %>         # one feature
-<%- end -%>
 <%- unless mobile? -%>
 HEADLESS=true bundle exec <%= test_cmd %>                   # without a browser window
 <%- end -%>
@@ -460,16 +430,11 @@ HEADLESS=true bundle exec <%= test_cmd %>                   # without a browser 
 - To run tests in parallel, each process needs its own device or simulator. This project does not set that up, so
   run the tests one at a time unless you add it.
 <%- else -%>
-- In parallel, with the `parallel_tests` gem in the Gemfile: `bundle exec <%= rspec? ? 'parallel_rspec spec/' : 'parallel_cucumber features/' %>`. Each process opens its own
+- In parallel, with the `parallel_tests` gem in the Gemfile: `bundle exec parallel_rspec spec/`. Each process opens its own
   browser.
 <%- end -%>
-<%- if rspec? -%>
 - `RETRY_COUNT=2 bundle exec rspec` runs each test up to 2 times, so a failing test gets one more try before it
   counts as failed.
-<%- else -%>
-- To run a failing scenario again before it counts as failed, change `--retry 0` in `cucumber.yml` to, for
-  example, `--retry 2`.
-<%- end -%>
 
 ### Running in CI
 
@@ -507,7 +472,7 @@ To log in once and reuse the session across tests, see [Reusing the login](#reus
 The wait helper is ordinary code in your project, so you can take it out. To do that:
 
 1. Delete `helpers/wait_helper.rb` and `helpers/raider_element.rb`.
-2. Remove `include WaitHelper` from `page_objects/abstract/page.rb`, <%= rspec? ? '`config.include(WaitHelper)` from `helpers/spec_helper.rb`' : '`World(WaitHelper)` from `features/support/world.rb`' %>, and the
+2. Remove `include WaitHelper` from `page_objects/abstract/page.rb`, `config.include(WaitHelper)` from `helpers/spec_helper.rb`, and the
    `require_relative` lines that load `wait_helper`.
 3. Replace the calls:
    - `find_element(loc)` with `driver.find_element(**loc)`;
@@ -613,9 +578,9 @@ answered itself.
 The network helper is ordinary code in your project, so you can take it out. To do that:
 
 1. Delete `helpers/network_helper.rb`.
-2. Remove `include NetworkHelper` from `page_objects/abstract/page.rb`, <%= rspec? ? '`config.include(NetworkHelper)` from `helpers/spec_helper.rb`' : '`World(NetworkHelper)` from `features/support/world.rb`' %>, and the
+2. Remove `include NetworkHelper` from `page_objects/abstract/page.rb`, `config.include(NetworkHelper)` from `helpers/spec_helper.rb`, and the
    `require_relative` lines that load `network_helper`.
-3. In the after hook (<%= rspec? ? '`helpers/spec_helper.rb`' : '`features/support/env.rb`' %>), remove the `NetworkHelper.finish` line and `raise mock_error`.
+3. In the after hook (`helpers/spec_helper.rb`), remove the `NetworkHelper.finish` line and `raise mock_error`.
 4. In `helpers/driver_helper.rb`, remove the `NetworkHelper` half of the `bidi` condition, so it reads
    `bidi = defined?(TraceHelper) && TraceHelper.bidi?(load_browser)`.
 5. Delete any `mock_request` and `block_request` calls in your tests.
@@ -642,7 +607,7 @@ A name is letters, digits, `-` and `_`, with `/` for folders, up to 100 characte
 commit it if it is what you want. On CI (when `CI` is set or the reporter detects a CI system) a missing baseline fails the test
 and writes nothing, so a forgotten file never goes unnoticed.
 
-**After a change you wanted.** Run `SCREENSHOTS=update bundle exec <%= rspec? ? 'rspec' : 'cucumber' %>`. Every comparison that differs
+**After a change you wanted.** Run `SCREENSHOTS=update bundle exec rspec`. Every comparison that differs
 rewrites its baseline and passes. Review the changed PNGs in your diff before you commit them.
 
 **When it fails.** The failure message names the baseline and says how many pixels differ. The report gets three pictures,
@@ -669,9 +634,9 @@ device pixel ratio. Create the baselines in the same environment that checks the
 The helper is ordinary code in your project, so you can take it out. To do that:
 
 1. Delete `helpers/screenshot_helper.rb` and the `screenshots/` folder.
-2. Remove `include ScreenshotHelper` from `page_objects/abstract/page.rb`, <%= rspec? ? '`config.include(ScreenshotHelper)` from `helpers/spec_helper.rb`' : '`World(ScreenshotHelper)` from `features/support/world.rb`' %>, and the
+2. Remove `include ScreenshotHelper` from `page_objects/abstract/page.rb`, `config.include(ScreenshotHelper)` from `helpers/spec_helper.rb`, and the
    `require_relative` lines that load `screenshot_helper`.
-3. Remove the `ScreenshotHelper.reset` line from the before hook (<%= rspec? ? '`helpers/spec_helper.rb`' : '`features/support/env.rb`' %>).
+3. Remove the `ScreenshotHelper.reset` line from the before hook (`helpers/spec_helper.rb`).
 4. Remove the `screenshots:` block from `config/config.yml` and `gem 'chunky_png'` from the `Gemfile`.
 5. Delete any `match_screenshot` calls in your tests.
 
@@ -680,7 +645,7 @@ The helper is ordinary code in your project, so you can take it out. To do that:
 ## Reusing the login
 
 <%- if examples? -%>
-Tag an example `:logged_in` (RSpec) or a scenario `@logged_in` (Cucumber) and the suite logs in once, saves the
+Tag an example `:logged_in` and the suite logs in once, saves the
 session, and restores it for the next tagged example or run instead of filling in the login form again. The generated
 account example shows it. If the saved session no longer works, the real login runs again and the state is saved anew.
 <%- else -%>
@@ -689,21 +654,14 @@ filling in the login form again. If the saved session no longer works, the real 
 saved anew.
 
 This project has no login page yet. Once you have one (`raider g page login`), add a hook so that every
-<%= rspec? ? 'example tagged `:logged_in`' : 'scenario tagged `@logged_in`' %> starts logged in. In `<%= rspec? ? 'helpers/spec_helper.rb' : 'features/support/env.rb' %>`, require your pages next to
-the other `require_relative` lines, then add the hook<%= rspec? ? ' inside `RSpec.configure`' : '' %>:
+example tagged `:logged_in` starts logged in. In `helpers/spec_helper.rb`, require your pages next to
+the other `require_relative` lines, then add the hook inside `RSpec.configure`:
 
 ```ruby
-<%- if rspec? -%>
 require_relative '../page_objects/pages/login'
 require_relative '../page_objects/pages/dashboard'
 
 config.before(:each, :logged_in) do
-<%- else -%>
-require_relative '../../page_objects/pages/login'
-require_relative '../../page_objects/pages/dashboard'
-
-Before('@logged_in') do
-<%- end -%>
   dashboard = Dashboard.new(driver)
   SessionState.new(driver).reuse(valid: -> { dashboard.tap(&:visit).logged_in? }) do
     login = Login.new(driver)
@@ -734,14 +692,8 @@ end
 <%- end -%>
 ## Reporting
 
-<%- if rspec? -%>
 Every run writes machine-readable results to `raider-results/` (including `run.json`) and a browsable report,
 `raider-results/index.html`. Open it in a browser after a run; `bundle exec raider-reporter report` rebuilds it.
-<%- else -%>
-Every run writes machine-readable results to `raider-results/` (including `run.json`) and a browsable report,
-`raider-results/index.html`. The reporter runs in plugin mode:
-`features/support/env.rb` requires `raider_reporter/cucumber`, so no extra Cucumber formatter flag is needed.
-<%- end -%>
 
 To upload runs to Raider, set these environment variables before running the suite.
 `RAIDER_TOKEN` and `RAIDER_ENDPOINT` come from your Raider Hideout server (its setup page, or `bin/rails hideout:setup` /
@@ -752,17 +704,12 @@ export RAIDER_TOKEN=your-token
 export RAIDER_ENDPOINT=https://hideout.example.com
 ```
 
-<%- if rspec? -%>
 Without `RAIDER_TOKEN`, nothing is uploaded and the suite output is unchanged. Failure screenshots are attached to the
 report and to Raider. See the [raider_reporter README](https://github.com/RaiderHQ/raider_reporter) for details.
-<%- else -%>
-Without `RAIDER_TOKEN`, nothing is uploaded and the suite output is unchanged. Failure screenshots are attached to the
-report and to Raider. See the [raider_reporter README](https://github.com/RaiderHQ/raider_reporter) for details.
-<%- end -%>
 
 ### Video replay
 
-Every test is recorded, and the video is kept only for failing tests<%= rspec? ? ' (on the last retry attempt)' : '' %>. It is attached
+Every test is recorded, and the video is kept only for failing tests (on the last retry attempt). It is attached
 to the report as `video` and saved under `raider-results/attachments/`, next to the failure screenshot.
 <%- if mobile? -%>
 Appium records the device screen and the video is attached as `video.mp4`.
@@ -771,12 +718,12 @@ The video is a `video.webm` built from page screenshots with ffmpeg.
 <%- end -%>
 
 <%- if single_platform? -%>
-- Turn video off for one run with `VIDEO=off bundle exec <%= rspec? ? 'rspec' : 'cucumber' %>`, or for the project with
+- Turn video off for one run with `VIDEO=off bundle exec rspec`, or for the project with
   `raider u video off`, which creates `config/config.yml` with a `video:` section (`raider u video on` turns it back
   on).
 <%- else -%>
 - Video is on by default: `video:` in `config/config.yml` (`enabled: true`, `fps: 5`, `max_width: 1280`).
-- Turn it off for one run with `VIDEO=off bundle exec <%= rspec? ? 'rspec' : 'cucumber' %>`, or for the project with
+- Turn it off for one run with `VIDEO=off bundle exec rspec`, or for the project with
   `raider u video off` (`raider u video on` turns it back on).
 <%- end -%>
 <%- unless mobile? -%>
@@ -819,13 +766,13 @@ The video is a `video.webm` built from page screenshots with ffmpeg.
 <%- if trace_helper? -%>
 ### Trace replay
 
-Every test records a trace, and the trace is kept only for failing tests<%= rspec? ? ' (on the last retry attempt)' : '' %>. A trace is a step-by-step
+Every test records a trace, and the trace is kept only for failing tests (on the last retry attempt). A trace is a step-by-step
 record of the test: each action and page load, with the locator, how long it waited, a screenshot and the page HTML
 after it, the network requests, and the browser console. It is saved as `raider-results/attachments/<n>-trace.zip`,
 next to the failure screenshot and video, and attached to the report as `trace`.
 
-- Keep the trace of passing tests too with `TRACE=on bundle exec <%= rspec? ? 'rspec' : 'cucumber' %>`. Capture nothing for one run with
-  `TRACE=off bundle exec <%= rspec? ? 'rspec' : 'cucumber' %>`, or for the project with `raider u trace off` (`raider u trace on` turns it back on).
+- Keep the trace of passing tests too with `TRACE=on bundle exec rspec`. Capture nothing for one run with
+  `TRACE=off bundle exec rspec`, or for the project with `raider u trace off` (`raider u trace on` turns it back on).
   `TRACE=off` turns tracing off but BiDi stays on, so [network mocking](#mocking-network-requests) still works;
   `BIDI=off` turns BiDi off, which also drops the network and console entries from a trace.
   `raider u trace on` and `raider u trace off` write `enabled:` under `trace:` in `config/config.yml`.
@@ -851,8 +798,8 @@ can contain typed text too, because an assertion message is kept as it is. Reque
 response bodies are never captured. Do not share or upload traces from runs that handle real credentials.
 
 **Removing the trace helper.** The trace helper is ordinary code in your project. Delete `helpers/trace_helper.rb` and
-the `require_relative` lines that load `trace_helper`: in <%= rspec? ? '`helpers/driver_helper.rb`' : '`helpers/driver_helper.rb` and `features/support/env.rb`' %>. The other lines that use it
-(in <%= rspec? ? '`helpers/spec_helper.rb`' : '`features/support/env.rb`' %> and the driver helper's listeners) only run when `TraceHelper` is defined,
+the `require_relative` lines that load `trace_helper`: in `helpers/driver_helper.rb`. The other lines that use it
+(in `helpers/spec_helper.rb` and the driver helper's listeners) only run when `TraceHelper` is defined,
 so they can stay. Remove the `trace:` block from `config/config.yml` if you like.
 
 <%- end -%>

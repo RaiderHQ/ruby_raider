@@ -19,7 +19,7 @@ require_relative 'template_renderer/template_error'
 #   <%= partial('driver_config', trim_mode: '<>') %> # Custom trim_mode
 #
 # The partial() method automatically has access to all generator instance
-# variables and methods (cucumber?, mobile?, selenium?, etc.) through binding.
+# variables and methods (mobile?, selenium?, etc.) through binding.
 module TemplateRenderer
   # Render a partial template with caching and smart path resolution
   #
