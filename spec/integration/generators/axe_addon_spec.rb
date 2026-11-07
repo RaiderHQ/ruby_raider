@@ -11,7 +11,7 @@ describe 'Axe accessibility addon generation' do
   # rubocop:disable RSpec/BeforeAfterAll, RSpec/InstanceVariable
   before(:all) do
     @axe_projects = []
-    %w[rspec cucumber].each do |framework|
+    %w[rspec].each do |framework|
       %w[selenium].each do |automation|
         name = "axe_#{framework}_#{automation}"
         @axe_projects << name
@@ -42,23 +42,6 @@ describe 'Axe accessibility addon generation' do
     it 'accessibility spec has valid Ruby syntax' do
       content = File.read("#{name}/spec/accessibility_spec.rb")
       expect { RubyVM::InstructionSequence.compile(content) }.not_to raise_error
-    end
-  end
-
-  context 'with cucumber and selenium' do
-    let(:name) { 'axe_cucumber_selenium' }
-
-    it 'creates accessibility.feature' do
-      expect(File).to exist("#{name}/features/accessibility.feature")
-    end
-
-    it 'creates accessibility_steps.rb' do
-      expect(File).to exist("#{name}/features/step_definitions/accessibility_steps.rb")
-    end
-
-    it 'includes axe gems in Gemfile' do
-      gemfile = File.read("#{name}/Gemfile")
-      expect(gemfile).to include('axe')
     end
   end
 

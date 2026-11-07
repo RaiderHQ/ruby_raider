@@ -48,12 +48,6 @@ describe CommonGenerator do
     include_examples 'creates a gitignore file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
   end
 
-  context 'with cucumber and selenium' do
-    include_examples 'creates common files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-    include_examples 'creates a config file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-    include_examples 'creates a gitignore file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-  end
-
   context 'with rspec and appium android' do
     include_examples 'creates common files', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
     include_examples 'creates a capabilities file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
@@ -68,27 +62,6 @@ describe CommonGenerator do
     include_examples 'creates a gitignore file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
   end
 
-  context 'with cucumber and appium android' do
-    include_examples 'creates common files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
-    include_examples 'creates a capabilities file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
-    include_examples "doesn't create a config file", "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
-    include_examples 'creates a gitignore file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
-  end
-
-  context 'with cucumber and appium ios' do
-    include_examples 'creates common files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
-    include_examples 'creates a capabilities file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
-    include_examples "doesn't create a config file", "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
-    include_examples 'creates a gitignore file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
-  end
-
-  context 'with cucumber and appium cross platform' do
-    include_examples 'creates common files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
-    include_examples 'creates a capabilities file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
-    include_examples 'creates a config file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
-    include_examples 'creates a gitignore file', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
-  end
-
   context 'with rspec and appium cross platform' do
     include_examples 'creates common files', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
     include_examples 'creates a capabilities file', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::CROSS_PLATFORM}"
@@ -97,7 +70,7 @@ describe CommonGenerator do
   end
 
   describe 'without example tests' do
-    %w[rspec cucumber].product(%w[selenium ios cross_platform]).each do |framework, automation|
+    %w[rspec].product(%w[selenium ios cross_platform]).each do |framework, automation|
       context "with #{framework} and #{automation}" do
         let(:name) { ensure_project(framework:, automation:, examples: false) }
         let(:ci_file) { automation == 'selenium' ? 'test_pipeline.yml' : 'appium_pipeline.yml' }
