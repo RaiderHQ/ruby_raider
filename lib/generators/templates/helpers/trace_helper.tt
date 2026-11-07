@@ -71,7 +71,7 @@ module TraceHelper
 
       recorder = Recorder.new(driver, screenshot: screenshot, snapshot: snapshot)
       WaitHelper.observer = recorder if defined?(WaitHelper)
-      # Lazy: this helper loads before network_helper does.
+      # Lazy: the project may have removed network_helper.
       NetworkHelper.observer = MockMarks if defined?(NetworkHelper)
       recorder
     rescue StandardError => e
