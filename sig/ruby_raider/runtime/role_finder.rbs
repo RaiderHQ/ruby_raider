@@ -1,0 +1,11 @@
+module Raider
+  module RoleFinder
+    ENGINE: String
+    QUERY: String
+  end
+
+  module RoleQuery
+    def self.run: (untyped bridge, untyped scope, String role, Hash[Symbol, untyped] options) -> Array[untyped]
+    def self.options_js: (Hash[Symbol, untyped] options) -> Hash[String, untyped]
+  end
+end

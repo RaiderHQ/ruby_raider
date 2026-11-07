@@ -9,6 +9,7 @@ require_relative 'runtime/context'
 require_relative 'runtime/selectors'
 require_relative 'runtime/locator_converter'
 require_relative 'runtime/finders'
+require_relative 'runtime/role_finder'
 require_relative 'runtime/strict'
 
 Raider::Finders.check_api
