@@ -204,6 +204,33 @@ RSpec.describe 'Raider element matchers' do
     end
   end
 
+  describe 'compound matchers' do
+    before do
+      bridge.answer(:element_text, 'abc')
+      bridge.answer(:element_displayed?, true)
+    end
+
+    it 'passes the block form of and when both hold' do
+      expect { element }.to have_text('a', wait: 1).and be_visible(wait: 1)
+    end
+
+    it 'fails the block form of and with a combined message' do
+      matcher = have_text('a', wait: 0.1).and be_hidden(wait: 0.1)
+      expect(matcher.matches?(proc { element })).to be(false)
+      expect(matcher.failure_message).to include('to be hidden')
+    end
+
+    it 'supports the block form of or' do
+      expect { element }.to have_text('zzz', wait: 0.1).or be_visible(wait: 0.1)
+      matcher = have_text('zzz', wait: 0.1).or be_hidden(wait: 0.1)
+      expect(matcher.matches?(proc { element })).to be(false)
+    end
+
+    it 'keeps the value form working' do
+      expect(element).to have_text('a', wait: 1) & be_visible(wait: 1)
+    end
+  end
+
   it 'works through expect syntax with a block' do
     bridge.answer(:element_text, 'x')
     expect { element }.to have_text('x', wait: 1)

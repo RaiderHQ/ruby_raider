@@ -13,6 +13,40 @@ module Raider
     class Base
       include RSpec::Matchers::Composable
 
+      # Compound evaluation that hands each matcher the actual as is, so a block
+      # actual is resolved by each matcher itself rather than nested.
+      module Sequential
+        private
+
+        def evaluate(actual)
+          @evaluator = RSpec::Matchers::BuiltIn::Compound::SequentialEvaluator.new(actual, matcher_1, matcher_2)
+        end
+      end
+
+      # `a.and(b)` evaluated sequentially.
+      class And < RSpec::Matchers::BuiltIn::Compound::And
+        include Sequential
+
+        private
+
+        def match(_expected, actual)
+          evaluate(actual)
+          matcher_1_matches? && matcher_2_matches?
+        end
+      end
+
+      # `a.or(b)` evaluated sequentially.
+      class Or < RSpec::Matchers::BuiltIn::Compound::Or
+        include Sequential
+
+        private
+
+        def match(_expected, actual)
+          evaluate(actual)
+          matcher_1_matches? || matcher_2_matches?
+        end
+      end
+
       NOT_FOUND = Object.new.freeze
       STALE_HINT = 'the element is stale; re-find it, use the block form, or a page-object element'
 
@@ -46,6 +80,16 @@ module Raider
       def failure_message_when_negated
         message('not to')
       end
+
+      def and(other)
+        And.new(self, other)
+      end
+      alias & and
+
+      def or(other)
+        Or.new(self, other)
+      end
+      alias | or
 
       def supports_block_expectations?
         true
