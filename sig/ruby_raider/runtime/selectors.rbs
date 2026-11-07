@@ -2,6 +2,7 @@ module Raider
   module Selectors
     ATTRIBUTE_NAME: Regexp
     LABEL_CONTROLS: String
+    EXCLUDED_TEXT: String
 
     def self.xpath_literal: (untyped string) -> String
     def self.label: (untyped value, exact: bool) -> String
