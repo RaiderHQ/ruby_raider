@@ -6,6 +6,7 @@ class HelpersGenerator < Generator
   def generate_helpers
     generate_driver_helper
     generate_appium_helper
+    generate_gesture_helper
     generate_spec_helper
     generate_video_helper
     generate_session_state
@@ -50,6 +51,12 @@ class HelpersGenerator < Generator
     return unless screenshot_helper?
 
     template('helpers/screenshot_helper.tt', "#{name}/helpers/screenshot_helper.rb")
+  end
+
+  def generate_gesture_helper
+    return unless mobile?
+
+    template('helpers/gesture_helper.tt', "#{name}/helpers/gesture_helper.rb")
   end
 
   def generate_appium_helper

@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 require 'ruby_raider/runtime'
+<%- if mobile? -%>
+require_relative '../../helpers/gesture_helper'
+<%- end -%>
 <%- if network_helper? -%>
 require_relative '../../helpers/network_helper'
 <%- end -%>
@@ -13,6 +16,9 @@ class Page
   include AppiumHelper
 <%- end -%>
   include Raider::Helpers
+<%- if mobile? -%>
+  include GestureHelper
+<%- end -%>
 <%- if network_helper? -%>
   include NetworkHelper
 <%- end -%>

@@ -63,7 +63,7 @@ class PdpSpec
 
     it 'shows add to cart button' do
       home_page.go_to_product_detail
-      eventually { expect(pdp_page.add_to_cart_text).to eq 'Add to Cart' }
+      expect { pdp_page.add_to_cart_button }.to have_text('Add to Cart')
     end
   end
 end

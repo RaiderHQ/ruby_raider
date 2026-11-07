@@ -1,6 +1,5 @@
 <%- if cross_platform? -%>
-{ ios: { accessibility_id: 'add-to-cart-button' },
-      android: { accessibility_id: 'add-to-cart-button' } }
+{ ios: { accessibility_id: 'add-to-cart-button' }, android: { accessibility_id: 'add-to-cart-button' } }
 <%- else -%>
 { accessibility_id: 'add-to-cart-button' }
 <%- end -%>

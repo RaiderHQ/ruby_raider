@@ -1,0 +1,78 @@
+# frozen_string_literal: true
+
+require 'ruby_raider/runtime'
+
+# Swipes and scrolls through the platform's own mobile: commands. Finding and clicking
+# elements is plain Appium; the runtime waits for them.
+#
+#   swipe('left', element)
+#   scroll('down')
+#   scroll_to({ accessibility_id: 'footer' }).click
+module GestureHelper
+  # Swipes the element, or the whole screen without one.
+  def swipe(direction, element = nil)
+    Gesture.new(driver, :swipe, direction).perform(element)
+  end
+
+  # Scrolls the element, or the whole screen without one.
+  def scroll(direction, element = nil)
+    Gesture.new(driver, :scroll, direction).perform(element)
+  end
+
+  # Scrolls the screen between single attempts to find the element, up to max_scrolls times.
+  def scroll_to(locator, direction: 'down', max_scrolls: 10)
+    gesture = Gesture.new(driver, :scroll, direction)
+    scrolls = 0
+    begin
+      Raider::Wait.immediately { driver.find_element(locator) }
+    rescue Selenium::WebDriver::Error::NoSuchElementError
+      if scrolls >= max_scrolls
+        raise Selenium::WebDriver::Error::NoSuchElementError,
+              "unable to locate #{Raider::Locator.describe([locator])} after #{scrolls} scrolls"
+      end
+
+      gesture.perform(nil)
+      scrolls += 1
+      retry
+    end
+  end
+
+  # A swipe or scroll through the platform's own mobile: command, as appium_lib issues them.
+  class Gesture
+    DIRECTIONS = %w[up down left right].freeze
+    COMMANDS = {
+      ios: { swipe: 'mobile: swipe', scroll: 'mobile: scroll' }.freeze,
+      android: { swipe: 'mobile: swipeGesture', scroll: 'mobile: scrollGesture' }.freeze
+    }.freeze
+    PERCENT = 0.75
+
+    def initialize(driver, kind, direction)
+      @driver = driver
+      @device = driver.appium_device.to_s.downcase.to_sym
+      @command = COMMANDS.dig(@device, kind)
+      raise NotImplementedError, "#{kind} has no gesture for #{driver.appium_device.inspect}; only :ios and :android" unless @command
+
+      @direction = direction.to_s
+      raise ArgumentError, "direction must be up, down, left or right; got #{direction.inspect}" unless DIRECTIONS.include?(@direction)
+    end
+
+    # element: the raw element to act on, or nil for the whole screen.
+    def perform(element)
+      @driver.execute_script(@command, arguments(element))
+    end
+
+    private
+
+    def arguments(element)
+      return { direction: @direction, element: element&.id }.compact if @device == :ios
+
+      area = element ? { elementId: element.id } : screen
+      area.merge(direction: @direction, percent: PERCENT)
+    end
+
+    def screen
+      rect = @driver.window_rect
+      { left: rect.x, top: rect.y, width: rect.width, height: rect.height }
+    end
+  end
+end

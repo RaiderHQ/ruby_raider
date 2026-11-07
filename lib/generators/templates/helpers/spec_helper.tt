@@ -10,6 +10,9 @@ require 'ruby_raider/runtime/rspec'
 require 'tmpdir'
 require_relative 'driver_helper'
 require_relative 'video_helper'
+<%- if mobile? -%>
+require_relative 'gesture_helper'
+<%- end -%>
 <%- if network_helper? -%>
 require_relative 'network_helper'
 <%- end -%>
@@ -35,6 +38,9 @@ module SpecHelper
     config.include(DriverHelper)
     config.include(Raider::Matchers)
     config.include(Raider::Helpers)
+    <%- if mobile? -%>
+    config.include(GestureHelper)
+    <%- end -%>
     <%- if network_helper? -%>
     config.include(NetworkHelper)
     <%- end -%>

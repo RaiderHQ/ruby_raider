@@ -3,17 +3,9 @@
 require_relative '../abstract/page'
 
 class Pdp < Page
-  # Actions
-
-  def add_to_cart_text
-    text(add_to_cart_button)
-  end
-
-  private
-
   # Elements
 
   def add_to_cart_button
-    <%= partial('pdp_page_selector') -%>
+    <%= cross_platform? ? 'element(' : 'driver.find_element(' -%><%= partial('pdp_page_selector').strip -%>)
   end
 end
