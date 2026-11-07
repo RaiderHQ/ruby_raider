@@ -105,8 +105,60 @@ RSpec.describe 'Raider block expectations with value matchers' do
     expect(calls).to eq(1)
   end
 
-  it 'keeps a Raider matcher on a block as it was' do
-    list = [1]
-    expect { list }.to have_count(1)
+  it 'evaluates throw_symbol once' do
+    calls = 0
+    expect { (calls += 1) && throw(:done) }.to throw_symbol(:done)
+    expect(calls).to eq(1)
+  end
+
+  it 'evaluates yield_control once' do
+    calls = 0
+    expect { |probe| (calls += 1) && probe.to_proc.call }.to yield_control
+    expect(calls).to eq(1)
+  end
+
+  it 'keeps a Raider matcher on a block with its own wait and message' do
+    started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    expect { expect { [1] }.to have_count(2, wait: 0.2) }
+      .to raise_error(RSpec::Expectations::ExpectationNotMetError, /expected the block to have count 2, last seen 1/)
+    expect(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).to be_between(0.15, 0.28)
+  end
+
+  it 'treats a timeout inside the block as not ready and ends with rspec own message' do
+    expect { expect { Raider::Wait.until(timeout: 0.05) { false } }.to eq(1) }
+      .to raise_error(Raider::TimeoutError, /condition not met/)
+  end
+
+  it 'passes once a block that raised a Raider::TimeoutError twice returns the value' do
+    calls = 0
+    expect { (calls += 1) <= 2 ? raise(Raider::TimeoutError, 'slow') : 5 }.to eq(5)
+  end
+
+  it 'reports the last poll error rather than an older value' do
+    calls = 0
+    block = proc do
+      raise Selenium::WebDriver::Error::NoSuchElementError, 'later gone' if (calls += 1) > 1
+
+      'x'
+    end
+    expect { expect(&block).to eq('y') }
+      .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /later gone/)
+  end
+
+  it 'reports the last value when the last poll read one' do
+    calls = 0
+    block = proc do
+      raise Selenium::WebDriver::Error::NoSuchElementError, 'early' if (calls += 1) == 1
+
+      'x'
+    end
+    expect { expect(&block).to eq('y') }
+      .to raise_error(RSpec::Expectations::ExpectationNotMetError, /got: "x"/)
+  end
+
+  it 'does not chain the internal timeout as a cause' do
+    expect { expect { 1 }.to eq(2) }.to raise_error(RSpec::Expectations::ExpectationNotMetError) { |error|
+      expect(error.cause).to be_nil
+    }
   end
 end

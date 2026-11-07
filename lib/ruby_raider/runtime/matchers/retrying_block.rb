@@ -13,10 +13,13 @@ module Raider
     # block until the value matches. Matchers that handle blocks themselves (Raider's,
     # raise_error, change, output, yield_*) keep stock semantics and one evaluation.
     # A polled block is re-run on every poll, so side effects in it repeat.
+    # Under aggregate_failures RSpec's notifier records the failure without raising,
+    # so the "(waited Ns)" prefix does not appear there.
     module RetryingBlock
       LOOKUP_ERRORS = [Selenium::WebDriver::Error::NoSuchElementError,
                        Selenium::WebDriver::Error::StaleElementReferenceError,
-                       Raider::AmbiguousMatch].freeze
+                       Raider::AmbiguousMatch,
+                       Selenium::WebDriver::Error::TimeoutError].freeze
 
       # One evaluation of the block and the check; remembers what it saw.
       class Attempt
@@ -33,6 +36,7 @@ module Raider
         end
 
         def pass?
+          @error = nil
           @value = Raider::Wait.immediately { @block.call }
           @check.call(@value)
         rescue *LOOKUP_ERRORS => e
@@ -74,19 +78,26 @@ module Raider
       def settle(matcher, message, polarity, negated, &)
         attempt = Attempt.new(target, check(matcher, negated))
         started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        Raider::Wait.until(timeout: Raider.timeout) { attempt.pass? || throw(:not_ready) }
-        true
-      rescue Raider::TimeoutError
+        return true if polled?(attempt)
+
         waited = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
         give_up(attempt, [matcher, message], polarity, waited, &)
       end
 
+      def polled?(attempt)
+        Raider::Wait.until(timeout: Raider.timeout) { attempt.pass? || throw(:not_ready) }
+        true
+      rescue Raider::TimeoutError
+        false
+      end
+
+      # The last poll's error wins; the last value goes to stock RSpec only when the last poll read one.
       def give_up(attempt, arguments, polarity, waited, &)
-        raise attempt.error unless attempt.read?
+        raise(attempt.error || Raider::TimeoutError.new('the block never produced a value')) if attempt.error || !attempt.read?
 
         RSpec::Expectations::ExpectationTarget.for(attempt.value, nil).public_send(polarity, *arguments, &)
       rescue RSpec::Expectations::ExpectationNotMetError => e
-        raise e.exception("(waited #{Raider::Describe.seconds(waited)}s) #{e.message}")
+        raise e.exception("(waited #{Raider::Describe.seconds(waited)}s) #{e.message}"), cause: nil
       end
     end
   end

@@ -12,15 +12,15 @@ module Raider
         def pass?: () -> bool
       end
 
-      def to: (?untyped matcher, ?String? message) ?{ () -> untyped } -> untyped
-      def not_to: (?untyped matcher, ?String? message) ?{ () -> untyped } -> untyped
-      def to_not: (?untyped matcher, ?String? message) ?{ () -> untyped } -> untyped
+      def to: (?untyped matcher, ?(String | ^() -> String)? message) ?{ () -> untyped } -> untyped
+      def not_to: (?untyped matcher, ?(String | ^() -> String)? message) ?{ () -> untyped } -> untyped
+      def to_not: (?untyped matcher, ?(String | ^() -> String)? message) ?{ () -> untyped } -> untyped
 
       private
 
       def check: (untyped matcher, bool negated) -> (^(untyped) -> bool | Method)
       def stock?: (untyped matcher) -> bool
-      def settle: (untyped matcher, String? message, Symbol polarity, bool negated) ?{ () -> untyped } -> true
+      def settle: (untyped matcher, (String | ^() -> String)? message, Symbol polarity, bool negated) ?{ () -> untyped } -> true
       def give_up: (Attempt attempt, Array[untyped] arguments, Symbol polarity, Float waited) ?{ () -> untyped } -> untyped
     end
   end

@@ -40,4 +40,20 @@ RSpec.describe 'Raider presence matchers' do
   it 'builds an xpath locator from have_xpath' do
     expect(have_xpath('//p', wait: 1).expected).to eq({ xpath: '//p' })
   end
+
+  it 'refuses a hash together with keywords' do
+    expect { have_element({ id: 'x' }, css: '.y') }.to raise_error(ArgumentError)
+  end
+
+  it 'refuses no locator at all' do
+    expect { have_element }.to raise_error(ArgumentError)
+  end
+
+  it 'says the block when the subject is a block' do
+    Raider.timeout = 0.1
+    bridge.enqueue(['e'])
+    bridge.enqueue(['e'])
+    expect { expect { driver }.not_to have_element(id: 'x') }
+      .to raise_error(RSpec::Expectations::ExpectationNotMetError, /expected the block not to have element/)
+  end
 end

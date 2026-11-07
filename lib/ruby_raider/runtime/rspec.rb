@@ -45,6 +45,9 @@ module Raider
     end
 
     def have_element(locator = nil, wait: nil, **by)
+      raise ArgumentError, 'have_element takes a locator, not both a hash and keywords' if locator && !by.empty?
+      raise ArgumentError, 'have_element needs a locator' if locator.nil? && by.empty?
+
       Presence::HaveElement.new(locator || by, wait: wait)
     end
 

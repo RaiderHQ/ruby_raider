@@ -29,7 +29,7 @@ module Raider
         private
 
         def target
-          polled_actual.is_a?(Selenium::WebDriver::Element) ? super : 'the page'
+          polled_actual.is_a?(Selenium::WebDriver::Driver) ? 'the page' : super
         end
 
         def show(value)
