@@ -47,7 +47,7 @@ RSpec.describe 'Raider page matchers' do
     it 'words a block failure with the last count' do
       matcher = have_count(3, wait: 0.2)
       expect(matcher.matches?(-> { [1, 2] })).to be(false)
-      expect(matcher.failure_message).to eq('expected the block to have count 3, last seen 2 after 0.2s')
+      expect(matcher.failure_message).to match(/\A#{Regexp.escape('expected the block to have count 3, last seen 2 after ')}0\.\d+s\z/)
     end
 
     it 'waits for the count to leave when negated' do
@@ -69,7 +69,7 @@ RSpec.describe 'Raider page matchers' do
     it 'fails with the last title' do
       matcher = have_title('Account', wait: 0.2)
       expect(matcher.matches?(driver_class.new(['Home'], ['']))).to be(false)
-      expect(matcher.failure_message).to eq('expected the page to have title "Account", last seen "Home" after 0.2s')
+      expect(matcher.failure_message).to match(/\A#{Regexp.escape('expected the page to have title "Account", last seen "Home" after ')}0\.\d+s\z/)
     end
   end
 
@@ -88,7 +88,7 @@ RSpec.describe 'Raider page matchers' do
       matcher = have_url('account', wait: 0.2)
       expect(matcher.matches?(driver)).to be(false)
       expect(matcher.failure_message)
-        .to eq('expected the page to have url "account", last seen "https://x/account" after 0.2s')
+        .to match(/\A#{Regexp.escape('expected the page to have url "account", last seen "https://x/account" after ')}0\.\d+s\z/)
     end
   end
 end

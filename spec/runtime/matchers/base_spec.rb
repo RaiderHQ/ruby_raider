@@ -50,21 +50,21 @@ RSpec.describe 'Raider::Matchers::Base' do
   it 'reports the last value seen after the wait' do
     matcher = matcher_class.new('b', wait: 0.2)
     expect(matcher.matches?(subject_class.new('a'))).to be(false)
-    expect(matcher.failure_message).to eq('expected <element> to have value "b", last seen "a" after 0.2s')
+    expect(matcher.failure_message).to match(/\A#{Regexp.escape('expected <element> to have value "b", last seen "a" after ')}0\.\d+s\z/)
   end
 
   it 'words the negated failure' do
     matcher = matcher_class.new('a', wait: 0.2)
     expect(matcher.does_not_match?(subject_class.new('a'))).to be(false)
     expect(matcher.failure_message_when_negated)
-      .to eq('expected <element> not to have value "a", last seen "a" after 0.2s')
+      .to match(/\A#{Regexp.escape('expected <element> not to have value "a", last seen "a" after ')}0\.\d+s\z/)
   end
 
   it 'uses the configured timeout when wait is nil' do
     Raider.timeout = 0.2
     matcher = matcher_class.new('b')
     matcher.matches?(subject_class.new('a'))
-    expect(matcher.failure_message).to end_with('after 0.2s')
+    expect(matcher.failure_message).to match(/after 0\.2\d*s\z/)
   end
 
   it 'calls a Proc actual on every poll and describes it as the block' do
@@ -92,6 +92,55 @@ RSpec.describe 'Raider::Matchers::Base' do
     element = subject_class.new(error: Selenium::WebDriver::Error::StaleElementReferenceError)
     expect(absent.new('x', wait: 0.2).matches?(element)).to be(true)
     expect(absent.new('x', wait: 0.2).does_not_match?(element)).to be(false)
+  end
+
+  context 'when the read raises a selenium TimeoutError' do
+    before { stub_const('SlowRead', Class.new(Selenium::WebDriver::Error::TimeoutError)) }
+
+    let(:timeout_error) { SlowRead }
+    let(:reader_class) do
+      Class.new do
+        def initialize(error, fails)
+          @error = error
+          @fails = fails
+        end
+
+        def value
+          raise @error, 'slow' if (@fails -= 1) >= 0
+
+          'ok'
+        end
+      end
+    end
+
+    it 'retries it as not yet' do
+      reader = reader_class.new(timeout_error, 2)
+      expect(matcher_class.new('ok', wait: 1).matches?(reader)).to be(true)
+    end
+
+    it 'counts it as absence when the matcher allows' do
+      absent = Class.new(matcher_class) { def absent_passes? = true }
+      expect(absent.new('x', wait: 1).matches?(reader_class.new(timeout_error, Float::INFINITY))).to be(true)
+    end
+
+    it 'still ends at the matcher deadline' do
+      expect(matcher_class.new('ok', wait: 0.2).matches?(reader_class.new(timeout_error, Float::INFINITY))).to be(false)
+    end
+  end
+
+  it 'reports the elapsed time rather than the configured wait' do
+    Raider.timeout = 30
+    matcher = matcher_class.new('b', wait: 0.3)
+    matcher.matches?(subject_class.new('a'))
+    seconds = matcher.failure_message[/after ([\d.]+)s/, 1].to_f
+    expect(seconds).to be_between(0.3, 0.5)
+  end
+
+  it 'fails with a message for an actual without tag_name' do
+    actual = Struct.new(:value).new('a')
+    matcher = matcher_class.new('b', wait: 0.1)
+    expect(matcher.matches?(actual)).to be(false)
+    expect(matcher.failure_message).to start_with('expected #<struct')
   end
 
   it 'supports block expectations and describes itself' do

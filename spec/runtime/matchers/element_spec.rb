@@ -29,7 +29,20 @@ RSpec.describe 'Raider element matchers' do
       matcher = have_text('Welcome back Ann', exact: true, wait: 0.2)
       expect(matcher.matches?(element)).to be(false)
       expect(matcher.failure_message)
-        .to eq('expected <element> to have text "Welcome back Ann", last seen "Welcome back Ann!" after 0.2s')
+        .to match(/\A#{Regexp.escape('expected <element> to have exact text "Welcome back Ann", last seen "Welcome back Ann!" after ')}0\.\d+s\z/)
+    end
+
+    it 'matches a regexp against the normalised text' do
+      bridge.answer(:element_text, "Hi  Ann\n Lee")
+      expect(have_text(/Ann Lee/, wait: 1).matches?(element)).to be(true)
+      expect(have_text(/Bob/, wait: 0.2).matches?(element)).to be(false)
+    end
+
+    it 'words an exact regexp failure' do
+      bridge.answer(:element_text, 'Bob')
+      matcher = have_text(/Ann/, exact: true, wait: 0.2)
+      expect(matcher.matches?(element)).to be(false)
+      expect(matcher.failure_message).to start_with('expected <element> to have exact text /Ann/, last seen "Bob"')
     end
 
     it 'waits for the text to change when negated' do
@@ -42,7 +55,7 @@ RSpec.describe 'Raider element matchers' do
       matcher = have_text('Loading', wait: 0.2)
       expect(matcher.does_not_match?(element)).to be(false)
       expect(matcher.failure_message_when_negated)
-        .to eq('expected <element> not to have text "Loading", last seen "Loading" after 0.2s')
+        .to match(/\A#{Regexp.escape('expected <element> not to have text "Loading", last seen "Loading" after ')}0\.\d+s\z/)
     end
 
     it 'reads a template element with timeout: 0 so the wait is not doubled' do
@@ -62,6 +75,13 @@ RSpec.describe 'Raider element matchers' do
     it 'reads the value attribute' do
       bridge.answer(:element_attribute, nil, 'admin')
       expect(have_value('admin', wait: 1).matches?(element)).to be(true)
+    end
+  end
+
+  describe 'have_value with a regexp' do
+    it 'matches the value' do
+      bridge.answer(:element_attribute, 'xyz')
+      expect(have_value(/y/, wait: 1).matches?(element)).to be(true)
     end
   end
 
@@ -107,14 +127,14 @@ RSpec.describe 'Raider element matchers' do
       bridge.answer(:element_displayed?, true)
       matcher = be_hidden(wait: 0.2)
       expect(matcher.matches?(element)).to be(false)
-      expect(matcher.failure_message).to eq('expected <element> to be hidden, last seen visible after 0.2s')
+      expect(matcher.failure_message).to match(/\A#{Regexp.escape('expected <element> to be hidden, last seen visible after ')}0\.\d+s\z/)
     end
 
     it 'be_visible failure reads last seen hidden' do
       bridge.answer(:element_displayed?, false)
       matcher = be_visible(wait: 0.2)
       expect(matcher.matches?(element)).to be(false)
-      expect(matcher.failure_message).to eq('expected <element> to be visible, last seen hidden after 0.2s')
+      expect(matcher.failure_message).to match(/\A#{Regexp.escape('expected <element> to be visible, last seen hidden after ')}0\.\d+s\z/)
     end
 
     it 'be_enabled and be_disabled read enabled?' do
@@ -133,7 +153,54 @@ RSpec.describe 'Raider element matchers' do
       bridge.answer(:element_selected?, false)
       matcher = be_checked(wait: 0.2)
       expect(matcher.matches?(element)).to be(false)
-      expect(matcher.failure_message).to eq('expected <element> to be checked, last seen unchecked after 0.2s')
+      expect(matcher.failure_message).to match(/\A#{Regexp.escape('expected <element> to be checked, last seen unchecked after ')}0\.\d+s\z/)
+    end
+  end
+
+  describe 'absence and staleness' do
+    it 'not_to be_visible passes on an absent element' do
+      bridge.answer(:element_displayed?, gone)
+      expect(be_visible(wait: 1).does_not_match?(element)).to be(true)
+    end
+
+    it 'not_to be_visible passes on a stale raw element' do
+      bridge.answer(:element_displayed?, Selenium::WebDriver::Error::StaleElementReferenceError)
+      expect(be_visible(wait: 1).does_not_match?(element)).to be(true)
+    end
+
+    it 'be_visible keeps retrying an absent element and fails' do
+      bridge.answer(:element_displayed?, gone)
+      matcher = be_visible(wait: 0.2)
+      expect(matcher.matches?(element)).to be(false)
+      expect(matcher.failure_message).to include('last seen: not found')
+    end
+
+    it 'fails at once with the hint for a stale raw element' do
+      bridge.answer(:element_text, Selenium::WebDriver::Error::StaleElementReferenceError)
+      matcher = have_text('x', wait: 5)
+      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      expect(matcher.matches?(element)).to be(false)
+      expect(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).to be < 1
+      expect(matcher.failure_message).to eq(
+        'expected <element> to have text "x", but the element is stale; re-find it, ' \
+        'use the block form, or a page-object element'
+      )
+    end
+
+    it 'be_hidden passes on a stale raw element' do
+      bridge.answer(:element_displayed?, Selenium::WebDriver::Error::StaleElementReferenceError)
+      expect(be_hidden(wait: 1).matches?(element)).to be(true)
+    end
+
+    it 'retries a stale element read through a block' do
+      bridge.answer(:element_text, Selenium::WebDriver::Error::StaleElementReferenceError, 'x')
+      expect(have_text('x', wait: 1).matches?(proc { element })).to be(true)
+    end
+
+    it 'composes with and' do
+      bridge.answer(:element_text, 'abc')
+      bridge.answer(:element_displayed?, true)
+      expect(element).to have_text('a', wait: 1).and be_visible(wait: 1)
     end
   end
 

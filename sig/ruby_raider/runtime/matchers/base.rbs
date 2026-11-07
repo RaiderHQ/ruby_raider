@@ -1,6 +1,11 @@
 module Raider
   module Matchers
     class Base
+      STALE_HINT: String
+
+      class StaleActual < StandardError
+      end
+
       NOT_FOUND: Object
 
       class Poll < Struct[untyped]
@@ -8,6 +13,8 @@ module Raider
         attr_accessor subject: untyped
         attr_accessor value: untyped
         attr_accessor waited: Numeric
+        attr_accessor elapsed: Numeric
+        attr_accessor stale: bool
       end
 
       attr_reader expected: untyped
@@ -33,7 +40,12 @@ module Raider
       def polled_actual: () -> untyped
       def wait_for: (untyped actual) -> Numeric
       def poll: (untyped actual, negated: bool) -> bool
+      def clock: () -> Float
       def settled?: (bool negated) -> bool
+      def gone: (Exception error, bool negated) -> bool
+      def negated_absent_passes?: () -> bool
+      def raw_element?: () -> bool
+      def raise_stale: () -> bot
       def retried_errors: () -> Array[untyped]
       def accepts_timeout?: (untyped subject, Symbol method) -> bool
       def message: (String polarity) -> String

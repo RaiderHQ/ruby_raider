@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'rspec/expectations'
 require 'selenium-webdriver'
 require_relative '../config'
 require_relative '../errors'
@@ -10,10 +11,16 @@ module Raider
     # Shared polling for the web-first matchers. Subclasses implement `read(subject)`,
     # `pass?(value)` and `verb`, and may override `absent_passes?`.
     class Base
+      include RSpec::Matchers::Composable
+
       NOT_FOUND = Object.new.freeze
+      STALE_HINT = 'the element is stale; re-find it, use the block form, or a page-object element'
+
+      # Raised inside the poll to end it at once: a raw element went stale.
+      class StaleActual < StandardError; end
 
       # What the last poll saw, for the failure message.
-      Poll = Struct.new(:actual, :subject, :value, :waited)
+      Poll = Struct.new(:actual, :subject, :value, :waited, :elapsed, :stale)
 
       attr_reader :expected
 
@@ -21,7 +28,7 @@ module Raider
         @expected = expected
         @wait = wait
         @options = options
-        @poll = Poll.new(nil, nil, NOT_FOUND, nil)
+        @poll = Poll.new(nil, nil, NOT_FOUND, nil, 0, false)
       end
 
       def matches?(actual)
@@ -77,26 +84,57 @@ module Raider
       end
 
       def poll(actual, negated:)
-        @poll = Poll.new(actual, nil, NOT_FOUND, wait_for(actual))
-        Raider::Wait.until(timeout: @poll.waited) { settled?(negated) }
-        true
-      rescue Raider::TimeoutError
-        false
+        @poll = Poll.new(actual, nil, NOT_FOUND, wait_for(actual), 0, false)
+        started = clock
+        begin
+          Raider::Wait.until(timeout: @poll.waited) { settled?(negated) }
+          true
+        rescue Raider::TimeoutError, StaleActual
+          false
+        ensure
+          @poll.elapsed = clock - started
+        end
+      end
+
+      def clock
+        Process.clock_gettime(Process::CLOCK_MONOTONIC)
       end
 
       def settled?(negated)
         @poll.subject = resolve(@poll.actual)
         @poll.value = read(@poll.subject)
         pass?(@poll.value) != negated || throw(:not_ready)
-      rescue *retried_errors
+      rescue *retried_errors => e
         @poll.value = NOT_FOUND
-        absent_passes? && !negated || throw(:not_ready)
+        gone(e, negated)
+      end
+
+      # The read found nothing: pass where absence counts, fail at once for a stale raw
+      # element, and otherwise try again.
+      def gone(error, negated)
+        return true if negated ? negated_absent_passes? : absent_passes?
+
+        raise_stale if error.is_a?(Selenium::WebDriver::Error::StaleElementReferenceError) && raw_element?
+        throw :not_ready
+      end
+
+      def negated_absent_passes?
+        false
+      end
+
+      def raw_element?
+        @poll.actual.is_a?(Selenium::WebDriver::Element)
+      end
+
+      def raise_stale
+        @poll.stale = true
+        raise StaleActual
       end
 
       def retried_errors
         [Selenium::WebDriver::Error::NoSuchElementError,
          Selenium::WebDriver::Error::StaleElementReferenceError,
-         Raider::AmbiguousMatch]
+         Selenium::WebDriver::Error::TimeoutError, Raider::AmbiguousMatch]
       end
 
       def accepts_timeout?(subject, method)
@@ -104,13 +142,17 @@ module Raider
       end
 
       def message(polarity)
-        "expected #{target} #{polarity} #{description}, #{last_seen} after #{Raider::Describe.seconds(@poll.waited)}s"
+        head = "expected #{target} #{polarity} #{description}"
+        return "#{head}, but #{STALE_HINT}" if @poll.stale
+
+        "#{head}, #{last_seen} after #{Raider::Describe.seconds(@poll.elapsed)}s"
       end
 
       def target
         return 'the block' if @poll.actual.is_a?(Proc)
 
-        Raider::Describe.element(@poll.subject || @poll.actual)
+        shown = @poll.subject || @poll.actual
+        shown.respond_to?(:tag_name) ? Raider::Describe.element(shown) : shown.inspect
       end
 
       def last_seen

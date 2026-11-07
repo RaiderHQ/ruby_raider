@@ -4,7 +4,7 @@ module Raider
       def self.normalise: (untyped text) -> String
 
       class HaveText < Base
-        def initialize: (String text, ?exact: bool, ?wait: Numeric?) -> void
+        def initialize: (String | Regexp text, ?exact: bool, ?wait: Numeric?) -> void
         def verb: () -> String
         def read: (untyped subject) -> untyped
         def pass?: (untyped value) -> bool
@@ -39,6 +39,10 @@ module Raider
       class BeVisible < State
         def verb: () -> String
         def read: (untyped subject) -> untyped
+
+        private
+
+        def negated_absent_passes?: () -> bool
       end
 
       class BeHidden < State
@@ -62,8 +66,8 @@ module Raider
       end
     end
 
-    def have_text: (String text, ?exact: bool, ?wait: Numeric?) -> Element::HaveText
-    def have_value: (String value, ?wait: Numeric?) -> Element::HaveValue
+    def have_text: (String | Regexp text, ?exact: bool, ?wait: Numeric?) -> Element::HaveText
+    def have_value: (String | Regexp value, ?wait: Numeric?) -> Element::HaveValue
     def have_attribute: (String name, ?untyped value, ?wait: Numeric?) -> Element::HaveAttribute
     def be_visible: (?wait: Numeric?) -> Element::BeVisible
     def be_hidden: (?wait: Numeric?) -> Element::BeHidden

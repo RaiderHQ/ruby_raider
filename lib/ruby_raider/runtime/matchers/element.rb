@@ -19,7 +19,7 @@ module Raider
         end
 
         def verb
-          'have text'
+          option(:exact) ? 'have exact text' : 'have text'
         end
 
         def read(subject)
@@ -28,6 +28,8 @@ module Raider
 
         def pass?(value)
           actual = Element.normalise(value)
+          return expected.match?(actual) if expected.is_a?(Regexp)
+
           wanted = Element.normalise(expected)
           option(:exact) ? actual == wanted : actual.include?(wanted)
         end
@@ -44,7 +46,7 @@ module Raider
         end
 
         def pass?(value)
-          value.to_s == expected.to_s
+          expected.is_a?(Regexp) ? expected.match?(value.to_s) : value.to_s == expected.to_s
         end
       end
 
@@ -111,6 +113,13 @@ module Raider
 
         def read(subject)
           read_with_zero_wait(subject, :displayed?)
+        end
+
+        private
+
+        # Gone counts as not visible for the negated form.
+        def negated_absent_passes?
+          true
         end
       end
 
