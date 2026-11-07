@@ -1,0 +1,19 @@
+module Raider
+  module Actionability
+    CHECKS: Hash[Symbol, Array[String]]
+    PHRASES: Hash[String, String]
+    SCRIPT: String
+    NOTICE: String
+
+    def self.ensure: (untyped element, Symbol action, force: bool) -> nil
+    def self.check: (untyped element, Symbol action) -> Hash[String, untyped]?
+    def self.reset_notice: () -> void
+
+    # private singleton helpers
+    def self.attached: (untyped element) -> nil
+    def self.wait: (untyped element, Symbol action) -> nil
+    def self.not_actionable: (untyped element, Hash[String, untyped]? last) -> NotActionable
+    def self.covering: (Hash[String, untyped] last) -> Hash[Symbol, untyped]?
+    def self.announce: () -> void
+  end
+end

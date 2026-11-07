@@ -7,13 +7,14 @@ module Raider
     # A stand-in for Selenium's remote bridge: converts locators the way a real
     # bridge does, records what reaches the wire and answers from a script.
     class FakeBridge
-      attr_reader :calls, :script_results
+      attr_reader :calls, :script_results, :script_calls
 
       def initialize
         @locator_converter = Selenium::WebDriver::Remote::Bridge.locator_converter
         @calls = []
         @queue = []
         @script_results = []
+        @script_calls = []
       end
 
       def enqueue(ids)
@@ -35,8 +36,22 @@ module Raider
         (@queue.shift || []).map { |id| wrap(id) }
       end
 
-      def execute_script(_script, *_args)
+      def execute_script(script, *args)
+        script_calls << [script, *args]
         script_results.shift
+      end
+
+      def element_tag_name(id)
+        calls << [:element_tag_name, id]
+        'div'
+      end
+
+      def element_attribute(_element, _name)
+        nil
+      end
+
+      def element_text(_id)
+        ''
       end
 
       def element_class
