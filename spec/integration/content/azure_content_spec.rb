@@ -27,11 +27,7 @@ describe 'Azure Pipelines content' do
       let(:raw) { read_generated(name, 'azure-pipelines.yml') }
       let(:yml) { YAML.safe_load(raw) }
       let(:run_command) do
-        if framework == 'cucumber'
-          'bundle exec raider-reporter exec -- bundle exec cucumber features/ --format pretty'
-        else
-          'bundle exec raider-reporter exec -- bundle exec rspec spec/ --format documentation'
-        end
+        'bundle exec raider-reporter exec -- bundle exec rspec spec/ --format documentation'
       end
 
       it 'has a tests job with ruby, bundle install, run command and an always-published artifact' do

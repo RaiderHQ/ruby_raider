@@ -125,7 +125,6 @@ RSpec.describe ScaffoldProjectDetector do
       expect(result[:automation]).to eq('selenium')
       expect(result[:framework]).to eq('rspec')
       expect(result[:has_spec]).to be true
-      expect(result[:has_features]).to be false
     end
   end
 end

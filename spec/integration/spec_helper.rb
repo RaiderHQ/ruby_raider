@@ -6,12 +6,11 @@ require_relative '../../lib/generators/invoke_generators'
 require_relative 'settings_helper'
 
 AUTOMATION_TYPES = %w[android ios selenium cross_platform].freeze
-FRAMEWORKS = %w[cucumber rspec].freeze
+FRAMEWORKS = %w[rspec].freeze
 
 # Named constants for readable spec references — no more fragile numeric indices
 module FrameworkIndex
-  CUCUMBER  = FRAMEWORKS[0]
-  RSPEC     = FRAMEWORKS[1]
+  RSPEC = FRAMEWORKS[0]
 end
 
 module AutomationIndex

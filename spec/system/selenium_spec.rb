@@ -3,7 +3,7 @@
 require_relative '../../lib/ruby_raider'
 require_relative 'support/system_test_helper'
 
-FRAMEWORKS = %w[cucumber rspec].freeze
+FRAMEWORKS = %w[rspec].freeze
 
 describe 'Selenium based frameworks' do
   include SystemTestHelper
@@ -30,9 +30,5 @@ describe 'Selenium based frameworks' do
 
   context 'with rspec' do
     include_examples 'runs tests successfully', 'rspec'
-  end
-
-  context 'with cucumber' do
-    include_examples 'runs tests successfully', 'cucumber'
   end
 end
