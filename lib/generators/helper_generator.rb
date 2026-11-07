@@ -4,7 +4,6 @@ require_relative 'generator'
 
 class HelpersGenerator < Generator
   def generate_helpers
-    generate_browser_helper
     generate_driver_helper
     generate_appium_helper
     generate_spec_helper
@@ -18,12 +17,6 @@ class HelpersGenerator < Generator
 
   private
 
-  def generate_browser_helper
-    return if selenium_based? || mobile?
-
-    template('helpers/browser_helper.tt', "#{name}/helpers/browser_helper.rb")
-  end
-
   def generate_spec_helper
     return if cucumber?
 
@@ -31,8 +24,6 @@ class HelpersGenerator < Generator
   end
 
   def generate_driver_helper
-    return if watir?
-
     template('helpers/driver_helper.tt', "#{name}/helpers/driver_helper.rb")
   end
 
@@ -47,8 +38,6 @@ class HelpersGenerator < Generator
   end
 
   def generate_wait_helper
-    return unless wait_helper?
-
     template('helpers/wait_helper.tt', "#{name}/helpers/wait_helper.rb")
     template('helpers/raider_element.tt', "#{name}/helpers/raider_element.rb")
   end

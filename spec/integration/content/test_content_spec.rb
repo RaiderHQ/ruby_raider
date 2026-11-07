@@ -55,19 +55,6 @@ describe 'Test file content' do
     end
   end
 
-  shared_examples 'watir rspec spec' do |project_name|
-    subject(:spec) { read_generated(project_name, 'spec/login_page_spec.rb') }
-
-    it 'instantiates Login with browser' do
-      expect(spec).to include('Login.new(browser)')
-    end
-
-    it 'uses visit method' do
-      expect(spec).to include('.visit')
-      expect(spec).not_to include('.visit_page')
-    end
-  end
-
   # --- Cucumber features and steps ---
 
   shared_examples 'valid cucumber feature' do |project_name|
@@ -146,26 +133,10 @@ describe 'Test file content' do
     include_examples 'logged in example', name
   end
 
-  context 'with rspec and watir' do
-    name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-    include_examples 'valid rspec spec', name
-    include_examples 'watir rspec spec', name
-    include_examples 'logged in example', name
-  end
-
   # --- Cucumber contexts ---
 
   context 'with cucumber and selenium' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-    include_examples 'valid cucumber feature', name
-    include_examples 'valid cucumber env', name
-    include_examples 'valid cucumber world', name
-    include_examples 'valid cucumber config', name
-    include_examples 'logged in scenario', name
-  end
-
-  context 'with cucumber and watir' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
     include_examples 'valid cucumber feature', name
     include_examples 'valid cucumber env', name
     include_examples 'valid cucumber world', name
@@ -180,9 +151,7 @@ describe 'Cucumber world WaitHelper wiring' do
       world = read_generated("cucumber_#{automation}", 'features/support/world.rb')
       expect(world).to include("require_relative '../../helpers/wait_helper'", 'World(WaitHelper)')
     end
-  end
 
-  %w[selenium ios android cross_platform watir].each do |automation|
     it "#{automation == 'selenium' ? 'adds' : 'leaves out'} NetworkHelper in the #{automation} world" do
       world = read_generated("cucumber_#{automation}", 'features/support/world.rb')
       expect(world.include?('World(NetworkHelper)')).to eq(automation == 'selenium')
@@ -193,10 +162,6 @@ describe 'Cucumber world WaitHelper wiring' do
       expect(world.include?('World(ScreenshotHelper)')).to eq(automation == 'selenium')
       expect(world.include?("require_relative '../../helpers/screenshot_helper'")).to eq(automation == 'selenium')
     end
-  end
-
-  it 'leaves the watir world without WaitHelper' do
-    expect(read_generated('cucumber_watir', 'features/support/world.rb')).not_to include('WaitHelper')
   end
 end
 
@@ -221,29 +186,6 @@ describe 'Example tests on the wait helper' do
     it "wraps the #{automation} cucumber Then step's assertion in eventually" do
       steps = read_generated("cucumber_#{automation}", 'features/step_definitions/home_steps.rb')
       expect(steps).to include("eventually { expect(pdp_page.add_to_cart_text).to eq 'Add to Cart' }")
-    end
-  end
-end
-
-# The Watir output must stay as master generated it (1274a66), plus the 3.12.1 lint fixes; the snapshots in
-# spec/fixtures/watir_master were generated from that commit's lib.
-# To regenerate: `git archive 1274a66 lib` into a scratch dir, generate rspec and cucumber Watir projects there,
-# then apply only the Readme deprecation-line delta (the `> **Deprecated:**` line under the heading block) and
-# the 3.12.1 changes: RuboCop lint fixes (page.rb loses its extra blank lines, login_steps.rb ends with a newline)
-# plus the frozen_string_literal comments the syntax spec requires (Style/FrozenStringLiteralComment is disabled
-# in the generated .rubocop.yml, so RuboCop does not ask for them) on the Watir page, world and user_factory files,
-# and the 3.15.0 base-url fix (page.rb joins the configured url and the page path with exactly one slash).
-describe 'Watir example output' do
-  snapshots = File.expand_path('../../fixtures/watir_master', __dir__)
-
-  { 'rspec_watir' => %w[page_objects/pages/login.rb page_objects/abstract/page.rb spec/login_page_spec.rb Readme.md],
-    'cucumber_watir' => %w[page_objects/pages/login.rb page_objects/abstract/page.rb
-                           features/step_definitions/login_steps.rb Readme.md] }.each do |project, files|
-    files.each do |file|
-      it "keeps #{project}/#{file} as master generates it" do
-        expected = File.read(File.join(snapshots, project, "#{file}.snapshot"))
-        expect(read_generated(project, file)).to eq(expected)
-      end
     end
   end
 end

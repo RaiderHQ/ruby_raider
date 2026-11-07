@@ -9,15 +9,16 @@ require_relative 'rspec/rspec_generator'
 
 module InvokeGenerators
   FRAMEWORKS = %w[rspec cucumber].freeze
-  AUTOMATIONS = %w[selenium watir ios android cross_platform].freeze
+  AUTOMATIONS = %w[selenium ios android cross_platform].freeze
 
-  WATIR_NOTICE = 'Watir is deprecated and will be removed in the next major version of ruby_raider; ' \
-                 'new projects should use Selenium.'.freeze
+  WATIR_REMOVED = 'Watir was removed in ruby_raider 4.0; generate a Selenium project and ' \
+                  'see "Migrating from Watir" in the README'.freeze
 
   module_function
 
   def generate_framework(structure = {})
     structure = normalise_options(structure)
+    refuse_watir(structure[:automation])
     validate_option(:framework, structure[:framework], FRAMEWORKS)
     validate_option(:automation, structure[:automation], AUTOMATIONS)
     validate_ci(structure[:ci])
@@ -36,8 +37,6 @@ module InvokeGenerators
                        })
     end
     print_mobile_azure_notice(structure)
-    print_watir_notice(structure)
-    print_watir_examples_notice(structure)
   end
 
   def normalise_options(structure)
@@ -65,10 +64,8 @@ module InvokeGenerators
     puts 'Azure Pipelines template for mobile projects is not available yet; see the README.'
   end
 
-  def print_watir_notice(structure)
-    return unless structure[:automation] == 'watir'
-
-    puts WATIR_NOTICE
+  def refuse_watir(automation)
+    raise Thor::Error, WATIR_REMOVED if automation.to_s == 'watir'
   end
 
   def add_generator(generators, *gens)
@@ -96,15 +93,8 @@ module InvokeGenerators
     flags
   end
 
-  # Watir templates are frozen, so a Watir project always gets the example tests
   def skeleton?(structure)
-    structure[:examples] == false && structure[:automation] != 'watir'
-  end
-
-  def print_watir_examples_notice(structure)
-    return unless structure[:examples] == false && structure[:automation] == 'watir'
-
-    puts 'Watir projects always include the example tests; examples:false applies to Selenium and Appium projects.'
+    structure[:examples] == false
   end
 
   def mobile_automation?(automation)

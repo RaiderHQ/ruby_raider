@@ -5,7 +5,7 @@ require_relative '../../page_objects/pages/login'
 
 Given("I'm a {user} on the login page") do |user|
   @user = user
-  @login_page = <% if watir? %>Login.new(browser)<% else %>Login.new(driver)<% end %>
+  @login_page = Login.new(driver)
   @login_page.visit
 end
 
@@ -18,11 +18,7 @@ When('I login with my credentials') do
 end
 
 Then("I'm logged in") do
-  account_page = <% if watir? %>Account.new(browser)<% else %>Account.new(driver)<% end %>
+  account_page = Account.new(driver)
   account_page.visit
-<%- if watir? -%>
-  expect(account_page.header.customer_name).to eq "Welcome back #{@user['name']}"
-<%- else -%>
   eventually { expect(account_page.header.customer_name).to eq "Welcome back #{@user['name']}" }
-<%- end -%>
 end

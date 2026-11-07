@@ -14,15 +14,7 @@ describe GithubGenerator do
     include_examples 'generates github actions', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
   end
 
-  context 'with rspec and watir' do
-    include_examples 'generates github actions', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-  end
-
   context 'with cucumber and selenium' do
     include_examples 'generates github actions', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-  end
-
-  context 'with cucumber and watir' do
-    include_examples 'generates github actions', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
   end
 end

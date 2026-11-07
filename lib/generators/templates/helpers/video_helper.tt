@@ -69,7 +69,7 @@ module VideoHelper
       config['enabled'] != false && ENV['VIDEO'] != 'off' && !@disabled
     end
 
-    def recorder_for(driver_or_browser)
+    def recorder_for(driver)
 <%- if mobile? -%>
       return NullRecorder.new unless enabled?
 <%- else -%>
@@ -77,9 +77,9 @@ module VideoHelper
 <%- end -%>
 
 <%- if mobile? -%>
-      AppiumRecorder.new(driver_or_browser)
+      AppiumRecorder.new(driver)
 <%- else -%>
-      FrameRecorder.new(selenium_driver(driver_or_browser))
+      FrameRecorder.new(driver)
 <%- end -%>
     rescue StandardError => e
       disable!("could not create a recorder: #{e.message}")
@@ -185,11 +185,6 @@ module VideoHelper
     end
     # rubocop:enable Style/StderrPuts
 <%- unless mobile? -%>
-
-    # Watir::Browser wraps the Selenium driver.
-    def selenium_driver(driver_or_browser)
-      driver_or_browser.respond_to?(:wd) ? driver_or_browser.wd : driver_or_browser
-    end
 
     # Decided once per process, at the first listener/recorder_for call, so a run
     # that can never get an ffmpeg warns at the start and pays no capture cost.

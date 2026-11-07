@@ -269,30 +269,6 @@ describe 'CI pipeline content' do
     include_examples 'github without allure steps', name
   end
 
-  context 'with rspec and watir' do
-    name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-    include_examples 'github ffmpeg cache', name, 'test_pipeline.yml', %w[build]
-    include_examples 'valid github pipeline', name
-    include_examples 'github rspec pipeline', name
-    include_examples 'github triggers', name, 'test_pipeline.yml'
-    include_examples 'github raider wiring', name, 'test_pipeline.yml'
-    include_examples 'github raider-comment job', name, 'test_pipeline.yml', %w[build]
-    include_examples 'github raider-gate job', name, 'test_pipeline.yml', %w[build]
-    include_examples 'github without allure steps', name
-  end
-
-  context 'with cucumber and watir' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
-    include_examples 'github ffmpeg cache', name, 'test_pipeline.yml', %w[build], 'cucumber'
-    include_examples 'valid github pipeline', name
-    include_examples 'github cucumber pipeline', name
-    include_examples 'github triggers', name, 'test_pipeline.yml'
-    include_examples 'github raider wiring', name, 'test_pipeline.yml', 'cucumber'
-    include_examples 'github raider-comment job', name, 'test_pipeline.yml', %w[build]
-    include_examples 'github raider-gate job', name, 'test_pipeline.yml', %w[build]
-    include_examples 'github without allure steps', name
-  end
-
   appium_jobs = { 'android' => %w[android-tests], 'ios' => %w[ios-tests],
                   'cross_platform' => %w[ios-tests android-tests] }
 
@@ -321,7 +297,7 @@ describe 'CI pipeline content' do
   end
 
   context 'with the saved login state' do
-    workflows = FRAMEWORKS.product(%w[selenium watir]).map { |f, a| ["#{f}_#{a}", 'test_pipeline.yml'] } +
+    workflows = FRAMEWORKS.product(%w[selenium]).map { |f, a| ["#{f}_#{a}", 'test_pipeline.yml'] } +
                 FRAMEWORKS.product(%w[android ios cross_platform]).map { |f, a| ["#{f}_#{a}", 'appium_pipeline.yml'] }
 
     workflows.each do |name, file|

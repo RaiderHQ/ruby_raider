@@ -17,15 +17,5 @@ class <%= class_name %> < Component
 <%- else -%>
   # Example: driver.find_element(css: '.selector')
 <%- end -%>
-<%- elsif watir? -%>
-
-  def content
-    component.text
-  end
-
-  private
-
-  # Elements
-  # Example: browser.element(css: '.selector')
 <%- end -%>
 end

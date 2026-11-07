@@ -5,7 +5,7 @@ require 'rspec'
 require_relative '../../lib/generators/invoke_generators'
 require_relative 'settings_helper'
 
-AUTOMATION_TYPES = %w[android ios selenium watir cross_platform].freeze
+AUTOMATION_TYPES = %w[android ios selenium cross_platform].freeze
 FRAMEWORKS = %w[cucumber rspec].freeze
 
 # Named constants for readable spec references — no more fragile numeric indices
@@ -18,8 +18,7 @@ module AutomationIndex
   ANDROID        = AUTOMATION_TYPES[0]
   IOS            = AUTOMATION_TYPES[1]
   SELENIUM       = AUTOMATION_TYPES[2]
-  WATIR          = AUTOMATION_TYPES[3]
-  CROSS_PLATFORM = AUTOMATION_TYPES[4]
+  CROSS_PLATFORM = AUTOMATION_TYPES[3]
 end
 
 # Lazy project generation — only generates a project the first time it's needed.

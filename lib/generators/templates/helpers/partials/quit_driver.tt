@@ -1,7 +1,5 @@
 <% if selenium_based? %>
   driver.quit
-<% elsif watir? %>
-  browser.quit
 <% else %>
   driver.quit_driver
 <% end %>

@@ -1,4 +1,4 @@
-<%- if selenium_based? || watir? -%>
+<%- if selenium_based? -%>
 # frozen_string_literal: true
 
 require_relative '../helpers/spec_helper'
@@ -8,13 +8,9 @@ require_relative '../page_objects/pages/login'
 
 # rubocop:disable RSpec/MultipleDescribes
 describe 'Login' do
-<%- if watir? -%>
-  subject(:header) { account_page.header.customer_name }
-
-<%- end -%>
   let(:user) { ModelFactory.for('users')['registered user'] }
-  let(:login_page) { <% if watir? -%>Login.new(browser)<% else -%>Login.new(driver)<% end -%> }
-  let(:account_page) { <% if watir? -%>Account.new(browser)<% else -%>Account.new(driver)<% end -%> }
+  let(:login_page) { Login.new(driver) }
+  let(:account_page) { Account.new(driver) }
 
   before do
     login_page.visit
@@ -26,11 +22,7 @@ describe 'Login' do
 
     it 'can successfully log in' do
       account_page.visit
-<%- if watir? -%>
-      expect(header).to eq "Welcome back #{user['name']}"
-<%- else -%>
       eventually { expect(account_page.header.customer_name).to eq "Welcome back #{user['name']}" }
-<%- end -%>
     end
   end
 
@@ -39,26 +31,18 @@ describe 'Login' do
 
     it 'cannot log in' do
       login_page.visit
-<%- if watir? -%>
-      expect(header).to eq 'Login or register'
-<%- else -%>
       eventually { expect(account_page.header.customer_name).to eq 'Login or register' }
-<%- end -%>
     end
   end
 end
 
 describe 'Account', :logged_in do
   let(:user) { ModelFactory.for('users')['registered user'] }
-  let(:account_page) { <% if watir? -%>Account.new(browser)<% else -%>Account.new(driver)<% end -%> }
+  let(:account_page) { Account.new(driver) }
 
   it 'opens the account page with the saved login' do
     account_page.visit
-<%- if watir? -%>
-    expect(account_page.header.customer_name).to eq "Welcome back #{user['name']}"
-<%- else -%>
     eventually { expect(account_page.header.customer_name).to eq "Welcome back #{user['name']}" }
-<%- end -%>
   end
 end
 # rubocop:enable RSpec/MultipleDescribes

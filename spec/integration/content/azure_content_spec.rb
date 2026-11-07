@@ -8,7 +8,7 @@ require_relative '../../../lib/ruby_raider/ffmpeg'
 # UseRubyVersion@0 versionSpec '3.4' resolves against the hosted tool cache, which lists Ruby 3.4.x
 # (3.2, 3.3, 3.4, 4.0): https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md
 describe 'Azure Pipelines content' do
-  combos = FRAMEWORKS.product(%w[selenium watir], [false, true])
+  combos = FRAMEWORKS.product(%w[selenium], [false, true])
 
   before(:all) do # rubocop:disable RSpec/BeforeAfterAll
     combos.each do |framework, automation, axe|
