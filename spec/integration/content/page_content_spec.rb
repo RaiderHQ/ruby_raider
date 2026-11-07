@@ -142,18 +142,10 @@ describe 'Page object content' do
     include_examples 'valid abstract page', name
     include_examples 'selenium abstract page', name
   end
-
-  context 'with cucumber and selenium' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-    include_examples 'valid login page', name
-    include_examples 'selenium login page', name
-    include_examples 'valid abstract page', name
-    include_examples 'selenium abstract page', name
-  end
 end
 
 describe 'Page WaitHelper wiring' do
-  %w[rspec cucumber].each do |framework|
+  FRAMEWORKS.each do |framework|
     %w[selenium ios android cross_platform].each do |automation|
       it "includes WaitHelper in #{framework} #{automation}" do
         page = read_generated("#{framework}_#{automation}", 'page_objects/abstract/page.rb')
@@ -179,7 +171,7 @@ describe 'Page WaitHelper wiring' do
 end
 
 describe 'Abstract page layout' do
-  %w[rspec cucumber].each do |framework|
+  FRAMEWORKS.each do |framework|
     %w[selenium ios android cross_platform].each do |automation|
       [true, false].each do |examples|
         it "has no blank line before the class end in #{framework} #{automation}#{' (skeleton)' unless examples}" do
@@ -192,7 +184,7 @@ describe 'Abstract page layout' do
 end
 
 describe 'Example pages on the wait helper' do
-  %w[rspec cucumber].each do |framework|
+  FRAMEWORKS.each do |framework|
     it "finds the header through the wait helper in #{framework} selenium" do
       page = read_generated("#{framework}_selenium", 'page_objects/abstract/page.rb')
       expect(page).to include("Header.new(find_element(css: '.welcome-msg'))")
