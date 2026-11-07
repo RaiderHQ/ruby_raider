@@ -27,7 +27,7 @@ RSpec.describe 'Raider strict find_element' do
   end
 
   it 'raises NoSuchElementError when nothing matches' do
-    bridge.enqueue([])
+    Raider.timeout = 0
     expect { driver.find_element(label: 'Email') }
       .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /no such element: \{ label: "Email" \}/)
   end
@@ -65,9 +65,75 @@ RSpec.describe 'Raider strict find_element' do
     expect(bridge.calls.map(&:first)).to eq([:find_element_by])
   end
 
-  it 'leaves find_elements alone' do
+  it 'returns find_elements results that already match without waiting' do
     bridge.enqueue(%w[a b])
     expect(driver.find_elements(label: 'Email').size).to eq(2)
+  end
+
+  describe 'waiting for a match' do
+    def find_calls(command = :find_elements_by)
+      bridge.calls.count { |call| call.first == command }
+    end
+
+    it 'returns the element once it shows up, after three calls' do
+      bridge.enqueue([])
+      bridge.enqueue([])
+      bridge.enqueue(['a'])
+      expect(driver.find_element(id: 'x')).to be_a(Selenium::WebDriver::Element)
+      expect(find_calls).to eq(3)
+    end
+
+    it 'raises NoSuchElementError naming the wait when nothing ever matches' do
+      Raider.timeout = 0.3
+      expect { driver.find_element(id: 'x') }
+        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /no such element: \{ id: "x" \} \(waited 0\.[34]\d?s\)/)
+    end
+
+    it 'waits the same way when strict is off' do
+      Raider.strict = false
+      Raider.timeout = 0.3
+      expect { driver.find_element(id: 'x') }
+        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /\(waited 0\.[34]\d?s\)/)
+      expect(find_calls(:find_element_by)).to be >= 3
+    end
+
+    it 'raises AmbiguousMatch on the first call' do
+      bridge.enqueue(%w[a b])
+      expect { driver.find_element(id: 'x') }.to raise_error(Raider::AmbiguousMatch)
+      expect(find_calls).to eq(1)
+    end
+
+    it 'returns the elements of find_elements once they show up, after three calls' do
+      bridge.enqueue([])
+      bridge.enqueue([])
+      bridge.enqueue(%w[a b])
+      expect(driver.find_elements(css: '.row').size).to eq(2)
+      expect(find_calls).to eq(3)
+    end
+
+    it 'returns [] from find_elements after about the timeout' do
+      Raider.timeout = 0.3
+      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      expect(driver.find_elements(css: '.row')).to eq([])
+      expect(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).to be_between(0.25, 0.6)
+    end
+
+    it 'makes one call per find inside Wait.immediately' do
+      Raider.timeout = 5
+      Raider::Wait.immediately do
+        expect(driver.find_elements(css: '.row')).to eq([])
+        expect { driver.find_element(id: 'x') }.to raise_error(Selenium::WebDriver::Error::NoSuchElementError)
+      end
+      expect(bridge.calls.map(&:first)).to eq(%i[find_elements_by find_elements_by])
+    end
+
+    it 'makes one call per find on the native path inside Wait.immediately' do
+      Raider.strict = false
+      Raider::Wait.immediately do
+        expect { driver.find_element(id: 'x') }.to raise_error(Selenium::WebDriver::Error::NoSuchElementError)
+      end
+      expect(bridge.calls.map(&:first)).to eq([:find_element_by])
+    end
   end
 
   context 'with an Appium bridge' do
@@ -88,6 +154,29 @@ RSpec.describe 'Raider strict find_element' do
       expect(bridge.calls.map(&:first)).to eq([:find_element_by])
     end
 
+    it 'waits for a match on NATIVE_APP too' do
+      Raider.timeout = 0.3
+      bridge.enqueue([])
+      bridge.enqueue(['a'])
+      expect(driver.find_element(id: 'x')).to be_a(Selenium::WebDriver::Element)
+      expect { driver.find_element(id: 'gone') }
+        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /\(waited 0\.[34]\d?s\)/)
+      expect(driver.find_elements(id: 'gone')).to eq([])
+    end
+
+    it 'reports the elapsed wait, not the timeout, inside a shorter enclosing wait' do
+      Raider.timeout = 5
+      expect { Raider::Wait.until(timeout: 0.2) { driver.find_element(id: 'x') } }
+        .to raise_error(Selenium::WebDriver::Error::NoSuchElementError, /\(waited 0\.[23]\d?s\)/)
+    end
+
+    it 'raises NotSupported at once for a role find on NATIVE_APP' do
+      Raider.timeout = 5
+      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      expect { driver.find_element(role: 'button') }.to raise_error(Raider::NotSupported)
+      expect(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).to be < 1
+    end
+
     context 'in a webview' do
       let(:context_name) { 'WEBVIEW_1' }
 
@@ -100,6 +189,28 @@ RSpec.describe 'Raider strict find_element' do
         bridge.script_results << ['a']
         allow(bridge).to receive(:current_context).and_call_original
         driver.find_element(role: 'button')
+        expect(bridge).to have_received(:current_context).once
+      end
+
+      it 'asks for the context once on a strict role find that waits several polls' do
+        bridge.script_results.push([], [], ['a'])
+        allow(bridge).to receive(:current_context).and_call_original
+        driver.find_element(role: 'button')
+        expect(bridge).to have_received(:current_context).once
+      end
+
+      it 'asks for the context once on a non-strict role find that waits several polls' do
+        Raider.strict = false
+        bridge.script_results.push([], [], ['a'])
+        allow(bridge).to receive(:current_context).and_call_original
+        driver.find_element(role: 'button')
+        expect(bridge).to have_received(:current_context).once
+      end
+
+      it 'asks for the context once on a role find_elements that waits several polls' do
+        bridge.script_results.push([], [], ['a'])
+        allow(bridge).to receive(:current_context).and_call_original
+        expect(driver.find_elements(role: 'button').size).to eq(1)
         expect(bridge).to have_received(:current_context).once
       end
 

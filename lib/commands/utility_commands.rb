@@ -47,10 +47,26 @@ class UtilityCommands < Thor
   desc 'headless [on/off]', 'Toggles headless mode for browser tests'
 
   def headless(toggle)
-    enabled = %w[on true 1 yes].include?(toggle.downcase)
+    enabled = on?(toggle)
     Utilities.headless = enabled
     state = enabled ? 'enabled' : 'disabled'
     say "Headless mode #{state}", :green
+  end
+
+  desc 'strict [on/off]', 'Toggles strict find_element (fails when a locator matches more than one element)'
+
+  def strict(toggle)
+    enabled = on?(toggle)
+    Utilities.strict = enabled
+    say "Strict mode #{enabled ? 'enabled' : 'disabled'}", :green
+  end
+
+  desc 'actionability [on/off]', 'Toggles the actionability wait before element actions'
+
+  def actionability(toggle)
+    enabled = on?(toggle)
+    Utilities.actionability = enabled
+    say "Actionability #{enabled ? 'enabled' : 'disabled'}", :green
   end
 
   desc 'raid', 'It runs all the tests in a project'
@@ -157,5 +173,11 @@ class UtilityCommands < Thor
       Utilities.video_enabled = enabled
       say "Failure video #{enabled ? 'enabled' : 'disabled'}", :green
     end
+  end
+
+  private
+
+  def on?(toggle)
+    %w[on true 1 yes].include?(toggle.downcase)
   end
 end

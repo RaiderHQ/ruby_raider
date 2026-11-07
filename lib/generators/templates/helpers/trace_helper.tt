@@ -3,28 +3,28 @@
 require 'cgi/escape'
 require 'fileutils'
 require 'json'
+require 'ruby_raider/runtime'
 require 'selenium-webdriver'
 require 'tmpdir'
 require 'yaml'
 require 'zlib'
 
-# Records a trace of each test: one step per WaitHelper action and navigation, with
+# Records a trace of each test: one step per element action and navigation, with
 # a screenshot and the page HTML after each state-changing step. stop(keep: true)
 # writes it as trace.zip in the raider-trace v1 format, which Raider Desktop and
 # Hideout open. Any capture error prints one [trace] line and turns tracing off for
 # the rest of the run; it never raises into a test. Something only left out (a
 # screenshot, or network on a browser without BiDi) prints at most one notice. TRACE=off skips tracing and
 # TRACE=on keeps the trace of passing tests too.
-# The Recorder follows WaitHelper as its observer. Without helpers/wait_helper.rb a
-# trace records only navigation and the failure. Navigation comes from TraceHelper.listener,
+# The Recorder follows Raider.observer. Navigation comes from TraceHelper.listener,
 # and network and console from passive WebDriver BiDi events (chrome, edge and firefox).
 module TraceHelper
   DEFAULTS = { 'enabled' => true, 'max_steps' => 200, 'max_mb' => 20 }.freeze
   PRODUCER = { name: 'ruby_raider', version: '<%= ruby_raider_version %>' }.freeze
   # Only these get a screenshot and a snapshot; query actions cost almost nothing.
-  MEDIA_ACTIONS = %w[navigate click send_keys clear submit select_by hover drag_and_drop scroll_into_view].freeze
-  # Only these record what was typed or selected, as value (null when secret).
-  TYPED_ACTIONS = %w[send_keys select_by].freeze
+  MEDIA_ACTIONS = %w[navigate click send_keys clear submit].freeze
+  # Only these record what was typed, as value (null when secret).
+  TYPED_ACTIONS = %w[send_keys].freeze
   SECRET_ENV_PREFIX = 'RAIDER_SECRET_'
   # The driver helper sets web_socket_url for these while tracing is on.
   BIDI_BROWSERS = %w[chrome edge firefox].freeze
@@ -70,7 +70,7 @@ module TraceHelper
       return null_recorder unless enabled?
 
       recorder = Recorder.new(driver, screenshot: screenshot, snapshot: snapshot)
-      WaitHelper.observer = recorder if defined?(WaitHelper)
+      Raider.observer = recorder
       # Lazy: the project may have removed network_helper.
       NetworkHelper.observer = MockMarks if defined?(NetworkHelper)
       recorder
@@ -79,10 +79,10 @@ module TraceHelper
       null_recorder
     end
 
-    # Unhooks the recorder from WaitHelper and the navigation listener.
+    # Unhooks the recorder from Raider.observer and the navigation listener.
     def release(recorder)
       @active_recorder = nil if @active_recorder.equal?(recorder)
-      WaitHelper.observer = nil if defined?(WaitHelper) && WaitHelper.observer.equal?(recorder)
+      Raider.observer = nil if Raider.observer.equal?(recorder)
     end
 
     # The first reason tracing stopped always gets its own [trace] line, even after a notice.
@@ -155,7 +155,7 @@ module TraceHelper
     end
 
     def detach_observer
-      WaitHelper.observer = nil if defined?(WaitHelper) && WaitHelper.observer.is_a?(Recorder)
+      Raider.observer = nil if Raider.observer.is_a?(Recorder)
     end
 
     def trace_config
@@ -182,8 +182,40 @@ module TraceHelper
     # rubocop:enable Style/StderrPuts
   end
 
-  # One step of the timeline. parent is the enclosing group Step; the index is given
-  # when the trace is written, after max_steps and eventually have dropped steps.
+  # Where an action was called from, for the observer.
+  module Observation
+    # helpers/ by its given and its real path (__dir__ is the real one), and the runtime's own directory:
+    # the trace, driver and runtime files are never the line that called an action or a navigation.
+    HELPER_DIRS = [File.dirname(__FILE__), __dir__, Raider::Observer::LIB_DIR].uniq.map { |dir| File.join(dir, '') }.freeze
+
+    # The first frame outside helpers/, Ruby and gems, as { file:, line: } (file relative
+    # to the working directory when inside it), or nil.
+    def self.source
+      frame = caller_locations.find { |location| project?(location.absolute_path || location.path) }
+      return unless frame
+
+      { file: relative(frame.absolute_path || frame.path), line: frame.lineno }
+    end
+
+    def self.project?(path)
+      return false if path.start_with?('<internal:') || HELPER_DIRS.any? { |dir| path.start_with?(dir) }
+
+      library_paths.none? { |root| path.start_with?(root) }
+    end
+
+    def self.library_paths
+      @library_paths ||= [*RbConfig::CONFIG.values_at('rubylibdir', 'rubyarchdir'), *Gem.path]
+                         .compact.map { |dir| File.join(dir, '') }
+    end
+
+    def self.relative(path)
+      root = File.join(Dir.pwd, '')
+      path.start_with?(root) ? path.delete_prefix(root) : path
+    end
+  end
+
+  # One step of the timeline. parent is always nil (the v1 group kind stays readable but is no longer
+  # produced); the index is given when the trace is written, after max_steps has dropped steps.
   # element is the format's { tag, label, role }; secret is true, false, or nil while the field is unknown.
   Step = Struct.new(:seq, :parent, :kind, :action, :locator, :url, :page_title, :started_at, :clock, :duration_ms,
                     :waited_ms, :retries, :status, :error, :source, :rect, :screenshot, :snapshot, :element,
@@ -192,12 +224,6 @@ module TraceHelper
       self.status = status.to_s
       self.error = error
       self.duration_ms = ((TraceHelper.monotonic_now - clock) * 1000).round
-    end
-
-    def within?(group)
-      step = parent
-      step = step.parent until step.nil? || step.equal?(group)
-      !step.nil?
     end
 
     def as_json(index, parent_index, media)
@@ -217,7 +243,7 @@ module TraceHelper
     end
   end
 
-  # Follows a test: WaitHelper reports its actions (the observer protocol) and the
+  # Follows a test: the runtime reports element actions to Raider.observer and the
   # navigation listener calls navigated. Media goes to its own tmpdir until stop.
   # BiDi events arrive on Selenium's websocket threads, so the event lists are locked.
   class Recorder
@@ -249,11 +275,13 @@ module TraceHelper
       discard
     end
 
-    # Returns the step as the token WaitHelper hands back. args: send_keys' keys or select_by's how and what.
-    # The locator has no label: a page object's element method has returned before the action runs.
-    def action_started(action:, locator:, within:, source:, args: nil)
+    # Returns the step as the token the runtime hands back (nil when not recording, so no ready or finished
+    # follows). args: send_keys' keys. The locator has no label: a page object's element method has returned
+    # before the action runs.
+    def action_started(action:, locator:, within:, args: nil)
       record('action') do
-        step = add(kind: 'action', action: action.to_s, locator: trace_locator(locator, within), source: source)
+        step = add(kind: 'action', action: action.to_s, locator: trace_locator(locator, within),
+                   source: TraceHelper::Observation.source)
         typed(step, Array(args)) if TYPED_ACTIONS.include?(step.action)
         step
       end
@@ -287,35 +315,6 @@ module TraceHelper
         step.retries = retries
         remember_secret(step)
         capture_step_media(step) if MEDIA_ACTIONS.include?(step.action)
-        nil
-      end
-    end
-
-    def group_started(action:, source:)
-      record('group') do
-        group = add(kind: 'group', action: action.to_s, locator: nil, source: source)
-        @groups.push(group)
-        group
-      end
-    end
-
-    # A new pass of eventually: only the last pass's steps are kept, and the
-    # group's error is the last one an earlier pass raised.
-    def group_retried(group, error: nil)
-      record('group') do
-        dropped, @steps = @steps.partition { |step| step.within?(group) }
-        dropped.each { |step| delete_media(step) }
-        @navigation = nil if dropped.any? { |step| step.equal?(@navigation) }
-        group.error = error
-        nil
-      end
-    end
-
-    def group_finished(group, status:, retries:, error:)
-      record('group') do
-        @groups.reject! { |open| open.equal?(group) }
-        group.finish(status, error || group.error)
-        group.retries = retries
         nil
       end
     end
@@ -452,7 +451,6 @@ module TraceHelper
     def reset
       @steps = []
       @navigation = nil
-      @groups = []
       @lock.synchronize do
         @events = []
         @requests = {}
@@ -481,7 +479,7 @@ module TraceHelper
     end
 
     # Runs a hook while recording. A hook that fails turns tracing off instead of
-    # raising into WaitHelper (which would warn a second time).
+    # raising into the runtime (which would warn a second time).
     def record(what)
       return nil unless @recording && TraceHelper.enabled?
 
@@ -493,7 +491,7 @@ module TraceHelper
     def add(kind:, action:, locator:, source:)
       finish_navigation(:failed) unless kind == 'navigate'
       @seq += 1
-      step = Step.new(seq: @seq, parent: @groups.last, kind: kind, action: action, locator: locator, source: source,
+      step = Step.new(seq: @seq, parent: nil, kind: kind, action: action, locator: locator, source: source,
                       url: @page[:url], page_title: @page[:page_title], started_at: TraceHelper.timestamp,
                       clock: TraceHelper.monotonic_now, waited_ms: 0, retries: 0)
       @steps << step
@@ -548,12 +546,12 @@ module TraceHelper
     end
 
     def navigation_source
-      WaitHelper::Observation.source if defined?(WaitHelper::Observation)
+      TraceHelper::Observation.source
     end
 
-    # The value as typed: strings as they are, keys such as :enter as {enter}; select_by's what.
+    # The value as typed: strings as they are, keys such as :enter as {enter}.
     def typed(step, args)
-      shown = step.action == 'select_by' ? args.last.to_s : args.flatten.map { |key| key_name(key) }.join
+      shown = args.flatten.map { |key| key_name(key) }.join
       step.value = shown
       step.typed_strings = [shown, *args.flatten.grep(String)].reject(&:empty?).uniq
       step.secret = true if step.typed_strings.any? { |each_value| TraceHelper.secret_value?(each_value) }
@@ -611,7 +609,7 @@ module TraceHelper
     end
 
     # A test that raised outside every kept step gets a last failure step. Steps dropped by
-    # eventually or max_steps own nothing, so their error still gets a step.
+    # max_steps own nothing, so their error still gets a step.
     def failure(error)
       return if error.nil? || @steps.any? { |step| step.error.equal?(error) }
 
@@ -1063,7 +1061,7 @@ module TraceHelper
   end
 end
 
-# What comes from the browser beside WaitHelper: navigation from Selenium's event listener,
+# What comes from the browser beside the element actions: navigation from Selenium's event listener,
 # network and console from WebDriver BiDi, and the screenshot.
 module TraceHelper
   # Selenium calls these after each navigation (through the driver helper's fan-out listener).

@@ -17,8 +17,8 @@ describe AutomationGenerator do
       expect(File).to exist("#{name}/page_objects/abstract/component.rb")
     end
 
-    it 'creates a component file' do
-      expect(File).to exist("#{name}/page_objects/components/header.rb")
+    it 'creates no header component' do
+      expect(File).not_to exist("#{name}/page_objects/components/header.rb")
     end
   end
 

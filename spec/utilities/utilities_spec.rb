@@ -104,6 +104,30 @@ RSpec.describe Utilities do
     end
   end
 
+  describe '.strict=' do
+    it 'sets strict to false' do
+      described_class.strict = false
+      expect(YAML.load_file(config_path)['strict']).to be false
+    end
+
+    it 'sets strict to true' do
+      described_class.strict = true
+      expect(YAML.load_file(config_path)['strict']).to be true
+    end
+  end
+
+  describe '.actionability=' do
+    it 'sets actionability to true' do
+      described_class.actionability = true
+      expect(YAML.load_file(config_path)['actionability']).to be true
+    end
+
+    it 'sets actionability to false' do
+      described_class.actionability = false
+      expect(YAML.load_file(config_path)['actionability']).to be false
+    end
+  end
+
   describe '.viewport=' do
     it 'sets viewport dimensions' do
       described_class.viewport = '375x812'

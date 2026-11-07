@@ -161,7 +161,7 @@ end
 
 describe 'Config timeout wiring' do
   FRAMEWORKS.each do |framework|
-    # Single-platform Appium projects have no config.yml; WaitHelper falls back to its default of 10.
+    # Single-platform Appium projects have no config.yml; the runtime falls back to its default of 10.
     %w[selenium cross_platform].each do |automation|
       it "sets timeout 10 in #{framework} #{automation}" do
         config = YAML.safe_load(read_generated("#{framework}_#{automation}", 'config/config.yml'), permitted_classes: [Symbol])
@@ -170,13 +170,19 @@ describe 'Config timeout wiring' do
     end
   end
 
-  it 'describes the selenium timeout as an action and eventually wait' do
-    expect(read_generated('rspec_selenium', 'config/config.yml'))
-      .to include('# seconds that actions and eventually wait before failing')
-  end
+  config_lines = [
+    'timeout: 10 # seconds that finds, actions and assertions wait before failing',
+    'strict: true # find_element fails when a locator matches more than one element; find_elements never does',
+    'actionability: true # actions wait until the element is ready (visible, enabled, stable, receives events; ' \
+    'on native apps visible and enabled); force: true skips it'
+  ].freeze
 
-  it 'describes the mobile timeout as an action and eventually wait' do
-    expect(read_generated('rspec_cross_platform', 'config/config.yml'))
-      .to include('timeout: 10 # seconds that actions and eventually wait before failing')
+  %w[rspec_selenium rspec_cross_platform].each do |project|
+    it "writes timeout, strict and actionability in order in #{project}" do
+      lines = read_generated(project, 'config/config.yml').lines.map(&:chomp)
+      start = lines.index(config_lines.first)
+      expect(start).not_to be_nil
+      expect(lines[start, 3]).to eq(config_lines)
+    end
   end
 end

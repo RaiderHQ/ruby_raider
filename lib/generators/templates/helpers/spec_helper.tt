@@ -6,10 +6,13 @@ require 'axe-rspec'
 require 'rspec'
 require 'rspec/retry'
 require 'raider_reporter/rspec'
+require 'ruby_raider/runtime/rspec'
 require 'tmpdir'
 require_relative 'driver_helper'
 require_relative 'video_helper'
-require_relative 'wait_helper'
+<%- if mobile? -%>
+require_relative 'gesture_helper'
+<%- end -%>
 <%- if network_helper? -%>
 require_relative 'network_helper'
 <%- end -%>
@@ -33,7 +36,11 @@ module SpecHelper
     config.default_retry_count = ENV.fetch('RETRY_COUNT', 0).to_i
     config.add_formatter(RaiderReporter::RSpec::Formatter)
     config.include(DriverHelper)
-    config.include(WaitHelper)
+    config.include(Raider::Matchers)
+    config.include(Raider::Helpers)
+    <%- if mobile? -%>
+    config.include(GestureHelper)
+    <%- end -%>
     <%- if network_helper? -%>
     config.include(NetworkHelper)
     <%- end -%>
@@ -68,7 +75,7 @@ module SpecHelper
       user = ModelFactory.for('users')['registered user']
       account = Account.new(driver)
       SessionState.new(driver).reuse(
-        valid: -> { account.tap(&:visit).header.customer_name == "Welcome back #{user['name']}" }
+        valid: -> { account.tap(&:visit).welcome_message.text == "Welcome back #{user['name']}" }
       ) do
         login = Login.new(driver)
         login.visit

@@ -1,0 +1,27 @@
+module Raider
+  module Matchers
+    module RetryingBlock
+      LOOKUP_ERRORS: Array[Class]
+
+      class Attempt
+        attr_reader value: untyped
+        attr_reader error: StandardError?
+
+        def initialize: (Proc block, ^(untyped) -> bool check) -> void
+        def read?: () -> bool
+        def pass?: () -> bool
+      end
+
+      def to: (?untyped matcher, ?(String | ^() -> String)? message) ?{ () -> untyped } -> untyped
+      def not_to: (?untyped matcher, ?(String | ^() -> String)? message) ?{ () -> untyped } -> untyped
+      def to_not: (?untyped matcher, ?(String | ^() -> String)? message) ?{ () -> untyped } -> untyped
+
+      private
+
+      def check: (untyped matcher, bool negated) -> (^(untyped) -> bool | Method)
+      def stock?: (untyped matcher) -> bool
+      def settle: (untyped matcher, (String | ^() -> String)? message, Symbol polarity, bool negated) ?{ () -> untyped } -> true
+      def give_up: (Attempt attempt, Array[untyped] arguments, Symbol polarity, Float waited) ?{ () -> untyped } -> untyped
+    end
+  end
+end

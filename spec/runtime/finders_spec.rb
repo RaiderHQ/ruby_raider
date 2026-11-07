@@ -32,7 +32,7 @@ RSpec.describe 'Raider finders' do
 
   it 'converts alt and title to css' do
     driver.find_element(alt: 'Logo')
-    driver.find_elements(title: 'Help')
+    Raider::Wait.immediately { driver.find_elements(title: 'Help') }
     expect(bridge.calls.map { |call| call[2] }).to eq(['[alt*="Logo"]', '[title*="Help"]'])
   end
 

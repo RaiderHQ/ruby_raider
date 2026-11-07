@@ -5,6 +5,7 @@ require 'erb'
 require 'fileutils'
 require 'tmpdir'
 require_relative '../../lib/generators/helper_generator'
+require_relative '../../lib/ruby_raider/runtime'
 
 # Renders screenshot_helper.tt for a selenium/rspec project and loads it.
 module ScreenshotHelperRenderer
@@ -587,9 +588,13 @@ RSpec.describe 'ScreenshotHelper' do
       ScreenshotHelper.reset
       allow(ScreenshotHelper).to receive_messages(ci?: false, update?: false)
       seen = self.seen
-      wait_helper = Module.new
-      wait_helper.define_singleton_method(:report) { |hook, **details| seen.replace([hook, details]) }
-      stub_const('WaitHelper', wait_helper)
+      observer = Object.new
+      observer.define_singleton_method(:screenshot_compared) { |**details| seen.replace([:screenshot_compared, details]) }
+      Raider.observer = observer
+    end
+
+    after do
+      Raider.observer = nil
     end
 
     def match(png, name: 'home', **options)
@@ -632,34 +637,21 @@ RSpec.describe 'ScreenshotHelper' do
       expect { match(white) }.to raise_error(ScreenshotHelper::Mismatch, /no baseline/)
       expect(seen).to be_empty
     end
-
-    it 'reports nothing without WaitHelper' do
-      hide_const('WaitHelper')
-      expect(match(white)).to be(true)
-    end
   end
 
-  describe 'WaitHelper.report' do
-    # Only the observer part of the rendered wait helper, on a module of its own.
-    def wait_helper_observer
-      generator = HelpersGenerator.new(%w[selenium rspec proj])
-      template = File.expand_path('../../lib/generators/templates/helpers/wait_helper.tt', __dir__)
-      rendered = ERB.new(File.read(template), trim_mode: '-').result(generator.instance_eval { binding })
-      code = rendered[%r{^\s*attr_accessor :observer.*?# rubocop:enable Style/StderrPuts}m]
-      Module.new.tap { |mod| mod.singleton_class.class_eval(code) }
-    end
+  describe 'Raider.report' do
+    after { Raider.observer = nil }
 
     it 'passes the hook to an observer that has it and leaves one without it alone, silently' do
-      helper = wait_helper_observer
       seen = []
-      helper.observer = Class.new { define_method(:screenshot_compared) { |**details| seen << details } }.new
-      helper.report(:screenshot_compared, name: 'a', status: :passed, png: 'x')
+      Raider.observer = Class.new { define_method(:screenshot_compared) { |**details| seen << details } }.new
+      Raider.report(:screenshot_compared, name: 'a', status: :passed, png: 'x')
       expect(seen).to eq([{ name: 'a', status: :passed, png: 'x' }])
 
       other = Object.new
-      helper.observer = other
-      expect { helper.report(:screenshot_compared, name: 'a', status: :passed, png: 'x') }.not_to output.to_stderr
-      expect(helper.observer).to be(other)
+      Raider.observer = other
+      expect { Raider.report(:screenshot_compared, name: 'a', status: :passed, png: 'x') }.not_to output.to_stderr
+      expect(Raider.observer).to be(other)
     end
   end
 

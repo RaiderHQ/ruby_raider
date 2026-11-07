@@ -15,6 +15,18 @@ module Raider
 
   module StrictFinder
     def find_element: (*untyped) -> Selenium::WebDriver::Element
+    def find_elements: (*untyped) -> Array[Selenium::WebDriver::Element]
+
+    private
+
+    def await_element: (Array[untyped] args, ^() -> Selenium::WebDriver::Element?) -> Selenium::WebDriver::Element?
+    def element_attempt: (Array[untyped] args) { () -> untyped } -> ^() -> Selenium::WebDriver::Element?
+    def elements_attempt: (Array[untyped] args) { () -> untyped } -> ^() -> Array[Selenium::WebDriver::Element]
+    def role_attempt: (Array[untyped] args) -> ^() -> Array[Selenium::WebDriver::Element]
+    def sole: (Array[untyped] args, Array[Selenium::WebDriver::Element] found, bool? strict) -> Selenium::WebDriver::Element?
+    def native_or_nil: () { () -> untyped } -> untyped
+    def not_found: (Array[untyped] args) -> String
+    def clock: () -> Float
   end
 
   module StrictFirst

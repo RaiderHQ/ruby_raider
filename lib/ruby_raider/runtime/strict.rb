@@ -5,6 +5,7 @@ require_relative 'config'
 require_relative 'errors'
 require_relative 'context'
 require_relative 'finders'
+require_relative 'observer'
 
 module Raider
   # Renders a find_element argument list for error messages.
@@ -44,18 +45,86 @@ module Raider
     end
   end
 
-  # Prepended to SearchContext: find_element must match exactly one element.
+  # Prepended to SearchContext: find_element must match exactly one element, and
+  # both finds wait for a match.
   module StrictFinder
     def find_element(*args)
       Finders.ensure_registered
-      return super unless Raider.strict && (RoleFinder.role_args?(args) || Context.web?(bridge))
+      attempt = element_attempt(args) { super(*args) }
+      Observer.stamp(await_element(args, attempt), args, self)
+    end
 
-      found = find_elements(*args)
-      raise AmbiguousMatch.new(Locator.describe(args), found) if found.size > 1
+    def find_elements(*args)
+      return Observer.stamp_all(super, args, self) if Wait.immediate?
 
-      raise Selenium::WebDriver::Error::NoSuchElementError, "no such element: #{Locator.describe(args)}" if found.empty?
+      attempt = elements_attempt(args) { super(*args) }
+      found = []
+      begin
+        Wait.until(timeout: Raider.timeout) { (found = attempt.call).any? }
+      rescue TimeoutError
+        nil
+      end
+      Observer.stamp_all(found, args, self)
+    end
+
+    private
+
+    def await_element(args, attempt)
+      return attempt.call || raise(Selenium::WebDriver::Error::NoSuchElementError, not_found(args)) if Wait.immediate?
+
+      started = clock
+      begin
+        Wait.until(timeout: Raider.timeout) { attempt.call }
+      rescue TimeoutError
+        raise Selenium::WebDriver::Error::NoSuchElementError,
+              "#{not_found(args)} (waited #{Describe.seconds(clock - started)}s)"
+      end
+    end
+
+    # A callable making one attempt at the element: the element, or nil when nothing
+    # matched yet. The context is decided here, once per find, not per attempt.
+    def element_attempt(args, &raw)
+      if RoleFinder.role_args?(args)
+        queried = role_attempt(args)
+        strict = Raider.strict
+        return -> { sole(args, queried.call, strict) }
+      end
+      return -> { native_or_nil(&raw) } unless Raider.strict && Context.web?(bridge)
+
+      -> { sole(args, Wait.immediately { find_elements(*args) }, true) }
+    end
+
+    def elements_attempt(args, &raw)
+      RoleFinder.role_args?(args) ? role_attempt(args) : raw
+    end
+
+    # Validates the role locator and checks the context once, then queries the engine directly.
+    def role_attempt(args)
+      role, options = RoleFinder.parse(args)
+      raise NotSupported, RoleFinder::NATIVE_MESSAGE unless Context.web?(bridge)
+
+      scope = is_a?(Selenium::WebDriver::Driver) ? nil : self
+      -> { RoleQuery.run(bridge, scope, role, options) }
+    end
+
+    def sole(args, found, strict)
+      raise AmbiguousMatch.new(Locator.describe(args), found) if strict && found.size > 1
 
       found.first
+    end
+
+    def native_or_nil
+      yield
+    rescue Selenium::WebDriver::Error::NoSuchElementError
+      nil
+    end
+
+    def not_found(args)
+      "no such element: #{Locator.describe(args)}"
+    end
+
+    def clock
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
     end
   end
 end

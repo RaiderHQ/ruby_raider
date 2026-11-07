@@ -6,10 +6,10 @@ class HelpersGenerator < Generator
   def generate_helpers
     generate_driver_helper
     generate_appium_helper
+    generate_gesture_helper
     generate_spec_helper
     generate_video_helper
     generate_session_state
-    generate_wait_helper
     generate_trace_helper
     generate_network_helper
     generate_screenshot_helper
@@ -35,11 +35,6 @@ class HelpersGenerator < Generator
     template('helpers/session_state.tt', "#{name}/helpers/session_state.rb")
   end
 
-  def generate_wait_helper
-    template('helpers/wait_helper.tt', "#{name}/helpers/wait_helper.rb")
-    template('helpers/raider_element.tt', "#{name}/helpers/raider_element.rb")
-  end
-
   def generate_trace_helper
     return unless trace_helper?
 
@@ -56,6 +51,12 @@ class HelpersGenerator < Generator
     return unless screenshot_helper?
 
     template('helpers/screenshot_helper.tt', "#{name}/helpers/screenshot_helper.rb")
+  end
+
+  def generate_gesture_helper
+    return unless mobile?
+
+    template('helpers/gesture_helper.tt', "#{name}/helpers/gesture_helper.rb")
   end
 
   def generate_appium_helper

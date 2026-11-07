@@ -70,7 +70,7 @@ describe 'Gemfile content' do
         let(:gemfile) { read_generated("#{FrameworkIndex::RSPEC}_#{automation}", 'Gemfile') }
 
         it 'includes raider_reporter' do
-          expect(gemfile).to include("gem 'raider_reporter', '~> 0.12'")
+          expect(gemfile).to include("gem 'raider_reporter', '~> 1.0'")
         end
 
         it "#{automation == 'selenium' ? 'includes' : 'leaves out'} chunky_png" do

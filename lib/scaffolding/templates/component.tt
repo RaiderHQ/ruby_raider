@@ -12,10 +12,6 @@ class <%= class_name %> < Component
   private
 
   # Elements
-<%- if wait_helper? -%>
   # Example: component.find_element(css: '.selector').click
-<%- else -%>
-  # Example: driver.find_element(css: '.selector')
-<%- end -%>
 <%- end -%>
 end

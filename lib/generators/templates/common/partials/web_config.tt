@@ -1,6 +1,8 @@
 browser: chrome
 url: 'https://raider-test-site.onrender.com/'
-timeout: 10 # seconds that actions and eventually wait before failing
+timeout: 10 # seconds that finds, actions and assertions wait before failing
+strict: true # find_element fails when a locator matches more than one element; find_elements never does
+actionability: true # actions wait until the element is ready (visible, enabled, stable, receives events; on native apps visible and enabled); force: true skips it
 viewport:
   width: 1920
   height: 1080

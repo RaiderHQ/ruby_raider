@@ -73,17 +73,39 @@ describe 'Test file content' do
   end
 end
 
-describe 'Example tests on the wait helper' do
-  it 'wraps every assertion of the selenium rspec spec in eventually' do
+describe 'Accessibility spec' do
+  it 'wraps the axe check in an immediate find' do
+    name = 'content_axe_rspec_selenium'
+    InvokeGenerators.generate_framework(automation: 'selenium', framework: 'rspec', name:, accessibility: true)
+    expect(read_generated(name, 'spec/accessibility_spec.rb'))
+      .to include('Raider::Wait.immediately { expect(driver).to be_axe_clean }')
+  ensure
+    FileUtils.rm_rf(name)
+  end
+end
+
+describe 'Example tests' do
+  it 'asserts the selenium rspec spec with have_text and no eventually' do
     spec = read_generated('rspec_selenium', 'spec/login_page_spec.rb')
-    expect(spec.scan('eventually { expect(').size).to eq(3)
-    expect(spec.scan(/^ +expect\(/)).to be_empty
+    expect(spec.scan('expect { account_page.welcome_message }.to have_text("Welcome back #{user[\'name\']}")').size).to eq(2)
+    expect(spec).to include("expect { login_page.welcome_message }.to have_text('Login or register')")
+    expect(spec).not_to include('eventually')
   end
 
   %w[ios android cross_platform].each do |automation|
-    it "wraps the #{automation} rspec assertion in eventually" do
+    it "asserts the #{automation} rspec spec with have_text and no eventually" do
       spec = read_generated("rspec_#{automation}", 'spec/pdp_page_spec.rb')
-      expect(spec).to include("eventually { expect(pdp_page.add_to_cart_text).to eq 'Add to Cart' }")
+      expect(spec).to include("expect { pdp_page.add_to_cart_button }.to have_text('Add to Cart')")
+      expect(spec).not_to include('eventually')
+    end
+
+    it "writes the #{automation} page objects in plain Appium" do
+      home = read_generated("rspec_#{automation}", 'page_objects/pages/home.rb')
+      pdp = read_generated("rspec_#{automation}", 'page_objects/pages/pdp.rb')
+      expect(home).to include('first_product.click')
+      expect(home).not_to match(/\btap\(/)
+      expect(pdp).to include('def add_to_cart_button').and match(/\b(driver\.find_element|element)\(/)
+      expect(pdp).not_to include('add_to_cart_text')
     end
   end
 end

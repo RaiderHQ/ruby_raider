@@ -39,6 +39,14 @@ RSpec.describe 'Raider page matchers' do
       expect(matcher.failure_message).to eq('expected the array to have count 2, last seen 1 after 0s')
     end
 
+    it 'passes on the first poll for a block whose find_elements is always empty' do
+      driver = Raider::Spec.driver(Raider::Spec::FakeBridge.new)
+      calls = 0
+      Raider.timeout = 5
+      expect { (calls += 1) && driver.find_elements(css: '.row') }.to have_count(0)
+      expect(calls).to eq(1)
+    end
+
     it 'keeps calling a block until the count arrives' do
       calls = 0
       expect { (calls += 1) > 2 ? [1, 2, 3] : [] }.to have_count(3)

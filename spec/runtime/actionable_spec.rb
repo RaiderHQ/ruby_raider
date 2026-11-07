@@ -97,4 +97,29 @@ RSpec.describe 'Raider::Actionable' do
     appium_like.new(bridge, 'e1').click
     expect([bridge.script_calls.size, bridge.calls.last]).to eq([1, [:click_element, 'e1']])
   end
+
+  describe 'on an Appium native context' do
+    let(:appium) { Class.new(Raider::Spec::FakeBridge) { def current_context = 'NATIVE_APP' }.new }
+    let(:native) { Selenium::WebDriver::Element.new(appium, 'e1') }
+
+    before { appium.answer(:element_displayed?, false, true).answer(:element_enabled?, false, true) }
+
+    it 'polls displayed and enabled, then clicks without a script call' do
+      native.click
+      expect(appium.calls).to include([:click_element, 'e1'])
+      expect(appium.script_calls).to be_empty
+    end
+
+    it 'clicks after one displayed call when forced' do
+      allow(native).to receive(:displayed?).and_return(false)
+      native.click(force: true)
+      expect(native).to have_received(:displayed?).once
+      expect(appium.calls).to include([:click_element, 'e1'])
+    end
+
+    it 'sends keys once ready' do
+      native.send_keys('a')
+      expect(appium.calls).to include([:send_keys_to_element, 'e1', ['a']])
+    end
+  end
 end

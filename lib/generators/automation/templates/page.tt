@@ -1,9 +1,12 @@
 # frozen_string_literal: true
 
-<%- if web? && examples? -%>
-require_relative '../components/header'
+require 'ruby_raider/runtime'
+<%- if cross_platform? -%>
+require_relative '../../helpers/appium_helper'
 <%- end -%>
-require_relative '../../helpers/wait_helper'
+<%- if mobile? -%>
+require_relative '../../helpers/gesture_helper'
+<%- end -%>
 <%- if network_helper? -%>
 require_relative '../../helpers/network_helper'
 <%- end -%>
@@ -15,7 +18,10 @@ class Page
 <%- if cross_platform? -%>
   include AppiumHelper
 <%- end -%>
-  include WaitHelper
+  include Raider::Helpers
+<%- if mobile? -%>
+  include GestureHelper
+<%- end -%>
 <%- if network_helper? -%>
   include NetworkHelper
 <%- end -%>
@@ -32,10 +38,10 @@ class Page
   end
   <%- if selenium_based? && examples? -%>
 
-  # Components
+  # Elements
 
-  def header
-    Header.new(find_element(css: '.welcome-msg'))
+  def welcome_message
+    driver.find_element(css: '.welcome-msg')
   end
   <%- end -%>
 end

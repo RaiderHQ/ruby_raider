@@ -6,7 +6,7 @@ class Home < Page
   # Actions
 
   def go_to_product_detail
-    tap(first_product)
+    first_product.click
   end
 
   private
@@ -14,6 +14,6 @@ class Home < Page
   # Elements
 
   def first_product
-    <%= partial('home_page_selector') -%>
+    <%= cross_platform? ? 'element(' : 'driver.find_element(' -%><%= partial('home_page_selector').strip -%>)
   end
 end

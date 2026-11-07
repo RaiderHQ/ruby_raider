@@ -18,11 +18,7 @@ require_relative '../abstract/page'
 
 <%= '  ' * module_parts.size %>  # Elements
 <%- if selenium? -%>
-<%- if wait_helper? -%>
-<%= '  ' * module_parts.size %>  # Example: click({ id: 'element_id' })
-<%- else -%>
-<%= '  ' * module_parts.size %>  # Example: driver.find_element(id: 'element_id')
-<%- end -%>
+<%= '  ' * module_parts.size %>  # Example: def submit_button = driver.find_element(by_role('button', name: 'Submit'))
 <%- end -%>
 <%= '  ' * module_parts.size %>end
 <% module_parts.each_with_index do |_mod, i| -%>
@@ -42,11 +38,7 @@ class <%= page_class_name %> < Page
 
   # Elements
 <%- if selenium? -%>
-<%- if wait_helper? -%>
-  # Example: click({ id: 'element_id' })
-<%- else -%>
-  # Example: driver.find_element(id: 'element_id')
-<%- end -%>
+  # Example: def submit_button = driver.find_element(by_role('button', name: 'Submit'))
 <%- end -%>
 end
 <% end -%>

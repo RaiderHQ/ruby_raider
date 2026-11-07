@@ -38,8 +38,8 @@ describe 'Ruby syntax validation' do
     end
 
     SYNTAX_MOBILE_AUTOMATIONS.each do |automation|
-      it "#{framework}_#{automation} wait_helper has the mobile gestures and no web-only methods" do
-        content = File.read(File.join(ensure_project(framework:, automation:), 'helpers/wait_helper.rb'))
+      it "#{framework}_#{automation} gesture_helper has the mobile gestures and no web-only methods" do
+        content = File.read(File.join(ensure_project(framework:, automation:), 'helpers/gesture_helper.rb'))
         expect(content).to include("'mobile: swipeGesture'").and include('def scroll_to(')
         expect(content).not_to include('def drag_and_drop(')
       end

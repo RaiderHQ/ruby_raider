@@ -7,6 +7,7 @@ require 'tmpdir'
 require 'yaml'
 require 'zip'
 require_relative '../../lib/generators/helper_generator'
+require_relative '../../lib/ruby_raider/runtime'
 require_relative '../integration/trace_format_checker'
 
 $LOAD_PATH.unshift(File.expand_path('fixtures/video_helper_stubs', __dir__))
@@ -54,7 +55,7 @@ class FakeTraceBidi
 end
 
 # Renders the real trace_helper.tt for a Selenium project, loads it, and drives its
-# Recorder the way WaitHelper's observer hook and the navigation listener do, with a
+# Recorder the way the runtime reports to Raider.observer and the navigation listener does, with a
 # driver double. The zips it writes are read back with rubyzip.
 # rubocop:disable RSpec/MultipleMemoizedHelpers, RSpec/VerifiedDoubles, RSpec/ExpectOutput, RSpec/MultipleExpectations, RSpec/ExampleLength
 describe 'Generated TraceHelper' do
@@ -72,16 +73,8 @@ describe 'Generated TraceHelper' do
                      capabilities: capabilities, execute_script: 2,
                      bidi: bidi, window_handle: 'context-1')
   end
-  let(:wait_helper) do
-    Module.new do
-      class << self
-        attr_accessor :observer
-      end
-    end
-  end
   let(:stderr) { StringIO.new }
   let(:warnings) { stderr.string.lines.grep(/\[trace\]/) }
-  let(:source) { { file: 'spec/login_page_spec.rb', line: 12 } }
   let(:failed_test) { { identifier: 'spec/login_page_spec.rb[1:1]', full_name: 'Login page logs in', status: 'failed', attempt: 2, error: nil } }
 
   def render_and_load
@@ -101,12 +94,16 @@ describe 'Generated TraceHelper' do
     TraceHelper.recorder_for(driver, **lambdas).tap(&:start)
   end
 
-  # What WaitHelper reports for one action. With an element, it was found ready (action_ready).
-  def act(recorder, action, selector, status: :passed, error: nil, within: [], args: nil, element: nil)
-    token = recorder.action_started(action: action, locator: { strategy: 'id', selector: selector }, within: within,
-                                    source: source, args: args)
-    recorder.action_ready(token, element: element) if element
-    recorder.action_finished(token, status: status, waited_ms: 95, retries: 1, error: error, element: element)
+  # What the runtime reports to Raider.observer for one action, through Raider.report. With an element, it was found
+  # ready (action_ready). Returns the recorder's token.
+  def act(_recorder, action, selector, status: :passed, error: nil, within: [], args: nil, element: nil)
+    started = { action: action, locator: { strategy: 'id', selector: selector }, within: within, args: args }
+    token = Raider.report(:action_started) { started } # ACT_LINE
+    Raider.report(:action_ready, token) { { element: element } } if element
+    Raider.report(:action_finished, token) do
+      { status: status, waited_ms: 95, retries: 1, error: error, element: element }
+    end
+    token
   end
 
   # What Page.capture's script answers: the inlined CSS, the sheets it could not read and the title.
@@ -119,6 +116,11 @@ describe 'Generated TraceHelper' do
     info = { 'rect' => { 'x' => 640, 'y' => 312, 'width' => 320, 'height' => 40 }, 'tag' => tag, 'label' => label,
              'role' => role, 'secret' => secret }
     allow(driver).to receive(:execute_script).with(/getBoundingClientRect/, element).and_return(info)
+  end
+
+  # The line of act that reports a start, which is where each recorded source points.
+  def act_line
+    File.foreach(__FILE__).find_index { |line| line.end_with?("# ACT_LINE\n") && line.include?('Raider.report') } + 1
   end
 
   def snapshot_of(path, index)
@@ -139,6 +141,7 @@ describe 'Generated TraceHelper' do
     Dir.chdir(project_dir) { example.run }
   ensure
     $stderr = original_stderr
+    Raider.observer = nil
     Object.send(:remove_const, :TraceHelper) if defined?(TraceHelper)
     FileUtils.rm_rf(project_dir)
   end
@@ -147,7 +150,6 @@ describe 'Generated TraceHelper' do
     # Recorder tmpdirs land inside the project, which the around hook removes.
     stub_const('ENV', ENV.to_h.merge(env).merge('TMPDIR' => File.join(project_dir, 'tmp')).compact)
     FileUtils.mkdir_p(File.join(project_dir, 'tmp'))
-    stub_const('WaitHelper', wait_helper)
     render_and_load
   end
 
@@ -220,7 +222,7 @@ describe 'Generated TraceHelper' do
     # No locator.label: a page object's element method has returned before the action runs, so it is never known.
     expect(steps.last).to include('locator' => { 'strategy' => 'id', 'selector' => 'go',
                                                  'within' => [{ 'strategy' => 'css', 'selector' => '.form' }] },
-                                  'source' => { 'file' => 'spec/login_page_spec.rb', 'line' => 12 },
+                                  'source' => { 'file' => __FILE__, 'line' => act_line },
                                   'waited_ms' => 95, 'retries' => 1, 'status' => 'passed',
                                   'screenshot' => 'steps/0002.jpg', 'snapshot' => 'steps/0002.html')
     expect(steps.last['duration_ms']).to be_a(Integer)
@@ -246,24 +248,6 @@ describe 'Generated TraceHelper' do
     expect(queries.map { |step| step.values_at('screenshot', 'snapshot') }.uniq).to eq([[nil, nil]])
     expect(queries.map { |step| step['url'] }.uniq).to eq(['https://example.test/login'])
     expect(names).to contain_exactly('trace.json', 'steps/0001.jpg', 'steps/0001.html')
-  end
-
-  it 'keeps only the last pass of eventually as child steps and counts the earlier passes in retries' do
-    recorder = started_recorder
-    group = recorder.group_started(action: :eventually, source: source)
-    2.times do |pass|
-      act(recorder, :click, 'refresh')
-      act(recorder, :text, 'welcome', status: :failed, error: RuntimeError.new("not yet #{pass}"))
-      recorder.group_retried(group, error: RuntimeError.new("not yet #{pass}"))
-    end
-    act(recorder, :click, 'refresh')
-    act(recorder, :text, 'welcome')
-    recorder.group_finished(group, status: :passed, retries: 2, error: nil)
-    steps = kept(recorder)['steps']
-
-    expect(steps.map { |step| step.values_at('index', 'parent_index', 'kind', 'action', 'status') })
-      .to eq([[1, nil, 'group', 'eventually', 'passed'], [2, 1, 'action', 'click', 'passed'], [3, 1, 'action', 'text', 'passed']])
-    expect(steps.first).to include('retries' => 2, 'error' => { 'class' => 'RuntimeError', 'message' => 'not yet 1' }, 'screenshot' => nil, 'snapshot' => nil)
   end
 
   it 'appends a failure step with the error when no traced step was running' do
@@ -295,20 +279,6 @@ describe 'Generated TraceHelper' do
 
     expect(steps.map { |step| step.values_at('kind', 'status', 'error') })
       .to eq([['action', 'failed', { 'class' => 'RuntimeError', 'message' => 'Waited 10s for {id: "go"} to be visible' }]])
-  end
-
-  it 'still gives the test error a step when the step that raised it was dropped by eventually' do
-    recorder = started_recorder
-    error = RuntimeError.new('not yet')
-    group = recorder.group_started(action: :eventually, source: source)
-    act(recorder, :click, 'refresh', status: :failed, error: error)
-    recorder.group_retried(group, error: error)
-    act(recorder, :click, 'refresh')
-    recorder.group_finished(group, status: :passed, retries: 1, error: nil)
-    steps = kept(recorder, failed_test.merge(error: error))['steps']
-
-    expect(steps.map { |step| step.values_at('kind', 'status') }).to eq([%w[group passed], %w[action passed]])
-    expect(steps.first['error']).to eq('class' => 'RuntimeError', 'message' => 'not yet')
   end
 
   it 'appends a failure step when the step that raised the test error was dropped by max_steps' do
@@ -491,11 +461,10 @@ describe 'Generated TraceHelper' do
       element_script(field, secret: false)
       recorder = started_recorder
       act(recorder, :send_keys, 'user', args: ['admin', :enter], element: field)
-      act(recorder, :select_by, 'colour', args: [:text, 'Blue'], element: field)
       act(recorder, :click, 'go', element: field)
       steps = kept(recorder)['steps']
 
-      expect(steps.map { |step| step.values_at('value', 'secret') }).to eq([['admin{enter}', false], ['Blue', false], [nil, nil]])
+      expect(steps.map { |step| step.values_at('value', 'secret') }).to eq([['admin{enter}', false], [nil, nil]])
       expect(steps.last.keys).not_to include('value', 'secret')
     end
 
@@ -611,17 +580,25 @@ describe 'Generated TraceHelper' do
     expect(Dir.children(File.join(project_dir, 'tmp'))).to be_empty
   end
 
-  it 'makes the recorder the WaitHelper observer until cleanup, so no test inherits it' do
+  it 'makes the recorder the Raider observer until cleanup, so no test inherits it' do
     recorder = started_recorder
-    expect(WaitHelper.observer).to be(recorder)
+    expect(Raider.observer).to be(recorder)
 
     recorder.stop(keep: false, test: failed_test)
     recorder.cleanup
-    expect(WaitHelper.observer).to be_nil
+    expect(Raider.observer).to be_nil
   end
 
-  it 'records navigation and the failure without WaitHelper' do
-    hide_const('WaitHelper')
+  it 'leaves an observer that is not the recorder alone on release' do
+    other = Object.new
+    recorder = started_recorder
+    Raider.observer = other
+    TraceHelper.release(recorder)
+
+    expect(Raider.observer).to be(other)
+  end
+
+  it 'records navigation and the failure with no observer events' do
     recorder = started_recorder
     recorder.navigated('https://example.test/login')
     steps = kept(recorder, failed_test.merge(error: RuntimeError.new('boom')))['steps']
@@ -629,25 +606,50 @@ describe 'Generated TraceHelper' do
     expect(steps.map { |step| step['kind'] }).to eq(%w[navigate failure])
   end
 
+  it 'takes each step source from the first frame outside the runtime and the helpers' do
+    recorder = started_recorder
+    act(recorder, :click, 'go')
+    act(recorder, :send_keys, 'user', args: ['admin'])
+    sources = kept(recorder)['steps'].map { |step| step['source'] }
+
+    expect(sources).to all(include('file' => __FILE__))
+    expect(sources.first['line']).to be_a(Integer)
+  end
+
+  it 'gives the token nil, so the runtime sends no ready or finished, when not recording' do
+    recorder = TraceHelper.recorder_for(driver)
+
+    expect(recorder.action_started(action: :click, locator: { strategy: 'id', selector: 'go' }, within: [])).to be_nil
+  end
+
+  it 'records the actions the runtime emits as steps with their locator strategy' do
+    recorder = started_recorder
+    %w[click send_keys clear submit].each { |action| act(recorder, action, 'go', args: nil) }
+    steps = kept(recorder)['steps']
+
+    expect(steps.map { |step| step['action'] }).to eq(%w[click send_keys clear submit])
+    expect(TraceHelper::MEDIA_ACTIONS).to eq(%w[navigate click send_keys clear submit])
+  end
+
   context 'with TRACE=off' do
     let(:env) { { 'TRACE' => 'off' } }
 
-    it 'returns a NullRecorder and leaves WaitHelper.observer nil with TRACE=off or enabled: false' do
+    it 'returns a NullRecorder and leaves Raider.observer nil with TRACE=off or enabled: false' do
       recorder = TraceHelper.recorder_for(driver)
 
       expect(recorder).to be_a(TraceHelper::NullRecorder)
       expect(recorder.start).to be_nil
       expect(recorder.stop(keep: true, test: failed_test)).to be_nil
-      expect(WaitHelper.observer).to be_nil
+      expect(Raider.observer).to be_nil
     end
   end
 
   context 'with enabled: false' do
     let(:trace_config) { { 'enabled' => false } }
 
-    it 'returns a NullRecorder and leaves WaitHelper.observer nil with TRACE=off or enabled: false' do
+    it 'returns a NullRecorder and leaves Raider.observer nil with TRACE=off or enabled: false' do
       expect(TraceHelper.recorder_for(driver)).to be_a(TraceHelper::NullRecorder)
-      expect(WaitHelper.observer).to be_nil
+      expect(Raider.observer).to be_nil
     end
   end
 
@@ -714,7 +716,7 @@ describe 'Generated TraceHelper' do
     expect(warnings).to eq(["[trace] could not write the trace: No space left on device; tracing disabled for this run\n"])
     expect(TraceHelper.enabled?).to be(false)
     expect(TraceHelper.recorder_for(driver)).to be_a(TraceHelper::NullRecorder)
-    expect(WaitHelper.observer).to be_nil
+    expect(Raider.observer).to be_nil
   end
 
   describe 'a navigation in flight' do
@@ -810,19 +812,6 @@ describe 'Generated TraceHelper' do
       steps = kept(recorder)['steps']
 
       expect(steps.map { |step| step['url'] }).to eq(['https://example.test/login', 'https://example.test/login'])
-    end
-
-    it 'forgets a pending navigation that eventually retried away, so navigated captures nothing for it' do
-      recorder = started_recorder
-      group = recorder.group_started(action: :eventually, source: source)
-      recorder.navigating('https://example.test/slow')
-      recorder.group_retried(group)
-      recorder.navigated('https://example.test/slow')
-      steps = kept(recorder)['steps']
-
-      expect(steps.map { |step| step.values_at('kind', 'action', 'status') }).to eq([%w[group eventually failed], %w[navigate navigate passed]])
-      expect(recorder.instance_variable_get(:@navigation)).to be_nil
-      expect(Dir.children(recorder.dir).grep(/\A000002/)).to eq([])
     end
 
     it 'is driven by the listener before each navigation, and the null recorder ignores it' do

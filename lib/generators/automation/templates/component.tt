@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class Component
+  # `component` is a Selenium element: `component.find_element(...)` searches inside it.
   attr_reader :component
 
   def initialize(component)

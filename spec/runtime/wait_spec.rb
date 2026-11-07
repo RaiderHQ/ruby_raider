@@ -42,40 +42,30 @@ RSpec.describe 'Raider::Wait' do
     end
   end
 
-  describe '.eventually' do
-    it 'never waits past an enclosing deadline' do
-      started = clock
-      expect { Raider.eventually(timeout: 0.3) { Raider::Wait.until(timeout: 5, interval: 0) { false } } }
-        .to raise_error(Raider::TimeoutError)
-      expect(clock - started).to be < 0.5
+  describe 'eventually' do
+    it 'is gone' do
+      expect(Raider.respond_to?(:eventually)).to be(false)
+      expect(Raider::Wait.respond_to?(:eventually)).to be(false)
+    end
+  end
+
+  describe '.immediately' do
+    it 'returns the block value and flags the block as immediate' do
+      expect(Raider::Wait.immediate?).to be(false)
+      expect(Raider::Wait.immediately { Raider::Wait.immediate? }).to be(true)
+      expect(Raider::Wait.immediate?).to be(false)
     end
 
-    it 'gives a nested call without timeout what is left' do
-      seen = nil
-      Raider.eventually(timeout: 2) { seen = Raider::Wait.until { Raider::Wait.deadline } }
-      expect(seen).to be <= clock + 2
-    end
-
-    it 'retries AmbiguousMatch then passes' do
-      calls = 0
-      result = Raider.eventually(timeout: 1) do
-        raise Raider::AmbiguousMatch.new('desc', []) if (calls += 1) == 1
-
-        :done
+    it 'stays immediate when an inner call leaves' do
+      Raider::Wait.immediately do
+        Raider::Wait.immediately { :inner }
+        expect(Raider::Wait.immediate?).to be(true)
       end
-      expect([result, calls]).to eq([:done, 2])
     end
 
-    it 'prefixes the last error with the time waited' do
-      expect { Raider.eventually(timeout: 0.1) { raise Raider::TimeoutError, 'covered' } }
-        .to raise_error(Raider::TimeoutError, /\A\(still failing after 0\.1s\)\ncovered/)
-    end
-
-    it 'does not retry other errors' do
-      calls = 0
-      expect { Raider.eventually(timeout: 1) { (calls += 1) && raise(ArgumentError, 'boom') } }
-        .to raise_error(ArgumentError)
-      expect(calls).to eq(1)
+    it 'restores the flag when the block raises' do
+      expect { Raider::Wait.immediately { raise ArgumentError } }.to raise_error(ArgumentError)
+      expect(Raider::Wait.immediate?).to be(false)
     end
   end
 end

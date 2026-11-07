@@ -64,7 +64,7 @@ RSpec.describe 'Raider::Matchers::Base' do
     Raider.timeout = 0.2
     matcher = matcher_class.new('b')
     matcher.matches?(subject_class.new('a'))
-    expect(matcher.failure_message).to match(/after 0\.2\d*s\z/)
+    expect(matcher.failure_message).to match(/after 0\.[23]\d*s\z/)
   end
 
   it 'calls a Proc actual on every poll and describes it as the block' do

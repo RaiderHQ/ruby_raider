@@ -177,8 +177,8 @@ describe 'Scaffolding E2E' do
   end
 
   shared_examples 'selenium scaffolded component' do
-    it 'has driver.find_element example' do
-      expect(component_content).to include('driver.find_element')
+    it 'has component.find_element example' do
+      expect(component_content).to include('component.find_element')
     end
 
     it 'has private section' do

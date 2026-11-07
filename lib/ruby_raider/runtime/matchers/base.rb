@@ -66,7 +66,7 @@ module Raider
       end
 
       NOT_FOUND = Object.new.freeze
-      STALE_HINT = 'the element is stale; re-find it, use the block form, or a page-object element'
+      STALE_HINT = 'the element is stale; use the block form (expect { page.element }) so it is found again'
 
       # Raised inside the poll to end it at once: a raw element went stale.
       class StaleActual < StandardError; end
@@ -153,8 +153,10 @@ module Raider
       end
 
       def settled?(negated)
-        @poll.subject = resolve(@poll.actual)
-        @poll.value = read(@poll.subject)
+        Raider::Wait.immediately do
+          @poll.subject = resolve(@poll.actual)
+          @poll.value = read(@poll.subject)
+        end
         pass?(@poll.value) != negated || throw(:not_ready)
       rescue *retried_errors => e
         @poll.value = NOT_FOUND

@@ -1,0 +1,46 @@
+module Raider
+  def self.report: (Symbol hook, *untyped args, **untyped details) ?{ () -> Hash[Symbol, untyped] } -> untyped
+
+  module Observer
+    LIB_DIR: String
+    GUARD_KEY: Symbol
+    MESSAGE_LIMIT: Integer
+    STRATEGIES: Hash[String, String]
+
+    class Run
+      @element: untyped
+      @action: Symbol
+      @args: Array[untyped]?
+      @retries: Integer
+      @started: Float
+      @token: untyped
+
+      def initialize: (untyped element, Symbol action, Array[untyped]? args) -> void
+      def ready: (Integer retries) -> untyped
+      def finish: (Exception? error) -> untyped
+
+      private
+
+      def finished: (Exception? error) -> Hash[Symbol, untyped]
+    end
+
+    def self.emit_action: (untyped element, Symbol action, ?Array[untyped]? args) { (Run?) -> untyped } -> untyped
+    def self.started: (untyped element, Symbol action, Array[untyped]? args) -> Hash[Symbol, untyped]
+    def self.locator_of: (untyped element) -> Hash[Symbol, untyped]?
+    def self.stamp: (untyped element, Array[untyped] args, untyped parent) -> untyped
+    def self.stamp_all: (Array[untyped] elements, Array[untyped] args, untyped parent) -> Array[untyped]
+    def self.guarded: () { () -> untyped } -> untyped
+    def self.stop: (untyped watcher, Exception error) -> nil
+    def self.millis: (Float started) -> Integer
+    def self.clock: () -> Float
+
+    # private singleton helpers
+    def self.attach: (untyped element, Hash[Symbol, untyped] stamp) -> untyped
+    def self.frozen_stamp: (Array[untyped] args, untyped parent) -> Hash[Symbol, untyped]
+    def self.summary: (Exception error) -> String
+    def self.describe: (Array[untyped] args, untyped parent) -> Hash[Symbol, untyped]
+    def self.selector: (String strategy, untyped what, Array[untyped] args) -> String
+    def self.role_text: (Array[untyped] args) -> String
+    def self.chain: (untyped parent) -> Array[Hash[Symbol, untyped]]
+  end
+end

@@ -12,6 +12,8 @@ module Utilities
   def self?.platform=: (String platform) -> void
   def self?.browser_options=: (Array[String] opts) -> void
   def self?.delete_browser_options: () -> void
+  def self?.strict=: (bool enabled) -> void
+  def self?.actionability=: (bool enabled) -> void
   def self?.video_enabled=: (bool enabled) -> void
   def self?.trace_enabled=: (bool enabled) -> void
   def self?.batch_update: (**untyped settings) -> void

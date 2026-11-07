@@ -56,6 +56,10 @@ RSpec.describe 'Raider runtime errors' do
       expect(error.message).to eq('waited 10s for `<input id="q">` to be visible')
     end
 
+    it 'reports the waited seconds when given' do
+      expect(described_class.new('<a>', 'be visible', waited: 0.25).message).to start_with('waited 0.25s for')
+    end
+
     it 'formats fractional timeouts' do
       Raider.timeout = 2.5
       expect(described_class.new('<a>', 'be visible').message).to start_with('waited 2.5s for')

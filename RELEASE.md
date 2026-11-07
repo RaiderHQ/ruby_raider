@@ -9,6 +9,19 @@
 - `raider g feature`, `raider g steps` and `raider u path --feature` are removed; `raider g scaffold` always writes a spec and a page.
 - Generated projects no longer emit `cucumber_step` trace groups.
 - ruby_raider now depends on selenium-webdriver >= 4.30.
+- Every generated project loads `require 'ruby_raider/runtime'`, which adds waiting and actionability to Selenium and Appium themselves.
+- `WaitHelper`, `RaiderElement`, `helpers/wait_helper.rb` and `helpers/raider_element.rb` are removed. Page objects call Selenium and Appium directly (`driver.find_element(...)`, `element.click`, `element.send_keys`).
+- New locator keys `label`, `placeholder`, `alt`, `title`, `text` and `test_id`, and `by_role(role, name:, exact:, include_hidden:, level:)`.
+- `find_element` is strict: it fails with `Raider::AmbiguousMatch` when a locator matches more than one element. `find_elements` never does.
+- `find_element` and `find_elements` wait for a match (`find_elements` returns `[]` at the deadline). A missing element fails with `no such element: { id: "x" } (waited 10s)`.
+- `eventually` is removed. Block-form expectations retry: `expect { value }.to eq(...)` works with any value matcher. RSpec's block matchers (`raise_error`, `change`, `output`, `throw_symbol`, `yield_*`) keep their stock behaviour, and `expect(value)` without a block does not retry.
+- New RSpec matchers `have_text`, `have_value`, `have_attribute`, `be_visible`, `be_hidden`, `be_enabled`, `be_disabled`, `be_checked`, `have_count`, `have_title`, `have_url`, `have_element`, `have_css` and `have_xpath`, each with `wait:`.
+- `click`, `send_keys`, `clear` and `submit` wait until the element is actionable (visible, enabled, not inert, stable, receives events). `force: true` skips the checks for one call.
+- Native Appium actions wait for the element to be displayed and enabled. On XCUITest an element reported as not displayed waits the full `timeout` and then raises `Raider::NotActionable`; use `force: true` or `Raider.actionability = false` as the way out.
+- `config/config.yml` gets `strict` and `actionability` next to `timeout`. `raider u strict on|off` and `raider u actionability on|off` set them, and `RAIDER_TIMEOUT`, `RAIDER_STRICT`, `RAIDER_ACTIONABILITY` and `RAIDER_QUIET` apply to every project, including single-platform mobile projects, which have no `config.yml`.
+- Mobile gestures (`swipe`, `scroll`, `scroll_to`) move to `helpers/gesture_helper.rb`.
+- Traces record element actions from the runtime: `click`, `send_keys`, `clear` and `submit` with their locators, `within` and `waited_ms`. `text`, `find_element` and other reads are no longer steps, and there are no `eventually` groups.
+- The generated Gemfile pins `raider_reporter` `~> 1.0` (1.0.0 drops the Cucumber plugin).
 - Existing projects pin `gem 'ruby_raider', '~> 3.15'` (or an older `~> 3.x`) in their Gemfile, so `bundle update` never moves them to 4.0; to upgrade, change the pin to `~> 4.0` and run `bundle update ruby_raider`.
 
 ### 3.7.0

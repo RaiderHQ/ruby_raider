@@ -1,0 +1,21 @@
+module Raider
+  module Matchers
+    module Presence
+      class HaveElement < Base
+        def verb: () -> String
+        def read: (untyped subject) -> Array[untyped]
+        def pass?: (untyped value) -> bool
+        def description: () -> String
+
+        private
+
+        def target: () -> String
+        def show: (untyped value) -> Integer
+      end
+    end
+
+    def have_element: (?Hash[Symbol, untyped]? locator, ?wait: Numeric?, **untyped by) -> Presence::HaveElement
+    def have_css: (String selector, ?wait: Numeric?) -> Presence::HaveElement
+    def have_xpath: (String selector, ?wait: Numeric?) -> Presence::HaveElement
+  end
+end

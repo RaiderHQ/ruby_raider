@@ -14,6 +14,9 @@ RSpec.describe 'Raider role finder' do
 
   after { Raider.reset }
 
+  # These examples are about the role engine, so each find makes one attempt.
+  around { |example| Raider::Wait.immediately { example.run } }
+
   def element(id)
     Selenium::WebDriver::Element.new(bridge, id)
   end

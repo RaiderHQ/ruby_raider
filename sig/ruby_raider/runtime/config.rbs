@@ -13,6 +13,8 @@ module Raider
   def self.actionability=: (bool?) -> bool?
   def self.timeout=: (Numeric?) -> Numeric?
   def self.test_id_attribute=: (String?) -> String?
+  def self.observer: () -> untyped
+  def self.observer=: (untyped) -> untyped
   def self.reset: () -> void
 
   # private singleton helpers

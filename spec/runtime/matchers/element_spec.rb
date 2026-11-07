@@ -113,6 +113,22 @@ RSpec.describe 'Raider element matchers' do
       expect(be_visible(wait: 1).matches?(element)).to be(true)
     end
 
+    it 'be_hidden passes in one poll on a block whose find is always empty' do
+      driver = Raider::Spec.driver(bridge)
+      calls = 0
+      Raider.timeout = 5
+      expect { (calls += 1) && driver.find_element(id: 'gone') }.to be_hidden
+      expect(calls).to eq(1)
+    end
+
+    it 'have_text fails on a block whose find is always empty after about three polls' do
+      driver = Raider::Spec.driver(bridge)
+      calls = 0
+      matcher = have_text('x', wait: 0.3)
+      expect(matcher.matches?(-> { (calls += 1) && driver.find_element(id: 'gone') })).to be(false)
+      expect(calls).to be_between(3, 4)
+    end
+
     it 'be_hidden passes when the element is absent' do
       bridge.answer(:element_displayed?, gone)
       expect(be_hidden(wait: 0.2).matches?(element)).to be(true)
@@ -182,8 +198,8 @@ RSpec.describe 'Raider element matchers' do
       expect(matcher.matches?(element)).to be(false)
       expect(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).to be < 1
       expect(matcher.failure_message).to eq(
-        'expected <element> to have text "x", but the element is stale; re-find it, ' \
-        'use the block form, or a page-object element'
+        'expected <element> to have text "x", but the element is stale; ' \
+        'use the block form (expect { page.element }) so it is found again'
       )
     end
 
