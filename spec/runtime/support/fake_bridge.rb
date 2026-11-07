@@ -41,6 +41,22 @@ module Raider
         script_results.shift
       end
 
+      def click_element(id)
+        calls << [:click_element, id]
+      end
+
+      def send_keys_to_element(id, keys)
+        calls << [:send_keys_to_element, id, keys]
+      end
+
+      def clear_element(id)
+        calls << [:clear_element, id]
+      end
+
+      def submit_element(id)
+        calls << [:submit_element, id]
+      end
+
       def element_tag_name(id)
         calls << [:element_tag_name, id]
         'div'
