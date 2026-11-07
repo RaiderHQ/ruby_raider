@@ -54,6 +54,8 @@ RSpec.configure do |config|
     # Individual specs can also call ensure_project() for on-demand generation.
     FRAMEWORKS.each do |framework|
       AUTOMATION_TYPES.each do |automation|
+        next if automation == 'watir' # refused since 4.0; Task 2 removes it and its specs
+
         ensure_project(framework:, automation:)
       end
     end
