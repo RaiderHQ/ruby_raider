@@ -19,6 +19,7 @@ module Raider
 
     private
 
+    def await_element: (Array[untyped] args, ^() -> Selenium::WebDriver::Element?) -> Selenium::WebDriver::Element?
     def element_attempt: (Array[untyped] args) { () -> untyped } -> ^() -> Selenium::WebDriver::Element?
     def elements_attempt: (Array[untyped] args) { () -> untyped } -> ^() -> Array[Selenium::WebDriver::Element]
     def role_attempt: (Array[untyped] args) -> ^() -> Array[Selenium::WebDriver::Element]

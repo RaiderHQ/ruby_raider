@@ -5,6 +5,7 @@ require_relative 'config'
 require_relative 'errors'
 require_relative 'context'
 require_relative 'finders'
+require_relative 'observer'
 
 module Raider
   # Renders a find_element argument list for error messages.
@@ -50,6 +51,25 @@ module Raider
     def find_element(*args)
       Finders.ensure_registered
       attempt = element_attempt(args) { super(*args) }
+      Observer.stamp(await_element(args, attempt), args, self)
+    end
+
+    def find_elements(*args)
+      return Observer.stamp_all(super, args, self) if Wait.immediate?
+
+      attempt = elements_attempt(args) { super(*args) }
+      found = []
+      begin
+        Wait.until(timeout: Raider.timeout) { (found = attempt.call).any? }
+      rescue TimeoutError
+        nil
+      end
+      Observer.stamp_all(found, args, self)
+    end
+
+    private
+
+    def await_element(args, attempt)
       return attempt.call || raise(Selenium::WebDriver::Error::NoSuchElementError, not_found(args)) if Wait.immediate?
 
       started = clock
@@ -60,21 +80,6 @@ module Raider
               "#{not_found(args)} (waited #{Describe.seconds(clock - started)}s)"
       end
     end
-
-    def find_elements(*args)
-      return super if Wait.immediate?
-
-      attempt = elements_attempt(args) { super(*args) }
-      found = []
-      begin
-        Wait.until(timeout: Raider.timeout) { (found = attempt.call).any? }
-      rescue TimeoutError
-        nil
-      end
-      found
-    end
-
-    private
 
     # A callable making one attempt at the element: the element, or nil when nothing
     # matched yet. The context is decided here, once per find, not per attempt.

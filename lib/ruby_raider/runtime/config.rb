@@ -30,8 +30,12 @@ module Raider
 
     attr_writer :strict, :actionability, :timeout, :test_id_attribute
 
+    # Any object (or nil) receiving action events; see Raider::Observer.
+    attr_accessor :observer
+
     def reset
       @strict = @actionability = @timeout = @test_id_attribute = nil
+      @observer = nil
       @file_config = nil
     end
 

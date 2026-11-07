@@ -5,5 +5,9 @@ module Raider
     alias send_key send_keys
     def clear: (?force: bool) -> untyped
     def submit: (?force: bool) -> untyped
+
+    private
+
+    def raider_gate: (Observer::Run? run, Symbol action, bool force) -> untyped
   end
 end
