@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Locators</title></head>
+<body>
+  <form>
+    <label for="email">Email</label>
+    <input id="email" type="text">
+
+    <label for="email-address">Email address</label>
+    <input id="email-address" type="text">
+
+    <label for="password">Password</label>
+    <input id="password" type="password">
+
+    <label>Username <input id="username" type="text"></label>
+
+    <input id="search" type="text" aria-label="Search site">
+
+    <span id="phone-label">Phone number</span>
+    <input id="phone" type="text" aria-labelledby="phone-label">
+
+    <input id="code" type="text" placeholder="Enter code">
+    <input id="name-field" type="text" placeholder="Enter your full name">
+  </form>
+
+  <section id="scope">
+    <label for="scoped-email">Email</label>
+    <input id="scoped-email" type="text">
+  </section>
+
+  <img id="logo" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="Company logo">
+  <a id="docs-link" href="#docs" title="Read the docs">Docs</a>
+
+  <div id="nested"><p id="sign-in">Sign in</p></div>
+
+  <ul>
+    <li id="item-one" data-testid="item-1">One</li>
+    <li id="item-two" data-testid="item-2">Two</li>
+  </ul>
+
+  <button id="save-a" class="primary">Save</button>
+  <button id="save-b" class="secondary">Save</button>
+  <button id="save-c" class="tertiary">Save</button>
+</body>
+</html>
