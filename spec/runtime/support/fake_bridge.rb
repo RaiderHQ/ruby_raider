@@ -57,9 +57,29 @@ module Raider
         result
       end
 
-      # Describe.element falls back to <element> when the tag cannot be read.
-      def element_tag_name(_ref)
-        raise Selenium::WebDriver::Error::WebDriverError, 'no tag'
+      def click_element(id)
+        calls << [:click_element, id]
+      end
+
+      def send_keys_to_element(id, keys)
+        calls << [:send_keys_to_element, id, keys]
+      end
+
+      def clear_element(id)
+        calls << [:clear_element, id]
+      end
+
+      def submit_element(id)
+        calls << [:submit_element, id]
+      end
+
+      # Records the call; answers from the scripted channel, else raises so
+      # Describe.element falls back to <element>.
+      def element_tag_name(ref)
+        calls << [:element_tag_name, ref]
+        raise Selenium::WebDriver::Error::WebDriverError, 'no tag' if @answers[:element_tag_name].empty?
+
+        next_answer(:element_tag_name)
       end
 
       def element_class

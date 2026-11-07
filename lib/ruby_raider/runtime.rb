@@ -10,7 +10,9 @@ require_relative 'runtime/selectors'
 require_relative 'runtime/locator_converter'
 require_relative 'runtime/finders'
 require_relative 'runtime/role_finder'
+require_relative 'runtime/actionability'
 require_relative 'runtime/strict'
+require_relative 'runtime/actionable'
 
 Raider::Finders.check_api
 Raider::Finders.install
