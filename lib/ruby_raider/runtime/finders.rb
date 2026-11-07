@@ -27,8 +27,12 @@ module Raider
       context.extra_finders = (context.extra_finders || {}).merge(FINDERS)
     end
 
+    # Covers a late `require 'appium_lib'`, which overwrites the finder table
+    # and assigns its own bridge converter. Bridges created before the wrap keep
+    # the converter they copied; require the runtime before creating a driver.
     def ensure_registered
       register unless Selenium::WebDriver::SearchContext.finders.key?(:label)
+      install_converter(Appium::Core::Base::Bridge) if defined?(Appium::Core::Base::Bridge)
     end
 
     def install_converter(bridge_class)
@@ -43,12 +47,15 @@ module Raider
       install_converter(Appium::Core::Base::Bridge) if defined?(Appium::Core::Base::Bridge)
     end
 
-    def guard
+    def check_api
       bridge = Selenium::WebDriver::Remote::Bridge
       context = Selenium::WebDriver::SearchContext
       raise Error, "#{BRIDGE} must respond to locator_converter=" unless bridge.respond_to?(:locator_converter=)
       raise Error, "#{SEARCH_CONTEXT} must respond to extra_finders=" unless context.respond_to?(:extra_finders=)
-      return unless ObjectSpace.each_object(bridge).any?
+    end
+
+    def guard
+      return unless ObjectSpace.each_object(Selenium::WebDriver::Remote::Bridge).any?
 
       raise Error, "require 'ruby_raider/runtime' before creating the driver"
     end
