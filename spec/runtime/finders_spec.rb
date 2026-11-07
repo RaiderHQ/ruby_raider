@@ -50,6 +50,7 @@ RSpec.describe 'Raider finders' do
     element = Selenium::WebDriver::Element.new(bridge, 'root')
     element.find_element(label: 'Email')
     expect(bridge.calls.last.last).to eq([:element, 'root'])
+    expect(bridge.calls.last[2].split(' | ')).to all(start_with('.//'))
   end
 
   it 'raises NotSupported for role' do
@@ -59,6 +60,12 @@ RSpec.describe 'Raider finders' do
   it 'raises ArgumentError naming the key for a malformed value' do
     expect { driver.find_element(label: [1, {}]) }.to raise_error(ArgumentError, /label/)
     expect { driver.find_element(label: %w[a b]) }.to raise_error(ArgumentError, /label/)
+  end
+
+  it 'rejects nil and blank values' do
+    [{ label: nil }, { text: '' }, { placeholder: ['  ', {}] }].each do |locator|
+      expect { driver.find_element(locator) }.to raise_error(ArgumentError, /#{locator.keys.first}: needs a non-empty value/)
+    end
   end
 
   describe '.install_converter' do
@@ -102,23 +109,36 @@ RSpec.describe 'Raider finders' do
     end
   end
 
+  describe '.ensure_registered with a late Appium bridge' do
+    it 'wraps the converter Appium assigned' do
+      appium = stub_const('Appium::Core::Base::Bridge', Class.new(Selenium::WebDriver::Remote::Bridge))
+      inner = Selenium::WebDriver::Remote::Bridge::LocatorConverter.new
+      appium.locator_converter = inner
+      Raider::Finders.ensure_registered
+      expect(appium.locator_converter).to be_a(Raider::LocatorConverter)
+      expect(appium.locator_converter.inner).to equal(inner)
+    end
+  end
+
   describe '.guard' do
     it 'raises when a bridge already exists' do
       existing = Selenium::WebDriver::Remote::Bridge.allocate
       expect { Raider::Finders.guard }.to raise_error(Raider::Error, /before creating the driver/)
       expect(existing).to be_a(Selenium::WebDriver::Remote::Bridge)
     end
+  end
 
+  describe '.check_api' do
     it 'raises when the bridge cannot take a converter' do
       allow(Selenium::WebDriver::Remote::Bridge).to receive(:respond_to?).and_call_original
       allow(Selenium::WebDriver::Remote::Bridge).to receive(:respond_to?).with(:locator_converter=).and_return(false)
-      expect { Raider::Finders.guard }.to raise_error(Raider::Error, /locator_converter=/)
+      expect { Raider::Finders.check_api }.to raise_error(Raider::Error, /locator_converter=/)
     end
 
     it 'raises when SearchContext cannot take extra finders' do
       allow(search_context).to receive(:respond_to?).and_call_original
       allow(search_context).to receive(:respond_to?).with(:extra_finders=).and_return(false)
-      expect { Raider::Finders.guard }.to raise_error(Raider::Error, /extra_finders=/)
+      expect { Raider::Finders.check_api }.to raise_error(Raider::Error, /extra_finders=/)
     end
   end
 end

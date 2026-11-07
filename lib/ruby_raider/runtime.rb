@@ -9,5 +9,6 @@ require_relative 'runtime/selectors'
 require_relative 'runtime/locator_converter'
 require_relative 'runtime/finders'
 
+Raider::Finders.check_api
 Raider::Finders.install
 Raider::Finders.guard
