@@ -6,6 +6,5 @@ module ScaffoldProjectDetector
   def self?.detect_automation: (?String? gemfile) -> String
   def self?.read_gemfile: () -> String
   def self?.selenium?: () -> bool
-  def self?.wait_helper?: () -> bool
   def self?.config: () -> Hash[String, untyped]
 end

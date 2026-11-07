@@ -17,7 +17,6 @@ class AutomationGenerator < Generator
       generate_home_page
       generate_pdp_page
     else
-      generate_header_component
       generate_model_files
       generate_pages
     end
@@ -65,10 +64,6 @@ class AutomationGenerator < Generator
 
   def generate_pdp_page
     template('pdp.tt', "#{name}/page_objects/pages/pdp.rb")
-  end
-
-  def generate_header_component
-    template('header.tt', "#{name}/page_objects/components/header.rb")
   end
 
   def generate_model_factory

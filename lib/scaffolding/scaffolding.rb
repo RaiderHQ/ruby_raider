@@ -76,10 +76,6 @@ class Scaffolding < Thor::Group
     automation_type == 'selenium'
   end
 
-  def wait_helper?
-    ScaffoldProjectDetector.wait_helper?
-  end
-
   def default_path(standard_path, file_type)
     path ? "#{path}/#{normalized_name}#{file_type}" : standard_path
   end

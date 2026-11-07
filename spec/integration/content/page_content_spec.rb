@@ -37,16 +37,15 @@ describe 'Page object content' do
   shared_examples 'selenium login page' do |project_name|
     subject(:login) { read_generated(project_name, 'page_objects/pages/login.rb') }
 
-    it 'returns locator hashes from the element methods' do
-      expect(login).to include("{ id: 'loginFrm_loginname' }", "{ id: 'loginFrm_password' }",
-                               %q({ xpath: "//button[@title='Login']" }))
-      expect(login).not_to include('driver.find_element')
+    it 'returns Selenium elements from the element methods' do
+      expect(login).to include("driver.find_element(id: 'loginFrm_loginname')", "driver.find_element(id: 'loginFrm_password')",
+                               "driver.find_element(by_role('button', name: 'Login'))")
+      expect(login).not_to include('browser.')
     end
 
-    it 'logs in through the wait helper' do
-      expect(login).to include('send_keys(username_field, username)', 'send_keys(password_field, password)',
-                               'click(login_button)')
-      expect(login).not_to include('.send_keys', '.click')
+    it 'logs in by acting on the elements' do
+      expect(login).to include('username_field.send_keys(username)', 'password_field.send_keys(password)', 'login_button.click')
+      expect(login).to include('alias log_as login')
     end
 
     it 'has private element methods' do
@@ -176,12 +175,12 @@ describe 'Abstract page layout' do
   end
 end
 
-describe 'Example pages on the wait helper' do
+describe 'Example pages' do
   FRAMEWORKS.each do |framework|
-    it "finds the header through the wait helper in #{framework} selenium" do
+    it "defines welcome_message on the abstract page in #{framework} selenium" do
       page = read_generated("#{framework}_selenium", 'page_objects/abstract/page.rb')
-      expect(page).to include("Header.new(find_element(css: '.welcome-msg'))")
-      expect(page).not_to include('driver.find_element')
+      expect(page).to include("def welcome_message\n    driver.find_element(css: '.welcome-msg')")
+      expect(page).not_to include('Header', 'components/header')
     end
 
     %w[ios android cross_platform].each do |automation|

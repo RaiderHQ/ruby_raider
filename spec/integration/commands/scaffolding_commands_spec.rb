@@ -60,15 +60,12 @@ describe ScaffoldingCommands do
     end
   end
 
-  describe 'waiting examples' do
-    let(:tmp_dir) { 'tmp_scaffold_wait_helper_test' }
-    let(:selenium_example) { "driver.find_element(id: 'element_id')" }
-    let(:waiting_example) { "click({ id: 'element_id' })" }
+  describe 'selenium examples' do
+    let(:tmp_dir) { 'tmp_scaffold_examples_test' }
 
-    def scaffold_in_project(gem_name, kind, wait_helper:)
-      FileUtils.mkdir_p("#{tmp_dir}/helpers")
-      File.write("#{tmp_dir}/Gemfile", "gem 'rspec'\ngem '#{gem_name}'\n")
-      File.write("#{tmp_dir}/helpers/wait_helper.rb", '') if wait_helper
+    def scaffold_in_project(kind)
+      FileUtils.mkdir_p(tmp_dir)
+      File.write("#{tmp_dir}/Gemfile", "gem 'rspec'\ngem 'selenium-webdriver'\n")
       Dir.chdir(tmp_dir) { scaffold.new.invoke(kind, nil, %w[foo]) }
     end
 
@@ -77,28 +74,15 @@ describe ScaffoldingCommands do
       FileUtils.rm_rf(tmp_dir)
     end
 
-    it 'shows the waiting example in a page when the project has the wait helper' do
-      scaffold_in_project('selenium-webdriver', :page, wait_helper: true)
-      content = File.read("#{tmp_dir}/page_objects/pages/foo.rb")
-      expect(content).to include(waiting_example)
-      expect(content).not_to include(selenium_example)
+    it 'shows the by_role example in a page' do
+      scaffold_in_project(:page)
+      expect(File.read("#{tmp_dir}/page_objects/pages/foo.rb"))
+        .to include("# Example: def submit_button = driver.find_element(by_role('button', name: 'Submit'))")
     end
 
-    it 'keeps the driver example in a page without the wait helper' do
-      scaffold_in_project('selenium-webdriver', :page, wait_helper: false)
-      content = File.read("#{tmp_dir}/page_objects/pages/foo.rb")
-      expect(content).to include(selenium_example)
-      expect(content).not_to include(waiting_example)
-    end
-
-    it 'shows the waiting example in a component when the project has the wait helper' do
-      scaffold_in_project('selenium-webdriver', :component, wait_helper: true)
-      expect(File.read("#{tmp_dir}/page_objects/components/foo.rb")).to include("component.find_element(css: '.selector').click")
-    end
-
-    it 'keeps the driver example in a component without the wait helper' do
-      scaffold_in_project('selenium-webdriver', :component, wait_helper: false)
-      expect(File.read("#{tmp_dir}/page_objects/components/foo.rb")).to include("driver.find_element(css: '.selector')")
+    it 'shows the component example in a component' do
+      scaffold_in_project(:component)
+      expect(File.read("#{tmp_dir}/page_objects/components/foo.rb")).to include("# Example: component.find_element(css: '.selector').click")
     end
   end
 end

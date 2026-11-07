@@ -22,7 +22,7 @@ describe 'Login' do
 
     it 'can successfully log in' do
       account_page.visit
-      eventually { expect(account_page.header.customer_name).to eq "Welcome back #{user['name']}" }
+      expect { account_page.welcome_message }.to have_text("Welcome back #{user['name']}")
     end
   end
 
@@ -31,7 +31,7 @@ describe 'Login' do
 
     it 'cannot log in' do
       login_page.visit
-      eventually { expect(account_page.header.customer_name).to eq 'Login or register' }
+      expect { login_page.welcome_message }.to have_text('Login or register')
     end
   end
 end
@@ -42,7 +42,7 @@ describe 'Account', :logged_in do
 
   it 'opens the account page with the saved login' do
     account_page.visit
-    eventually { expect(account_page.header.customer_name).to eq "Welcome back #{user['name']}" }
+    expect { account_page.welcome_message }.to have_text("Welcome back #{user['name']}")
   end
 end
 # rubocop:enable RSpec/MultipleDescribes

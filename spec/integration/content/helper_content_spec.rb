@@ -427,7 +427,7 @@ describe 'Helper file content' do
       it 'reuses the saved login for the driver, falling back to the real login' do
         expect(helper).to include("SessionState.new(#{target}).reuse(")
         expect(helper).to include("user = ModelFactory.for('users')['registered user']", ".login(user['username'], user['password'])")
-        expect(helper).to include("header.customer_name == \"Welcome back \#{user['name']}\"")
+        expect(helper).to include("welcome_message.text == \"Welcome back \#{user['name']}\"")
       end
 
       it 'requires the models and pages the login needs' do

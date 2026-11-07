@@ -73,11 +73,12 @@ describe 'Test file content' do
   end
 end
 
-describe 'Example tests on the wait helper' do
-  it 'wraps every assertion of the selenium rspec spec in eventually' do
+describe 'Example tests' do
+  it 'asserts the selenium rspec spec with have_text and no eventually' do
     spec = read_generated('rspec_selenium', 'spec/login_page_spec.rb')
-    expect(spec.scan('eventually { expect(').size).to eq(3)
-    expect(spec.scan(/^ +expect\(/)).to be_empty
+    expect(spec.scan('expect { account_page.welcome_message }.to have_text("Welcome back #{user[\'name\']}")').size).to eq(2)
+    expect(spec).to include("expect { login_page.welcome_message }.to have_text('Login or register')")
+    expect(spec).not_to include('eventually')
   end
 
   %w[ios android cross_platform].each do |automation|

@@ -9,46 +9,26 @@ class Login < Page
 
   # Actions
 
-<%- if selenium_based? -%>
   def login(username, password)
-    send_keys(username_field, username)
-    send_keys(password_field, password)
-    click(login_button)
-  end
-  alias log_as login
-<%- else -%>
-  def login(username, password)
-    username_field.set username
-    password_field.set password
+    username_field.send_keys(username)
+    password_field.send_keys(password)
     login_button.click
   end
-<%- end -%>
+  alias log_as login
 
   private
 
   # Elements
 
   def username_field
-<%- if selenium_based? -%>
-    { id: 'loginFrm_loginname' }
-<%- else -%>
-    browser.text_field(id: 'loginFrm_loginname')
-<%- end -%>
+    driver.find_element(id: 'loginFrm_loginname')
   end
 
   def password_field
-<%- if selenium_based? -%>
-    { id: 'loginFrm_password' }
-<%- else -%>
-    browser.text_field(id: 'loginFrm_password')
-<%- end -%>
+    driver.find_element(id: 'loginFrm_password')
   end
 
   def login_button
-<%- if selenium_based? -%>
-    { xpath: "//button[@title='Login']" }
-<%- else -%>
-    browser.button(xpath: "//button[@title='Login']")
-<%- end -%>
+    driver.find_element(by_role('button', name: 'Login'))
   end
 end

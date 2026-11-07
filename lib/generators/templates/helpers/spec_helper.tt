@@ -69,7 +69,7 @@ module SpecHelper
       user = ModelFactory.for('users')['registered user']
       account = Account.new(driver)
       SessionState.new(driver).reuse(
-        valid: -> { account.tap(&:visit).header.customer_name == "Welcome back #{user['name']}" }
+        valid: -> { account.tap(&:visit).welcome_message.text == "Welcome back #{user['name']}" }
       ) do
         login = Login.new(driver)
         login.visit
