@@ -17,7 +17,7 @@ RSpec.describe 'Raider finders' do
 
   it 'converts label to xpath' do
     driver.find_element(label: 'Email')
-    expect(bridge.calls.last).to eq([:find_element_by, 'xpath', Raider::Selectors.label('Email', exact: false), [:driver, nil]])
+    expect(bridge.calls.last).to eq([:find_elements_by, 'xpath', Raider::Selectors.label('Email', exact: false), [:driver, nil]])
   end
 
   it 'converts text to xpath' do
