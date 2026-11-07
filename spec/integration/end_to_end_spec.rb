@@ -102,10 +102,10 @@ describe 'End-to-End Project Generation and Execution' do
       expect(bundle_install(project)).to be true
     end
 
-    it 'resolves raider_reporter 0.10+ from RubyGems and ships the raider-reporter executable', :aggregate_failures do
+    it 'resolves raider_reporter 1.x from RubyGems and ships the raider-reporter executable', :aggregate_failures do
       skip 'Bundle install failed' unless bundle_install(project)
 
-      expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.1\d\.\d+\)$/)
+      expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(1\.\d+\.\d+\)$/)
       result = run_in_project(project, 'bundle exec raider-reporter --help', timeout: 60)
       expect(result[:exit_code]).to eq(0), "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
       expect(result[:stdout] + result[:stderr]).to include('raider-reporter comment')
@@ -164,6 +164,13 @@ describe 'End-to-End Project Generation and Execution' do
 
       it 'passes its own RuboCop with its bundled gems', :slow do
         expect_project_rubocop_clean('rspec_selenium')
+      end
+
+      it 'prints the actionability notice once per run', :slow do
+        skip 'Bundle install failed' unless bundle_install('rspec_selenium')
+
+        result = run_rspec('rspec_selenium')
+        expect(result[:stderr].scan('[raider] actionability on').size).to eq(1), "STDERR: #{result[:stderr]}"
       end
 
       it 'saves the login once and reuses it', :aggregate_failures, :slow do
@@ -241,12 +248,12 @@ describe 'End-to-End Project Generation and Execution' do
     describe 'Selenium + RSpec' do
       let(:project) { generate_azure_project('rspec') }
 
-      it 'ships azure-pipelines.yml and resolves raider_reporter 0.10+', :aggregate_failures do
+      it 'ships azure-pipelines.yml and resolves raider_reporter 1.x', :aggregate_failures do
         expect(File).to exist(File.join(project, 'azure-pipelines.yml'))
         expect(File).not_to exist(File.join(project, '.github/workflows'))
         skip 'Bundle install failed' unless bundle_install(project)
 
-        expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.1\d\.\d+\)$/)
+        expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(1\.\d+\.\d+\)$/)
       end
 
       it 'records provider azure_pipelines and an azure_pipelines: build key in run.json', :aggregate_failures, :slow do
@@ -297,7 +304,7 @@ describe 'End-to-End Project Generation and Execution' do
     File.directory?("/Applications/#{app}.app") || system("command -v #{command} > /dev/null 2>&1")
   end
 
-  # A separate project, so the default projects keep resolving raider_reporter 0.10+ from RubyGems
+  # A separate project, so the default projects keep resolving raider_reporter 1.x from RubyGems
   def generate_video_project(framework, automation)
     name = "video_#{framework}_#{automation}"
     unless LazyProjectGenerator::GENERATED.include?(name)
@@ -429,7 +436,7 @@ describe 'End-to-End Project Generation and Execution' do
   end
 
   # Trace replay against headless Chrome, and one example on headless Firefox. The page is served over HTTP from this process (never file://), so
-  # WebDriver BiDi reports real network and console entries. raider_reporter ~> 0.12 resolves from RubyGems, or
+  # WebDriver BiDi reports real network and console entries. raider_reporter ~> 1.0 resolves from RubyGems, or
   # from a checkout at RAIDER_REPORTER_PATH. The example with video on also needs RAIDER_FFMPEG_PATH.
   # Set TRACE_FIXTURE_DIR to keep the failing RSpec example's trace.zip (and an unzipped copy) there.
   context 'Trace replay', :slow do
@@ -454,8 +461,8 @@ describe 'End-to-End Project Generation and Execution' do
     def skip_unless_trace_prerequisites(project, browser = 'chrome')
       skip "#{browser == 'chrome' ? 'Google Chrome' : 'Firefox'} is not installed" unless browser_installed?(browser)
       version = run_in_project(project, %(bundle exec ruby -e "require 'raider_reporter/version'; print RaiderReporter::VERSION"))
-      skip "the bundle does not resolve raider_reporter ~> 0.12 (set RAIDER_REPORTER_PATH): #{version[:stderr].lines.last}" unless
-        version[:success] && Gem::Version.new(version[:stdout]) >= Gem::Version.new('0.12')
+      skip "the bundle does not resolve raider_reporter ~> 1.0 (set RAIDER_REPORTER_PATH): #{version[:stderr].lines.last}" unless
+        version[:success] && Gem::Version.new(version[:stdout]) >= Gem::Version.new('1.0')
     end
 
     def trace_env(overrides = {})
@@ -515,7 +522,7 @@ describe 'End-to-End Project Generation and Execution' do
       'passes after driving the page'
     end
 
-    # Drives the page through the generated WaitHelper, so the trace has action steps.
+    # Drives the page with plain Selenium and the runtime's matchers, so the trace has action steps.
     # Each example prints the driver's webSocketUrl, which is set only while tracing is on.
     def add_rspec_trace_spec(project)
       File.write(File.join(project, 'spec/trace_replay_spec.rb'), <<~SPEC)
@@ -527,19 +534,21 @@ describe 'End-to-End Project Generation and Execution' do
           it '#{failing}' do
             driver.navigate.to('#{server.url}start')
             puts "TRACE_E2E_WEBSOCKET=\#{driver.capabilities[:web_socket_url].inspect}"
-            send_keys({ id: 'pw' }, '#{secrets[0]}')
-            send_keys({ id: 'pw2' }, '#{secrets[1]}')
-            find_element(id: 'name').send_keys('#{plain_value}')
-            click({ id: 'go' })
-            eventually(timeout: 5) { expect(text(id: 'status')).to eq('answered by /api') }
-            eventually(timeout: 1) { expect(text(id: 'title')).to eq('deliberate trace failure') }
+            driver.find_element(id: 'pw').send_keys('#{secrets[0]}')
+            driver.find_element(id: 'pw2').send_keys('#{secrets[1]}')
+            form = driver.find_element(id: 'form')
+            form.find_element(id: 'name').send_keys('#{plain_value}')
+            driver.find_element(id: 'go').click
+            expect { driver.find_element(id: 'status') }.to have_text('answered by /api', wait: 5)
+            expect { driver.find_element(id: 'status').text }.to eq('answered by /api')
+            expect { driver.find_element(id: 'title') }.to have_text('deliberate trace failure', wait: 1)
           end
 
           it '#{passing}' do
             driver.navigate.to('#{server.url}')
             puts "TRACE_E2E_WEBSOCKET=\#{driver.capabilities[:web_socket_url].inspect}"
-            send_keys({ id: 'name' }, 'ok')
-            eventually { expect(text(id: 'title')).to eq('Trace') }
+            driver.find_element(id: 'name').send_keys('ok')
+            expect { driver.find_element(id: 'title') }.to have_text('Trace')
           end
         end
       SPEC
@@ -548,6 +557,18 @@ describe 'End-to-End Project Generation and Execution' do
     def failing_trace(result)
       expect(trace_attachments(result).size).to eq(1)
       trace_zip(project, trace_attachments(result).first)
+    end
+
+    # Locators as id strategies, the chained find as within, the password steps masked, and no 3.x step shapes.
+    def expect_runtime_steps(steps)
+      by_id = ->(step) { step['locator'].is_a?(Hash) && step['locator']['strategy'] == 'id' && step['locator']['selector'].is_a?(String) }
+      expect(steps.select { |step| step['action'] == 'click' }).to all(satisfy(&by_id)).and(be_any)
+      typed = steps.select { |step| step['action'] == 'send_keys' }
+      expect(typed).to all(satisfy(&by_id))
+      expect(typed.last['locator']['within']).to be_a(Array).and(be_any)
+      expect(typed.first(2)).to all(include('value' => nil, 'secret' => true))
+      expect(steps.map { |step| step['kind'] }).not_to include('group')
+      expect(steps.map { |step| step['action'] }).not_to include('cucumber_step')
     end
 
     def steps_of(path)
@@ -625,6 +646,7 @@ describe 'End-to-End Project Generation and Execution' do
         expect(trace_attachments(result_named(project, passing))).to be_empty
         expect(trace_files(project).size).to eq(1)
         expect_valid_trace(path)
+        expect_runtime_steps(steps_of(path))
 
         trace, names = TraceFormatChecker.read(path)
         expect(trace['capabilities']).to include('network' => true, 'console' => true)
@@ -650,7 +672,7 @@ describe 'End-to-End Project Generation and Execution' do
       end
 
       it 'writes no trace and no web_socket_url with TRACE=off', :aggregate_failures do
-        run = run_in_project(project, command, env: trace_env('TRACE' => 'off'))
+        run = run_in_project(project, command, env: trace_env('TRACE' => 'off', 'BIDI' => 'off'))
         expect_run(run)
         expect(run[:stdout].scan(/^TRACE_E2E_WEBSOCKET=(.*)$/).flatten).to eq(%w[nil nil])
         expect(results(project).flat_map { |result| trace_attachments(result) }).to be_empty
@@ -733,6 +755,7 @@ describe 'End-to-End Project Generation and Execution' do
         expect_run(run)
         path = failing_trace(result_named(project, failing))
         expect_valid_trace(path)
+        expect_runtime_steps(steps_of(path))
 
         trace, names = TraceFormatChecker.read(path)
         expect(trace['browser']).to include('name' => 'firefox')
@@ -793,19 +816,19 @@ describe 'End-to-End Project Generation and Execution' do
             block_request('**/api/fail')
             mock_request('**/api/echo') { { continue: { headers: { 'x-raider' => 'yes' } } } }
             mock_request('http://mock.raider.test/api/cors', json: { ok: true })
-            click({ id: 'users' })
-            eventually(timeout: 5) { expect(text(id: 'users-out')).to eq('ana') }
-            click({ id: 'fail' })
-            eventually(timeout: 5) { expect(text(id: 'fail-out')).to eq('request failed') }
-            click({ id: 'echo' })
-            eventually(timeout: 5) { expect(text(id: 'echo-out')).to eq('echo yes') }
-            click({ id: 'cors' })
-            eventually(timeout: 5) { expect(text(id: 'cors-out')).to eq('cors true') }
+            driver.find_element(id: 'users').click
+            expect { driver.find_element(id: 'users-out') }.to have_text('ana', wait: 5)
+            driver.find_element(id: 'fail').click
+            expect { driver.find_element(id: 'fail-out') }.to have_text('request failed', wait: 5)
+            driver.find_element(id: 'echo').click
+            expect { driver.find_element(id: 'echo-out') }.to have_text('echo yes', wait: 5)
+            driver.find_element(id: 'cors').click
+            expect { driver.find_element(id: 'cors-out') }.to have_text('cors true', wait: 5)
             expect(users.calls.size).to eq(1)
             expect(users).to be_called
             remove_mock(users)
-            click({ id: 'users' })
-            eventually(timeout: 5) { expect(text(id: 'users-out')).to eq('real') }
+            driver.find_element(id: 'users').click
+            expect { driver.find_element(id: 'users-out') }.to have_text('real', wait: 5)
             expect(users.calls.size).to eq(1)
             puts 'NETWORK_MOCKING_#{browser.upcase}_DONE'
           end
@@ -848,11 +871,11 @@ describe 'End-to-End Project Generation and Execution' do
             driver.navigate.to('#{server.url}mock')
             mock_request('#{server.url}api/users', json: { users: ['ana'] })
             block_request('#{server.url}api/fail')
-            click({ id: 'users' })
-            eventually(timeout: 5) { expect(text(id: 'users-out')).to eq('ana') }
-            click({ id: 'fail' })
-            eventually(timeout: 5) { expect(text(id: 'fail-out')).to eq('request failed') }
-            eventually(timeout: 1) { expect(text(id: 'users-out')).to eq('deliberate mocking failure') }
+            driver.find_element(id: 'users').click
+            expect { driver.find_element(id: 'users-out') }.to have_text('ana', wait: 5)
+            driver.find_element(id: 'fail').click
+            expect { driver.find_element(id: 'fail-out') }.to have_text('request failed', wait: 5)
+            expect { driver.find_element(id: 'users-out') }.to have_text('deliberate mocking failure', wait: 1)
           end
         BODY
       end
@@ -877,8 +900,8 @@ describe 'End-to-End Project Generation and Execution' do
           it 'has a raising block' do
             driver.navigate.to('#{server.url}mock')
             mock_request('#{server.url}api/users') { raise 'boom from the block' }
-            click({ id: 'users' })
-            eventually(timeout: 5) { expect(text(id: 'users-out')).to eq('users failed') }
+            driver.find_element(id: 'users').click
+            expect { driver.find_element(id: 'users-out') }.to have_text('users failed', wait: 5)
           end
         BODY
         run = mocking_run('TRACE' => 'off')

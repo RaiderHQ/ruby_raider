@@ -10,7 +10,7 @@ module TraceFormatChecker
   ENTRY_NAME = %r{\Atrace\.json\z|\Asteps/\d{4}\.(jpg|png|html|xml)\z}
   TIMESTAMP = /\A\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z\z/
   KINDS = %w[navigate action group failure].freeze
-  STRATEGIES = %w[id css xpath name link_text partial_link_text class_name tag_name].freeze
+  STRATEGIES = %w[id css xpath name link_text partial_link_text class_name tag_name role label placeholder alt title text test_id].freeze
   # The required keys and the types each may have: the top level, then every step.
   FIELDS = {
     top: {

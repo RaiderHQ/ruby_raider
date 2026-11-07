@@ -18,7 +18,7 @@ class TracePageServer
         <h1 id="title">Trace</h1>
         <input type="password" id="pw" placeholder="Password">
         <input type="text" id="pw2" autocomplete="current-password" placeholder="Confirm password">
-        <input id="name" placeholder="Name">
+        <form id="form" onsubmit="return false"><input id="name" placeholder="Name"></form>
         <button id="go">Go</button>
         <p id="status"></p>
         <script>
