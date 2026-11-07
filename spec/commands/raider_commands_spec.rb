@@ -195,7 +195,7 @@ RSpec.describe RubyRaider::Raider do # rubocop:disable RSpec/FilePath
             expect(err).not_to include('invalid multibyte')
             expect(status.exitstatus).to eq(0)
             readme = File.read(File.join(dir, 'x/Readme.md'), encoding: 'UTF-8')
-            expect(readme).to include("`eventually { \u2026 }`")
+            expect(readme).to include("`expect { account_page.welcome_message }.to have_text(\u2026)`")
             config = File.read(File.join(dir, 'x/config/config.yml'), encoding: 'UTF-8')
             expect(YAML.safe_load(config, permitted_classes: [Symbol])['url']).to include('http')
           end

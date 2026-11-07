@@ -161,7 +161,7 @@ end
 
 describe 'Config timeout wiring' do
   FRAMEWORKS.each do |framework|
-    # Single-platform Appium projects have no config.yml; WaitHelper falls back to its default of 10.
+    # Single-platform Appium projects have no config.yml; the runtime falls back to its default of 10.
     %w[selenium cross_platform].each do |automation|
       it "sets timeout 10 in #{framework} #{automation}" do
         config = YAML.safe_load(read_generated("#{framework}_#{automation}", 'config/config.yml'), permitted_classes: [Symbol])

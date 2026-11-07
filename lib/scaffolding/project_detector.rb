@@ -41,8 +41,6 @@ module ScaffoldProjectDetector
     detect_automation == 'selenium'
   end
 
-  # Projects made before WaitHelper, or whose owner removed it, do not have the file.
-
   # Validates that the current directory looks like a Ruby Raider project.
   # Returns an array of warning messages (empty = valid project).
   def validate_project

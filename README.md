@@ -61,7 +61,7 @@ Every generated project comes with:
 - **Page Object Model** — Base page and component classes with example pages
 - **Test examples** — Working login tests against the [Raider Test Store](https://raider-test-site.onrender.com/)
 - **Raider reporting** — Generated projects include [raider_reporter](https://github.com/RaiderHQ/raider_reporter), which writes results to `raider-results/` and uploads runs to your Raider Hideout server when `RAIDER_TOKEN` and `RAIDER_ENDPOINT` are set; generated CI runs the suite through `raider-reporter exec` with `RAIDER_QUARANTINE`, so quarantined tests do not fail the build; an opt-in `raider-gate` job (`RAIDER_GATE=1`) fails CI when the Raider quality gate fails
-- **Waiting** — generated Selenium and Appium projects wait for elements by themselves (`WaitHelper` and `RaiderElement`): `click`, `send_keys`, `text` and the rest poll until the element is ready, and `eventually { … }` retries assertions, so there is no implicit wait and no `sleep`; `timeout` in `config.yml` sets how long to wait
+- **Locators, waiting and assertions**: The runtime (`ruby_raider/runtime`), loaded by every generated project, adds waiting to Selenium and Appium themselves. Locators go beyond `id` and `css`: `label:`, `placeholder:`, `alt:`, `title:`, `text:`, `test_id:` and `by_role('button', name: 'Save')` find elements the way a person sees them, and `find_element` fails when a locator matches more than one. `find_element` and `find_elements` wait for a match, and `click`, `send_keys`, `clear` and `submit` wait until the element is visible, enabled, stable and not covered (on native apps, displayed and enabled), so there is no implicit wait and no `sleep`; `timeout`, `strict` and `actionability` in `config.yml` (or `RAIDER_TIMEOUT`, `RAIDER_STRICT`, `RAIDER_ACTIONABILITY`) set the rules, and `force: true` skips the checks for one call. RSpec matchers (`have_text`, `have_value`, `have_attribute`, `be_visible`, `be_hidden`, `be_enabled`, `be_disabled`, `be_checked`, `have_count`, `have_title`, `have_url`, `have_element`) retry until the page matches, and a block expectation such as `expect { driver.find_element(id: 'status').text }.to eq('done')` retries with any value matcher
 - **Example tests or a skeleton (`examples:false`)** — start from the working login examples, or pass `examples:false` for an empty skeleton with the helpers, config, CI and README (see [Getting Started](#getting-started))
 - **Login reuse** — generated web projects (Selenium) log in once and restore the saved session for examples tagged `:logged_in`; `RAIDER_LOGIN_STATE=off|refresh` and `login_state: max_age:` control it, and the state stays in git-ignored `.raider/auth/`
 - **Failure video replay** — Every test is recorded and the video is kept only for failing tests, attached to the report as `video` (WebM from page screenshots for Selenium, Appium's own MP4 for mobile, which needs `ffmpeg` on the Appium server host for iOS and for Android recordings over 180 s). Turn it off per run with `VIDEO=off`, or per project with `raider u video off`; ffmpeg is downloaded once, SHA-256 checked and cached in `~/.cache/raider`. The RaiderHQ `ffmpeg-7.1` build that the download uses is not published yet, so for now set `RAIDER_FFMPEG_PATH` to an ffmpeg with libvpx to get web videos
@@ -75,12 +75,6 @@ Every generated project comes with:
 - **Parallel execution** — parallel_tests and parallel_split_test gems included
 - **Configurable browser** — Chrome/Firefox with customizable arguments, viewport, timeout, and headless mode
 - **Linting** — RuboCop and Reek configs included
-
-> **Upgrading from 3.9 or earlier:** existing projects are not changed automatically. To get failure videos, generate a
-> new project with the same options and copy `helpers/video_helper.rb`, the video lines in `helpers/spec_helper.rb`,
-> the `listener:` in the driver helper, the `video:` block
-> in `config/config.yml`, and the ffmpeg cache and install steps in your CI pipeline. raider_reporter 0.10 or later
-> adds the inline video player in `raider-results/index.html` and a larger size limit for video attachments.
 
 For Appium projects, download the example [app](https://github.com/RaiderHQ/raider_test_app) and start the server:
 
@@ -130,48 +124,6 @@ raider new my_project -p framework:rspec automation:selenium examples:false
 ```
 
 The skeleton keeps the helpers, config, CI and README, and its empty suite passes; grow it with `raider g`.
-
-## Adopting waiting in an existing project
-
-Gem upgrades do not rewrite generated code, so existing projects keep their implicit wait until you opt in:
-
-1. Copy both `helpers/wait_helper.rb` and `helpers/raider_element.rb` from a freshly generated project into your
-   `helpers/` folder. Keep them side by side: `wait_helper.rb` loads the other with `require_relative 'raider_element'`.
-2. Include it in `Page`, the spec helper, or the World, after loading it with `require_relative`, for example
-   `require_relative '../../helpers/wait_helper'` at the top of `page_objects/abstract/page.rb`.
-3. Set how long it waits: add `timeout: 10` to `config/config.yml`. Single-platform mobile projects (iOS or Android
-   only) have no `config/config.yml`, so pass `timeout:` to a call, or create `config/config.yml` with that line;
-   without either, it waits 10 seconds.
-4. Remove the `implicit_wait` line.
-5. Move flaky spots to `click`, `send_keys` and `eventually` first.
-
-Keep in mind that keeping the implicit wait while using the layer makes every `find` miss cost up to `timeout` seconds per poll cycle, so remove it once you have moved over.
-
-## Adding network mocking to a 3.13 project
-
-Gem upgrades do not rewrite generated code, so a project made with 3.13 or earlier opts in by hand (Selenium web projects only):
-
-1. Copy `helpers/network_helper.rb` from a freshly generated project into your `helpers/` folder.
-2. Load and include it: add `require_relative 'network_helper'` next to the other helper requires, then
-   `config.include(NetworkHelper)` in `helpers/spec_helper.rb`. If you want mocks in
-   page objects, add `include NetworkHelper` to `page_objects/abstract/page.rb`.
-3. In the after hook, call `mock_error = NetworkHelper.finish(driver)` before the driver quits. Treat the returned mock error
-   as a failure when deciding whether to keep the trace and video (`example.exception || mock_error`), and `raise mock_error if mock_error` after the driver quits, so a failing
-   mock block fails the test and mocks never leak into the next test.
-4. In `helpers/driver_helper.rb`, make the BiDi condition include the helper:
-   `bidi = (defined?(TraceHelper) && TraceHelper.bidi?(load_browser)) || (defined?(NetworkHelper) && NetworkHelper.bidi?(load_browser))`.
-
-## Adding screenshot comparison to a 3.14 project
-
-Gem upgrades do not rewrite generated code, so a project made with 3.14 or earlier opts in by hand (Selenium web projects only):
-
-1. Copy `helpers/screenshot_helper.rb` from a freshly generated project into your `helpers/` folder, and add `gem 'chunky_png'` to the `Gemfile`.
-2. Load and include it: add `require_relative 'screenshot_helper'` next to the other helper requires, then
-   `config.include(ScreenshotHelper)` in `helpers/spec_helper.rb`. If you want it in
-   page objects, add `include ScreenshotHelper` to `page_objects/abstract/page.rb`.
-3. Call `ScreenshotHelper.reset` in the before hook, so a name can be used again in the next test.
-4. Add the `screenshots:` block (`threshold`, `max_diff_pixels`, `max_diff_ratio`) from a fresh `config/config.yml`.
-5. Use `raider_reporter` 0.14 or later to list comparisons in the report; with an older one the pictures are still attached.
 
 ## Commands
 

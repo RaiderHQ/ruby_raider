@@ -86,11 +86,15 @@ describe 'Generated Readme content' do
           expect(section).to include('Failure messages can contain typed text too, because an assertion message is kept as it is')
         end
 
-        it 'says how to remove the trace helper and notes the wait helper link' do
-          expect(readme).to include('Removing the trace helper', 'require_relative',
-                                    'without WaitHelper a trace records only navigation and the failure')
+        it 'says how to remove the trace helper' do
+          expect(readme).to include('Removing the trace helper', 'require_relative')
           expect(readme).not_to match(/allure/i)
           expect(readme).not_to include('—')
+        end
+
+        it 'says which element actions the trace records' do
+          expect(section).to include('records `click`, `send_keys`, `clear` and `submit` with their locators',
+                                     '`by_role` as `button, name: Save`', 'not steps')
         end
       else
         it 'does not mention trace replay' do
@@ -106,7 +110,9 @@ describe 'Generated Readme content' do
         it 'documents the API, the examples, BIDI=off and how to remove the helper' do
           expect(readme).to include('## Mocking network requests', "mock_request('**/api/users', json: { users: [] })",
                                     'BIDI=off', '### Removing the network helper', 'status: 500',
-                                    "block_request('**/*.png')", 'eventually', 'NetworkHelper::MockError')
+                                    "block_request('**/*.png')", 'NetworkHelper::MockError')
+          expect(readme).to include('expect { users.called? }.to be(true)',
+                                    "expect { users.calls.first&.method }.to eq('GET')")
         end
 
         it 'names the files to edit for this framework' do
@@ -224,36 +230,55 @@ describe 'Generated Readme: How the framework works' do
         expect(readme.index("\n## Reusing the login\n")).to be > works
       end
 
-      it 'covers the web wait helper, chaining, .native, absence checks and how to remove it' do
+      it 'covers the folders, the settings, running the tests and the helpers without a wait helper' do
         section = section_of(readme)
-        expect(section).to include('### Removing the wait helper', '.native',
-                                   "find_element(css: '.form').find_element(id: 'email')",
-                                   'select_by', 'hover', 'drag_and_drop', 'eventually', 'timeout: 0',
-                                   'find_elements', 'config/config.yml', '[Reporting](#reporting)',
-                                   '[Reusing the login](#reusing-the-login)', 'parallel_tests', 'HEADLESS',
+        expect(section).to include('config/config.yml', '[Reporting](#reporting)', '[Reusing the login](#reusing-the-login)',
+                                   'parallel_tests', 'HEADLESS', 'requires the Raider runtime',
                                    framework == 'rspec' ? 'RETRY_COUNT' : '--retry 2')
-        expect(section).not_to include('scroll_to', 'swipe')
+        expect(section).to include('`timeout`', '`strict`', '`actionability`')
+        expect(section).not_to include('scroll_to', 'swipe', 'gesture_helper')
       end
 
-      it 'explains that the waits inside eventually stretch to its time and are retried' do
-        eventually = section_of(readme)[/^### eventually\n.*?(?=^### )/m]
-        expect(eventually).to include('a wait inside it that timed out', 'whatever is left of the block',
-                                      '`timeout: 2` gets 2 seconds per try', '(still failing after 10s)')
+      it 'has no wait helper, RaiderElement, eventually or implicit wait advice' do
+        expect(readme).not_to match(/WaitHelper|RaiderElement|wait_helper|raider_element|eventually|wait helper/i)
+        expect(readme).not_to include('Removing the wait helper', 'implicit_wait = ')
       end
 
-      it 'replaces eventually with a true/false Wait block and points at the generators that check' do
-        removal = section_of(readme)[/^### Removing the wait helper\n.*/m]
-        expect(removal).to include('a plain `expect`, or `Selenium::WebDriver::Wait.new(timeout: 10).until { condition }`',
-                                   'a block that returns true or false', '`raider g page` and `raider g component`')
-        expect(removal).not_to include('raider g spec')
+      it 'documents the locators, with by_role, the exact form, strictness and find_elements' do
+        locators = section_of(readme)[/^### Locators\n.*?(?=^### )/m].gsub(/\s+/, ' ')
+        expect(locators).to include('id:', 'css:', 'xpath:', 'name:', 'class:', 'link_text:', 'label:', 'placeholder:',
+                                    'alt:', 'title:', 'text:', 'test_id:', 'data-testid', 'RAIDER_TEST_ID_ATTRIBUTE',
+                                    "by_role('button', name: 'Login')", 'exact:', 'include_hidden:', 'level:',
+                                    "label: ['Email', { exact: true }]", 'matches more than one element',
+                                    'AmbiguousMatch', 'find_elements')
       end
 
-      it 'lists the five steps to remove the wait helper' do
-        removal = section_of(readme)[/^### Removing the wait helper\n.*/m]
-        expect(removal).to include('helpers/wait_helper.rb', 'helpers/raider_element.rb', 'include WaitHelper',
-                                   'driver.find_element(**', 'Selenium::WebDriver::Wait.new', 'implicit_wait',
-                                   'raider g')
-        expect(removal.scan(/^\d\. /).size).to eq(5)
+      it 'documents the waiting finds, the per-action checks, force and the settings' do
+        waiting = section_of(readme)[/^### Waiting and actionability\n.*?(?=^### )/m].gsub(/\s+/, ' ')
+        expect(waiting).to include('`find_element` and `find_elements` wait for a match', '`find_elements` returns `[]`',
+                                   '| `click` | visible, enabled, not inert, stable, receives events |',
+                                   '| `send_keys` | visible, enabled, editable, not inert |',
+                                   '| `clear` | visible, enabled, editable, not inert |',
+                                   '| `submit` | visible, enabled, not inert |',
+                                   'force: true', 'Raider.actionability = false', 'RAIDER_STRICT', 'RAIDER_ACTIONABILITY',
+                                   'RAIDER_TIMEOUT', 'RAIDER_QUIET', 'raider u strict', 'raider u actionability',
+                                   'no such element: { id: "x" } (waited 10s)', 'NotActionable', 'select_by',
+                                   'implicit wait')
+        expect(waiting).not_to include('driver.manage.timeouts.implicit_wait')
+      end
+
+      it 'documents the matchers, wait:, the block form and its limits' do
+        assertions = section_of(readme)[/^### Assertions\n.*?(?=^### )/m].gsub(/\s+/, ' ')
+        expect(assertions).to include('have_text', 'have_value', 'have_attribute', 'be_visible', 'be_hidden', 'be_enabled',
+                                      'be_disabled', 'be_checked', 'have_count', 'have_title', 'have_url', 'have_element',
+                                      'have_css', 'have_xpath', 'wait: 5', 'expect { account_page.welcome_message }',
+                                      'expect { value }.to eq(', 'raise_error', 'does not retry',
+                                      'once per poll', 'aggregate_failures')
+      end
+
+      it 'lists the web helpers and the page base class without a wait helper' do
+        section = section_of(readme)
+        expect(section).to include('`driver_helper.rb` starts the browser', '`video_helper.rb`', '`session_state.rb`')
       end
     end
 
@@ -268,13 +293,38 @@ describe 'Generated Readme: How the framework works' do
           expect(readme.index("\n## Reporting\n")).to be > works
         end
 
-        it 'covers the mobile method set, per-OS locators, Appium setup and how to remove the wait helper' do
+        it 'covers the folders, per-OS locators, Appium setup and the gesture helper' do
           section = section_of(readme)
-          expect(section).to include('swipe', 'scroll_to', 'tap', 'capabilities.yml', 'raider u start_appium',
-                                     '### Removing the wait helper', '.native', '[Reporting](#reporting)',
-                                     'timeout: 15', 'http://127.0.0.1:4723')
-          expect(section).not_to include('select_by', 'hover', 'drag_and_drop', 'Reusing the login', '/wd/hub')
+          expect(section).to include('capabilities.yml', 'raider u start_appium', '[Reporting](#reporting)',
+                                     'timeout: 15', 'http://127.0.0.1:4723', '`gesture_helper.rb`',
+                                     '`swipe`', '`scroll_to`', 'requires the Raider runtime')
+          expect(section).not_to include('select_by', 'hover', 'drag_and_drop', 'Reusing the login', '/wd/hub',
+                                         'by_role', 'wait_helper', 'raider_element')
           expect(section).to include('ios: {') if automation == 'cross_platform'
+        end
+
+        it 'has no wait helper, RaiderElement or eventually' do
+          expect(readme).not_to match(/WaitHelper|RaiderElement|wait_helper|raider_element|eventually|wait helper/i)
+        end
+
+        it 'documents the Appium locators and the waiting finds and actions' do
+          section = section_of(readme)
+          locators = section[/^### Locators\n.*?(?=^### )/m].gsub(/\s+/, ' ')
+          expect(locators).to include('accessibility_id:', 'xpath:', 'id:', 'class_name:', 'find_elements')
+          expect(section).to include('element(ios: { … }, android: { … })') if automation == 'cross_platform'
+          waiting = section[/^### Waiting\n.*?(?=^### )/m].gsub(/\s+/, ' ')
+          expect(waiting).to include('`find_element` and `find_elements` wait for a match',
+                                     '`click`, `send_keys` and `clear` wait until the element is displayed and enabled',
+                                     '`submit` is not checked', 'strict is off', 'force: true', 'Raider.actionability = false',
+                                     'NotActionable', 'XCUITest', 'RAIDER_TIMEOUT', 'RAIDER_STRICT', 'RAIDER_ACTIONABILITY')
+          expect(section[/^### Settings\n.*?(?=^### )/m]).to include('no `config/config.yml`') unless automation == 'cross_platform'
+        end
+
+        it 'documents the gestures and the assertions' do
+          section = section_of(readme)
+          gestures = section[/^### Gestures\n.*?(?=^### )/m].gsub(/\s+/, ' ')
+          expect(gestures).to include("swipe('left', element)", "scroll('down')", 'scroll_to({ accessibility_id: ')
+          expect(section[/^### Assertions\n.*?(?=^### )/m]).to include('have_text', 'expect { pdp_page.add_to_cart_button }')
         end
 
         it 'says the device capabilities sit under appium:options' do
@@ -292,7 +342,7 @@ describe 'Generated Readme: How the framework works' do
         subject(:readme) { read_generated(ensure_project(framework:, automation:, examples: false), 'Readme.md') }
 
         it 'still explains how the framework works' do
-          expect(readme).to include('## How the framework works', '### The wait helper and RaiderElement')
+          expect(readme).to include('## How the framework works', '### Locators', '### Assertions')
         end
 
         it 'points at no example file' do
