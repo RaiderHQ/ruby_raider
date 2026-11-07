@@ -22,10 +22,6 @@ class Generator < Thor::Group
     initializer.first
   end
 
-  def cucumber?
-    framework == 'cucumber'
-  end
-
   # The framework is cross platform when it supports Android and iOS
   def cross_platform?
     automation == 'cross_platform'
@@ -45,10 +41,6 @@ class Generator < Thor::Group
 
   def android?
     automation == 'android'
-  end
-
-  def rspec?
-    framework == 'rspec'
   end
 
   def azure?

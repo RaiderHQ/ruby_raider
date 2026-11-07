@@ -71,7 +71,7 @@ module TraceHelper
 
       recorder = Recorder.new(driver, screenshot: screenshot, snapshot: snapshot)
       WaitHelper.observer = recorder if defined?(WaitHelper)
-      # Lazy: Cucumber's env.rb loads this helper before the World loads network_helper.
+      # Lazy: this helper loads before network_helper does.
       NetworkHelper.observer = MockMarks if defined?(NetworkHelper)
       recorder
     rescue StandardError => e
@@ -318,17 +318,6 @@ module TraceHelper
         group.retries = retries
         nil
       end
-    end
-
-    # A Cucumber step is a group named by its keyword and text; the actions it runs become its children.
-    def step_started(name:, source:)
-      group = group_started(action: :cucumber_step, source: source)
-      group.name = name if group.is_a?(Step)
-      group
-    end
-
-    def step_finished(group, status:, error:)
-      group_finished(group, status: status, retries: 0, error: error) if group.is_a?(Step)
     end
 
     # A navigation has begun. Its step stays pending until navigated, so the requests the page makes

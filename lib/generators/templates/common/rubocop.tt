@@ -1,7 +1,5 @@
-<% if rspec? -%>
 require:
   - rubocop-rspec
-<% end -%>
 
 # Layout
 Layout/CaseIndentation:

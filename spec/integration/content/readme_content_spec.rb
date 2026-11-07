@@ -186,7 +186,7 @@ describe 'Generated Readme content' do
       if automation == 'selenium'
         it 'documents the tags, other roles, max_age, the env switch and the secrets warning' do
           section = readme[/^## Reusing the login\n.*?(?=^##)/m].gsub(/\s+/, ' ')
-          expect(section).to include('`:logged_in`', '`@logged_in`', "SessionState.new(driver, name: 'admin')",
+          expect(section).to include('`:logged_in`', "SessionState.new(driver, name: 'admin')",
                                      'login_state', 'max_age', 'RAIDER_LOGIN_STATE=off',
                                      'RAIDER_LOGIN_STATE=refresh', '.raider/auth/', 'git-ignored',
                                      'live session tokens', 'must not be committed, cached or uploaded')
