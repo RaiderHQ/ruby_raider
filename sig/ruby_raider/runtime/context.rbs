@@ -7,5 +7,6 @@ module Raider
 
     # private singleton helper
     def self.contextual?: (untyped bridge) -> bool
+    def self.event_firing?: (untyped bridge) -> bool
   end
 end

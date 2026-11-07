@@ -50,6 +50,15 @@ module Raider
       end
     end
 
+    # An initialized real bridge of klass, built without a network call: the
+    # initializer signature differs across selenium versions.
+    def self.real_bridge(klass)
+      keywords = Selenium::WebDriver::Remote::Bridge.instance_method(:initialize).parameters.map(&:last)
+      args = { http_client: Selenium::WebDriver::Remote::Http::Default.new }
+      args[:url] = 'http://127.0.0.1:4444/' if keywords.include?(:url)
+      klass.allocate.tap { |bridge| bridge.send(:initialize, **args) }
+    end
+
     def self.driver(bridge)
       Selenium::WebDriver::Driver.allocate.tap { |driver| driver.instance_variable_set(:@bridge, bridge) }
     end
