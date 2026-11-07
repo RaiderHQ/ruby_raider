@@ -4,11 +4,14 @@ module Raider
   module Finders
     BRIDGE: String
     SEARCH_CONTEXT: String
+    SELENIUM_BRIDGES: Array[String]
+    APPIUM_BRIDGES: Array[String]
 
     def self.register: () -> void
     def self.ensure_registered: () -> void
     def self.install_converter: (untyped bridge_class) -> void
     def self.install: () -> void
+    def self.install_appium_converters: () -> void
     def self.check_api: () -> void
     def self.guard: () -> void
 
@@ -16,6 +19,7 @@ module Raider
     def ensure_registered: () -> void
     def install_converter: (untyped bridge_class) -> void
     def install: () -> void
+    def install_appium_converters: () -> void
     def check_api: () -> void
     def guard: () -> void
   end
