@@ -3,11 +3,8 @@
 require 'open3'
 
 module SystemTestHelper
-  def test_command_for(framework)
-    case framework
-    when 'cucumber' then 'bundle exec cucumber features --format pretty'
-    else 'bundle exec rspec spec --format documentation'
-    end
+  def test_command_for(_framework)
+    'bundle exec rspec spec --format documentation'
   end
 
   def run_tests_with(framework, automation)

@@ -28,20 +28,6 @@ RSpec.describe MenuGenerator do
   end
 
   describe '#choose_test_framework' do
-    context 'with a web automation' do
-      it 'presents test framework selection' do
-        menu = double('menu') # rubocop:disable RSpec/VerifiedDoubles
-        allow(menu).to receive(:choice)
-        allow(prompt).to receive(:select).with('Please select your test framework').and_yield(menu)
-
-        menu_generator.choose_test_framework('selenium')
-
-        expect(menu).to have_received(:choice).with(:Cucumber, anything)
-        expect(menu).to have_received(:choice).with(:Rspec, anything)
-        expect(menu).to have_received(:choice).with(:Quit, anything)
-      end
-    end
-
     context 'with appium' do
       it 'presents mobile platform selection' do
         menu = double('menu') # rubocop:disable RSpec/VerifiedDoubles
@@ -241,10 +227,10 @@ RSpec.describe MenuGenerator do
       allow(prompt).to receive(:select).with('Do you want example tests?').and_yield(menu)
       allow(menu).to receive(:choice).with(:No, anything) { |_, action| action.call }
 
-      menu_generator.send(:select_examples, 'Cucumber', 'ios')
+      menu_generator.send(:select_examples, 'Rspec', 'ios')
 
       expect(menu_generator).to have_received(:generate_framework).with(
-        hash_including(automation: 'ios', framework: 'cucumber', examples: false)
+        hash_including(automation: 'ios', framework: 'rspec', examples: false)
       )
     end
   end

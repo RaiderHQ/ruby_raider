@@ -143,7 +143,7 @@ RSpec.describe RubyRaider::Raider do # rubocop:disable RSpec/FilePath
         out, err, status = run_raider('new', 'x', '-p', 'framework:minitest', 'automation:selenium', chdir: dir)
 
         expect(status.exitstatus).not_to eq(0)
-        expect(out + err).to include('framework', 'rspec', 'cucumber')
+        expect(out + err).to include('framework', 'rspec')
         expect(File.exist?(File.join(dir, 'x'))).to be(false)
       end
     end
