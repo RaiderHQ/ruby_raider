@@ -83,7 +83,9 @@ RSpec.describe 'Raider finders in a real browser', :browser do
 
     it 'raises AmbiguousMatch naming three buttons' do
       expect { driver.find_element(text: 'Save') }.to raise_error(Raider::AmbiguousMatch) { |error|
-        expect(error.message).to include('matched 3 elements')
+        expect(error.message).to include('matched 3 elements', '(+0 more)')
+        expect(error.message).to include('<button id="save-a" class="primary">Save</button>',
+                                         '<button id="save-b" class="secondary">Save</button>')
       }
     end
 
