@@ -28,7 +28,7 @@ module Raider
       literal = xpath_literal(value)
       [
         ".//*[@id = //label[#{match('.', literal, exact)}]/@for]",
-        ".//label[#{match('.', literal, exact)}]//*[#{LABEL_CONTROLS}]",
+        ".//label[#{match('.', literal, exact)}]//*[(#{LABEL_CONTROLS}) and not(self::input[@type='hidden'])]",
         ".//*[#{match('@aria-label', literal, exact)}]",
         ".//*[@aria-labelledby and #{match('string(id(@aria-labelledby))', literal, exact)}]"
       ].join(' | ')
