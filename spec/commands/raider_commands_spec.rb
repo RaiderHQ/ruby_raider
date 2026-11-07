@@ -168,23 +168,45 @@ RSpec.describe RubyRaider::Raider do # rubocop:disable RSpec/FilePath
       end
     end
 
+    it 'refuses automation:watir with the removal message and creates nothing' do
+      Dir.mktmpdir do |dir|
+        out, err, status = run_raider('new', 'x', '-p', 'framework:rspec', 'automation:watir', chdir: dir)
+
+        expect(status.exitstatus).to eq(1)
+        expect(out + err).to include(InvokeGenerators::WATIR_REMOVED)
+        expect(File.exist?(File.join(dir, 'x'))).to be(false)
+      end
+    end
+
+    it 'refuses raider g page in a Watir project and writes no file' do
+      Dir.mktmpdir do |dir|
+        File.write(File.join(dir, 'Gemfile'), "gem 'watir'\ngem 'rspec'\n")
+        out, err, status = run_raider('g', 'page', 'home', chdir: dir)
+
+        expect(status.exitstatus).to eq(1)
+        expect(out + err).to include(InvokeGenerators::WATIR_REMOVED)
+        expect(Dir.glob('**/*', base: dir)).to eq(['Gemfile'])
+      end
+    end
+
     describe 'raider new under a US-ASCII locale' do
       # macOS gives GUI apps no LANG, so a shell spawned by the desktop runs Ruby with a US-ASCII
-      # default_external; the templates hold UTF-8 bytes and must still render. Watir keeps the em dash in
-      # its timeout comment, so the rendered file proves the bytes came through. RUBYOPT is unset so a
+      # default_external; the templates hold UTF-8 bytes and must still render. The generated README holds
+      # an ellipsis, so the rendered file proves the bytes came through. RUBYOPT is unset so a
       # -E or -K flag from the outer environment cannot hide the locale.
       { 'LC_ALL=C' => { 'LANG' => nil, 'LC_CTYPE' => nil, 'LC_ALL' => 'C', 'RUBYOPT' => nil },
         'no locale variables' => { 'LANG' => nil, 'LC_CTYPE' => nil, 'LC_ALL' => nil, 'RUBYOPT' => nil } }
         .each do |label, env|
         it "renders the config under #{label}" do
           Dir.mktmpdir do |dir|
-            _out, err, status = run_raider('new', 'x', '-p', 'framework:rspec', 'automation:watir',
+            _out, err, status = run_raider('new', 'x', '-p', 'framework:rspec', 'automation:selenium',
                                            chdir: dir, env:)
 
             expect(err).not_to include('invalid multibyte')
             expect(status.exitstatus).to eq(0)
+            readme = File.read(File.join(dir, 'x/README.md'), encoding: 'UTF-8')
+            expect(readme).to include("`eventually { \u2026 }`")
             config = File.read(File.join(dir, 'x/config/config.yml'), encoding: 'UTF-8')
-            expect(config).to include("timeout: 10 # seconds \u2014 used for implicit waits and max wait time")
             expect(YAML.safe_load(config, permitted_classes: [Symbol])['url']).to include('http')
           end
         end
