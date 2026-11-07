@@ -44,18 +44,55 @@ module Raider
     end
   end
 
-  # Prepended to SearchContext: find_element must match exactly one element.
+  # Prepended to SearchContext: find_element must match exactly one element, and
+  # both finds wait for a match.
   module StrictFinder
     def find_element(*args)
       Finders.ensure_registered
-      return super unless Raider.strict && (RoleFinder.role_args?(args) || Context.web?(bridge))
+      strict = Raider.strict && (RoleFinder.role_args?(args) || Context.web?(bridge))
+      return single(args, strict) { super(*args) } if Wait.immediate?
 
-      found = find_elements(*args)
+      Wait.until(timeout: Raider.timeout) { single_or_nil(args, strict) { super(*args) } }
+    rescue TimeoutError
+      raise Selenium::WebDriver::Error::NoSuchElementError, "#{not_found(args)} (waited #{Describe.seconds(Raider.timeout)}s)"
+    end
+
+    def find_elements(*args)
+      return super if Wait.immediate?
+
+      found = []
+      begin
+        Wait.until(timeout: Raider.timeout) { (found = super(*args)).any? }
+      rescue TimeoutError
+        nil
+      end
+      found
+    end
+
+    private
+
+    def single(args, strict, &)
+      single_or_nil(args, strict, &) || raise(Selenium::WebDriver::Error::NoSuchElementError, not_found(args))
+    end
+
+    # One attempt: the element, or nil when nothing matched yet.
+    def single_or_nil(args, strict, &)
+      return native_or_nil(&) unless strict
+
+      found = Wait.immediately { find_elements(*args) }
       raise AmbiguousMatch.new(Locator.describe(args), found) if found.size > 1
 
-      raise Selenium::WebDriver::Error::NoSuchElementError, "no such element: #{Locator.describe(args)}" if found.empty?
-
       found.first
+    end
+
+    def native_or_nil(&)
+      yield
+    rescue Selenium::WebDriver::Error::NoSuchElementError
+      nil
+    end
+
+    def not_found(args)
+      "no such element: #{Locator.describe(args)}"
     end
   end
 end

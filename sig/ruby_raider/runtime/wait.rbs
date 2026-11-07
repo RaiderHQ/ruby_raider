@@ -1,8 +1,11 @@
 module Raider
   module Wait
     DEADLINE_KEY: Symbol
+    IMMEDIATE_KEY: Symbol
 
     def self.deadline: () -> Float?
+    def self.immediately: [T] () { () -> T } -> T
+    def self.immediate?: () -> bool
     def self.until: (?timeout: Numeric?, ?interval: Numeric) { () -> untyped } -> untyped
     def self.eventually: [T] (?timeout: Numeric?) { () -> T } -> T
 

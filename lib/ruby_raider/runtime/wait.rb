@@ -9,10 +9,24 @@ module Raider
   # (the same key the generated wait helper uses).
   module Wait
     DEADLINE_KEY = :raider_wait_deadline
+    IMMEDIATE_KEY = :raider_wait_immediate
 
     class << self
       def deadline
         Thread.current[DEADLINE_KEY]
+      end
+
+      # Runs the block with finds making one attempt each (the caller does the waiting).
+      def immediately
+        previous = Thread.current[IMMEDIATE_KEY]
+        Thread.current[IMMEDIATE_KEY] = true
+        yield
+      ensure
+        Thread.current[IMMEDIATE_KEY] = previous
+      end
+
+      def immediate?
+        Thread.current[IMMEDIATE_KEY] == true
       end
 
       # Polls until the block returns a truthy value. The block may

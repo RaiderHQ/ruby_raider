@@ -78,4 +78,24 @@ RSpec.describe 'Raider::Wait' do
       expect(calls).to eq(1)
     end
   end
+
+  describe '.immediately' do
+    it 'returns the block value and flags the block as immediate' do
+      expect(Raider::Wait.immediate?).to be(false)
+      expect(Raider::Wait.immediately { Raider::Wait.immediate? }).to be(true)
+      expect(Raider::Wait.immediate?).to be(false)
+    end
+
+    it 'stays immediate when an inner call leaves' do
+      Raider::Wait.immediately do
+        Raider::Wait.immediately { :inner }
+        expect(Raider::Wait.immediate?).to be(true)
+      end
+    end
+
+    it 'restores the flag when the block raises' do
+      expect { Raider::Wait.immediately { raise ArgumentError } }.to raise_error(ArgumentError)
+      expect(Raider::Wait.immediate?).to be(false)
+    end
+  end
 end

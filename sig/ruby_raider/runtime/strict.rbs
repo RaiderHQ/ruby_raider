@@ -15,6 +15,14 @@ module Raider
 
   module StrictFinder
     def find_element: (*untyped) -> Selenium::WebDriver::Element
+    def find_elements: (*untyped) -> Array[Selenium::WebDriver::Element]
+
+    private
+
+    def single: (Array[untyped] args, bool? strict) { () -> untyped } -> Selenium::WebDriver::Element
+    def single_or_nil: (Array[untyped] args, bool? strict) { () -> untyped } -> Selenium::WebDriver::Element?
+    def native_or_nil: () { () -> untyped } -> untyped
+    def not_found: (Array[untyped] args) -> String
   end
 
   module StrictFirst
