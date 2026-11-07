@@ -21,8 +21,8 @@ RSpec.describe 'Raider::Actionable' do
     expect(Selenium::WebDriver::Element.ancestors.first).to eq(Raider::Actionable)
   end
 
-  it 'defines only the four action methods' do
-    expect(Raider::Actionable.instance_methods(false)).to contain_exactly(:click, :send_keys, :clear, :submit)
+  it 'defines only the four action methods and the send_key alias' do
+    expect(Raider::Actionable.instance_methods(false)).to contain_exactly(:click, :send_keys, :send_key, :clear, :submit)
   end
 
   it 'polls the script until it passes, then clicks' do
@@ -40,6 +40,12 @@ RSpec.describe 'Raider::Actionable' do
     bridge.script_results.push(nil)
     element.send_keys('a', :enter)
     expect(bridge.calls.last).to eq([:send_keys_to_element, 'e1', keys])
+  end
+
+  it 'gates the send_key alias too' do
+    bridge.script_results.push(nil)
+    element.send_key('a')
+    expect([bridge.script_calls.size, bridge.calls.last]).to eq([1, [:send_keys_to_element, 'e1', Selenium::WebDriver::Keys.encode(['a'])]])
   end
 
   it 'sends keys when forced without leaking the keyword' do

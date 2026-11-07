@@ -16,6 +16,7 @@ module Raider
       Actionability.ensure(self, :send_keys, force: force)
       super(*keys)
     end
+    alias send_key send_keys
 
     def clear(force: false)
       Actionability.ensure(self, :clear, force: force)
