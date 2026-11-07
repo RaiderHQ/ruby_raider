@@ -70,4 +70,19 @@ RSpec.describe 'Raider::Actionable in a real browser', :browser do
     Raider.actionability = false
     expect { element('covered').click }.to raise_error(Selenium::WebDriver::Error::ElementClickInterceptedError)
   end
+
+  it 'costs under 50 ms per click on a visible button', :slow do
+    mean_ms = lambda do
+      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      20.times { element('plain').click }
+      (Process.clock_gettime(Process::CLOCK_MONOTONIC) - started) / 20 * 1000
+    end
+    Raider.actionability = true
+    on_mean = mean_ms.call
+    Raider.actionability = false
+    off_mean = mean_ms.call
+    puts format('actionability on %<on>.1f ms, off %<off>.1f ms, difference %<diff>.1f ms per click',
+                on: on_mean, off: off_mean, diff: on_mean - off_mean)
+    expect(on_mean - off_mean).to be < 50
+  end
 end
