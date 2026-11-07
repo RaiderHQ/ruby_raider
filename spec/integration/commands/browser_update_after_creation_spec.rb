@@ -113,8 +113,4 @@ describe 'Browser update after framework creation' do
   context 'with selenium + rspec' do
     include_examples 'updates browser config after creation', 'rspec', 'selenium'
   end
-
-  context 'with selenium + cucumber' do
-    include_examples 'updates browser config after creation', 'cucumber', 'selenium'
-  end
 end

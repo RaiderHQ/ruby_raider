@@ -13,7 +13,7 @@ require_relative 'trace_page_server'
 # These tests:
 # 1. Generate a complete project
 # 2. Install dependencies (bundle install)
-# 3. Run the generated tests (rspec/cucumber)
+# 3. Run the generated tests (rspec)
 # 4. Verify tests pass
 #
 # This ensures the template system produces working, executable test frameworks
@@ -94,21 +94,6 @@ describe 'End-to-End Project Generation and Execution' do
     result
   end
 
-  # Helper to run Cucumber tests
-  def run_cucumber(project_name)
-    puts "\n🥒 Running Cucumber tests in #{project_name}..."
-    result = run_in_project(project_name, 'HEADLESS=true bundle exec cucumber features/ --format pretty', timeout: 120)
-
-    puts result[:stdout] if result[:stdout].length.positive?
-
-    unless result[:success]
-      puts '❌ Cucumber tests failed:'
-      puts result[:stderr] if result[:stderr].length.positive?
-    end
-
-    result
-  end
-
   # Shared example for RSpec-based projects
   shared_examples 'executable rspec project' do |project_name|
     let(:project) { project_name }
@@ -157,116 +142,6 @@ describe 'End-to-End Project Generation and Execution' do
     end
   end
 
-  # Shared example for Cucumber-based projects
-  shared_examples 'executable cucumber project' do |project_name|
-    let(:project) { project_name }
-
-    it 'installs dependencies successfully' do
-      expect(bundle_install(project)).to be true
-    end
-
-    it 'runs generated Cucumber tests successfully', :slow do
-      skip 'Bundle install failed' unless bundle_install(project)
-
-      result = run_cucumber(project)
-
-      expect(result[:success]).to be(true),
-                                  "Cucumber tests failed with exit code #{result[:exit_code]}.\n" \
-                                  "STDOUT: #{result[:stdout]}\n" \
-                                  "STDERR: #{result[:stderr]}"
-    end
-
-    it 'resolves raider_reporter 0.10+ from RubyGems and requires its Cucumber plugin', :aggregate_failures do
-      skip 'Bundle install failed' unless bundle_install(project)
-
-      lockfile = File.read(File.join(project, 'Gemfile.lock'))
-      expect(lockfile).to match(/^    raider_reporter \(0\.1\d\.\d+\)$/)
-      expect(File.read(File.join(project, 'features/support/env.rb'))).to include("require 'raider_reporter/cucumber'")
-    end
-
-    it 'prints pretty output and keeps the exit status of a failing Cucumber run', :aggregate_failures, :slow do
-      skip 'Bundle install failed' unless bundle_install(project)
-
-      result = run_cucumber_with_failure(project)
-
-      expect(result[:stdout]).to include('Feature: Reporter failure')
-      expect(result[:stdout]).to include('Scenario: A deliberately failing scenario')
-      expect(result[:stdout]).to match(/\d+ scenarios? \(\d+ failed/)
-      expect(result[:exit_code]).to eq(1)
-    end
-
-    it 'writes rerun.txt listing only the failing scenario', :aggregate_failures, :slow do
-      skip 'Bundle install failed' unless bundle_install(project)
-
-      result = run_cucumber_with_failure(project)
-
-      expect(result[:exit_code]).to eq(1)
-      rerun = File.join(project, 'rerun.txt')
-      expect(File).to exist(rerun)
-      expect(File.read(rerun).strip).to eq('features/reporter_failure.feature:3')
-    end
-
-    it 'writes raider-results/run.json listing every scenario with a failing scenario screenshot',
-       :aggregate_failures, :slow do
-      skip 'Bundle install failed' unless bundle_install(project)
-
-      result = run_cucumber_with_failure(project)
-      summary = result[:stdout].match(/(\d+) scenarios? \((?:(\d+) failed)?/)
-      expect(summary).not_to be_nil, "No Cucumber summary line.\nSTDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
-
-      run = JSON.parse(File.read(File.join(project, 'raider-results', 'run.json')))
-      expect(run['schema_version']).to eq(1)
-      expect(run['results'].size).to eq(summary[1].to_i)
-      expect(run['results'].count { |r| r['status'] == 'failed' }).to eq(summary[2].to_i)
-
-      failing = run['results'].find { |r| r['full_name'] == 'Reporter failure: A deliberately failing scenario' }
-      expect(failing).not_to be_nil, "Scenario missing from run.json: #{run['results'].map { |r| r['full_name'] }}"
-      expect(failing['status']).to eq('failed')
-      expect(failing['file_path']).to eq('features/reporter_failure.feature')
-      expect(failing['failure']['message']).to start_with(
-        'Then the reporter records this failure (features/reporter_failure.feature:5)'
-      )
-      screenshot = failing['attachments'].find { |a| a['name'] == 'screenshot' }
-      expect(screenshot).not_to be_nil, "No screenshot attachment: #{failing['attachments']}"
-      expect(screenshot['content_type']).to eq('image/png')
-    end
-  end
-
-  # Runs the project's features plus a deliberately failing scenario, then removes that scenario again
-  def run_cucumber_with_failure(project)
-    add_failing_cucumber_scenario(project)
-    FileUtils.rm_rf([File.join(project, 'raider-results'), File.join(project, 'rerun.txt')])
-    run_cucumber(project)
-  ensure
-    remove_failing_cucumber_scenario(project)
-  end
-
-  # Adds a scenario that always fails at its last step, after the browser has been started
-  def add_failing_cucumber_scenario(project)
-    File.write(File.join(project, 'features/reporter_failure.feature'), <<~FEATURE)
-      Feature: Reporter failure
-
-      Scenario: A deliberately failing scenario
-          Given the reporter has a started scenario
-          Then the reporter records this failure
-    FEATURE
-    File.write(File.join(project, 'features/step_definitions/reporter_failure_steps.rb'), <<~STEPS)
-      # frozen_string_literal: true
-
-      Given('the reporter has a started scenario') {}
-
-      Then('the reporter records this failure') do
-        raise 'deliberate failure for raider_reporter'
-      end
-    STEPS
-  end
-
-  # Keeps the deliberate failure from leaking into the other examples that share the project
-  def remove_failing_cucumber_scenario(project)
-    FileUtils.rm_f(File.join(project, 'features/reporter_failure.feature'))
-    FileUtils.rm_f(File.join(project, 'features/step_definitions/reporter_failure_steps.rb'))
-  end
-
   # Runs the project's own RuboCop with the gems its bundle resolved (newer than this gem's dev bundle).
   # It runs from a copy outside this repo, as a user's project would: inside it RuboCop would also read
   # this repo's .rubocop.yml, gemspec and .ruby-version.
@@ -312,14 +187,6 @@ describe 'End-to-End Project Generation and Execution' do
         output = [first, second].map { |run| run[:stdout] + run[:stderr] }.join
         # Short values like "1" or "en" can appear in any output; a leaked token is long.
         cookie_values.select { |value| value.length >= 8 }.each { |value| expect(output).not_to include(value) }
-      end
-    end
-
-    describe 'Selenium + Cucumber' do
-      include_examples 'executable cucumber project', 'cucumber_selenium'
-
-      it 'passes its own RuboCop with its bundled gems', :slow do
-        expect_project_rubocop_clean('cucumber_selenium')
       end
     end
   end
@@ -392,27 +259,6 @@ describe 'End-to-End Project Generation and Execution' do
         expect_azure_ci_block(project)
       end
     end
-
-    describe 'Selenium + Cucumber' do
-      let(:project) { generate_azure_project('cucumber') }
-
-      it 'ships azure-pipelines.yml and resolves raider_reporter 0.10+', :aggregate_failures do
-        expect(File).to exist(File.join(project, 'azure-pipelines.yml'))
-        skip 'Bundle install failed' unless bundle_install(project)
-
-        expect(File.read(File.join(project, 'Gemfile.lock'))).to match(/^    raider_reporter \(0\.1\d\.\d+\)$/)
-      end
-
-      it 'records provider azure_pipelines and an azure_pipelines: build key in run.json', :aggregate_failures, :slow do
-        skip 'Bundle install failed' unless bundle_install(project)
-
-        FileUtils.rm_rf(File.join(project, 'raider-results'))
-        result = run_in_project(project, "#{azure_env_prefix} bundle exec cucumber features/ --format pretty",
-                                timeout: 120)
-        expect(result[:success]).to be(true), "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
-        expect_azure_ci_block(project)
-      end
-    end
   end
 
   # An empty skeleton (examples: false) still passes its run, so its CI is green until tests are added
@@ -434,17 +280,6 @@ describe 'End-to-End Project Generation and Execution' do
         result = run_in_project(project, "bundle exec #{command}", timeout: 120)
         expect(result[:exit_code]).to eq(0), "#{command}\nSTDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
         expect(result[:stdout]).to include('0 examples, 0 failures')
-      end
-    end
-
-    it 'runs bundle exec cucumber on a selenium cucumber skeleton with 0 scenarios', :aggregate_failures do
-      project = generate_skeleton_project('cucumber')
-      skip 'Bundle install failed' unless bundle_install(project)
-
-      ['cucumber', 'cucumber features'].each do |command|
-        result = run_in_project(project, "bundle exec #{command}", timeout: 120)
-        expect(result[:exit_code]).to eq(0), "#{command}\nSTDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
-        expect(result[:stdout]).to include('0 scenarios')
       end
     end
   end
@@ -524,41 +359,6 @@ describe 'End-to-End Project Generation and Execution' do
           end
         end
       SPEC
-    end
-
-    def add_cucumber_video_feature(project, firefox_binary)
-      File.write(File.join(project, 'features/video_replay.feature'), <<~FEATURE)
-        Feature: Video replay
-
-        Scenario: A passing scenario
-            Given the video page is open
-            Then the video page title is "Video"
-
-        Scenario: A failing scenario
-            Given the video page is open
-            Then the video page title is "deliberate video failure"
-      FEATURE
-      File.write(File.join(project, 'features/step_definitions/video_replay_steps.rb'), <<~STEPS)
-        # frozen_string_literal: true
-
-        Given('the video page is open') do
-          browser.goto('#{page_url}')
-          browser.text_field(id: 'name').set('typed')
-          browser.button(id: 'go').click
-        end
-
-        Then('the video page title is {string}') do |title|
-          raise "expected title \#{title}" unless browser.h1(id: 'title').text == title
-        end
-      STEPS
-      config = File.join(project, 'config/config.yml')
-      File.write(config, File.read(config).sub(/^browser: .*$/, 'browser: firefox'))
-      # Test setup only: the generated templates do not read FIREFOX_BINARY.
-      File.write(File.join(project, 'features/support/zz_firefox_binary.rb'), <<~RUBY) if firefox_binary
-        # frozen_string_literal: true
-
-        Selenium::WebDriver::Firefox.path = ENV['FIREFOX_BINARY'] if ENV['FIREFOX_BINARY']
-      RUBY
     end
 
     def video_files(project)
@@ -944,60 +744,6 @@ describe 'End-to-End Project Generation and Execution' do
       end
     end
 
-    describe 'Selenium + Cucumber on headless Chrome' do
-      let(:project) { 'video_cucumber_selenium' }
-
-      before do
-        generate_video_project('cucumber', 'selenium')
-        skip_unless_trace_prerequisites(project)
-        add_cucumber_trace_feature(project)
-      end
-
-      after do
-        FileUtils.rm_f(File.join(project, 'features/trace_replay.feature'))
-        FileUtils.rm_f(File.join(project, 'features/step_definitions/trace_replay_steps.rb'))
-      end
-
-      def add_cucumber_trace_feature(project)
-        File.write(File.join(project, 'features/trace_replay.feature'), <<~FEATURE)
-          Feature: Trace replay
-
-          Scenario: A failing traced scenario
-              Given the trace page is open
-              When I type a name on the trace page
-              Then the trace page title is "deliberate trace failure"
-        FEATURE
-        File.write(File.join(project, 'features/step_definitions/trace_replay_steps.rb'), <<~STEPS)
-          # frozen_string_literal: true
-
-          Given('the trace page is open') do
-            driver.navigate.to('#{server.url}')
-          end
-
-          When('I type a name on the trace page') do
-            send_keys({ id: 'name' }, '#{plain_value}')
-            click({ id: 'go' })
-          end
-
-          Then('the trace page title is {string}') do |title|
-            eventually(timeout: 1) { expect(text(id: 'title')).to eq(title) }
-          end
-        STEPS
-      end
-
-      it 'attaches a trace.zip with Gherkin step groups to the failing scenario', :aggregate_failures do
-        run = run_in_project(project, 'bundle exec cucumber features/trace_replay.feature', env: trace_env, timeout: 240)
-        expect_run(run)
-        attachments = trace_attachments(result_named(project, 'A failing traced scenario'))
-        expect(attachments.size).to eq(1)
-        expect(attachments.first).to include('content_type' => 'application/vnd.raider.trace+zip', 'attempt' => 1)
-        path = trace_zip(project, attachments.first)
-        expect_valid_trace(path)
-        groups = TraceFormatChecker.read(path).first['steps'].select { |step| step['action'] == 'cucumber_step' }
-        expect(groups).to include(include('kind' => 'group', 'name' => a_string_including('the trace page is open')))
-      end
-    end
-
     # mock_request / block_request through WebDriver BiDi, on a page that fetches /api/* and a cross-origin URL
     # that exists nowhere (so it only answers when mocked). Chrome by default; Edge and Firefox run only when
     # RAIDER_E2E_BROWSERS (comma separated) lists them.
@@ -1143,7 +889,7 @@ describe 'End-to-End Project Generation and Execution' do
   end
 
   # match_screenshot against real browsers, on a fixed data: page (no server, no animation). Chrome by default; Edge and
-  # Firefox run only when RAIDER_E2E_BROWSERS (comma separated) lists them. The generated spec or step recolours the page
+  # Firefox run only when RAIDER_E2E_BROWSERS (comma separated) lists them. The generated spec recolours the page
   # when SHOT_VARIANT=changed. raider_reporter comes from RubyGems (no `comparison` method yet), so the images are
   # attached and one warning is printed; the report's comparisons field is not asserted here.
   context 'Screenshot comparison', :slow do
@@ -1155,8 +901,6 @@ describe 'End-to-End Project Generation and Execution' do
       File.write(config_path, original_config) if File.exist?(config_path)
       FileUtils.rm_rf(File.join(project, 'screenshots'))
       FileUtils.rm_f(File.join(project, 'spec/screenshot_comparison_spec.rb'))
-      FileUtils.rm_f(File.join(project, 'features/screenshot_comparison.feature'))
-      FileUtils.rm_f(File.join(project, 'features/step_definitions/screenshot_comparison_steps.rb'))
       FileUtils.rm_rf(cache_dir)
     end
 
@@ -1220,28 +964,6 @@ describe 'End-to-End Project Generation and Execution' do
       SPEC
     end
 
-    def write_cucumber_feature
-      File.write(File.join(project, 'features/screenshot_comparison.feature'), <<~FEATURE)
-        Feature: Screenshot comparison
-
-        Scenario: Home matches
-            Given the screenshot page is open
-            Then the page matches the "home" screenshot
-      FEATURE
-      File.write(File.join(project, 'features/step_definitions/screenshot_comparison_steps.rb'), <<~STEPS)
-        # frozen_string_literal: true
-
-        Given('the screenshot page is open') do
-          driver.navigate.to('#{shot_page}')
-          driver.execute_script("#{recolour}") if ENV['SHOT_VARIANT'] == 'changed'
-        end
-
-        Then('the page matches the {string} screenshot') do |name|
-          match_screenshot(name)
-        end
-      STEPS
-    end
-
     # Every failure message in run.json, as text.
     def failure_text(project)
       results(project).to_json
@@ -1303,20 +1025,6 @@ describe 'End-to-End Project Generation and Execution' do
           walk_through('bundle exec rspec spec/screenshot_comparison_spec.rb')
         end
       end
-
-      describe "Selenium + Cucumber on headless #{name}" do
-        let(:project) { 'video_cucumber_selenium' }
-
-        before do
-          generate_video_project('cucumber', 'selenium')
-          use_browser(name)
-          write_cucumber_feature
-        end
-
-        it 'creates, matches, fails with images, refuses on CI and updates', :aggregate_failures do
-          walk_through('bundle exec cucumber features/screenshot_comparison.feature')
-        end
-      end
     end
   end
 
@@ -1335,19 +1043,6 @@ describe 'End-to-End Project Generation and Execution' do
       end
     end
 
-    describe 'iOS + Cucumber' do
-      it 'generates valid project structure' do
-        expect(File).to exist('cucumber_ios/features/support/env.rb')
-        expect(File).to exist('cucumber_ios/Gemfile')
-        expect(File).to exist('cucumber_ios/features')
-      end
-
-      it 'has valid Ruby syntax in generated files' do
-        result = run_in_project('cucumber_ios', 'ruby -c features/support/env.rb')
-        expect(result[:success]).to be true
-      end
-    end
-
     describe 'Android + RSpec' do
       it 'generates valid project structure' do
         expect(File).to exist('rspec_android/helpers/spec_helper.rb')
@@ -1361,19 +1056,6 @@ describe 'End-to-End Project Generation and Execution' do
       end
     end
 
-    describe 'Android + Cucumber' do
-      it 'generates valid project structure' do
-        expect(File).to exist('cucumber_android/features/support/env.rb')
-        expect(File).to exist('cucumber_android/Gemfile')
-        expect(File).to exist('cucumber_android/features')
-      end
-
-      it 'has valid Ruby syntax in generated files' do
-        result = run_in_project('cucumber_android', 'ruby -c features/support/env.rb')
-        expect(result[:success]).to be true
-      end
-    end
-
     describe 'Cross-Platform + RSpec' do
       it 'generates valid project structure' do
         expect(File).to exist('rspec_cross_platform/helpers/appium_helper.rb')
@@ -1383,19 +1065,6 @@ describe 'End-to-End Project Generation and Execution' do
 
       it 'has valid Ruby syntax in generated files' do
         result = run_in_project('rspec_cross_platform', 'ruby -c helpers/spec_helper.rb')
-        expect(result[:success]).to be true
-      end
-    end
-
-    describe 'Cross-Platform + Cucumber' do
-      it 'generates valid project structure' do
-        expect(File).to exist('cucumber_cross_platform/helpers/appium_helper.rb')
-        expect(File).to exist('cucumber_cross_platform/Gemfile')
-        expect(File).to exist('cucumber_cross_platform/features')
-      end
-
-      it 'has valid Ruby syntax in generated files' do
-        result = run_in_project('cucumber_cross_platform', 'ruby -c features/support/env.rb')
         expect(result[:success]).to be true
       end
     end

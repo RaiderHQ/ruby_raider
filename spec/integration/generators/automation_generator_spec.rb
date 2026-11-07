@@ -40,10 +40,6 @@ describe AutomationGenerator do
     include_examples 'creates web automation framework', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
   end
 
-  context 'with cucumber and selenium' do
-    include_examples 'creates web automation framework', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-  end
-
   context 'with rspec and appium android' do
     include_examples 'creates mobile automation framework', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}"
   end
@@ -52,20 +48,8 @@ describe AutomationGenerator do
     include_examples 'creates mobile automation framework', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::IOS}"
   end
 
-  context 'with cucumber and appium android' do
-    include_examples 'creates mobile automation framework', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::ANDROID}"
-  end
-
-  context 'with cucumber and appium ios' do
-    include_examples 'creates mobile automation framework', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::IOS}"
-  end
-
-  context 'with cucumber and appium cross platform' do
-    include_examples 'creates mobile automation framework', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::CROSS_PLATFORM}"
-  end
-
   describe 'without example tests' do
-    %w[rspec cucumber].product(%w[selenium ios cross_platform]).each do |framework, automation|
+    %w[rspec].product(%w[selenium ios cross_platform]).each do |framework, automation|
       context "with #{framework} and #{automation}" do
         let(:name) { ensure_project(framework:, automation:, examples: false) }
 

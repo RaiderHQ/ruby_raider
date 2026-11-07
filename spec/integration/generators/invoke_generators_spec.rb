@@ -9,9 +9,9 @@ describe InvokeGenerators do
   after { FileUtils.rm_rf(Dir.glob('case_*')) }
 
   context 'with option values in a different case' do
-    it 'accepts framework:Cucumber and automation:Selenium' do
-      described_class.generate_framework(framework: 'Cucumber', automation: 'Selenium', name: 'case_mixed')
-      expect(File).to exist('case_mixed/cucumber.yml')
+    it 'accepts framework:Rspec and automation:Selenium' do
+      described_class.generate_framework(framework: 'Rspec', automation: 'Selenium', name: 'case_mixed')
+      expect(File).to exist('case_mixed/.rspec')
     end
 
     it 'accepts upper-case values' do
@@ -28,10 +28,10 @@ describe InvokeGenerators do
   context 'with raider new and capitalised options' do
     it 'generates the project and exits zero' do
       root = File.expand_path('../../..', __dir__)
-      _out, status = Open3.capture2e('ruby', "#{root}/bin/raider", 'new', 'case_cli', '-p', 'framework:Cucumber',
+      _out, status = Open3.capture2e('ruby', "#{root}/bin/raider", 'new', 'case_cli', '-p', 'framework:Rspec',
                                      'automation:Selenium')
       expect(status.exitstatus).to eq(0)
-      expect(File).to exist('case_cli/cucumber.yml')
+      expect(File).to exist('case_cli/.rspec')
     end
   end
 
@@ -100,21 +100,21 @@ describe 'Projects named like a generator option' do
   end
 
   it 'gives a Selenium project named watir the wait helper it wires in' do
-    InvokeGenerators.generate_framework(automation: 'selenium', framework: 'cucumber', name: 'watir')
+    InvokeGenerators.generate_framework(automation: 'selenium', framework: 'rspec', name: 'watir')
     expect(File).to exist('watir/helpers/wait_helper.rb')
-    expect(File.read('watir/features/support/env.rb')).not_to include('Watir')
+    expect(File.read('watir/helpers/spec_helper.rb')).not_to include('Watir')
     expect(File.read('watir/page_objects/abstract/page.rb')).to include('include WaitHelper')
   end
 end
 
 describe 'Option-named projects generate what a neutral name generates' do
-  option_names = %w[ios android cucumber rspec cross_platform axe_addon selenium watir no_examples azure]
+  option_names = %w[ios android rspec cross_platform axe_addon selenium watir no_examples azure]
   option_sets = [
     { automation: 'selenium', framework: 'rspec' },
-    { automation: 'selenium', framework: 'cucumber', accessibility: true },
+    { automation: 'selenium', framework: 'rspec', accessibility: true },
     { automation: 'selenium', framework: 'rspec', examples: false, ci: 'azure' },
     { automation: 'ios', framework: 'rspec' },
-    { automation: 'android', framework: 'cucumber' },
+    { automation: 'android', framework: 'rspec' },
     { automation: 'cross_platform', framework: 'rspec' }
   ].freeze
 
