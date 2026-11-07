@@ -4,7 +4,10 @@
 
 ### 4.0.0
 
-- Watir is removed: `automation:watir` refuses with a message. See Migrating from Watir in the README.
+- Watir is removed: `automation:watir` is no longer a valid automation value.
+- Cucumber is removed: `raider new` generates RSpec projects only and `framework:cucumber` is no longer a valid framework value.
+- `raider g feature`, `raider g steps` and `raider u path --feature` are removed; `raider g scaffold` always writes a spec and a page.
+- Generated projects no longer emit `cucumber_step` trace groups.
 - ruby_raider now depends on selenium-webdriver >= 4.30.
 - Existing projects pin `gem 'ruby_raider', '~> 3.15'` (or an older `~> 3.x`) in their Gemfile, so `bundle update` never moves them to 4.0; to upgrade, change the pin to `~> 4.0` and run `bundle update ruby_raider`.
 
