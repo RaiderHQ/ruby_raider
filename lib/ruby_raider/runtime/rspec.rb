@@ -4,6 +4,7 @@ require 'rspec/expectations'
 require_relative '../runtime'
 require_relative 'matchers/base'
 require_relative 'matchers/element'
+require_relative 'matchers/page'
 
 module Raider
   # Web-first RSpec matchers that retry until the page settles.
@@ -39,6 +40,18 @@ module Raider
 
     def be_checked(wait: nil)
       Element::BeChecked.new(wait: wait)
+    end
+
+    def have_count(count, wait: nil)
+      Page::HaveCount.new(count, wait: wait)
+    end
+
+    def have_title(expected, wait: nil)
+      Page::HaveTitle.new(expected, wait: wait)
+    end
+
+    def have_url(expected, wait: nil)
+      Page::HaveUrl.new(expected, wait: wait)
     end
   end
   # rubocop:enable Naming/PredicatePrefix

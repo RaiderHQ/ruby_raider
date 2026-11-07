@@ -30,6 +30,8 @@ module Raider
 
       def option: (Symbol key) -> untyped
 
+      def polled_actual: () -> untyped
+      def wait_for: (untyped actual) -> Numeric
       def poll: (untyped actual, negated: bool) -> bool
       def settled?: (bool negated) -> bool
       def retried_errors: () -> Array[untyped]

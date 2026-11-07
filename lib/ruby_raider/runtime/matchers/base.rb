@@ -68,8 +68,16 @@ module Raider
         @options[key]
       end
 
+      def polled_actual
+        @poll.actual
+      end
+
+      def wait_for(_actual)
+        @wait || Raider.timeout
+      end
+
       def poll(actual, negated:)
-        @poll = Poll.new(actual, nil, NOT_FOUND, @wait || Raider.timeout)
+        @poll = Poll.new(actual, nil, NOT_FOUND, wait_for(actual))
         Raider::Wait.until(timeout: @poll.waited) { settled?(negated) }
         true
       rescue Raider::TimeoutError
