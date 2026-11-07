@@ -52,30 +52,7 @@ module Raider
         end
       end
 
-      # Retries the block on expectation and lookup failures until the deadline,
-      # then re-raises the last error with the time waited prefixed.
-      def eventually(timeout: nil)
-        limit, waited = limits(timeout)
-        within(limit) do
-          loop do
-            return yield
-          rescue *retried_errors => e
-            raise e.exception("(still failing after #{Describe.seconds(waited)}s)\n#{e.message}") if now >= limit
-
-            pause(limit, 0.1)
-          end
-        end
-      end
-
       private
-
-      def retried_errors
-        errors = [Selenium::WebDriver::Error::NoSuchElementError,
-                  Selenium::WebDriver::Error::StaleElementReferenceError,
-                  AmbiguousMatch, NotActionable, TimeoutError]
-        errors.unshift(RSpec::Expectations::ExpectationNotMetError) if defined?(RSpec::Expectations)
-        errors
-      end
 
       # Inside an enclosing deadline, a call without timeout waits for what is left;
       # one with timeout waits that long, never past the enclosing deadline.
@@ -103,9 +80,5 @@ module Raider
         Process.clock_gettime(Process::CLOCK_MONOTONIC)
       end
     end
-  end
-
-  def self.eventually(timeout: nil, &)
-    Wait.eventually(timeout: timeout, &)
   end
 end

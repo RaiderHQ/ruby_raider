@@ -5,6 +5,8 @@ require_relative '../runtime'
 require_relative 'matchers/base'
 require_relative 'matchers/element'
 require_relative 'matchers/page'
+require_relative 'matchers/presence'
+require_relative 'matchers/retrying_block'
 
 module Raider
   # Web-first RSpec matchers that retry until the page settles.
@@ -42,6 +44,18 @@ module Raider
       Element::BeChecked.new(wait: wait)
     end
 
+    def have_element(locator = nil, wait: nil, **by)
+      Presence::HaveElement.new(locator || by, wait: wait)
+    end
+
+    def have_css(selector, wait: nil)
+      have_element({ css: selector }, wait: wait)
+    end
+
+    def have_xpath(selector, wait: nil)
+      have_element({ xpath: selector }, wait: wait)
+    end
+
     def have_count(count, wait: nil)
       Page::HaveCount.new(count, wait: wait)
     end
@@ -56,3 +70,6 @@ module Raider
   end
   # rubocop:enable Naming/PredicatePrefix
 end
+
+target = RSpec::Expectations::BlockExpectationTarget
+target.prepend(Raider::Matchers::RetryingBlock) unless target.ancestors.include?(Raider::Matchers::RetryingBlock)

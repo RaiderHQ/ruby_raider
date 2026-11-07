@@ -7,15 +7,11 @@ module Raider
     def self.immediately: [T] () { () -> T } -> T
     def self.immediate?: () -> bool
     def self.until: (?timeout: Numeric?, ?interval: Numeric) { () -> untyped } -> untyped
-    def self.eventually: [T] (?timeout: Numeric?) { () -> T } -> T
 
     # private singleton helpers
-    def self.retried_errors: () -> Array[untyped]
     def self.limits: (Numeric? timeout) -> [Float, Float]
     def self.within: [T] (Float limit) { () -> T } -> T
     def self.pause: (Float limit, Numeric interval) -> void
     def self.now: () -> Float
   end
-
-  def self.eventually: [T] (?timeout: Numeric?) { () -> T } -> T
 end
