@@ -121,6 +121,12 @@ RSpec.describe 'The in-page role engine', :browser do
       expect(ids(query(element('scope'), 'button'))).to eq(['scope-save'])
     end
 
+    it 'leaves out buttons under hidden ancestors and keeps the visible child of a hidden parent' do
+      found = ids(query(nil, 'button'))
+      expect(found).to include('h-visible', 'h-vis-parent-child')
+      expect(found).not_to include('h-anc-aria', 'h-anc-none', 'h-vis-inherit', 'h-visibility')
+    end
+
     it 'never returns the scope element itself' do
       expect(ids(query(element('scope-button'), 'button'))).to eq(['scope-inner'])
     end
