@@ -3,6 +3,8 @@ module Raider
 
   module Observer
     LIB_DIR: String
+    GUARD_KEY: Symbol
+    MESSAGE_LIMIT: Integer
     STRATEGIES: Hash[String, String]
 
     class Run
@@ -27,10 +29,15 @@ module Raider
     def self.locator_of: (untyped element) -> Hash[Symbol, untyped]?
     def self.stamp: (untyped element, Array[untyped] args, untyped parent) -> untyped
     def self.stamp_all: (Array[untyped] elements, Array[untyped] args, untyped parent) -> Array[untyped]
+    def self.guarded: () { () -> untyped } -> untyped
+    def self.stop: (untyped watcher, Exception error) -> nil
     def self.millis: (Float started) -> Integer
     def self.clock: () -> Float
 
     # private singleton helpers
+    def self.attach: (untyped element, Hash[Symbol, untyped] stamp) -> untyped
+    def self.frozen_stamp: (Array[untyped] args, untyped parent) -> Hash[Symbol, untyped]
+    def self.summary: (Exception error) -> String
     def self.describe: (Array[untyped] args, untyped parent) -> Hash[Symbol, untyped]
     def self.selector: (String strategy, untyped what, Array[untyped] args) -> String
     def self.role_text: (Array[untyped] args) -> String

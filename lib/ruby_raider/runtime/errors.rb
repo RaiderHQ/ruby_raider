@@ -49,10 +49,11 @@ module Raider
 
   # An element did not become actionable within the timeout.
   class NotActionable < Selenium::WebDriver::Error::ElementNotInteractableError
-    attr_reader :check, :covering
+    attr_reader :check, :covering, :retries
 
-    def initialize(element_description, check, covering: nil, waited: Raider.timeout)
+    def initialize(element_description, check, covering: nil, waited: Raider.timeout, retries: 0)
       @check = check
+      @retries = retries
       @covering = covering
       message = "waited #{Describe.seconds(waited)}s for `#{element_description}` to #{check}"
       message += "; `#{covering[:element]}` covers it at (#{covering[:x]}, #{covering[:y]})" if covering

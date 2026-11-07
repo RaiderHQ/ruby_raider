@@ -81,7 +81,7 @@ module Raider
         end
         retries
       rescue TimeoutError
-        raise not_actionable(element, last, clock - started)
+        raise not_actionable(element, last, clock - started, retries)
       end
 
       # Plain Appium commands, no script: the first check that fails, else nil.
@@ -108,9 +108,9 @@ module Raider
         Process.clock_gettime(Process::CLOCK_MONOTONIC)
       end
 
-      def not_actionable(element, last, waited)
+      def not_actionable(element, last, waited, retries)
         check = last.fetch('check')
-        NotActionable.new(Describe.element(element), PHRASES.fetch(check, check), covering: covering(last), waited: waited)
+        NotActionable.new(Describe.element(element), PHRASES.fetch(check, check), covering: covering(last), waited: waited, retries: retries)
       end
 
       def covering(last)

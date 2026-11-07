@@ -23,8 +23,9 @@ module Raider
   class NotActionable < Selenium::WebDriver::Error::ElementNotInteractableError
     attr_reader check: String
     attr_reader covering: Hash[Symbol, untyped]?
+    attr_reader retries: Integer
 
-    def initialize: (String element_description, String check, ?covering: Hash[Symbol, untyped]?, ?waited: Numeric) -> void
+    def initialize: (String element_description, String check, ?covering: Hash[Symbol, untyped]?, ?waited: Numeric, ?retries: Integer) -> void
   end
 
   class NotSupported < Selenium::WebDriver::Error::UnsupportedOperationError
