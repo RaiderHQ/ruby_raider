@@ -53,10 +53,6 @@ RSpec.describe 'Raider finders' do
     expect(bridge.calls.last[2].split(' | ')).to all(start_with('.//'))
   end
 
-  it 'raises NotSupported for role' do
-    expect { driver.find_element(role: 'button') }.to raise_error(Raider::NotSupported, /role engine/)
-  end
-
   it 'raises ArgumentError naming the key for a malformed value' do
     expect { driver.find_element(label: [1, {}]) }.to raise_error(ArgumentError, /label/)
     expect { driver.find_element(label: %w[a b]) }.to raise_error(ArgumentError, /label/)

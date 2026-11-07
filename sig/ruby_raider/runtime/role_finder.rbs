@@ -2,6 +2,12 @@ module Raider
   module RoleFinder
     ENGINE: String
     QUERY: String
+    NATIVE_MESSAGE: String
+
+    def find_elements: (*untyped args) -> Array[untyped]
+    def find_element: (*untyped args) -> untyped
+    def self.role_args?: (Array[untyped] args) -> bool
+    def self.parse: (Array[untyped] args) -> [String, Hash[Symbol, untyped]]?
   end
 
   module RoleQuery

@@ -5,6 +5,8 @@ require_relative '../../../lib/ruby_raider/runtime'
 require_relative '../support/browser'
 
 RSpec.describe 'Raider finders in a real browser', :browser do
+  include Raider::Helpers
+
   let(:driver) { Raider::Spec::Browser.driver }
 
   before(:all) { Raider::Spec::Browser.open('locators.html') } # rubocop:disable RSpec/BeforeAfterAll
@@ -103,6 +105,22 @@ RSpec.describe 'Raider finders in a real browser', :browser do
       expect(driver.find_elements(test_id: 'item').size).to eq(0)
       expect(id_of(driver.find_element(test_id: 'item-1'))).to eq('item-one')
       expect(id_of(driver.find_element(test_id: 'item-2'))).to eq('item-two')
+    end
+  end
+
+  describe 'by_role' do
+    before(:all) { Raider::Spec::Browser.open('roles.html') } # rubocop:disable RSpec/BeforeAfterAll
+
+    after(:all) { Raider::Spec::Browser.open('locators.html') } # rubocop:disable RSpec/BeforeAfterAll
+
+    it 'finds a role inside the scope element' do
+      scope = driver.find_element(id: 'scope')
+      button = scope.find_element(by_role('button', name: 'Save'))
+      expect(driver.execute_script('return arguments[0].closest("#scope") !== null', button)).to be(true)
+    end
+
+    it 'is strict at the page level when two buttons match' do
+      expect { driver.find_element(by_role('button', name: 'Save')) }.to raise_error(Raider::AmbiguousMatch)
     end
   end
 
