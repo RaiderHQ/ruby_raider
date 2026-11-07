@@ -25,7 +25,7 @@ module Raider
     def label(value, exact:)
       literal = xpath_literal(value)
       [
-        ".//*[@id = (.//label[#{match('.', literal, exact)}]/@for)]",
+        ".//*[@id = //label[#{match('.', literal, exact)}]/@for]",
         ".//label[#{match('.', literal, exact)}]//*[#{LABEL_CONTROLS}]",
         ".//*[#{match('@aria-label', literal, exact)}]",
         ".//*[@aria-labelledby and #{match('string(id(@aria-labelledby))', literal, exact)}]"
