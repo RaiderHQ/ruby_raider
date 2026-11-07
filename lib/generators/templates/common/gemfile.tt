@@ -32,6 +32,3 @@ gem 'ruby_raider', '<%= ruby_raider_version_requirement %>'
 <%- if selenium_based? -%>
 gem 'selenium-webdriver'
 <%- end -%>
-<%- if watir? -%>
-gem 'watir'
-<%- end -%>

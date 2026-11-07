@@ -46,8 +46,7 @@ describe 'Scaffolding E2E' do
 
     gems = []
     case automation
-    when 'selenium'  then gems << "gem 'selenium-webdriver'"
-    when 'watir'     then gems << "gem 'watir'"
+    when 'selenium' then gems << "gem 'selenium-webdriver'"
     end
     case framework
     when 'rspec'    then gems << "gem 'rspec'"
@@ -100,28 +99,6 @@ describe 'Scaffolding E2E' do
     it 'does not have capybara fill_in' do
       expect(page_content).not_to include('fill_in')
     end
-
-    it 'does not have watir browser.text_field' do
-      expect(page_content).not_to include('browser.text_field')
-    end
-  end
-
-  shared_examples 'watir scaffolded page' do
-    it 'has browser.text_field example' do
-      expect(page_content).to include('browser.text_field')
-    end
-
-    it 'has private section' do
-      expect(page_content).to include('private')
-    end
-
-    it 'does not have selenium find_element' do
-      expect(page_content).not_to include('driver.find_element')
-    end
-
-    it 'does not have capybara fill_in' do
-      expect(page_content).not_to include('fill_in')
-    end
   end
 
   # ──────────────────────────────────────────────
@@ -166,17 +143,6 @@ describe 'Scaffolding E2E' do
 
     it 'does not use capybara visit' do
       expect(spec_content).not_to match(/^\s+visit '/)
-    end
-  end
-
-  shared_examples 'watir scaffolded spec' do
-    it 'instantiates page with browser' do
-      expect(spec_content).to include('CheckoutPage.new(browser)')
-    end
-
-    it 'visits through the page object, which joins the config url and the page path' do
-      expect(spec_content).to include('before { page.visit }')
-      expect(spec_content).not_to include('project_config', 'browser.goto')
     end
   end
 
@@ -238,12 +204,6 @@ describe 'Scaffolding E2E' do
     end
   end
 
-  shared_examples 'watir scaffolded steps' do
-    it 'instantiates page with browser' do
-      expect(steps_content).to include('CheckoutPage.new(browser)')
-    end
-  end
-
   # ──────────────────────────────────────────────
   # Shared examples: Helper content
   # ──────────────────────────────────────────────
@@ -302,25 +262,11 @@ describe 'Scaffolding E2E' do
     end
   end
 
-  shared_examples 'watir scaffolded component' do
-    it 'has browser.element example' do
-      expect(component_content).to include('browser.element')
-    end
-
-    it 'has private section' do
-      expect(component_content).to include('private')
-    end
-
-    it 'has content method' do
-      expect(component_content).to include('def content')
-    end
-  end
-
   # ══════════════════════════════════════════════
   # Test matrix: automation × framework
   # ══════════════════════════════════════════════
 
-  %w[selenium watir].each do |automation|
+  %w[selenium].each do |automation|
     %w[rspec cucumber].each do |framework|
       style = scaffold_style(framework)
 

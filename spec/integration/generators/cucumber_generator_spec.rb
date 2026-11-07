@@ -57,11 +57,6 @@ describe CucumberGenerator do
     include_examples 'creates factories for web projects', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}", 'login'
   end
 
-  context 'with cucumber and watir' do
-    include_examples 'creates cucumber files', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}", 'login'
-    include_examples 'creates factories for web projects', "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}", 'login'
-  end
-
   describe 'without example tests' do
     %w[selenium ios cross_platform].each do |automation|
       context "with cucumber and #{automation}" do

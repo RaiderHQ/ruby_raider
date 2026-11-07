@@ -225,32 +225,10 @@ describe 'Common file content' do
     it_behaves_like 'web gitignore for saved logins', name
   end
 
-  context 'with rspec and watir' do
-    name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-    it_behaves_like 'valid rakefile', name
-    it_behaves_like 'rspec rakefile with tag tasks', name
-    it_behaves_like 'has rspec dotfile', name
-    it_behaves_like 'rspec gitignore', name
-    it_behaves_like 'spec helper with retry config', name
-    it_behaves_like 'gemfile with rspec-retry', name
-    it_behaves_like 'web gitignore for saved logins', name
-  end
-
   # --- Cucumber contexts ---
 
   context 'with cucumber and selenium' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
-    it_behaves_like 'valid rakefile', name
-    it_behaves_like 'cucumber rakefile with tag tasks', name
-    it_behaves_like 'no rspec dotfile', name
-    it_behaves_like 'non-rspec gitignore', name
-    it_behaves_like 'gemfile without rspec-retry', name
-    it_behaves_like 'cucumber config with retry', name
-    it_behaves_like 'web gitignore for saved logins', name
-  end
-
-  context 'with cucumber and watir' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
     it_behaves_like 'valid rakefile', name
     it_behaves_like 'cucumber rakefile with tag tasks', name
     it_behaves_like 'no rspec dotfile', name

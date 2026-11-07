@@ -3,9 +3,4 @@
   def visit(*page)
     @driver.navigate.to full_url(page.first)
   end
-<%- elsif watir? -%>
-
-  def visit(*page)
-    @browser.goto full_url(page.first)
-  end
 <%- end -%>

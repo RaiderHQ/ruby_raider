@@ -4,8 +4,7 @@ require_relative 'content_helper'
 
 describe 'Cucumber raider_reporter wiring' do
   screenshot_calls = {
-    'selenium' => 'driver.save_screenshot(screenshot_path)',
-    'watir' => 'browser.screenshot.save(screenshot_path)'
+    'selenium' => 'driver.save_screenshot(screenshot_path)'
   }
 
   AUTOMATION_TYPES.each do |automation|
@@ -14,7 +13,7 @@ describe 'Cucumber raider_reporter wiring' do
       let(:env) { read_generated(project_name, 'features/support/env.rb') }
       let(:screenshot_call) { screenshot_calls.fetch(automation, 'driver.screenshot(screenshot_path)') }
       let(:hook) { env[/^\s*After do.*\z/m] }
-      let(:quit_call) { automation == 'watir' ? 'browser.quit' : 'driver.quit' }
+      let(:quit_call) { 'driver.quit' }
 
       it 'activates the reporter by requiring raider_reporter/cucumber' do
         expect(env).to include("require 'raider_reporter/cucumber'")
@@ -63,8 +62,8 @@ describe 'Cucumber raider_reporter wiring' do
       end
 
       context 'with video recording' do
-        target = automation == 'watir' ? 'browser' : 'driver'
-        video_type = %w[selenium watir].include?(automation) ? ':webm' : ':mp4'
+        target = 'driver'
+        video_type = automation == 'selenium' ? ':webm' : ':mp4'
 
         it 'requires video_helper' do
           expect(env).to include("require_relative '../../helpers/video_helper'")
@@ -153,7 +152,7 @@ describe 'Cucumber raider_reporter wiring' do
 end
 
 describe 'Cucumber login reuse wiring' do
-  { 'selenium' => 'driver', 'watir' => 'browser.driver' }.each do |automation, target|
+  { 'selenium' => 'driver' }.each do |automation, target|
     context "with cucumber and #{automation}" do
       let(:env) { read_generated("#{FrameworkIndex::CUCUMBER}_#{automation}", 'features/support/env.rb') }
 

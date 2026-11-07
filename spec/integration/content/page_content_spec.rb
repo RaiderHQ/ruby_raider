@@ -60,28 +60,6 @@ describe 'Page object content' do
       expect(login).not_to include('Capybara::DSL')
       expect(login).not_to include('fill_in')
     end
-
-    it 'does not include Watir methods' do
-      expect(login).not_to include('browser.text_field')
-    end
-  end
-
-  shared_examples 'watir login page' do |project_name|
-    subject(:login) { read_generated(project_name, 'page_objects/pages/login.rb') }
-
-    it 'uses browser methods for elements' do
-      expect(login).to include('browser.text_field')
-      expect(login).to include('browser.button')
-    end
-
-    it 'uses set for input' do
-      expect(login).to include('.set ')
-    end
-
-    it 'does not include Selenium methods' do
-      expect(login).not_to include('find_element')
-      expect(login).not_to include('send_keys')
-    end
   end
 
   # --- Abstract page ---
@@ -155,22 +133,6 @@ describe 'Page object content' do
     end
   end
 
-  shared_examples 'watir abstract page' do |project_name|
-    subject(:page) { read_generated(project_name, 'page_objects/abstract/page.rb') }
-
-    it 'has attr_reader :browser' do
-      expect(page).to include('attr_reader :browser')
-    end
-
-    it 'has initialize accepting browser' do
-      expect(page).to match(/def initialize\(browser\)/)
-    end
-
-    it 'has visit with browser.goto' do
-      expect(page).to include('browser.goto')
-    end
-  end
-
   # --- Contexts ---
 
   context 'with rspec and selenium' do
@@ -181,28 +143,12 @@ describe 'Page object content' do
     include_examples 'selenium abstract page', name
   end
 
-  context 'with rspec and watir' do
-    name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}"
-    include_examples 'valid login page', name
-    include_examples 'watir login page', name
-    include_examples 'valid abstract page', name
-    include_examples 'watir abstract page', name
-  end
-
   context 'with cucumber and selenium' do
     name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::SELENIUM}"
     include_examples 'valid login page', name
     include_examples 'selenium login page', name
     include_examples 'valid abstract page', name
     include_examples 'selenium abstract page', name
-  end
-
-  context 'with cucumber and watir' do
-    name = "#{FrameworkIndex::CUCUMBER}_#{AutomationIndex::WATIR}"
-    include_examples 'valid login page', name
-    include_examples 'watir login page', name
-    include_examples 'valid abstract page', name
-    include_examples 'watir abstract page', name
   end
 end
 
@@ -216,22 +162,18 @@ describe 'Page WaitHelper wiring' do
     end
 
     it "includes NetworkHelper only in #{framework} selenium" do
-      %w[selenium ios android cross_platform watir].each do |automation|
+      %w[selenium ios android cross_platform].each do |automation|
         page = read_generated("#{framework}_#{automation}", 'page_objects/abstract/page.rb')
         expect(page.include?('include NetworkHelper')).to eq(automation == 'selenium')
       end
     end
 
     it "includes ScreenshotHelper only in #{framework} selenium" do
-      %w[selenium ios android cross_platform watir].each do |automation|
+      %w[selenium ios android cross_platform].each do |automation|
         page = read_generated("#{framework}_#{automation}", 'page_objects/abstract/page.rb')
         expect(page.include?('include ScreenshotHelper')).to eq(automation == 'selenium')
         expect(page.include?("require_relative '../../helpers/screenshot_helper'")).to eq(automation == 'selenium')
       end
-    end
-
-    it "does not include WaitHelper in #{framework} watir" do
-      expect(read_generated("#{framework}_watir", 'page_objects/abstract/page.rb')).not_to include('WaitHelper')
     end
   end
 end

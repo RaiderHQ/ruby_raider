@@ -26,12 +26,6 @@ describe RspecGenerator do
                      "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}", 'login'
   end
 
-  context 'with rspec and watir' do
-    include_examples 'creates factory files', "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
-    include_examples 'creates rspec files examples',
-                     "#{FrameworkIndex::RSPEC}_#{AutomationIndex::WATIR}", 'login'
-  end
-
   context 'with rspec and appium android' do
     include_examples 'creates rspec files examples',
                      "#{FrameworkIndex::RSPEC}_#{AutomationIndex::ANDROID}", 'pdp'

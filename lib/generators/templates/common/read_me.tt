@@ -19,10 +19,6 @@
    <p align="center"> For more information and updates on releases, see <a href="https://ruby-raider.com">https://ruby-raider.com</a></p>
 </div>
 
-<%- if watir? -%>
-> **Deprecated:** Watir is deprecated and will be removed in the next major version of ruby_raider; new projects should use Selenium. Watir is only available through `-p automation:watir`. See [Migrating from Watir](https://github.com/RaiderHQ/ruby_raider#migrating-from-watir).
-
-<%- end -%>
 ## What is Ruby Raider?
 
 Ruby Raider is a generator and scaffolding gem to make UI test automation easier.
@@ -33,8 +29,8 @@ Ruby Raider is a generator and scaffolding gem to make UI test automation easier
 |-----------------------|------------------------------------|
 | Cucumber and Selenium | Cucumber and Appium for iOS        |
 | RSpec and Selenium    | RSpec and Appium for iOS           |
-| Cucumber and Watir    | Cucumber and Appium for Android    |
-| RSpec and Watir       | RSpec and Appium for Android       |
+|                       | Cucumber and Appium for Android    |
+|                       | RSpec and Appium for Android       |
 |                       | Cucumber and Appium Cross-platform |
 |                       | RSpec and Appium Cross-platform    |
 
@@ -86,7 +82,6 @@ raider g steps [NAME]     # Create step definitions
 raider g scaffold [NAME]  # Create page + test + steps
 ```
 
-<%- if wait_helper? -%>
 <%- test_cmd = rspec? ? 'rspec' : 'cucumber' -%>
 ## How the framework works
 
@@ -538,7 +533,6 @@ The wait helper is ordinary code in your project, so you can take it out. To do 
 Note that without WaitHelper a trace records only navigation and the failure (see [Trace replay](#trace-replay)).
 <%- end -%>
 
-<%- end -%>
 <%- if network_helper? -%>
 ## Mocking network requests
 
@@ -730,8 +724,6 @@ SessionState.new(driver, name: 'admin').reuse(valid: -> { dashboard.tap(&:visit)
   # the real login for the admin
 end
 ```
-
-With Watir, pass `browser.driver`, the Selenium driver underneath the browser.
 
 - `login_state: max_age:` in `config/config.yml` is how many seconds a saved login stays valid (default 3600).
 - `RAIDER_LOGIN_STATE=off` always does the real login and saves nothing; `RAIDER_LOGIN_STATE=refresh` ignores the saved
