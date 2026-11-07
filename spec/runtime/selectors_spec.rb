@@ -5,8 +5,8 @@ require_relative '../../lib/ruby_raider/runtime/selectors'
 
 RSpec.describe 'Raider::Selectors' do
   let(:controls) do
-    'self::input or self::textarea or self::select or self::button or ' \
-      'self::meter or self::output or self::progress'
+    '(self::input or self::textarea or self::select or self::button or ' \
+      "self::meter or self::output or self::progress) and not(self::input[@type='hidden'])"
   end
   let(:excluded) do
     'not(self::script or self::style or self::noscript or self::template or self::title or self::head) ' \
