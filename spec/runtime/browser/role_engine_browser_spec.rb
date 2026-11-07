@@ -25,7 +25,7 @@ RSpec.describe 'The in-page role engine', :browser do
 
   def query(scope, role, options = {})
     engine('return window.__raider.role(arguments[0] || document, arguments[1], arguments[2])',
-           scope, role, { 'name' => nil, 'exact' => false, 'includeHidden' => false }.merge(options))
+           scope, role, { 'name' => nil, 'exact' => false, 'includeHidden' => false, 'level' => nil }.merge(options))
   end
 
   role_cases = {
@@ -52,7 +52,12 @@ RSpec.describe 'The in-page role engine', :browser do
     'cy-self' => 'region', 'cy-a' => 'region', 'cy-b' => 'region', 'cy-button' => 'button', 'r-th-second' => 'columnheader', 'r-th-scoperow' => 'rowheader',
     'r-td' => 'cell', 'r-td-grid' => 'gridcell', 'r-td-grid-ancestor' => 'gridcell', 'r-textarea' => 'textbox',
     'r-div' => 'generic', 'r-span' => 'generic', 'r-div-button' => 'button', 'r-role-tokens' => 'button',
-    'r-bad-role' => 'button', 'r-explicit-over-implicit' => 'button'
+    'r-bad-role' => 'button', 'r-explicit-over-implicit' => 'button',
+    'r-p' => 'paragraph', 'r-blockquote' => 'blockquote', 'r-code' => 'code', 'r-em' => 'emphasis',
+    'r-strong' => 'strong', 'r-del' => 'deletion', 'r-ins' => 'insertion', 'r-sub' => 'subscript',
+    'r-sup' => 'superscript', 'r-time' => 'time', 'r-dfn' => 'term', 'r-dt' => 'term', 'r-dd' => 'definition',
+    'r-caption' => 'caption', 'r-html' => 'document', 'r-search' => 'search', 'r-address' => 'group',
+    'r-optgroup' => 'group'
   }.freeze
 
   name_cases = {
@@ -66,13 +71,14 @@ RSpec.describe 'The in-page role engine', :browser do
     'n-title-fallback' => 'Text wins', 'n-embedded' => 'Search for cats', 'n-slider' => 'Rate 7 stars',
     'n-select' => 'Pick Two', 'n-content' => 'Go icon now', 'n-blocks' => 'One Two', 'n-inline' => 'Abcd',
     'n-heading' => 'Spaced title', 'n-hidden-child' => 'Visible', 'n-div-button' => 'Div button',
-    'n-generic' => '', 'n-li' => '', 'n-unreferenced-hidden' => '', 'n-unlabelled' => '', 'cy-self' => '', 'cy-a' => 'B', 'cy-b' => 'A', 'cy-button' => 'Self button'
+    'n-generic' => '', 'n-li' => '', 'n-unreferenced-hidden' => '', 'n-unlabelled' => '', 'cy-self' => '', 'cy-a' => 'B', 'cy-b' => 'A', 'cy-button' => 'Self button',
+    'n-placeholder' => 'Email address', 'n-placeholder-title' => 'Title wins', 'n-placeholder-area' => 'Say more'
   }.freeze
 
   hidden_cases = {
     'h-visible' => false, 'h-aria-hidden' => true, 'h-anc-aria' => true, 'h-anc-none' => true,
     'h-display-none' => true, 'h-attr' => true, 'h-visibility' => true, 'h-vis-parent-child' => false,
-    'h-vis-inherit' => true, 'r-in-hidden' => true
+    'h-vis-inherit' => true, 'r-in-hidden' => true, 'o-option' => false, 'dc-button' => false
   }.freeze
 
   describe 'getRole' do
@@ -125,6 +131,24 @@ RSpec.describe 'The in-page role engine', :browser do
       found = ids(query(nil, 'button'))
       expect(found).to include('h-visible', 'h-vis-parent-child')
       expect(found).not_to include('h-anc-aria', 'h-anc-none', 'h-vis-inherit', 'h-visibility')
+    end
+
+    it 'finds an option inside a closed select and a display: contents button' do
+      expect(ids(query(nil, 'option', 'name' => 'Pick me'))).to eq(['o-option'])
+      expect(ids(query(nil, 'button', 'name' => 'Contents button'))).to eq(['dc-button'])
+    end
+
+    it 'filters headings by level from the tag or aria-level' do
+      expect(ids(query(nil, 'heading', 'level' => 2))).to eq(%w[r-h2 lv-aria n-heading])
+      expect(ids(query(nil, 'heading', 'level' => 1))).to eq(['r-h1'])
+    end
+
+    it 'searches a shadow root scope and resolves labelledby inside it' do
+      host = element('shadow-host')
+      names = driver.execute_script('return arguments[0].shadowRoot.querySelectorAll("button").length', host)
+      expect(names).to eq(2)
+      found = engine('return window.__raider.role(arguments[0].shadowRoot, "button", { name: "Labelled inner" })', host)
+      expect(found.size).to eq(1)
     end
 
     it 'never returns the scope element itself' do

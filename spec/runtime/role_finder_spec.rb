@@ -8,7 +8,7 @@ RSpec.describe 'Raider role finder' do
   let(:bridge) { Raider::Spec::FakeBridge.new }
   let(:driver) { Raider::Spec.driver(bridge) }
   let(:locator) { Raider.by_role('button', name: 'Save') }
-  let(:options) { { 'name' => 'Save', 'exact' => false, 'includeHidden' => false } }
+  let(:options) { { 'name' => 'Save', 'exact' => false, 'includeHidden' => false, 'level' => nil } }
 
   before { allow(Raider::Describe).to receive(:element) { |element| "<el #{element.ref.last}>" } }
 
@@ -29,7 +29,24 @@ RSpec.describe 'Raider role finder' do
     bridge.script_results << []
     scope.find_elements(Raider.by_role('listitem'))
     expect(bridge.script_calls.first.drop(1)).to eq([scope, 'listitem', { 'name' => nil, 'exact' => false,
-                                                                          'includeHidden' => false }])
+                                                                          'includeHidden' => false, 'level' => nil }])
+  end
+
+  it 'scopes the query to a shadow root instead of the document' do
+    shadow = Selenium::WebDriver::ShadowRoot.new(bridge, 'sr')
+    bridge.script_results << []
+    shadow.find_elements(Raider.by_role('button'))
+    expect(bridge.script_calls.first[1]).to equal(shadow)
+  end
+
+  it 'carries a heading level and rejects bad ones before any script runs' do
+    bridge.script_results << []
+    driver.find_elements(Raider.by_role('heading', level: 2))
+    expect(bridge.script_calls.first.last).to include('level' => 2)
+    [{ role: ['button', { level: 2 }] }, { role: ['heading', { level: 7 }] }, { role: ['heading', { level: '2' }] }].each do |bad|
+      expect { driver.find_elements(bad) }.to raise_error(ArgumentError, /level/)
+    end
+    expect(bridge.script_calls.size).to eq(1)
   end
 
   it 'accepts the two-argument form and string option keys' do

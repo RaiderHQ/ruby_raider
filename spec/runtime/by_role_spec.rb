@@ -18,6 +18,16 @@ RSpec.describe 'Raider.by_role' do
     expect(Raider.by_role('link', include_hidden: true)).to eq(role: ['link', { include_hidden: true }])
   end
 
+  it 'carries a heading level' do
+    expect(Raider.by_role('heading', name: 'Intro', level: 2)).to eq(role: ['heading', { name: 'Intro', level: 2 }])
+  end
+
+  it 'rejects a level on another role or outside 1 to 6' do
+    expect { Raider.by_role('button', level: 1) }.to raise_error(ArgumentError, /heading/)
+    expect { Raider.by_role('heading', level: 0) }.to raise_error(ArgumentError, /1 to 6/)
+    expect { Raider.by_role('heading', level: '2') }.to raise_error(ArgumentError, /1 to 6/)
+  end
+
   it 'stringifies a symbol role' do
     expect(Raider.by_role(:heading)).to eq(role: ['heading'])
   end

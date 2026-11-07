@@ -18,7 +18,7 @@ module Raider
 
       raise NotSupported, NATIVE_MESSAGE unless Context.web?(bridge)
 
-      RoleQuery.run(bridge, is_a?(Selenium::WebDriver::Element) ? self : nil, role, options)
+      RoleQuery.run(bridge, is_a?(Selenium::WebDriver::Driver) ? nil : self, role, options)
     end
 
     def find_element(*args)
@@ -44,7 +44,9 @@ module Raider
       options = (options || {}).transform_keys(&:to_sym)
       raise ArgumentError, "role: name must be a String, got #{options[:name].class}" unless [NilClass, String].include?(options[:name].class)
 
-      [validated(role), options]
+      token = validated(role)
+      RoleLocator.validated_level(token, options[:level])
+      [token, options]
     end
 
     def self.validated(role)
@@ -71,7 +73,8 @@ module Raider
       {
         'name' => options[:name],
         'exact' => options[:exact] ? true : false,
-        'includeHidden' => options[:include_hidden] ? true : false
+        'includeHidden' => options[:include_hidden] ? true : false,
+        'level' => options[:level]
       }
     end
   end

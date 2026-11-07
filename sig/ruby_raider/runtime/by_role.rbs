@@ -2,13 +2,14 @@ module Raider
   ROLES: Array[String]
 
   module RoleLocator
-    def self.build: (String | Symbol role, String? name, bool exact, bool include_hidden) -> Hash[Symbol, Array[untyped]]
+    def self.build: (String | Symbol role, String? name, bool exact, bool include_hidden, ?Integer? level) -> Hash[Symbol, Array[untyped]]
+    def self.validated_level: (String token, Integer? level) -> void
     def self.validated_role: (String | Symbol role) -> String
   end
 
-  def self.by_role: (String | Symbol role, ?name: String?, ?exact: bool, ?include_hidden: bool) -> Hash[Symbol, Array[untyped]]
+  def self.by_role: (String | Symbol role, ?name: String?, ?exact: bool, ?include_hidden: bool, ?level: Integer?) -> Hash[Symbol, Array[untyped]]
 
   module Helpers
-    def by_role: (String | Symbol role, ?name: String?, ?exact: bool, ?include_hidden: bool) -> Hash[Symbol, Array[untyped]]
+    def by_role: (String | Symbol role, ?name: String?, ?exact: bool, ?include_hidden: bool, ?level: Integer?) -> Hash[Symbol, Array[untyped]]
   end
 end

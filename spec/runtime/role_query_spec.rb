@@ -53,13 +53,20 @@ RSpec.describe 'Raider::RoleQuery' do
     bridge.script_results << elements
     Raider::RoleQuery.run(bridge, :scope, 'link', name: 'Save', exact: true, include_hidden: true)
     expect(bridge.script_calls.first.drop(1))
-      .to eq([:scope, 'link', { 'name' => 'Save', 'exact' => true, 'includeHidden' => true }])
+      .to eq([:scope, 'link', { 'name' => 'Save', 'exact' => true, 'includeHidden' => true, 'level' => nil }])
   end
 
-  it 'always carries all three option keys' do
+  it 'always carries all four option keys' do
     bridge.script_results << elements
     Raider::RoleQuery.run(bridge, nil, 'link', {})
-    expect(bridge.script_calls.first.last).to eq('name' => nil, 'exact' => false, 'includeHidden' => false)
+    expect(bridge.script_calls.first.last).to eq('name' => nil, 'exact' => false, 'includeHidden' => false,
+                                                 'level' => nil)
+  end
+
+  it 'carries the heading level' do
+    bridge.script_results << elements
+    Raider::RoleQuery.run(bridge, nil, 'heading', level: 3)
+    expect(bridge.script_calls.first.last).to include('level' => 3)
   end
 
   it 'exposes the engine source as a frozen string' do

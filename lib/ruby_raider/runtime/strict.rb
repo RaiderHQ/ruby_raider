@@ -48,7 +48,7 @@ module Raider
   module StrictFinder
     def find_element(*args)
       Finders.ensure_registered
-      return super unless Raider.strict && Context.web?(bridge)
+      return super unless Raider.strict && (RoleFinder.role_args?(args) || Context.web?(bridge))
 
       found = find_elements(*args)
       raise AmbiguousMatch.new(Locator.describe(args), found) if found.size > 1

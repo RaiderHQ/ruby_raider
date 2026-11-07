@@ -16,12 +16,22 @@ module Raider
   module RoleLocator
     module_function
 
-    def build(role, name, exact, include_hidden)
+    def build(role, name, exact, include_hidden, level = nil)
       token = validated_role(role)
       raise ArgumentError, "name must be a String, got #{name.class}" unless name.nil? || name.is_a?(String)
 
-      options = { name: name, exact: (true if exact), include_hidden: (true if include_hidden) }.compact
+      validated_level(token, level)
+      options = { name: name, exact: (true if exact), include_hidden: (true if include_hidden), level: level }.compact
       { role: options.empty? ? [token] : [token, options] }
+    end
+
+    # level: filters headings by h1-h6 or aria-level; nil means any level.
+    def validated_level(token, level)
+      return if level.nil?
+      raise ArgumentError, "level: only applies to the heading role, not '#{token}'" unless token == 'heading'
+      return if level.is_a?(Integer) && level.between?(1, 6)
+
+      raise ArgumentError, "level: must be an Integer from 1 to 6, got #{level.inspect}"
     end
 
     def validated_role(role)
@@ -32,8 +42,8 @@ module Raider
     end
   end
 
-  def self.by_role(role, name: nil, exact: false, include_hidden: false)
-    RoleLocator.build(role, name, exact, include_hidden)
+  def self.by_role(role, name: nil, exact: false, include_hidden: false, level: nil)
+    RoleLocator.build(role, name, exact, include_hidden, level)
   end
 
   # Locator helpers for page objects and wait helpers.

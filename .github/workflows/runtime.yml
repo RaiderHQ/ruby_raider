@@ -31,5 +31,8 @@ jobs:
       - name: Run runtime unit specs
         run: bundle exec rspec spec/runtime
 
+      - name: Check the role engine syntax
+        run: node --check lib/ruby_raider/runtime/js/role_engine.js
+
       - name: Run runtime browser specs
         run: bundle exec rspec spec/runtime/browser --tag browser

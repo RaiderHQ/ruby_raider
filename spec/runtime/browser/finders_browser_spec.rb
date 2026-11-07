@@ -113,6 +113,16 @@ RSpec.describe 'Raider finders in a real browser', :browser do
 
     after(:all) { Raider::Spec::Browser.open('locators.html') } # rubocop:disable RSpec/BeforeAfterAll
 
+    it 'scopes to a shadow root and leaves the document search blind to it' do
+      host = driver.find_element(id: 'shadow-host')
+      expect(host.shadow_root.find_element(by_role('button', name: 'Shadow inner')).text).to eq('Shadow inner')
+      expect(driver.find_elements(by_role('button', name: 'Shadow inner'))).to be_empty # documented engine gap
+    end
+
+    it 'filters headings by level' do
+      expect(driver.find_element(by_role('heading', level: 1)).text).to eq('Roles')
+    end
+
     it 'finds a role inside the scope element' do
       scope = driver.find_element(id: 'scope')
       button = scope.find_element(by_role('button', name: 'Save'))
