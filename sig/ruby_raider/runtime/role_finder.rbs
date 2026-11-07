@@ -7,6 +7,7 @@ module Raider
     def find_elements: (*untyped args) -> Array[untyped]
     def find_element: (*untyped args) -> untyped
     def self.role_args?: (Array[untyped] args) -> bool
+    def self.validated: (untyped role) -> String
     def self.parse: (Array[untyped] args) -> [String, Hash[Symbol, untyped]]?
   end
 

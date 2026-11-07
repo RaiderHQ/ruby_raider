@@ -53,6 +53,11 @@ RSpec.describe 'Raider finders' do
     expect(bridge.calls.last[2].split(' | ')).to all(start_with('.//'))
   end
 
+  it 'guards the converter role branch with an internal error' do
+    expect { Raider::LocatorConverter.new(nil).convert(Raider::LocatorConverter::ROLE, 'button') }
+      .to raise_error(Raider::NotSupported, /did not intercept/)
+  end
+
   it 'raises ArgumentError naming the key for a malformed value' do
     expect { driver.find_element(label: [1, {}]) }.to raise_error(ArgumentError, /label/)
     expect { driver.find_element(label: %w[a b]) }.to raise_error(ArgumentError, /label/)

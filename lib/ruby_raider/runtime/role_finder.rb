@@ -30,16 +30,27 @@ module Raider
 
     def self.role_args?(args)
       key = args.size == 1 && args.first.is_a?(Hash) ? args.first.keys.first : args.first
-      key == :role
+      key.to_s == 'role'
     end
 
     # Returns [role, symbol-keyed options] for a role locator, nil for any other.
     def self.parse(args)
       return unless role_args?(args)
 
-      value = args.size == 1 ? args.first[:role] : args[1]
-      role, options = Array(value)
-      [role.to_s, (options || {}).transform_keys(&:to_sym)]
+      value = args.size == 1 ? args.first.values.first : args[1]
+      role, options = value.is_a?(Array) ? value : [value, nil]
+      raise ArgumentError, 'role: needs a role name and an optional options Hash' unless options.nil? || options.is_a?(Hash)
+
+      options = (options || {}).transform_keys(&:to_sym)
+      raise ArgumentError, "role: name must be a String, got #{options[:name].class}" unless [NilClass, String].include?(options[:name].class)
+
+      [validated(role), options]
+    end
+
+    def self.validated(role)
+      raise ArgumentError, "role: needs a role name, got #{role.inspect}" unless role.is_a?(String) || role.is_a?(Symbol)
+
+      RoleLocator.validated_role(role)
     end
   end
 

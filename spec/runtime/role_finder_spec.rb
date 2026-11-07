@@ -44,6 +44,33 @@ RSpec.describe 'Raider role finder' do
     expect(bridge.script_calls.first[2]).to eq('button')
   end
 
+  it 'accepts a string role key in both forms' do
+    bridge.script_results.push([], [])
+    driver.find_elements('role' => ['button', { name: 'Save' }])
+    driver.find_elements('role', ['button', { name: 'Save' }])
+    expect(bridge.script_calls.map { |call| call.drop(1) }).to eq([[nil, 'button', options]] * 2)
+  end
+
+  it 'finds a single element through a string role key' do
+    bridge.script_results << [element('a')]
+    expect(driver.find_element('role' => 'button').ref.last).to eq('a')
+  end
+
+  {
+    'a nil value' => { role: nil },
+    'an unknown role' => { role: 'buton' },
+    'a Hash value' => { role: { a: 1 } },
+    'a blank role' => { role: ['', { name: 'x' }] },
+    'non-Hash options' => { role: %w[button Save] },
+    'a Regexp name' => { role: ['button', { name: /Save/ }] }
+  }.each do |label, locator|
+    it "raises ArgumentError for #{label} before any script runs" do
+      expect { driver.find_elements(locator) }.to raise_error(ArgumentError, /role|unknown role/)
+      expect { driver.find_element(locator) }.to raise_error(ArgumentError)
+      expect(bridge.script_calls).to be_empty
+    end
+  end
+
   it 'raises AmbiguousMatch from find_element on two matches' do
     bridge.script_results << [element('a'), element('b')]
     expect { driver.find_element(locator) }.to raise_error(Raider::AmbiguousMatch) { |error|
