@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Actionability fixture</title>
+  <style>
+    html { overflow-x: hidden; }
+    body { margin: 0; padding: 80px 20px 0; font-family: sans-serif; }
+    #overlay { position: fixed; top: 0; left: 0; width: 220px; height: 60px; background: #c00; opacity: 0.9; z-index: 10; }
+    #covered { position: absolute; top: 10px; left: 10px; width: 120px; height: 30px; }
+    #hidden-display { display: none; }
+    #hidden-visibility { visibility: hidden; }
+    #moving { position: relative; animation: slide 60s linear forwards; }
+    #bouncer { position: absolute; top: 1200px; left: 600px; animation: fall 60s linear forwards; }
+    @keyframes fall { from { transform: translateY(0); } to { transform: translateY(2000px); } }
+    #hidden-box { display: none; }
+    @keyframes slide { from { transform: translateX(0); } to { transform: translateX(3000px); } }
+    #far { position: absolute; top: 3000px; left: 400px; }
+    #sticky-zone { position: absolute; top: 4000px; left: 0; width: 100%; height: 2500px; }
+    #top { position: sticky; top: 0; height: 70vh; background: #036; opacity: 0.9; z-index: 5; }
+    #under-header { position: absolute; top: 1500px; left: 400px; }
+    #scroller { width: 300px; height: 120px; overflow: auto; border: 1px solid #999; }
+    #scroller .pad { height: 300px; }
+    #zero { position: absolute; top: 0; left: 0; width: 0; height: 0; padding: 0; border: 0; overflow: hidden; }
+    #file { position: absolute; width: 0; height: 0; opacity: 0; }
+  </style>
+</head>
+<body>
+  <div id="overlay"></div>
+  <button id="covered">Covered</button>
+
+  <p><button id="plain">Plain</button></p>
+  <p><button id="hidden-display">Gone</button> <button id="hidden-visibility">Invisible</button></p>
+  <p><button id="disabled" disabled>Disabled</button></p>
+  <fieldset id="locked" disabled>
+    <legend><button id="legend-button">Legend</button></legend>
+    <button id="in-fieldset">In fieldset</button>
+  </fieldset>
+  <p>
+    <input id="readonly" type="text" readonly value="read only">
+    <input id="writable" type="text" value="writable">
+    <textarea id="area"></textarea>
+    <div id="editable" contenteditable="true">Edit me</div>
+  </p>
+  <div id="inert-region" inert><button id="in-inert">Inert</button></div>
+  <dialog id="dlg"><button id="in-dialog">Inside</button><div id="shadow-host"></div></dialog>
+  <div id="scroller"><div class="pad"></div><button id="deep" onclick="this.setAttribute('data-clicked', '1')">Deep</button></div>
+  <button id="zero">Zero</button>
+  <p id="many"><button id="m0">0</button><button id="m1">1</button><button id="m2">2</button><button id="m3">3</button><button id="m4">4</button><button id="m5">5</button><button id="m6">6</button><button id="m7">7</button><button id="m8">8</button><button id="m9">9</button></p>
+  <p><button id="outside-dialog">Outside</button></p>
+  <p><button id="moving">Moving</button></p>
+  <p>
+    <select id="choices"><option id="opt-a" value="a">A</option><option id="opt-b" value="b">B</option><option id="opt-blue" value="blue">Blue</option></select>
+    <label>File <input id="file" type="file"></label>
+  </p>
+
+  <button id="bouncer">Bouncing</button>
+  <div id="hidden-box"><input id="file-hidden" type="file"></div>
+  <button id="far" onclick="this.setAttribute('data-clicked', '1')">Far away</button>
+  <div id="sticky-zone">
+    <header id="top">Sticky header</header>
+    <button id="under-header">Under the header</button>
+  </div>
+  <details id="collapsed"><summary>More</summary><button id="in-details">Hidden in details</button></details>
+  <div style="height: 7000px"></div>
+  <script>
+    document.getElementById('shadow-host').attachShadow({ mode: 'open' }).innerHTML = '<button id="shadow-button">Shadow</button>';
+  </script>
+</body>
+</html>

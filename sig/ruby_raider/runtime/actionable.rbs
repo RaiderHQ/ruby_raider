@@ -1,0 +1,9 @@
+module Raider
+  module Actionable
+    def click: (?force: bool) -> untyped
+    def send_keys: (*untyped keys, ?force: bool) -> untyped
+    alias send_key send_keys
+    def clear: (?force: bool) -> untyped
+    def submit: (?force: bool) -> untyped
+  end
+end
