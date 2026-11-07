@@ -6,6 +6,6 @@ module Raider
     def self.web_for?: (untyped search_context) -> bool
 
     # private singleton helper
-    def self.appium?: (untyped bridge) -> bool
+    def self.contextual?: (untyped bridge) -> bool
   end
 end
