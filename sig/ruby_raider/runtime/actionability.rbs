@@ -17,7 +17,8 @@ module Raider
     def self.native_failure: (untyped element, Symbol action) -> Hash[String, String]?
     def self.polled: (untyped element, Symbol action) -> Hash[String, untyped]?
     def self.native_ready?: (untyped element, String name) -> bool
-    def self.not_actionable: (untyped element, Hash[String, untyped]? last) -> NotActionable
+    def self.clock: () -> Float
+    def self.not_actionable: (untyped element, Hash[String, untyped]? last, Float waited) -> NotActionable
     def self.covering: (Hash[String, untyped] last) -> Hash[Symbol, untyped]?
     def self.announce: () -> void
   end

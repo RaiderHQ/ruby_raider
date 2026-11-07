@@ -104,19 +104,48 @@ RSpec.describe 'Raider::Actionability' do
       it "raises NotActionable to be visible for a hidden element on #{action}" do
         Raider.timeout = 0.3
         appium.answer(:element_displayed?, false).answer(:element_enabled?, true)
-        expect { ensure_native(action) }.to raise_error(Raider::NotActionable, /to be visible/)
+        expect { ensure_native(action) }.to raise_error(Raider::NotActionable, /waited 0\.3\d?s for .* to be visible/)
       end
 
       it "raises NotActionable to be enabled for a disabled element on #{action}" do
         Raider.timeout = 0.3
         appium.answer(:element_displayed?, true).answer(:element_enabled?, false)
-        expect { ensure_native(action) }.to raise_error(Raider::NotActionable, /to be enabled/)
+        expect { ensure_native(action) }.to raise_error(Raider::NotActionable, /waited 0\.3\d?s for .* to be enabled/)
       end
     end
 
     it 'makes no check call for submit' do
+      allow(native).to receive(:displayed?)
+      allow(native).to receive(:enabled?)
       expect(ensure_native(:submit)).to eq(0)
+      expect(native).not_to have_received(:displayed?)
+      expect(native).not_to have_received(:enabled?)
       expect([appium.script_calls, appium.calls]).to eq([[], []])
+    end
+
+    it 'raises a stale element at once rather than waiting out the timeout' do
+      Raider.timeout = 5
+      allow(native).to receive(:displayed?).and_raise(Selenium::WebDriver::Error::StaleElementReferenceError)
+      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      expect { ensure_native(:click) }.to raise_error(Selenium::WebDriver::Error::StaleElementReferenceError)
+      expect(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).to be < 1
+      expect(native).to have_received(:displayed?).once
+    end
+
+    it 'reports the elapsed wait of the gate, not the configured timeout' do
+      Raider.timeout = 5
+      appium.answer(:element_displayed?, false)
+      error = nil
+      Raider::Wait.until(timeout: 0.2) do
+        ensure_native(:click)
+      rescue Raider::NotActionable => e
+        error = e
+      end
+      expect(error.message).to match(/waited 0\.2\d?s for/)
+    end
+
+    it 'raises KeyError for an action with no native table entry' do
+      expect { ensure_native(:hover) }.to raise_error(KeyError)
     end
 
     it 'makes one displayed call and no enabled call when forced' do

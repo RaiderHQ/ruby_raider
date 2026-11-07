@@ -51,10 +51,10 @@ module Raider
   class NotActionable < Selenium::WebDriver::Error::ElementNotInteractableError
     attr_reader :check, :covering
 
-    def initialize(element_description, check, covering: nil)
+    def initialize(element_description, check, covering: nil, waited: Raider.timeout)
       @check = check
       @covering = covering
-      message = "waited #{Describe.seconds(Raider.timeout)}s for `#{element_description}` to #{check}"
+      message = "waited #{Describe.seconds(waited)}s for `#{element_description}` to #{check}"
       message += "; `#{covering[:element]}` covers it at (#{covering[:x]}, #{covering[:y]})" if covering
       super(message)
     end

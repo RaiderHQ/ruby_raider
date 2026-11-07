@@ -7,9 +7,9 @@ require_relative 'wait'
 require_relative 'context'
 
 module Raider
-  # Waits for an element to be actionable before an action runs. The checks run
-  # in the browser (js/actionability.js); this module owns the action table and
-  # the poll loop.
+  # Waits for an element to be actionable before an action runs. On web contexts
+  # the checks run in the browser (js/actionability.js); on native ones the gate
+  # polls displayed?/enabled?. This module owns the check tables and the poll loops.
   # :reek:TooManyConstants { max_constants: 6 } -- one table per check set, the script and the notice
   module Actionability
     CHECKS = {
@@ -22,7 +22,8 @@ module Raider
     NATIVE_CHECKS = {
       click: %w[visible enabled],
       send_keys: %w[visible enabled],
-      clear: %w[visible enabled]
+      clear: %w[visible enabled],
+      submit: []
     }.freeze
 
     PHRASES = {
@@ -70,6 +71,7 @@ module Raider
       def poll(element)
         last = nil
         retries = 0
+        started = clock
         Wait.until(timeout: Raider.timeout) do
           last = yield
           next true unless last
@@ -79,12 +81,12 @@ module Raider
         end
         retries
       rescue TimeoutError
-        raise not_actionable(element, last)
+        raise not_actionable(element, last, clock - started)
       end
 
       # Plain Appium commands, no script: the first check that fails, else nil.
       def native_failure(element, action)
-        failing = NATIVE_CHECKS.fetch(action, []).find { |name| !native_ready?(element, name) }
+        failing = NATIVE_CHECKS.fetch(action).find { |name| !native_ready?(element, name) }
         failing && { 'check' => failing }
       end
 
@@ -102,9 +104,13 @@ module Raider
         name == 'visible' ? element.displayed? : element.enabled?
       end
 
-      def not_actionable(element, last)
+      def clock
+        Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      end
+
+      def not_actionable(element, last, waited)
         check = last.fetch('check')
-        NotActionable.new(Describe.element(element), PHRASES.fetch(check, check), covering: covering(last))
+        NotActionable.new(Describe.element(element), PHRASES.fetch(check, check), covering: covering(last), waited: waited)
       end
 
       def covering(last)

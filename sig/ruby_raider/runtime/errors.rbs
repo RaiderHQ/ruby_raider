@@ -24,7 +24,7 @@ module Raider
     attr_reader check: String
     attr_reader covering: Hash[Symbol, untyped]?
 
-    def initialize: (String element_description, String check, ?covering: Hash[Symbol, untyped]?) -> void
+    def initialize: (String element_description, String check, ?covering: Hash[Symbol, untyped]?, ?waited: Numeric) -> void
   end
 
   class NotSupported < Selenium::WebDriver::Error::UnsupportedOperationError
