@@ -1,19 +1,22 @@
 module Raider
   module Actionability
     CHECKS: Hash[Symbol, Array[String]]
+    NATIVE_CHECKS: Hash[Symbol, Array[String]]
     PHRASES: Hash[String, String]
     SCRIPT: String
     FIRST_POLL: Hash[String, untyped]
     NOTICE: String
 
-    def self.ensure: (untyped element, Symbol action, force: bool) -> nil
+    def self.ensure: (untyped element, Symbol action, force: bool) -> Integer
     def self.check: (untyped element, Symbol action) -> Hash[String, untyped]?
     def self.reset_notice: () -> void
 
     # private singleton helpers
-    def self.attached: (untyped element) -> nil
-    def self.wait: (untyped element, Symbol action) -> nil
+    def self.attached: (untyped element, bool web) -> Integer
+    def self.poll: (untyped element) { () -> Hash[String, untyped]? } -> Integer
+    def self.native_failure: (untyped element, Symbol action) -> Hash[String, String]?
     def self.polled: (untyped element, Symbol action) -> Hash[String, untyped]?
+    def self.native_ready?: (untyped element, String name) -> bool
     def self.not_actionable: (untyped element, Hash[String, untyped]? last) -> NotActionable
     def self.covering: (Hash[String, untyped] last) -> Hash[Symbol, untyped]?
     def self.announce: () -> void

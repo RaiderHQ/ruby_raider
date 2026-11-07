@@ -57,11 +57,107 @@ RSpec.describe 'Raider::Actionability' do
       .to raise_error(Raider::NotActionable, /receive events; `<div class="overlay">` covers it at \(412, 300\)/)
   end
 
-  it 'makes no script call on an Appium native context' do
-    appium = Class.new(Raider::Spec::FakeBridge) { def current_context = 'NATIVE_APP' }.new
-    native = Selenium::WebDriver::Element.new(appium, 'e1')
-    Raider::Actionability.ensure(native, :click, force: false)
-    expect(appium.script_calls).to be_empty
+  it 'returns zero when actionability is off or forced' do
+    Raider.actionability = false
+    off = Raider::Actionability.ensure(element, :click, force: false)
+    Raider.actionability = true
+    bridge.answer(:element_tag_name, 'div')
+    expect([off, Raider::Actionability.ensure(element, :click, force: true)]).to eq([0, 0])
+  end
+
+  it 'returns the number of not-ready polls on the web' do
+    bridge.script_results.push({ 'check' => 'visible' }, { 'check' => 'enabled' }, nil)
+    expect(Raider::Actionability.ensure(element, :click, force: false)).to eq(2)
+  end
+
+  it 'does not count the first stable poll as not ready' do
+    bridge.script_results.push({ 'check' => 'stable', 'first' => true }, nil)
+    allow(Raider::Actionability).to receive(:sleep)
+    expect(Raider::Actionability.ensure(element, :click, force: false)).to eq(0)
+  end
+
+  describe 'on an Appium native context' do
+    let(:context) { 'NATIVE_APP' }
+    let(:appium) do
+      name = context
+      Class.new(Raider::Spec::FakeBridge) { define_method(:current_context) { name } }.new
+    end
+
+    def native = @native ||= Selenium::WebDriver::Element.new(appium, 'e1')
+
+    def ensure_native(action, **opts)
+      Raider::Actionability.ensure(native, action, force: false, **opts)
+    end
+
+    it 'polls until displayed and enabled, then returns the not-ready count without a script call' do
+      appium.answer(:element_displayed?, false, false, true).answer(:element_enabled?, false, true)
+      expect(ensure_native(:click)).to eq(3)
+      expect(appium.script_calls).to be_empty
+    end
+
+    it 'returns zero when ready at once' do
+      appium.answer(:element_displayed?, true).answer(:element_enabled?, true)
+      expect(ensure_native(:click)).to eq(0)
+    end
+
+    %i[click send_keys clear].each do |action|
+      it "raises NotActionable to be visible for a hidden element on #{action}" do
+        Raider.timeout = 0.3
+        appium.answer(:element_displayed?, false).answer(:element_enabled?, true)
+        expect { ensure_native(action) }.to raise_error(Raider::NotActionable, /to be visible/)
+      end
+
+      it "raises NotActionable to be enabled for a disabled element on #{action}" do
+        Raider.timeout = 0.3
+        appium.answer(:element_displayed?, true).answer(:element_enabled?, false)
+        expect { ensure_native(action) }.to raise_error(Raider::NotActionable, /to be enabled/)
+      end
+    end
+
+    it 'makes no check call for submit' do
+      expect(ensure_native(:submit)).to eq(0)
+      expect([appium.script_calls, appium.calls]).to eq([[], []])
+    end
+
+    it 'makes one displayed call and no enabled call when forced' do
+      allow(native).to receive(:displayed?).and_return(true)
+      allow(native).to receive(:enabled?)
+      expect(Raider::Actionability.ensure(native, :click, force: true)).to eq(0)
+      expect(native).to have_received(:displayed?).once
+      expect(native).not_to have_received(:enabled?)
+    end
+
+    it 'raises on a stale element when forced' do
+      appium.answer(:element_displayed?, Selenium::WebDriver::Error::StaleElementReferenceError)
+      expect { Raider::Actionability.ensure(native, :click, force: true) }
+        .to raise_error(Selenium::WebDriver::Error::StaleElementReferenceError)
+    end
+
+    it 'makes no displayed or enabled call when actionability is off' do
+      Raider.actionability = false
+      allow(native).to receive(:displayed?)
+      allow(native).to receive(:enabled?)
+      expect(ensure_native(:click)).to eq(0)
+      expect(native).not_to have_received(:displayed?)
+      expect(native).not_to have_received(:enabled?)
+    end
+
+    it 'asks for the context once per action' do
+      appium.answer(:element_displayed?, true).answer(:element_enabled?, true)
+      allow(appium).to receive(:current_context).and_call_original
+      ensure_native(:click)
+      expect(appium).to have_received(:current_context).once
+    end
+
+    context 'when the context is a webview' do
+      let(:context) { 'WEBVIEW_1' }
+
+      it 'uses the script path as before' do
+        appium.script_results.push({ 'check' => 'visible' }, nil)
+        expect(ensure_native(:click)).to eq(1)
+        expect(appium.script_calls.size).to eq(2)
+      end
+    end
   end
 
   it 'prints the notice once' do
