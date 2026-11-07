@@ -3,6 +3,7 @@
 require 'selenium-webdriver'
 require_relative 'runtime/config'
 require_relative 'runtime/errors'
+require_relative 'runtime/by_role'
 require_relative 'runtime/wait'
 require_relative 'runtime/context'
 require_relative 'runtime/selectors'

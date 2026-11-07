@@ -1,0 +1,14 @@
+module Raider
+  ROLES: Array[String]
+
+  module RoleLocator
+    def self.build: (String | Symbol role, String? name, bool exact, bool include_hidden) -> Hash[Symbol, Array[untyped]]
+    def self.validated_role: (String | Symbol role) -> String
+  end
+
+  def self.by_role: (String | Symbol role, ?name: String?, ?exact: bool, ?include_hidden: bool) -> Hash[Symbol, Array[untyped]]
+
+  module Helpers
+    def by_role: (String | Symbol role, ?name: String?, ?exact: bool, ?include_hidden: bool) -> Hash[Symbol, Array[untyped]]
+  end
+end
