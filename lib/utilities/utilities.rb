@@ -23,10 +23,6 @@ module Utilities
       set('spec_path', path)
     end
 
-    def feature_path=(path)
-      set('feature_path', path)
-    end
-
     def helper_path=(path)
       set('helper_path', path)
     end
@@ -91,13 +87,11 @@ module Utilities
     end
 
     def run(opts = nil)
-      command = File.directory?('spec') ? 'rspec spec/' : 'cucumber features'
-      system "#{command} #{opts}"
+      system "rspec spec/ #{opts}"
     end
 
     def parallel_run(opts = nil, _settings = nil)
-      command = File.directory?('spec') ? 'parallel_rspec spec/' : 'parallel_cucumber features'
-      system "#{command} #{opts}"
+      system "parallel_rspec spec/ #{opts}"
     end
 
     private

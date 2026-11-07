@@ -20,14 +20,6 @@ class ScaffoldingCommands < Thor
     generate_scaffolding(name, 'page', options[:path])
   end
 
-  desc 'feature [NAME]', 'Creates a new feature'
-  option :path, type: :string, required: false,
-                desc: 'The path where your feature will be created', aliases: '-p'
-
-  def feature(name)
-    generate_scaffolding(name, 'feature', options[:path])
-  end
-
   desc 'spec [SPEC_NAME]', 'Creates a new spec'
   option :path, type: :string, required: false,
                 desc: 'The path where your spec will be created', aliases: '-p'
@@ -44,14 +36,6 @@ class ScaffoldingCommands < Thor
     generate_scaffolding(name, 'helper', options[:path])
   end
 
-  desc 'steps [STEPS_NAME]', 'Creates a new steps definition'
-  option :path, type: :string, required: false,
-                desc: 'The path where your steps will be created', aliases: '-p'
-
-  def steps(name)
-    generate_scaffolding(name, 'steps', options[:path])
-  end
-
   desc 'component [NAME]', 'Creates a component inheriting from Component'
   option :path, type: :string, required: false,
                 desc: 'The path where your component will be created', aliases: '-p'
@@ -60,7 +44,7 @@ class ScaffoldingCommands < Thor
     generate_scaffolding(name, 'component', options[:path])
   end
 
-  desc 'scaffold [NAMES...]', 'Generates pages, specs/features, and helpers for one or more names'
+  desc 'scaffold [NAMES...]', 'Generates pages, specs, and helpers for one or more names'
 
   def scaffold(*names)
     names.each { |name| generate_default_scaffold(name) }
@@ -83,9 +67,7 @@ class ScaffoldingCommands < Thor
         say 'Warning: No Gemfile found, defaulting to selenium + rspec templates.', :yellow
       else
         automation = ScaffoldProjectDetector.detect_automation(gemfile)
-        framework = ScaffoldProjectDetector.detect_framework(gemfile)
         say 'Warning: Could not detect automation library from Gemfile, defaulting to selenium.', :yellow if automation.nil?
-        say 'Warning: Could not detect test framework from Gemfile, defaulting to rspec.', :yellow if framework.nil?
       end
     end
 
@@ -97,12 +79,7 @@ class ScaffoldingCommands < Thor
 
     def generate_default_scaffold(name)
       validate_project!
-      if Pathname.new('spec').exist? && !Pathname.new('features').exist?
-        generate_scaffolding(name, 'spec', load_config_path('spec'))
-      else
-        generate_scaffolding(name, 'feature', load_config_path('feature'))
-        generate_scaffolding(name, 'steps', load_config_path('steps'))
-      end
+      generate_scaffolding(name, 'spec', load_config_path('spec'))
       generate_scaffolding(name, 'page', load_config_path('page'))
     end
   end

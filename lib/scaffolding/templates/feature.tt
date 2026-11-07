@@ -1,6 +1,0 @@
-Feature: <%= class_name %>
-
-Scenario: Scenario name
-    Given I am on the <%= normalized_name.tr('_', ' ') %> page
-    When I perform an action
-    Then I see the expected result

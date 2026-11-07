@@ -26,41 +26,14 @@ RSpec.describe ScaffoldProjectDetector do
       expect(described_class.detect_automation).to eq('selenium')
     end
 
-    it 'detects rspec framework' do
-      expect(described_class.detect_framework).to eq('rspec')
-    end
-
     it 'reports selenium?' do
       expect(described_class.selenium?).to be true
-    end
-  end
-
-  context 'with watir project' do
-    before do
-      File.write('Gemfile', "gem 'watir'\ngem 'rspec'\n")
-      FileUtils.mkdir_p('spec')
-    end
-
-    it 'detects watir automation' do
-      expect(described_class.detect_automation).to eq('watir')
-    end
-
-    it 'detects rspec framework' do
-      expect(described_class.detect_framework).to eq('rspec')
-    end
-
-    it 'reports watir?' do
-      expect(described_class.watir?).to be true
     end
   end
 
   context 'with no Gemfile' do
     it 'defaults to selenium' do
       expect(described_class.detect_automation).to eq('selenium')
-    end
-
-    it 'defaults to rspec' do
-      expect(described_class.detect_framework).to eq('rspec')
     end
   end
 
@@ -120,11 +93,8 @@ RSpec.describe ScaffoldProjectDetector do
       FileUtils.mkdir_p('spec')
     end
 
-    it 'returns full detection hash' do
-      result = described_class.detect
-      expect(result[:automation]).to eq('selenium')
-      expect(result[:framework]).to eq('rspec')
-      expect(result[:has_spec]).to be true
+    it 'returns the automation and whether there is a spec folder, and nothing else' do
+      expect(described_class.detect).to eq(automation: 'selenium', has_spec: true)
     end
   end
 end

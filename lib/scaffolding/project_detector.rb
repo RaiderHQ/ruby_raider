@@ -4,17 +4,10 @@ require 'yaml'
 
 module ScaffoldProjectDetector
   AUTOMATION_GEMS = {
-    'watir' => 'watir',
     'selenium-webdriver' => 'selenium',
     'appium_lib' => 'appium',
     'eyes_selenium' => 'selenium',
-    'axe-core-rspec' => 'selenium',
-    'axe-core-cucumber' => 'selenium'
-  }.freeze
-
-  FRAMEWORK_GEMS = {
-    'rspec' => 'rspec',
-    'cucumber' => 'cucumber'
+    'axe-core-rspec' => 'selenium'
   }.freeze
 
   CONFIG_PATH = 'config/config.yml'
@@ -28,9 +21,7 @@ module ScaffoldProjectDetector
     gemfile = read_gemfile
     {
       automation: detect_automation(gemfile),
-      framework: detect_framework(gemfile),
-      has_spec: Dir.exist?('spec'),
-      has_features: Dir.exist?('features')
+      has_spec: Dir.exist?('spec')
     }
   end
 
@@ -41,13 +32,6 @@ module ScaffoldProjectDetector
     'selenium'
   end
 
-  def detect_framework(gemfile = read_gemfile)
-    FRAMEWORK_GEMS.each do |gem_name, framework|
-      return framework if gemfile.include?("'#{gem_name}'") || gemfile.include?("\"#{gem_name}\"")
-    end
-    'rspec'
-  end
-
   def read_gemfile
     return '' unless File.exist?('Gemfile')
 
@@ -56,10 +40,6 @@ module ScaffoldProjectDetector
 
   def selenium?
     detect_automation == 'selenium'
-  end
-
-  def watir?
-    detect_automation == 'watir'
   end
 
   # Projects made before WaitHelper, or whose owner removed it, do not have the file.
