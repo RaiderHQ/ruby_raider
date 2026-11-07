@@ -44,17 +44,18 @@
   <p><button id="outside-dialog">Outside</button></p>
   <p><button id="moving">Moving</button></p>
   <p>
-    <select id="choices"><option id="opt-a" value="a">A</option><option id="opt-b" value="b">B</option></select>
+    <select id="choices"><option id="opt-a" value="a">A</option><option id="opt-b" value="b">B</option><option id="opt-blue" value="blue">Blue</option></select>
     <label>File <input id="file" type="file"></label>
   </p>
 
   <button id="bouncer">Bouncing</button>
   <div id="hidden-box"><input id="file-hidden" type="file"></div>
-  <button id="far">Far away</button>
+  <button id="far" onclick="this.setAttribute('data-clicked', '1')">Far away</button>
   <div id="sticky-zone">
     <header id="top">Sticky header</header>
     <button id="under-header">Under the header</button>
   </div>
+  <details id="collapsed"><summary>More</summary><button id="in-details">Hidden in details</button></details>
   <div style="height: 7000px"></div>
 </body>
 </html>
