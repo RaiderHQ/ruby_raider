@@ -46,6 +46,25 @@ RSpec.describe 'Raider strict find_element' do
     expect(bridge.calls.last.first).to eq(:find_elements_by)
   end
 
+  it 'makes driver.first strict' do
+    bridge.enqueue(%w[a b])
+    expect { driver.first(label: 'Email') }.to raise_error(Raider::AmbiguousMatch)
+    expect(bridge.calls.map(&:first)).to eq([:find_elements_by])
+  end
+
+  it 'makes element.first strict' do
+    bridge.enqueue(%w[a b])
+    expect { Selenium::WebDriver::Element.new(bridge, 'root').first(label: 'Email') }.to raise_error(Raider::AmbiguousMatch)
+    expect(bridge.calls.map(&:first)).to eq([:find_elements_by])
+  end
+
+  it 'sends driver.first back to find_element_by when strict is off' do
+    Raider.strict = false
+    bridge.enqueue(['a'])
+    driver.first(label: 'Email')
+    expect(bridge.calls.map(&:first)).to eq([:find_element_by])
+  end
+
   it 'leaves find_elements alone' do
     bridge.enqueue(%w[a b])
     expect(driver.find_elements(label: 'Email').size).to eq(2)

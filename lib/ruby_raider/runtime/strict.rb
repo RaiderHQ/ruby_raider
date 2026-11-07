@@ -60,4 +60,14 @@ module Raider
   end
 end
 
+# Selenium aliases `first` to find_element on Driver and Element, which
+# bypasses the prepend above; `find_elements(...).first` stays the non-strict escape.
+module Raider
+  # Routes Selenium's `first` alias through the strict find_element.
+  module StrictFirst
+    def first(*args) = find_element(*args)
+  end
+end
+
 Selenium::WebDriver::SearchContext.prepend(Raider::StrictFinder)
+[Selenium::WebDriver::Driver, Selenium::WebDriver::Element].each { |klass| klass.prepend(Raider::StrictFirst) }
