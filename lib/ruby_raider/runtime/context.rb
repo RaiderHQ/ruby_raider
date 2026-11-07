@@ -10,7 +10,7 @@ module Raider
 
     class << self
       def web?(bridge)
-        return true unless appium?(bridge)
+        return true unless contextual?(bridge)
 
         bridge.current_context != NATIVE
       end
@@ -22,8 +22,9 @@ module Raider
 
       private
 
-      def appium?(bridge)
-        defined?(Appium::Core::Base::Bridge) && bridge.is_a?(Appium::Core::Base::Bridge)
+      # Appium bridges answer current_context; an event-firing wrapper delegates it.
+      def contextual?(bridge)
+        bridge.respond_to?(:current_context)
       end
     end
   end

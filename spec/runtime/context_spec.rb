@@ -15,9 +15,7 @@ RSpec.describe 'Raider::Context' do
   end
 
   def plain_bridge
-    bridge = Selenium::WebDriver::Remote::Bridge.allocate
-    bridge.define_singleton_method(:current_context) { raise 'current_context must not be asked' }
-    bridge
+    Selenium::WebDriver::Remote::Bridge.allocate
   end
 
   def holder(klass, bridge)
@@ -29,6 +27,11 @@ RSpec.describe 'Raider::Context' do
       expect(Raider::Context.web?(appium_bridge('NATIVE_APP'))).to be(false)
     end
 
+    it 'is false on NATIVE_APP when a listener wraps the Appium bridge' do
+      wrapped = Selenium::WebDriver::Support::EventFiringBridge.new(appium_bridge('NATIVE_APP'), [])
+      expect(Raider::Context.web?(wrapped)).to be(false)
+    end
+
     it 'is true on an Appium webview context' do
       expect(Raider::Context.web?(appium_bridge('WEBVIEW_1'))).to be(true)
     end
@@ -38,7 +41,9 @@ RSpec.describe 'Raider::Context' do
     end
 
     it 'is true for a non-Appium bridge without asking current_context' do
-      expect(Raider::Context.web?(plain_bridge)).to be(true)
+      bridge = plain_bridge
+      expect(bridge).not_to respond_to(:current_context)
+      expect(Raider::Context.web?(bridge)).to be(true)
     end
 
     it 'is true for a non-Appium bridge when Appium is not loaded' do
