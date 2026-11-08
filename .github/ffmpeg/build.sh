@@ -83,7 +83,10 @@ sha256() {
 
 fetch() { # url sha256 file
   local url="$1" want="$2" file="$work/src/$3"
-  [[ -f "$file" ]] || curl --proto '=https' --tlsv1.2 -sSfL --retry 3 -o "$file" "$url"
+  if [[ ! -f "$file" ]]; then
+    echo "fetching $url"
+    curl --proto '=https' --tlsv1.2 -sSfL --retry 5 --retry-all-errors --retry-delay 10 -o "$file" "$url"
+  fi
   local got
   got="$(sha256 "$file")"
   if [[ "$got" != "$want" ]]; then
