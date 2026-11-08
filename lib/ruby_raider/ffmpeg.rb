@@ -18,26 +18,26 @@ module RubyRaider
     MAX_DOWNLOAD_BYTES = 64 * 1024 * 1024
 
     # The RaiderHQ `ffmpeg-7.1` release: FFmpeg 7.1.5, LGPL, built by .github/workflows/ffmpeg.yml
-    # (.github/ffmpeg/build.sh), run 42438703597. Each SHA-256 pins the exact bytes of that release's asset.
+    # (.github/ffmpeg/build.sh), run 42440762165. Each SHA-256 pins the exact bytes of that release's asset.
     RELEASE_BASE = 'https://github.com/RaiderHQ/ruby_raider/releases/download/ffmpeg-7.1/ffmpeg-7.1-'
     MANIFEST = {
       version: '7.1',
       assets: {
         'darwin-arm64' => {
           url: "#{RELEASE_BASE}darwin-arm64".freeze,
-          sha256: '2e55e6bd4f7f0d8d7c9fe9e3f1c5e767ec0df95afab2f68688811b819b6f9044'
+          sha256: 'e6c9240c133f22ced9f1e55fc2d0889991274e1b787c296583cb74f7242ef417'
         }.freeze,
         'darwin-x64' => {
           url: "#{RELEASE_BASE}darwin-x64".freeze,
-          sha256: '3fc6913418b87e59d61907c0eb12a07dcdec4500dda9f9b7a75b55a9c8dced0f'
+          sha256: 'e649ff3c5abe05700a657a12d549ee27ac53e190cd1aaee7a113765d3189e91f'
         }.freeze,
         'linux-x64' => {
           url: "#{RELEASE_BASE}linux-x64".freeze,
-          sha256: '40d36e971be4dd7bb8a3cae74a8b1ecc511324da0d182402e4ebf57345afd5c3'
+          sha256: '108b685bbfba103c8f25c641fc4c21e5ea79acecd131f9ea964db959e894e7d4'
         }.freeze,
         'windows-x64' => {
           url: "#{RELEASE_BASE}windows-x64.exe".freeze,
-          sha256: '8bfe72f3dac56505c89642ddd4fc3d76ded76c4ec010dba4145b9a6991684615'
+          sha256: 'e27c4d32675e8715a6b3260c87ed3834f959275af0412f501ed5781d5324ac1a'
         }.freeze
       }.freeze
     }.freeze
