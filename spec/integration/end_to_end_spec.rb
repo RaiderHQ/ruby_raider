@@ -429,7 +429,7 @@ describe 'End-to-End Project Generation and Execution' do
         expect(result[:exit_code]).to eq(off[:exit_code]), "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
         video_lines = result[:stderr].lines.grep(/\[video\]/)
         expect(video_lines.size).to eq(1), "STDERR: #{result[:stderr]}"
-        expect(video_lines.first).to include('ffmpeg')
+        expect(video_lines.first).to include('ffmpeg download failed')
         expect(video_files(project)).to be_empty
         expect(Dir.glob(File.join(cache_dir, '**', '*'))).to eq([blocker])
       end
