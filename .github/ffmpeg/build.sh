@@ -152,7 +152,7 @@ configure_args=(
   cd "ffmpeg-${FFMPEG_VERSION}"
   PKG_CONFIG_PATH="$prefix/lib/pkgconfig" ./configure "${configure_args[@]}" >"$work/configure.log" 2>&1 ||
     { tail -40 ffbuild/config.log; exit 1; }
-  make -s -j"$jobs" ffmpeg >/dev/null
+  make -s -j"$jobs" "ffmpeg$exe" >/dev/null
   cp "ffmpeg$exe" "$out_dir/ffmpeg-7.1-$target$exe"
   grep -q '^CONFIG_GPL=yes' ffbuild/config.mak && { echo 'GPL build: refusing' >&2; exit 1; }
   grep -q '^CONFIG_NONFREE=yes' ffbuild/config.mak && { echo 'nonfree build: refusing' >&2; exit 1; }
