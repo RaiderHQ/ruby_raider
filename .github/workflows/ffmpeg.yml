@@ -75,7 +75,7 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-  # Each binary on a runner it was not built on (older macOS, older glibc Linux, newer Windows),
+  # Each binary on a runner it was not built on (another macOS, older glibc Linux, newer Windows),
   # running VideoHelper's exact encode.
   test:
     name: test ${{ matrix.target }} on ${{ matrix.os }}
@@ -86,7 +86,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { target: darwin-arm64, os: macos-14 }
+          - { target: darwin-arm64, os: macos-26 }
           - { target: darwin-x64, os: macos-15-intel }
           - { target: linux-x64, os: ubuntu-22.04 }
           - { target: windows-x64, os: windows-2025 }
