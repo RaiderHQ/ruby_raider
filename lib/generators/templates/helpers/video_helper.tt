@@ -24,8 +24,7 @@ module VideoHelper
 <%- unless mobile? -%>
   MAX_FRAME_SECONDS = 2.0
   ENCODE_TIMEOUT = 120
-  NO_FFMPEG = 'no ffmpeg available for this platform yet (set RAIDER_FFMPEG_PATH, or run ' \
-              '`raider u video install` once the ffmpeg release is published)'
+  NO_FFMPEG = 'no ffmpeg download for this platform (set RAIDER_FFMPEG_PATH to an ffmpeg with libvpx)'
 <%- end -%>
 
   @disabled = false

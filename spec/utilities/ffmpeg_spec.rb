@@ -41,11 +41,51 @@ describe RubyRaider::Ffmpeg do
     expect(described_class.platform(host_os: 'linux-gnu', host_cpu: 'aarch64')).to be_nil
   end
 
-  it 'ships a placeholder manifest with https urls and nil checksums for all four platforms' do
-    assets = described_class::MANIFEST[:assets]
-    expect(assets.keys).to contain_exactly('darwin-arm64', 'darwin-x64', 'linux-x64', 'windows-x64')
-    expect(assets.values.map { |a| a[:url] }).to all(start_with('https://'))
-    expect(assets.values.map { |a| a[:sha256] }).to all(be_nil)
+  it 'pins a SHA-256 and the ffmpeg-7.1 release url for each of the four platforms', :aggregate_failures do
+    expect(described_class::MANIFEST[:version]).to eq('7.1')
+    base = 'https://github.com/RaiderHQ/ruby_raider/releases/download/ffmpeg-7.1/ffmpeg-7.1-'
+    expect(described_class::MANIFEST[:assets].transform_values { |a| a[:url] }).to eq(
+      'darwin-arm64' => "#{base}darwin-arm64", 'darwin-x64' => "#{base}darwin-x64",
+      'linux-x64' => "#{base}linux-x64", 'windows-x64' => "#{base}windows-x64.exe"
+    )
+    shas = described_class::MANIFEST[:assets].values.map { |a| a[:sha256] }
+    expect(shas).to all(match(/\A\h{64}\z/))
+    expect(shas.uniq.size).to eq(4)
+  end
+
+  describe 'the pinned checksums' do
+    let(:real) { described_class::MANIFEST }
+
+    it 'is obtainable on every supported platform without an override' do
+      described_class::PLATFORMS.each do |p|
+        expect(described_class.obtainable?(env: {}, platform: p)).to be(true)
+      end
+    end
+
+    it 'discards a download whose bytes do not match the pinned checksum', :aggregate_failures do
+      described_class::PLATFORMS.each do |p|
+        result = described_class.ensure!(env:, manifest: real, fetch:, warn: warner, platform: p)
+        expect(result).to be_nil
+      end
+      expect(calls).to eq(real[:assets].values.map { |a| a[:url] })
+      expect(warnings).to all(include('checksum mismatch'))
+      expect(Dir.glob(File.join(cache, '**', '*'))).to be_empty
+    end
+
+    # FFMPEG_ARTIFACTS=<dir> holding ffmpeg-7.1-<platform>[.exe] (the build workflow's artifacts
+    # or the release assets) proves those exact bytes pass verification and get cached.
+    it 'accepts the built binaries', if: ENV.fetch('FFMPEG_ARTIFACTS', nil) do
+      described_class::PLATFORMS.each do |p|
+        name = File.basename(real[:assets][p][:url])
+        source = File.join(ENV.fetch('FFMPEG_ARTIFACTS'), name)
+        copy = ->(_url, dest) { FileUtils.cp(source, dest) }
+        own = { 'RAIDER_CACHE_DIR' => File.join(cache, p) }
+        path = described_class.ensure!(env: own, manifest: real, fetch: copy, warn: warner, platform: p)
+        expect(path).to eq(described_class.cached_path(env: own, manifest: real, platform: p))
+        expect(File.executable?(path)).to be(true)
+      end
+      expect(warnings).to be_empty
+    end
   end
 
   it 'derives the cache dir from RAIDER_CACHE_DIR or the home cache', :aggregate_failures do
@@ -281,8 +321,8 @@ describe RubyRaider::Ffmpeg do
       expect(described_class.obtainable?(env: {}, manifest:, platform: 'linux-x64')).to be(true)
     end
 
-    it 'is false with no override and a nil checksum (the placeholder manifest)' do
-      expect(described_class.obtainable?(env: {}, platform: 'darwin-arm64')).to be(false)
+    it 'is false with no override and a nil checksum' do
+      expect(described_class.obtainable?(env: {}, manifest: unpublished, platform: 'darwin-arm64')).to be(false)
     end
 
     it 'is false for an unknown platform or a non-executable override' do

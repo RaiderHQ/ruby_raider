@@ -351,8 +351,13 @@ describe 'Generated VideoHelper' do
       end
     end
 
-    context 'when no ffmpeg can be obtained (no override, placeholder manifest)' do
+    context 'when no ffmpeg can be obtained (no override, no build for this platform)' do
       let(:env) { { 'RAIDER_FFMPEG_PATH' => nil } }
+
+      before do
+        require 'ruby_raider/ffmpeg'
+        stub_const('RubyRaider::Ffmpeg::MANIFEST', { version: '7.1', assets: {} })
+      end
 
       it 'decides once, at the first call: listener nil, NullRecorder, exactly one [video] line' do
         require 'ruby_raider/ffmpeg'
@@ -362,9 +367,8 @@ describe 'Generated VideoHelper' do
         expect(warnings.size).to eq(1)
         expect(VideoHelper.recorder_for(driver)).to be_a(VideoHelper::NullRecorder)
         expect(VideoHelper.listener).to be_nil
-        expect(warnings).to eq(['[video] no ffmpeg available for this platform yet (set RAIDER_FFMPEG_PATH, or run ' \
-                                '`raider u video install` once the ffmpeg release is published); ' \
-                                "recording disabled for this run\n"])
+        expect(warnings).to eq(['[video] no ffmpeg download for this platform (set RAIDER_FFMPEG_PATH to an ffmpeg ' \
+                                "with libvpx); recording disabled for this run\n"])
         expect(RubyRaider::Ffmpeg).not_to have_received(:ensure!)
         expect(shots).to be_empty
       end

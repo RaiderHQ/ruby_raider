@@ -149,7 +149,7 @@ Every test is recorded. The video is kept only for failing tests and attached to
 - **Web:** WebM built from page screenshots.
 - **Mobile:** Appium's own MP4. iOS needs `ffmpeg` on the Appium server host. Android recordings stop at 180 s and need no ffmpeg.
 - Turn it off per run with `VIDEO=off`, or per project with `raider u video off`.
-- ffmpeg is downloaded once, SHA-256 checked and cached in `~/.cache/raider`. The RaiderHQ `ffmpeg-7.1` build it downloads is not published yet, so for web videos set `RAIDER_FFMPEG_PATH` to an ffmpeg with libvpx.
+- ffmpeg is downloaded once, SHA-256 checked and cached in `~/.cache/raider`: an LGPL ffmpeg 7.1 build with libvpx for macOS (Apple silicon and Intel), Linux x64 and Windows x64, built by [`.github/workflows/ffmpeg.yml`](.github/workflows/ffmpeg.yml). On other platforms set `RAIDER_FFMPEG_PATH` to an ffmpeg with libvpx.
 
 ### Failure trace replay (web)
 

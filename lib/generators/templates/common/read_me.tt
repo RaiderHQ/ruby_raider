@@ -746,17 +746,16 @@ The video is a `video.webm` built from page screenshots with ffmpeg.
   `raider u video off` (`raider u video on` turns it back on).
 <%- end -%>
 <%- unless mobile? -%>
-- ffmpeg is downloaded on first use, checked against a pinned SHA-256 and cached in `~/.cache/raider`
-  (`%LOCALAPPDATA%\raider` on Windows). `raider u video install` downloads it ahead of time (CI does this before the
+- ffmpeg 7.1 (an LGPL build with libvpx, from the RaiderHQ `ffmpeg-7.1` release) is downloaded on first use,
+  checked against a pinned SHA-256 and cached in `~/.cache/raider` (`%LOCALAPPDATA%\raider` on Windows). Builds exist
+  for macOS (Apple silicon and Intel), Linux x64 and Windows x64. `raider u video install` downloads it ahead of time (CI does this before the
   tests and caches the folder), and `raider u video status` prints the binary in use.
-- `RAIDER_FFMPEG_PATH` uses your own ffmpeg (it needs libvpx) instead of the download, and `RAIDER_CACHE_DIR` moves
-  the cache.
+- `RAIDER_FFMPEG_PATH` uses your own ffmpeg (it needs libvpx) instead of the download, for example on Linux arm64,
+  and `RAIDER_CACHE_DIR` moves the cache.
 <%- if azure? -%>
 - `azure-pipelines.yml` sets `RAIDER_CACHE_DIR` to `$(Pipeline.Workspace)/.cache/raider`, the folder its `Cache@2`
   step keeps between runs.
 <%- end -%>
-- The RaiderHQ `ffmpeg-7.1` release that the download comes from is not published yet. Until it is, set
-  `RAIDER_FFMPEG_PATH` to get videos; without it the suite runs as usual and prints one `[video]` line.
 - If ffmpeg is missing or recording fails, the suite still runs and its exit code is unchanged; you get one `[video]`
   line on stderr and no video.
 - Known limits: a frame is taken after each page load, click and text change, plus one at the end of a failing test,
@@ -777,7 +776,7 @@ The video is a `video.webm` built from page screenshots with ffmpeg.
   than 180 s needs ffmpeg on the Appium host.
 - `raider u video install` and `raider u video status` manage the ffmpeg that web projects use, cached in
   `~/.cache/raider` (override with `RAIDER_FFMPEG_PATH` or `RAIDER_CACHE_DIR`); they do not install ffmpeg on the
-  Appium host. The RaiderHQ `ffmpeg-7.1` release it comes from is not published yet.
+  Appium host.
 - If recording fails, the suite still runs and its exit code is unchanged; you get one `[video]` line on stderr and
   no video.
 <%- end -%>
