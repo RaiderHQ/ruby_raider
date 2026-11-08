@@ -14,16 +14,31 @@ module RubyRaider
     MAX_REDIRECTS = 5
     # Seconds for the whole download, redirects included.
     DOWNLOAD_TIMEOUT = 300
+    # The binaries are 3-5 MB; a bigger body is not ours and must not fill the disk before the checksum.
+    MAX_DOWNLOAD_BYTES = 64 * 1024 * 1024
 
-    # Checksums are filled in when the RaiderHQ `ffmpeg-7.1` release is cut.
+    # The RaiderHQ `ffmpeg-7.1` release: FFmpeg 7.1.5, LGPL, built by .github/workflows/ffmpeg.yml
+    # (.github/ffmpeg/build.sh), run 42440762165. Each SHA-256 pins the exact bytes of that release's asset.
     RELEASE_BASE = 'https://github.com/RaiderHQ/ruby_raider/releases/download/ffmpeg-7.1/ffmpeg-7.1-'
     MANIFEST = {
       version: '7.1',
       assets: {
-        'darwin-arm64' => { url: "#{RELEASE_BASE}darwin-arm64".freeze, sha256: nil }.freeze,
-        'darwin-x64' => { url: "#{RELEASE_BASE}darwin-x64".freeze, sha256: nil }.freeze,
-        'linux-x64' => { url: "#{RELEASE_BASE}linux-x64".freeze, sha256: nil }.freeze,
-        'windows-x64' => { url: "#{RELEASE_BASE}windows-x64.exe".freeze, sha256: nil }.freeze
+        'darwin-arm64' => {
+          url: "#{RELEASE_BASE}darwin-arm64".freeze,
+          sha256: 'e6c9240c133f22ced9f1e55fc2d0889991274e1b787c296583cb74f7242ef417'
+        }.freeze,
+        'darwin-x64' => {
+          url: "#{RELEASE_BASE}darwin-x64".freeze,
+          sha256: 'e649ff3c5abe05700a657a12d549ee27ac53e190cd1aaee7a113765d3189e91f'
+        }.freeze,
+        'linux-x64' => {
+          url: "#{RELEASE_BASE}linux-x64".freeze,
+          sha256: '108b685bbfba103c8f25c641fc4c21e5ea79acecd131f9ea964db959e894e7d4'
+        }.freeze,
+        'windows-x64' => {
+          url: "#{RELEASE_BASE}windows-x64.exe".freeze,
+          sha256: 'e27c4d32675e8715a6b3260c87ed3834f959275af0412f501ed5781d5324ac1a'
+        }.freeze
       }.freeze
     }.freeze
 
@@ -115,18 +130,30 @@ module RubyRaider
       def handle_response(response, destination, deadline, timeout)
         case response
         when Net::HTTPSuccess
-          File.open(destination, 'wb') do |file|
-            response.read_body do |chunk|
-              check_deadline(deadline, timeout)
-              file.write(chunk)
-            end
-          end
+          check_size(response['content-length'].to_i)
+          write_body(response, destination, deadline, timeout)
           nil
         when Net::HTTPRedirection
           response['location'] || raise(IOError, 'redirect without Location header')
         else
           raise IOError, "download failed: HTTP #{response.code}"
         end
+      end
+
+      def write_body(response, destination, deadline, timeout)
+        written = 0
+        File.open(destination, 'wb') do |file|
+          response.read_body do |chunk|
+            check_deadline(deadline, timeout)
+            written += chunk.bytesize
+            check_size(written)
+            file.write(chunk)
+          end
+        end
+      end
+
+      def check_size(bytes)
+        raise IOError, "download larger than #{MAX_DOWNLOAD_BYTES} bytes" if bytes > MAX_DOWNLOAD_BYTES
       end
 
       def socket_timeouts(deadline, timeout)

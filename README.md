@@ -146,7 +146,7 @@ Projects include [raider_reporter](https://github.com/RaiderHQ/raider_reporter).
 
 Each test is recorded. The video is kept only when the test fails and attached to the report as `video`.
 
-- **Web:** WebM built from page screenshots. Set `RAIDER_FFMPEG_PATH` to an ffmpeg with libvpx: until the RaiderHQ ffmpeg build is published, web video is off without it.
+- **Web:** WebM built from page screenshots. ffmpeg is downloaded once, SHA-256 checked and cached in `~/.cache/raider`: an LGPL ffmpeg 7.1 build with libvpx for macOS (Apple silicon and Intel), Linux x64 and Windows x64, built by [`.github/workflows/ffmpeg.yml`](.github/workflows/ffmpeg.yml). On other platforms set `RAIDER_FFMPEG_PATH` to an ffmpeg with libvpx.
 - **Mobile:** Appium's own MP4. iOS needs `ffmpeg` on the Appium server host. Android stops at 180 s by default, so it needs no ffmpeg; a longer `video.time_limit` needs ffmpeg too.
 - Turn it off per run with `VIDEO=off`, or per project with `raider u video off`.
 

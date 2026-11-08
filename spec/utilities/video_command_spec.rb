@@ -44,10 +44,23 @@ RSpec.describe UtilityCommands do
 
   describe 'video install' do
     it 'exits 1 and explains when the build is not published yet' do
+      require 'ruby_raider/ffmpeg'
+      unpublished = { version: '7.1', assets: { RubyRaider::Ffmpeg.platform.to_s => { url: 'https://example.test/x', sha256: nil } } }
+      stub_const('RubyRaider::Ffmpeg::MANIFEST', unpublished)
       out, err, status = run_cli('video', 'install')
       expect(status).to eq(1)
       expect(err).to include('[video]', 'ffmpeg build not published yet')
       expect(out).to eq('')
+    end
+
+    it 'exits 1 and installs nothing when the download does not match the pinned checksum', :aggregate_failures do
+      require 'ruby_raider/ffmpeg'
+      allow(RubyRaider::Ffmpeg).to receive(:http_get) { |_url, dest| File.write(dest, 'not ffmpeg') }
+      out, err, status = run_cli('video', 'install')
+      expect(status).to eq(1)
+      expect(err).to include('[video]', 'checksum mismatch')
+      expect(out).to eq('')
+      expect(Dir.glob(File.join(cache, '**', '*'))).to be_empty
     end
 
     it 'prints the path and exits 0 when ensure! succeeds' do

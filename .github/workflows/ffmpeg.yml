@@ -1,0 +1,160 @@
+name: ffmpeg build
+
+# Builds the four ffmpeg binaries that RubyRaider::Ffmpeg downloads for failure videos
+# (.github/ffmpeg/build.sh), tests each one on a second runner, and uploads them as
+# workflow artifacts. It never publishes: the ffmpeg-7.1 release is created by hand from
+# the downloaded artifacts of one run, so the release bytes are the bytes MANIFEST pins.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/ffmpeg/**
+      - .github/workflows/ffmpeg.yml
+      # check.sh repeats VideoHelper#ffmpeg_arguments: a new filter or codec there needs a rebuild.
+      - lib/generators/templates/helpers/video_helper.tt
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ffmpeg-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: darwin-arm64, os: macos-15 }
+          - { target: darwin-x64, os: macos-15-intel }
+          - { target: linux-x64, os: ubuntu-24.04 }
+          - { target: windows-x64, os: windows-2022 }
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Build (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install nasm pkgconf
+          .github/ffmpeg/build.sh ${{ matrix.target }} dist
+
+      # Alpine/musl gives a fully static binary that runs on any x86_64 Linux.
+      - name: Build (Linux, Alpine container)
+        if: runner.os == 'Linux'
+        run: |
+          docker run --rm -v "$PWD:/w" -w /w alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc sh -c '
+            apk add --no-cache bash build-base nasm perl pkgconf git curl xz tar diffutils file ruby &&
+            .github/ffmpeg/build.sh linux-x64 dist'
+
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
+        if: runner.os == 'Windows'
+        with:
+          msystem: MINGW64
+          update: false
+          install: >-
+            make diffutils git tar xz curl perl
+            mingw-w64-x86_64-gcc mingw-w64-x86_64-nasm mingw-w64-x86_64-pkgconf mingw-w64-x86_64-ruby
+
+      - name: Build (Windows, MSYS2 MINGW64)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: .github/ffmpeg/build.sh windows-x64 dist
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ffmpeg-7.1-${{ matrix.target }}
+          path: |
+            dist/ffmpeg-7.1-*
+            dist/BUILD-*.txt
+            dist/COPYING.LGPLv2.1
+            dist/libvpx-LICENSE
+            dist/libvpx-PATENTS
+            dist/zlib-LICENSE
+            dist/musl-COPYRIGHT
+            dist/mingw-w64-notices/
+          if-no-files-found: error
+          retention-days: 90
+
+      # The complete corresponding source, once (every target builds from the same pinned sources).
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: matrix.target == 'linux-x64'
+        with:
+          name: ffmpeg-7.1-sources
+          path: dist/sources/
+          if-no-files-found: error
+          retention-days: 90
+
+  # Each binary on a fresh runner (another macOS version, older glibc Linux, newer Windows; darwin-x64
+  # only has the macos-15-intel label), running VideoHelper's exact encode.
+  test:
+    name: test ${{ matrix.target }} on ${{ matrix.os }}
+    needs: build
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: darwin-arm64, os: macos-26 }
+          - { target: darwin-x64, os: macos-15-intel }
+          - { target: linux-x64, os: ubuntu-22.04 }
+          - { target: windows-x64, os: windows-2025 }
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: ffmpeg-7.1-${{ matrix.target }}
+          path: dist
+      - name: Encode like VideoHelper
+        run: |
+          bin="dist/ffmpeg-7.1-${{ matrix.target }}"
+          [ "${{ runner.os }}" = Windows ] && bin="$bin.exe"
+          chmod +x "$bin"
+          # Linkage was audited in the build job, where the toolchain's tools are.
+          SKIP_LINKAGE=1 .github/ffmpeg/check.sh "$bin" "$RUNNER_TEMP/check"
+          mv "$RUNNER_TEMP/check/video.webm" "video-${{ matrix.target }}.webm"
+          mv "$RUNNER_TEMP/check/vp9.webm" "vp9-${{ matrix.target }}.webm"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: video-${{ matrix.target }}
+          path: |
+            video-${{ matrix.target }}.webm
+            vp9-${{ matrix.target }}.webm
+          retention-days: 14
+
+  validate:
+    name: validate videos and print checksums
+    needs: test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          path: artifacts
+          pattern: '{ffmpeg-7.1-*,video-*}'
+      - name: Probe every video with a reference ffprobe
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
+          for video in artifacts/video-*/video-*.webm; do .github/ffmpeg/probe.sh "$(command -v ffprobe)" "$video"; done
+          for video in artifacts/video-*/vp9-*.webm; do .github/ffmpeg/probe.sh "$(command -v ffprobe)" "$video" vp9; done
+      - name: Checksums for MANIFEST
+        run: |
+          {
+            echo '### ffmpeg-7.1 assets'
+            echo '```'
+            cd artifacts && sha256sum ffmpeg-7.1-*/ffmpeg-7.1-*
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"

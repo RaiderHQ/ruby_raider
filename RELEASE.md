@@ -2,6 +2,13 @@
 
 ## Release Notes
 
+### 4.0.1
+
+- Failure video works for web projects without `RAIDER_FFMPEG_PATH`: the RaiderHQ `ffmpeg-7.1` release is published and `RubyRaider::Ffmpeg::MANIFEST` pins the SHA-256 of its four binaries (macOS arm64 and x64, Linux x64, Windows x64). The first failing test, or `raider u video install`, downloads the one for your platform, checks it and caches it in `~/.cache/raider` (`%LOCALAPPDATA%\raider` on Windows).
+- The binaries are FFmpeg 7.1.5 built from source by `.github/workflows/ffmpeg.yml` (`.github/ffmpeg/build.sh`): LGPL (no `--enable-gpl`, no `--enable-nonfree`), statically linked with libvpx 1.15.2 and zlib 1.3.1, with only the PNG input, scaling, VP8/VP9 encoding and WebM output that the video helper uses. The release carries the license texts, the source tarballs and the exact configure line. macOS binaries are ad-hoc signed, not notarized (`spctl` rejects them). Gatekeeper only checks files carrying the quarantine attribute, which a browser download gets and the gem's Net::HTTP download does not, so the gem's copy runs; a copy downloaded with a browser would be blocked.
+- On other platforms (Linux arm64, for example) `RAIDER_FFMPEG_PATH` is still the way to get web videos; the `[video]` line now says so.
+- Existing 4.0.0 projects need no change beyond `bundle update ruby_raider`.
+
 ### 4.0.0
 
 - Watir is removed: `automation:watir` is no longer a valid automation value.

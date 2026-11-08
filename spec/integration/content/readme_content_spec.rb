@@ -17,8 +17,13 @@ describe 'Generated Readme content' do
                                    'RAIDER_CACHE_DIR', 'raider-results/attachments/')
       end
 
-      it 'says that video needs RAIDER_FFMPEG_PATH until the ffmpeg release is published' do
-        expect(section).to include('ffmpeg-7.1', 'not published yet')
+      it 'names the ffmpeg-7.1 release and no longer says it is unpublished' do
+        expect(section).to include('ffmpeg-7.1') if web
+        expect(section).not_to include('not published yet')
+      end
+
+      it 'lists the platforms with an ffmpeg download for web projects' do
+        expect(section).to include('macOS (Apple silicon and Intel), Linux x64 and Windows x64') if web
       end
 
       it 'names the right video format and how to turn video off for this project' do

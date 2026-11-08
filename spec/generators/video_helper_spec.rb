@@ -128,6 +128,19 @@ describe 'Generated VideoHelper' do
       expect(argv.each_cons(2).to_a).to include(['-vf', "scale='min(1280,iw)':-2"])
     end
 
+    # The pinned ffmpeg has only what this encode needs (.github/ffmpeg/build.sh), and
+    # .github/ffmpeg/check.sh proves it on every build: both must run the same arguments.
+    it 'runs the encode that .github/ffmpeg/check.sh proves on the pinned ffmpeg builds' do
+      recorder = VideoHelper.recorder_for(driver)
+      recorder.start
+      recorder.stop(keep: true)
+
+      check = File.read(File.expand_path('../../.github/ffmpeg/check.sh', __dir__)).gsub(/\\\n\s*/, '')
+      shell = argv[0..-2].map { |arg| arg.include?("'") ? %("#{arg}") : arg }
+      shell[shell.index('-i') + 1] = '"$work/list.txt"'
+      expect(check).to include(%("$binary" #{shell.join(' ')} "$work/video.webm"))
+    end
+
     context 'when the config sets other fps and max_width' do
       let(:video_config) { { 'enabled' => true, 'fps' => 10, 'max_width' => 640 } }
 
@@ -351,8 +364,13 @@ describe 'Generated VideoHelper' do
       end
     end
 
-    context 'when no ffmpeg can be obtained (no override, placeholder manifest)' do
+    context 'when no ffmpeg can be obtained (no override, no build for this platform)' do
       let(:env) { { 'RAIDER_FFMPEG_PATH' => nil } }
+
+      before do
+        require 'ruby_raider/ffmpeg'
+        stub_const('RubyRaider::Ffmpeg::MANIFEST', { version: '7.1', assets: {} })
+      end
 
       it 'decides once, at the first call: listener nil, NullRecorder, exactly one [video] line' do
         require 'ruby_raider/ffmpeg'
@@ -362,9 +380,8 @@ describe 'Generated VideoHelper' do
         expect(warnings.size).to eq(1)
         expect(VideoHelper.recorder_for(driver)).to be_a(VideoHelper::NullRecorder)
         expect(VideoHelper.listener).to be_nil
-        expect(warnings).to eq(['[video] no ffmpeg available for this platform yet (set RAIDER_FFMPEG_PATH, or run ' \
-                                '`raider u video install` once the ffmpeg release is published); ' \
-                                "recording disabled for this run\n"])
+        expect(warnings).to eq(['[video] no ffmpeg download for this platform (set RAIDER_FFMPEG_PATH to an ffmpeg ' \
+                                "with libvpx); recording disabled for this run\n"])
         expect(RubyRaider::Ffmpeg).not_to have_received(:ensure!)
         expect(shots).to be_empty
       end
