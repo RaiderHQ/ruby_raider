@@ -3,8 +3,9 @@
 #   .github/ffmpeg/check.sh <ffmpeg binary> [work_dir]
 # 1. links only (unless SKIP_LINKAGE is set) to libraries every machine of that OS has;
 # 2. runs VideoHelper#ffmpeg_arguments' exact encode on sample PNG frames;
-# 3. if FFPROBE is set (or ffprobe is on PATH), checks the WebM: one VP8 stream, 1280 wide, even height.
-# Writes <work_dir>/video.webm.
+# 3. encodes the same frames with libvpx-vp9 too (built for later use);
+# 4. if FFPROBE is set (or ffprobe is on PATH), checks both WebMs (probe.sh).
+# Writes <work_dir>/video.webm and <work_dir>/vp9.webm.
 set -euo pipefail
 
 binary="$1"
@@ -56,9 +57,16 @@ size="$(wc -c <"$work/video.webm" | tr -d ' ')"
 echo "video.webm: $size bytes"
 [[ "$size" -gt 1000 ]] || { echo 'video too small' >&2; exit 1; }
 
+echo "== encode (VP9)"
+"$binary" -y -loglevel error -f concat -safe 0 -i "$work/list.txt" \
+  -vf "scale='min(1280,iw)':-2" -c:v libvpx-vp9 -deadline realtime \
+  -b:v 1M -r 5 -pix_fmt yuv420p "$work/vp9.webm"
+[[ "$(wc -c <"$work/vp9.webm" | tr -d ' ')" -gt 1000 ]] || { echo 'vp9 video too small' >&2; exit 1; }
+
 probe="${FFPROBE:-$(command -v ffprobe || true)}"
 if [[ -n "$probe" ]]; then
   "$here/probe.sh" "$probe" "$work/video.webm"
+  "$here/probe.sh" "$probe" "$work/vp9.webm" vp9
 else
   echo "(no ffprobe here: the validate job probes this video)"
 fi

@@ -128,6 +128,19 @@ describe 'Generated VideoHelper' do
       expect(argv.each_cons(2).to_a).to include(['-vf', "scale='min(1280,iw)':-2"])
     end
 
+    # The pinned ffmpeg has only what this encode needs (.github/ffmpeg/build.sh), and
+    # .github/ffmpeg/check.sh proves it on every build: both must run the same arguments.
+    it 'runs the encode that .github/ffmpeg/check.sh proves on the pinned ffmpeg builds' do
+      recorder = VideoHelper.recorder_for(driver)
+      recorder.start
+      recorder.stop(keep: true)
+
+      check = File.read(File.expand_path('../../.github/ffmpeg/check.sh', __dir__)).gsub(/\\\n\s*/, '')
+      shell = argv[0..-2].map { |arg| arg.include?("'") ? %("#{arg}") : arg }
+      shell[shell.index('-i') + 1] = '"$work/list.txt"'
+      expect(check).to include(%("$binary" #{shell.join(' ')} "$work/video.webm"))
+    end
+
     context 'when the config sets other fps and max_width' do
       let(:video_config) { { 'enabled' => true, 'fps' => 10, 'max_width' => 640 } }
 

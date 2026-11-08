@@ -6,6 +6,8 @@
 # LGPL build (no --enable-gpl, no --enable-nonfree) with only what the generated
 # VideoHelper needs: PNG frames listed in a concat file, scaled, encoded with libvpx
 # (VP8, VP9 kept for later) into WebM. Every source is pinned by SHA-256 or commit.
+# Also writes the license notices for what is linked in and, in <out_dir>/sources/, the complete
+# corresponding source (FFmpeg and zlib tarballs, a git archive of the libvpx commit) for the release.
 # Runs on: macOS (arm64 or x86_64 runner), Alpine Linux (fully static, musl) and
 # MSYS2 MINGW64 on Windows (static libgcc/winpthread). Needs bash, make, a C compiler,
 # curl, tar, xz, git, pkg-config, perl and nasm (x86_64 targets only).
@@ -17,11 +19,15 @@ ZLIB_VERSION=1.3.1
 ZLIB_SHA256=9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23
 LIBVPX_TAG=v1.15.2
 LIBVPX_COMMIT=d168454ecd099805c675d4a98c66f4891373302a
+# Only for its license notice: the Linux binary links musl statically (Alpine 3.20 ships musl 1.2.5).
+MUSL_VERSION=1.2.5
+MUSL_SHA256=a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4
 MACOS_MIN=11.0
 
 FFMPEG_URL="https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz"
 ZLIB_URL="https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz"
 LIBVPX_REPO=https://chromium.googlesource.com/webm/libvpx
+MUSL_URL="https://musl.libc.org/releases/musl-${MUSL_VERSION}.tar.gz"
 
 target="${1:?usage: build.sh <darwin-arm64|darwin-x64|linux-x64|windows-x64> [out_dir]}"
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -145,6 +151,7 @@ configure_args=(
   --enable-demuxer=concat,image2,png_pipe
   --enable-decoder=png
   --enable-encoder=libvpx_vp8,libvpx_vp9
+  --enable-bsf=vp9_superframe
   --enable-muxer=webm
   --enable-filter=scale,format,null
 )
@@ -161,6 +168,26 @@ configure_args=(
 cp libvpx/LICENSE "$out_dir/libvpx-LICENSE"
 cp libvpx/PATENTS "$out_dir/libvpx-PATENTS"
 sed -n '/^Copyright notice:/,$p' "zlib-${ZLIB_VERSION}/README" >"$out_dir/zlib-LICENSE"
+case "$target" in
+  linux-x64)
+    fetch "$MUSL_URL" "$MUSL_SHA256" "musl-${MUSL_VERSION}.tar.gz"
+    tar -xzOf "musl-${MUSL_VERSION}.tar.gz" "musl-${MUSL_VERSION}/COPYRIGHT" >"$out_dir/musl-COPYRIGHT"
+    ;;
+  windows-x64)
+    # Static libgcc, mingw-w64 CRT and winpthreads: copy MSYS2's license files for them.
+    notices="$out_dir/mingw-w64-notices"
+    mkdir -p "$notices"
+    for dir in /mingw64/share/licenses/*; do
+      case "$(basename "$dir")" in
+        *winpthread* | *crt* | *gcc-libs* | *libwinpthread* | *headers*) cp -R "$dir" "$notices/" ;;
+      esac
+    done
+    [[ -n "$(ls -A "$notices")" ]] || { echo 'no mingw-w64 license files found' >&2; exit 1; }
+    ;;
+esac
+mkdir -p "$out_dir/sources"
+cp "ffmpeg-${FFMPEG_VERSION}.tar.xz" "zlib-${ZLIB_VERSION}.tar.gz" "$out_dir/sources/"
+git -C libvpx archive --format=tar.gz --prefix="libvpx-${LIBVPX_TAG#v}/" -o "$out_dir/sources/libvpx-${LIBVPX_TAG#v}.tar.gz" HEAD
 
 binary="$out_dir/ffmpeg-7.1-$target$exe"
 # arm64 macOS will not run an unsigned binary; re-apply the linker's ad-hoc signature.

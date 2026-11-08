@@ -5,6 +5,7 @@ module RubyRaider
 
     MAX_REDIRECTS: Integer
     DOWNLOAD_TIMEOUT: Integer
+    MAX_DOWNLOAD_BYTES: Integer
     RELEASE_BASE: String
     MANIFEST: manifest
     PLATFORMS: Array[String]

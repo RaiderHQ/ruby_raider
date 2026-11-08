@@ -321,9 +321,9 @@ describe 'End-to-End Project Generation and Execution' do
     JSON.parse(File.read(File.join(project, 'raider-results', 'run.json')))['results']
   end
 
-  # Failure video replay against real browsers. Needs an ffmpeg with libvpx (RAIDER_FFMPEG_PATH), because the
-  # RaiderHQ ffmpeg release has no checksums yet. Skipped when it, or the browser, is missing. Firefox can be
-  # pointed at a specific binary with FIREFOX_BINARY.
+  # Failure video replay against real browsers. Needs an ffmpeg with libvpx (RAIDER_FFMPEG_PATH), so most examples
+  # never download the release binary; RAIDER_E2E_DOWNLOAD=1 adds one that does. Skipped when it, or the browser,
+  # is missing. Firefox can be pointed at a specific binary with FIREFOX_BINARY.
   context 'Failure video replay', :slow, :video do
     let(:ffmpeg_path) { ENV.fetch('RAIDER_FFMPEG_PATH', '') }
     let(:cache_dir) { Dir.mktmpdir('raider-cache') }
@@ -421,16 +421,28 @@ describe 'End-to-End Project Generation and Execution' do
       it 'runs unchanged with one [video] line and no download when no ffmpeg is usable', :aggregate_failures do
         off = run_in_project(project, command, env: video_env('VIDEO' => 'off'))
         FileUtils.rm_rf(File.join(project, 'raider-results'))
-        result = run_in_project(project, command, env: video_env('RAIDER_FFMPEG_PATH' => nil))
+        # A file where the cache dir should be: the download cannot even start, so nothing is fetched.
+        blocker = File.join(cache_dir, 'not-a-dir')
+        File.write(blocker, '')
+        result = run_in_project(project, command, env: video_env('RAIDER_FFMPEG_PATH' => nil, 'RAIDER_CACHE_DIR' => blocker))
 
         expect(result[:exit_code]).to eq(off[:exit_code]), "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
         video_lines = result[:stderr].lines.grep(/\[video\]/)
         expect(video_lines.size).to eq(1), "STDERR: #{result[:stderr]}"
-        # Decided at the first driver/recorder call, before any capture or fetch: the placeholder
-        # manifest has no checksum, so nothing is captured or downloaded.
-        expect(video_lines.first).to include('no ffmpeg available for this platform yet')
+        expect(video_lines.first).to include('ffmpeg')
         expect(video_files(project)).to be_empty
-        expect(Dir.glob(File.join(cache_dir, '**', '*'))).to be_empty
+        expect(Dir.glob(File.join(cache_dir, '**', '*'))).to eq([blocker])
+      end
+
+      # Downloads the pinned ffmpeg-7.1 release asset for this platform into an empty cache.
+      it 'downloads the pinned ffmpeg into an empty cache and attaches the video', :aggregate_failures do
+        skip 'set RAIDER_E2E_DOWNLOAD=1 to download the ffmpeg-7.1 release asset' unless ENV['RAIDER_E2E_DOWNLOAD'] == '1'
+
+        result = run_in_project(project, command, env: video_env('RAIDER_FFMPEG_PATH' => nil))
+        expect(result[:exit_code]).to eq(1), "STDOUT: #{result[:stdout]}\nSTDERR: #{result[:stderr]}"
+        expect(result[:stderr]).not_to include('[video]')
+        expect(Dir.glob(File.join(cache_dir, 'ffmpeg', '7.1', 'ffmpeg{,.exe}')).size).to eq(1)
+        expect_video_for_failure_only(project, 'fails after driving the page', result)
       end
     end
   end

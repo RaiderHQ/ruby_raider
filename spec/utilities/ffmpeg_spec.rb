@@ -74,7 +74,7 @@ describe RubyRaider::Ffmpeg do
 
     # FFMPEG_ARTIFACTS=<dir> holding ffmpeg-7.1-<platform>[.exe] (the build workflow's artifacts
     # or the release assets) proves those exact bytes pass verification and get cached.
-    it 'accepts the built binaries', if: ENV.fetch('FFMPEG_ARTIFACTS', nil) do
+    it 'accepts the built binaries', unless: ENV.fetch('FFMPEG_ARTIFACTS', '').empty? do
       described_class::PLATFORMS.each do |p|
         name = File.basename(real[:assets][p][:url])
         source = File.join(ENV.fetch('FFMPEG_ARTIFACTS'), name)
@@ -292,6 +292,39 @@ describe RubyRaider::Ffmpeg do
     File.utime(mtime, mtime, cached_path)
     expect(described_class.ensure!(env:, manifest:, fetch:, warn: warner)).to be_nil
     expect(warnings).to eq(['cached ffmpeg failed checksum; video disabled'])
+  end
+
+  describe 'download size cap' do
+    let(:dest) { File.join(cache, 'download.part') }
+    let(:deadline) { Process.clock_gettime(Process::CLOCK_MONOTONIC) + 60 }
+
+    def ok_response(length, chunks)
+      response = Net::HTTPOK.new('1.1', '200', 'OK')
+      response['content-length'] = length.to_s if length
+      allow(response).to receive(:read_body) { |&block| chunks.each(&block) }
+      response
+    end
+
+    it 'refuses a Content-Length over the cap before writing anything', :aggregate_failures do
+      response = ok_response(described_class::MAX_DOWNLOAD_BYTES + 1, ['x'])
+      expect { described_class.send(:handle_response, response, dest, deadline, 60) }
+        .to raise_error(IOError, /larger than/)
+      expect(File).not_to exist(dest)
+    end
+
+    it 'stops writing once the body passes the cap, whatever Content-Length said' do
+      stub_const("#{described_class}::MAX_DOWNLOAD_BYTES", 10)
+      response = ok_response(nil, ['x' * 6, 'x' * 6, 'x' * 6])
+      expect { described_class.send(:handle_response, response, dest, deadline, 60) }
+        .to raise_error(IOError, /larger than/)
+      expect(File.size(dest)).to be <= 10
+    end
+
+    it 'writes a body within the cap' do
+      response = ok_response(4, %w[ab cd])
+      expect(described_class.send(:handle_response, response, dest, deadline, 60)).to be_nil
+      expect(File.read(dest)).to eq('abcd')
+    end
   end
 
   describe 'DEFAULT_WARN' do

@@ -14,6 +14,8 @@ module RubyRaider
     MAX_REDIRECTS = 5
     # Seconds for the whole download, redirects included.
     DOWNLOAD_TIMEOUT = 300
+    # The binaries are 3-5 MB; a bigger body is not ours and must not fill the disk before the checksum.
+    MAX_DOWNLOAD_BYTES = 64 * 1024 * 1024
 
     # The RaiderHQ `ffmpeg-7.1` release: FFmpeg 7.1.5, LGPL, built by .github/workflows/ffmpeg.yml
     # (.github/ffmpeg/build.sh), run 42438703597. Each SHA-256 pins the exact bytes of that release's asset.
@@ -128,18 +130,30 @@ module RubyRaider
       def handle_response(response, destination, deadline, timeout)
         case response
         when Net::HTTPSuccess
-          File.open(destination, 'wb') do |file|
-            response.read_body do |chunk|
-              check_deadline(deadline, timeout)
-              file.write(chunk)
-            end
-          end
+          check_size(response['content-length'].to_i)
+          write_body(response, destination, deadline, timeout)
           nil
         when Net::HTTPRedirection
           response['location'] || raise(IOError, 'redirect without Location header')
         else
           raise IOError, "download failed: HTTP #{response.code}"
         end
+      end
+
+      def write_body(response, destination, deadline, timeout)
+        written = 0
+        File.open(destination, 'wb') do |file|
+          response.read_body do |chunk|
+            check_deadline(deadline, timeout)
+            written += chunk.bytesize
+            check_size(written)
+            file.write(chunk)
+          end
+        end
+      end
+
+      def check_size(bytes)
+        raise IOError, "download larger than #{MAX_DOWNLOAD_BYTES} bytes" if bytes > MAX_DOWNLOAD_BYTES
       end
 
       def socket_timeouts(deadline, timeout)
