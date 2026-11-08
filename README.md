@@ -38,7 +38,7 @@ Ruby Raider works on Mac OS, Linux and Windows.
 Web projects use **Selenium and RSpec**. They get:
 
 - Locators people see on the page (`label:`, `text:`, `by_role(...)` and more), with strict matching
-- Waiting built into Selenium: no implicit wait, no `sleep`
+- Automatic waiting for elements and actions: no implicit wait, no `sleep`
 - Retrying RSpec matchers
 - Login reuse, failure video, failure trace, network mocking and screenshot comparison
 - Optional accessibility tests (axe) and a choice of GitHub Actions or Azure Pipelines
@@ -56,7 +56,7 @@ Mobile projects use **Appium and RSpec**:
 They get:
 
 - Appium locators: `accessibility_id:`, `id:`, `xpath:` and `class_name:`
-- Waiting built into Appium: `find_element` waits for a match, and `click`, `send_keys` and `clear` wait until the element is displayed and enabled
+- Automatic waiting: `find_element` waits for a match, and `click`, `send_keys` and `clear` wait until the element is displayed and enabled
 - Retrying RSpec matchers
 - Gestures: `swipe`, `scroll` and `scroll_to`, on iOS and Android
 - Failure video from Appium's screen recording
@@ -140,16 +140,15 @@ Projects include [raider_reporter](https://github.com/RaiderHQ/raider_reporter).
 - Results go to `raider-results/`.
 - Runs upload to your Raider Hideout server when `RAIDER_TOKEN` and `RAIDER_ENDPOINT` are set.
 - CI runs the suite through `raider-reporter exec` with `RAIDER_QUARANTINE`, so quarantined tests do not fail the build.
-- An opt-in `raider-gate` job (`RAIDER_GATE=1`) fails CI when the Raider quality gate fails.
+- Set the CI variable `RAIDER_GATE` to `1` to add a `raider-gate` job that fails CI when the Raider quality gate fails.
 
 ### Failure video replay
 
-Every test is recorded. The video is kept only for failing tests and attached to the report as `video`.
+Each test is recorded. The video is kept only when the test fails and attached to the report as `video`.
 
-- **Web:** WebM built from page screenshots.
-- **Mobile:** Appium's own MP4. iOS needs `ffmpeg` on the Appium server host. Android recordings stop at 180 s and need no ffmpeg.
+- **Web:** WebM built from page screenshots. ffmpeg is downloaded once, SHA-256 checked and cached in `~/.cache/raider`: an LGPL ffmpeg 7.1 build with libvpx for macOS (Apple silicon and Intel), Linux x64 and Windows x64, built by [`.github/workflows/ffmpeg.yml`](.github/workflows/ffmpeg.yml). On other platforms set `RAIDER_FFMPEG_PATH` to an ffmpeg with libvpx.
+- **Mobile:** Appium's own MP4. iOS needs `ffmpeg` on the Appium server host. Android stops at 180 s by default, so it needs no ffmpeg; a longer `video.time_limit` needs ffmpeg too.
 - Turn it off per run with `VIDEO=off`, or per project with `raider u video off`.
-- ffmpeg is downloaded once, SHA-256 checked and cached in `~/.cache/raider`: an LGPL ffmpeg 7.1 build with libvpx for macOS (Apple silicon and Intel), Linux x64 and Windows x64, built by [`.github/workflows/ffmpeg.yml`](.github/workflows/ffmpeg.yml). On other platforms set `RAIDER_FFMPEG_PATH` to an ffmpeg with libvpx.
 
 ### Failure trace replay (web)
 
@@ -175,7 +174,7 @@ mock_request(url, status: 500)
 block_request('**/*.png')
 ```
 
-- `calls` shows what the page asked for.
+- `mock_request` returns the mock; `mock.calls` lists the requests it answered.
 - Works through WebDriver BiDi on Chrome, Edge and Firefox. Safari and `BIDI=off` raise `NetworkHelper::Unavailable`.
 - Handles CORS for cross-origin mocks, clears mocks after each test, and marks mocked requests in the trace.
 
@@ -193,16 +192,18 @@ match_screenshot('home')
 
 ### Login reuse (web)
 
-Projects log in once and restore the saved session for examples tagged `:logged_in`.
+Example projects log in once and restore the saved session for examples tagged `:logged_in`.
 
 - `RAIDER_LOGIN_STATE=off|refresh` and `login_state: max_age:` control it.
 - The state stays in git-ignored `.raider/auth/`.
+- Skeletons (`examples:false`) get `SessionState#reuse` to wire your own login.
 
 ### Also included
 
 - **Page Object Model:** base page and component classes with example pages
-- **Example tests:** working login tests against the [Raider Test Store](https://raider-test-site.onrender.com/), or an empty skeleton with `examples:false` (see [Getting Started](#getting-started))
-- **GitHub Actions CI:** a ready-to-use pipeline that caches ffmpeg for failure videos
+- **Example tests:** working tests against the [Raider Test Store](https://raider-test-site.onrender.com/) (web) or the [Raider test app](https://github.com/RaiderHQ/raider_test_app) (mobile), or an empty skeleton with `examples:false` (see [Getting Started](#getting-started))
+- **CI:** GitHub Actions, or Azure Pipelines for web. It caches ffmpeg and comments results on pull requests
+- **Failure screenshots:** each failing test attaches a screenshot to the report
 - **Rake tasks:** default, smoke and regression, filtered by tag
 - **Retries:** RSpec retry, with the count set by `RETRY_COUNT`
 - **Re-run failed tests:** RSpec keeps `spec/examples.txt` for `--only-failures`
@@ -228,6 +229,12 @@ Or skip the menu with parameters:
 
 ```bash
 raider new [project_name] -p framework:rspec automation:selenium
+```
+
+Create a mobile project (`automation:ios`, `automation:android` or `automation:cross_platform`):
+
+```bash
+raider new my_app -p framework:rspec automation:android
 ```
 
 Add accessibility testing:
