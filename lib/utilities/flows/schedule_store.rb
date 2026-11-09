@@ -15,6 +15,17 @@ module RubyRaider
       NOFOLLOW = defined?(File::NOFOLLOW) ? File::NOFOLLOW : 0
       NONBLOCK = defined?(File::NONBLOCK) ? File::NONBLOCK : 0
 
+      # What delete returns for an entry it removed but could not read: enough to remove its OS entry
+      class Removed
+        attr_reader :name, :os_id
+
+        def initialize(name, os_id)
+          @name = name
+          @os_id = os_id
+          freeze
+        end
+      end
+
       def initialize(project)
         @project = project
         @file = project.path("#{DIR}/#{FILE}")
@@ -36,13 +47,15 @@ module RubyRaider
         schedule
       end
 
-      # The removed schedule, or nil when there was none
+      # Removes every entry with the name, readable or not. Returns the removed schedule, a Removed
+      # (name and os_id) when the entry could not be read, or nil when there was none.
       def delete(name)
-        removed = find(name)
-        return nil unless removed
+        entries = writable_entries
+        named, kept = entries.partition { |entry| named?(entry, name) }
+        return nil if named.empty?
 
-        write(writable_entries.reject { |entry| named?(entry, name) })
-        removed
+        write(kept)
+        named.filter_map { |entry| from_entry(entry) }.first || Removed.new(name, Schedule.os_id_for(@project.root, name))
       end
 
       private
@@ -55,10 +68,11 @@ module RubyRaider
 
       def named?(entry, name) = entry.is_a?(Hash) && entry['name'] == name
 
-      # The raw entries, nil when the file is not a schedules file (missing reads as empty)
+      # The raw entries, nil when the file is not a schedules file or can't be read (missing reads as empty)
       def read_entries
         text = read_text
         return [] if text.nil?
+        return nil unless text
 
         data = YAML.safe_load(text)
         return [] if data.nil?
@@ -74,15 +88,16 @@ module RubyRaider
         read_entries || raise(Error, "#{DIR}/#{FILE} is not a schedules file: fix or remove it, then try again")
       end
 
-      # Read through one handle that is not a link; nil when there is no file
+      # Read through one handle that is not a link; nil when there is no file, false when it is a link,
+      # not a regular file or can't be read (so a write never replaces what it could not see)
       def read_text
         File.open(@file, File::RDONLY | NONBLOCK | NOFOLLOW) do |file|
-          file.stat.file? ? file.read.to_s.force_encoding(Encoding::UTF_8) : ''
+          file.stat.file? ? file.read.to_s.force_encoding(Encoding::UTF_8) : false
         end
       rescue Errno::ENOENT
         nil
       rescue SystemCallError
-        ''
+        false
       end
 
       def write(entries)

@@ -6,11 +6,18 @@ module RubyRaider
       NOFOLLOW: Integer
       NONBLOCK: Integer
 
+      class Removed
+        attr_reader name: String
+        attr_reader os_id: String
+
+        def initialize: (String name, String os_id) -> void
+      end
+
       def initialize: (Project project) -> void
       def all: () -> Array[Schedule]
       def find: (String name) -> Schedule?
       def save: (Schedule schedule) -> Schedule
-      def delete: (String name) -> Schedule?
+      def delete: (String name) -> (Schedule | Removed)?
 
       private
 
@@ -18,7 +25,7 @@ module RubyRaider
       def named?: (untyped entry, String name) -> bool
       def read_entries: () -> Array[untyped]?
       def writable_entries: () -> Array[untyped]
-      def read_text: () -> String?
+      def read_text: () -> (String | false)?
       def write: (Array[untyped] entries) -> void
       def private_dir: () -> String
     end

@@ -37,7 +37,11 @@ module RubyRaider
         raise Error, 'A schedule entry must be a mapping' unless hash.is_a?(Hash)
 
         fields = KEYS.to_h { |key| [key.to_sym, hash[key]] }
-        new(**fields, project_root: project_root)
+        schedule = new(**fields, project_root: project_root)
+        # Strict: an entry copied from another project, or a moved project, is not this project's entry
+        raise Error, "Invalid os_id #{schedule.os_id.inspect} for #{schedule.name} in #{project_root}" unless schedule.os_id == os_id_for(project_root, schedule.name)
+
+        schedule
       end
 
       def self.os_id_for(project_root, name) = "#{OS_ID_PREFIX}.#{Digest::SHA256.hexdigest(project_root)[0, 10]}.#{name}"
@@ -163,8 +167,10 @@ module RubyRaider
         raise Error, 'Invalid inputs: use a list of name=value' unless inputs.is_a?(Array)
 
         inputs.map do |pair|
-          key, value = pair.to_s.split('=', 2)
-          raise Error, "Invalid input #{key.to_s.inspect}: #{Runner::INPUT_RULE}" unless pair.is_a?(String) && value && Runner::INPUT.match?(key.to_s)
+          raise Error, "Invalid input #{pair.inspect}: use name=value in valid UTF-8" unless pair.is_a?(String) && pair.valid_encoding?
+
+          key, value = pair.split('=', 2)
+          raise Error, "Invalid input #{key.to_s.inspect}: #{Runner::INPUT_RULE}" unless value && Runner::INPUT.match?(key.to_s)
           raise Error, "Invalid input #{key.inspect}: the value contains a control character" if value.match?(/[[:cntrl:]]/)
 
           pair.dup.freeze
@@ -172,7 +178,7 @@ module RubyRaider
       end
 
       def checked_os_id(os_id)
-        pattern = /\A#{Regexp.escape(OS_ID_PREFIX)}\.\h{10}\.#{Regexp.escape(name)}\z/
+        pattern = /\A#{Regexp.escape(OS_ID_PREFIX)}\.[0-9a-f]{10}\.#{Regexp.escape(name)}\z/
         return os_id.dup.freeze if os_id.is_a?(String) && pattern.match?(os_id)
 
         raise Error, "Invalid os_id #{os_id.inspect} for #{name}"
@@ -191,7 +197,7 @@ module RubyRaider
       end
 
       def checked_text(label, text)
-        return text.dup.freeze if text.is_a?(String) && !text.empty? && !text.match?(/[[:cntrl:]]/)
+        return text.dup.freeze if text.is_a?(String) && text.valid_encoding? && !text.empty? && !text.match?(/[[:cntrl:]]/)
 
         raise Error, "Invalid #{label} #{text.inspect}"
       end

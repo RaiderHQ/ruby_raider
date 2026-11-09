@@ -81,6 +81,10 @@ RSpec.describe RubyRaider::Flows::Schedule do # rubocop:disable RSpec/FilePath
       expect(errors).to all(start_with('Invalid input'))
     end
 
+    it 'refuses input that is not valid UTF-8' do
+      expect([error_for(inputs: ["note=a\xFFb"]), error_for(inputs: ["n\xFFte=ab"])]).to all(include('valid UTF-8'))
+    end
+
     it 'keeps hostile input values as plain argv items' do
       values = ["'; rm -rf ~; '", '</string>', '%h', '$(id)']
       schedule = build(inputs: values.map { |value| "note=#{value}" })
@@ -168,10 +172,11 @@ RSpec.describe RubyRaider::Flows::Schedule do # rubocop:disable RSpec/FilePath
       expect(described_class.from_h(schedule.to_h, dir).to_h).to eq(schedule.to_h)
     end
 
-    it 'keeps the os_id it was scheduled under' do
-      moved = described_class.from_h(schedule.to_h, '/elsewhere')
+    it 'refuses an entry whose os_id is not this project\'s, or not in lowercase hex' do
+      upper = schedule.os_id.sub(/\.(\h{10})\./) { ".#{Regexp.last_match(1).upcase}." }
 
-      expect([moved.os_id, moved.project_root]).to eq([schedule.os_id, '/elsewhere'])
+      expect { described_class.from_h(schedule.to_h, '/elsewhere') }.to raise_error(RubyRaider::Flows::Error, /os_id/)
+      expect { described_class.from_h(schedule.to_h.merge('os_id' => upper), dir) }.to raise_error(RubyRaider::Flows::Error, /os_id/)
     end
 
     it 'refuses entries that were tampered with' do
