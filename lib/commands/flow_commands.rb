@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'thor'
+require_relative '../utilities/flows/project'
 
 # raider flow: recordings without assertions that run on their own.
 class FlowCommands < Thor
@@ -10,7 +11,12 @@ class FlowCommands < Thor
 
   desc 'init', 'Adds flows/flow_helper.rb and the .gitignore lines to a Selenium web project'
 
-  def init; end
+  def init
+    code = project.init
+    exit(code) unless code.zero?
+  rescue RubyRaider::Flows::Error => e
+    stop(e)
+  end
 
   # `run` is a Thor reserved word, so the method has another name
   desc 'run NAME', 'Runs flows/NAME_flow.rb headless with its own results folder and run log'
@@ -27,4 +33,15 @@ class FlowCommands < Thor
   option :json, type: :boolean, desc: 'Print JSON for the desktop app'
 
   def list; end
+
+  no_commands do
+    def project
+      RubyRaider::Flows::Project.new(options[:project] || Dir.pwd)
+    end
+
+    def stop(error)
+      warn(error.message)
+      exit(error.exit_code)
+    end
+  end
 end
