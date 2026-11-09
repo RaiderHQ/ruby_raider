@@ -229,6 +229,30 @@ end
 - **The same record every way:** `bundle exec rspec flows/timesheet_flow.rb` writes the same run log as `raider flow run`; `raider flow run` adds retries (whole flow, 30 s apart) and the exit codes. Set `RAIDER_FLOW_HEADED=1` to watch a plain rspec run (`headless: true` in `config/config.yml` still wins).
 - Projects made with 4.0 can add flows: `raider flow init` raises the Gemfile's `ruby_raider` pin to `~> 4.1`; run `bundle install` after it.
 
+### Scheduling flows
+
+Your computer's own scheduler runs the flow, so nothing needs to stay open. Scheduling never asks for sudo or admin rights.
+
+```bash
+raider flow schedule timesheet --every weekday --at 17:30 --input hours=7 --notify
+raider flow schedule backup --every hour --at :15
+raider flow schedule report --every week --on fri --at 09:00 --retries 2
+raider flow unschedule timesheet
+raider flow schedules [--json]       # each schedule, its next run, last result and OS state
+```
+
+- **Rules:** `--every hour|day|weekday|week`. `--at HH:MM` (24h, local time) is required for `day`, `weekday` and `week`; for `hour` use `--at :MM` (default `:00`). `--on mon|tue|wed|thu|fri|sat|sun` is required for `week` and refused otherwise. `--retries N` (0 to 3) and `--input name=value` are passed to `raider flow run`. Scheduling a flow again replaces its schedule.
+- **Schedulers:** macOS uses launchd (`~/Library/LaunchAgents/dev.rubyraider.flow.<hash>.<name>.plist`). Windows uses Task Scheduler (a task in the `\RubyRaider\` folder). Linux uses a systemd user timer in `~/.config/systemd/user`, or, when `systemctl --user` does not answer, one tagged line in your crontab. Times are local time (cron uses the system time zone).
+- **Missed runs:** launchd runs a run missed while the Mac slept once on wake. Task Scheduler runs it as soon as it can. systemd (`Persistent=true`) runs it once your user manager is back, at the next boot or login. cron skips it, and `raider flow schedules` says so.
+- **Linux:** systemd user timers stop when you log out unless lingering is on: `loginctl enable-linger $USER` (raider does not run it). A systemd schedule can only be removed from a session where `systemctl --user` works; until then `unschedule` refuses and keeps the entry.
+- **Per machine:** schedules live in `.raider/flows/schedules.yml`, which `raider flow init` git-ignores, so a fresh clone has none. schedules.yml is the source of truth, and the next run is worked out from the rule. Each OS entry is tied to the project's path: unschedule before you move the project.
+- **States:** `ok`, `missing from launchd` (or `Task Scheduler`, `systemd`, `cron`) when the OS entry is gone, `missing from schedules.yml` when the OS still runs a flow the file does not list, `Ruby not found: re-schedule`, and `unknown (...)` when the scheduler could not be asked.
+- **Ruby:** the OS entry runs the absolute `ruby` and `bundle` paths captured when you scheduled, plus `GEM_HOME` and `GEM_PATH` on macOS and Linux. After a Ruby upgrade or move, `schedules` says `Ruby not found: re-schedule`: run `raider flow schedule` again.
+- **Logs:** on macOS and Linux the scheduler's output goes to `.raider/flows/<name>/scheduler.log`. Windows tasks run ruby.exe directly with your user environment and keep no scheduler.log; each run's result is in `runs.jsonl` as always.
+- **Notify:** `--notify` shows a desktop notification only when a run ends failed or could not start (not when it completed, was already running, or was stopped). macOS uses `osascript`, Linux `notify-send`, Windows a PowerShell toast. A notification that can't be shown prints a warning and never changes the exit code. `raider flow run --notify` does the same for a manual run.
+- **Secrets:** keep them in `.raider/flows/env`, never in `--input`: inputs are stored in plain text in the OS entry and in schedules.yml.
+- **Windows refusals:** Task Scheduler expands `%NAME%` with no way to escape it, so an input or path holding `%...%` is refused. An argument holding both `'` and one of `* ? [ {` is refused too, because ruby.exe would glob it.
+
 ### Also included
 
 - **Page Object Model:** base page and component classes with example pages
@@ -301,7 +325,7 @@ The skeleton keeps the helpers, config, CI and README, and its empty suite passe
 raider new [PROJECT_NAME]       # Create a new framework project
 raider generate                 # Access scaffolding commands
 raider utility                  # Access utility commands
-raider flow                     # Run flows: init, run, list
+raider flow                     # Run flows: init, run, list, schedule
 raider version                  # Show current version
 raider help [COMMAND]           # Describe available commands
 ```

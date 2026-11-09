@@ -9,7 +9,10 @@
 - Each run takes a per-flow lock, writes its report, screenshot, video and trace to `flow-results/<name>/<UTC time>/` (never cleaned between runs, last 20 kept) and appends one line to `.raider/flows/<name>/runs.jsonl` (last 50 kept). Flow runs never touch `raider-results/`.
 - Secrets for flows go in `.raider/flows/env` (`KEY=value`), loaded only from a file you own with permissions 600 and kept out of the run log.
 - `raider flow list [--json]` shows each flow and its last result. `raider f` is short for `raider flow`.
-- Scheduling flows (`raider flow schedule`) is not in this release.
+- `raider flow schedule NAME --every hour|day|weekday|week [--at HH:MM | :MM] [--on mon..sun] [--retries N] [--input name=value] [--notify]` runs a flow with the computer's own scheduler: launchd on macOS, Task Scheduler (`\RubyRaider\` folder) on Windows, a systemd user timer on Linux, or a crontab line when `systemctl --user` does not answer. No sudo or admin rights. The entry stores the absolute ruby and bundle paths (and `GEM_HOME`/`GEM_PATH` on macOS and Linux) captured when you schedule.
+- `raider flow unschedule NAME` removes the OS entry, then the `.raider/flows/schedules.yml` entry. `raider flow schedules [--json]` lists each schedule with its rule, next run, last result and OS state (`ok`, `missing from <scheduler>`, `missing from schedules.yml`, `Ruby not found: re-schedule`, `unknown`).
+- `--notify` (on `schedule` and on `raider flow run`) shows a desktop notification when a run fails or can not start: osascript on macOS, notify-send on Linux, a PowerShell toast on Windows.
+- Only launchd has been run for real (a scheduled run fired on macOS and was unscheduled cleanly). Task Scheduler, systemd and cron are covered by unit tests only: no real Windows or Linux run before this release.
 
 ### 4.0.1
 
