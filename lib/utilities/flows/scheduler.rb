@@ -62,9 +62,11 @@ module RubyRaider
       def unschedule(name)
         raise Error, "Invalid flow name #{name.inspect}: use 1 to 60 of a-z, 0-9 and _ (not env)" unless Flows.valid_name?(name)
 
-        removed = @store.delete(name)
+        # The OS entry first: when the scheduler refuses, the yml entry stays to retry with.
+        # from_h is strict, so a stored entry's os_id is always this one.
         label = adapter.label
-        was_there = adapter.remove(removed&.os_id || Schedule.os_id_for(@project.root, name))
+        was_there = adapter.remove(Schedule.os_id_for(@project.root, name))
+        removed = @store.delete(name)
         raise Error, "No schedule for #{name}" unless removed || was_there
 
         @out.puts(was_there ? "Unscheduled #{name}" : "Unscheduled #{name} (it was already gone from #{label})")
