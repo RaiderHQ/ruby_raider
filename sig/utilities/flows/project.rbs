@@ -1,0 +1,45 @@
+module RubyRaider
+  module Flows
+    NAME: Regexp
+    RESERVED: Array[String]
+
+    def self.valid_name?: (untyped name) -> bool
+    def self.printable: (untyped text) -> String
+
+    class Error < StandardError
+      attr_reader exit_code: Integer
+
+      def initialize: (String message, ?exit_code: Integer) -> void
+    end
+
+    class Project
+      UNSUPPORTED: String
+      GITIGNORE_LINES: Array[String]
+      TEMPLATES: Hash[String, String]
+      PIN: Regexp
+      FLOWS_PIN: Array[Integer]
+
+      attr_reader root: String
+
+      def initialize: (String path) -> void
+      def path: (String relative) -> String
+      def flow_file: (String name) -> String
+      def flow_names: () -> Array[String]
+      def set_up?: () -> bool
+      def unsupported_reason: () -> String?
+      def init: (?out: IO | StringIO, ?err: IO | StringIO) -> Integer
+
+      private
+
+      def template_dir: () -> String
+      def read: (String relative) -> String?
+      def selenium?: (String gemfile) -> bool
+      def runtime?: () -> bool
+      def old_pin?: (String gemfile) -> bool
+      def write_templates: () -> Array[String]
+      def add_gitignore_lines: () -> Array[String]
+      def pin_gem: () -> bool
+      def report: (IO | StringIO out, Array[String] created, Array[String] updated, bool pinned) -> void
+    end
+  end
+end

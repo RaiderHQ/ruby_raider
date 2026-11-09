@@ -1,0 +1,9 @@
+# Type definitions for FlowCommands
+class FlowCommands < Thor
+  def init: () -> void
+  def run_flow: (String name) -> void
+  def list: () -> void
+  def project: () -> RubyRaider::Flows::Project
+  def list_line: (Hash[String, untyped] flow) -> String
+  def stop: (RubyRaider::Flows::Error error) -> bot
+end
