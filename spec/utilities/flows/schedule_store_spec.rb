@@ -74,6 +74,15 @@ RSpec.describe RubyRaider::Flows::ScheduleStore do # rubocop:disable RSpec/FileP
     expect(File.read(file)).to eq("schedules: [\n")
   end
 
+  it 'says whether it could write, before anything else is changed' do
+    expect(store.writable!).to be_nil
+    FileUtils.mkdir_p(File.dirname(file))
+    File.write(file, "schedules: [\n")
+
+    expect { store.writable! }
+      .to raise_error(RubyRaider::Flows::Error, '.raider/flows/schedules.yml is not a schedules file: fix or remove it, then try again')
+  end
+
   it 'will not overwrite a file it cannot read' do
     store.save(schedule('report'))
     before = File.read(file)

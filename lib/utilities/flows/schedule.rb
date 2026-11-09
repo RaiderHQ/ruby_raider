@@ -28,7 +28,7 @@ module RubyRaider
       def self.build(project:, name:, every:, at: nil, on: nil, retries: 0, inputs: [], notify: false, now: Time.now)
         root = project.root
         new(name: name, every: every, at: at, on: on, retries: retries, inputs: inputs, notify: notify, os_id: os_id_for(root, name),
-            ruby: RbConfig.ruby, bundle: Gem.bin_path('bundler', 'bundle'), gem_env: captured_gem_env,
+            ruby: RbConfig.ruby, bundle: bundle_path, gem_env: captured_gem_env,
             project_root: root, created_at: now.getutc.iso8601)
       end
 
@@ -45,6 +45,12 @@ module RubyRaider
       end
 
       def self.os_id_for(project_root, name) = "#{OS_ID_PREFIX}.#{Digest::SHA256.hexdigest(project_root)[0, 10]}.#{name}"
+
+      def self.bundle_path
+        Gem.bin_path('bundler', 'bundle')
+      rescue Gem::GemNotFoundException, Gem::MissingSpecError => e
+        raise Error, "Bundler not found for this Ruby (#{e.message}): gem install bundler, then try again"
+      end
 
       # The GEM_HOME and GEM_PATH raider started with (before bundle exec changed them), only when set
       def self.captured_gem_env

@@ -28,6 +28,7 @@ module RubyRaider
       def self.build: (project: Project, name: String, every: String, ?at: String?, ?on: String?, ?retries: untyped, ?inputs: Array[String], ?notify: bool, ?now: Time) -> Schedule
       def self.from_h: (untyped hash, String project_root) -> Schedule
       def self.os_id_for: (String project_root, String name) -> String
+      def self.bundle_path: () -> String
       def self.captured_gem_env: () -> Hash[String, String]
 
       def initialize: (name: untyped, every: untyped, at: untyped, on: untyped, retries: untyped, inputs: untyped, os_id: untyped, ruby: untyped, bundle: untyped, gem_env: untyped, project_root: untyped, created_at: untyped, ?notify: untyped) -> void

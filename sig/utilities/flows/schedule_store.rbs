@@ -17,6 +17,7 @@ module RubyRaider
       def all: () -> Array[Schedule]
       def find: (String name) -> Schedule?
       def save: (Schedule schedule) -> Schedule
+      def writable!: () -> nil
       def delete: (String name) -> (Schedule | Removed)?
 
       private

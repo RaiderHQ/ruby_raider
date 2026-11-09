@@ -9,6 +9,7 @@ module RubyRaider
   module Flows
     # .raider/flows/schedules.yml: the project's scheduled flows, sorted by name. The OS entries are made
     # from it; it is written whole through a temp file and a rename, so a reader never sees half a file.
+    # :reek:MissingSafeMethod { exclude: [ writable! ] } -- a check that raises, with no safe twin to offer
     class ScheduleStore
       DIR = '.raider/flows'
       FILE = 'schedules.yml'
@@ -45,6 +46,12 @@ module RubyRaider
       def save(schedule)
         write(writable_entries.reject { |entry| named?(entry, schedule.name) } + [schedule.to_h])
         schedule
+      end
+
+      # Raises the Error save and delete would, before anything else is changed
+      def writable!
+        writable_entries
+        nil
       end
 
       # Removes every entry with the name, readable or not. Returns the removed schedule, a Removed

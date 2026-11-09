@@ -114,6 +114,14 @@ RSpec.describe RubyRaider::Flows::Schedule do # rubocop:disable RSpec/FilePath
       expect(build.argv).not_to include('--notify')
     end
 
+    it 'refuses with a Flows::Error when bundler is not installed for this Ruby' do
+      [Gem::GemNotFoundException.new('no bundler'), Gem::MissingSpecError.new('bundler', '>= 0')].each do |error|
+        allow(Gem).to receive(:bin_path).with('bundler', 'bundle').and_raise(error)
+
+        expect(error_for).to start_with('Bundler not found for this Ruby')
+      end
+    end
+
     it 'runs in the project and logs to the flow folder' do
       expect([build.working_directory, build.log_path]).to eq([dir, File.join(dir, '.raider/flows/report/scheduler.log')])
     end

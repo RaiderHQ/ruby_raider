@@ -195,11 +195,22 @@ RSpec.describe RubyRaider::Flows::Runner do # rubocop:disable RSpec/FilePath
       expect(notes).to eq([['Ruby Raider flow report', "Failed at step 3 (Open\e[2J report)"]])
     end
 
-    it 'points at the scheduler log on a setup error or when no line was recorded' do
+    it 'points a scheduled run at the scheduler log on a setup error or when no line was recorded' do
+      allow(Gem).to receive(:win_platform?).and_return(false)
       outcomes.push({ status: 'setup_error', code: 1 }, :nothing)
-      2.times { notifying.run('report', notify: true) }
+      2.times { notifying.run('report', trigger: 'schedule', notify: true) }
 
       expect(notes.map(&:last)).to eq(['Could not start: see .raider/flows/report/scheduler.log'] * 2)
+    end
+
+    it 'points at the run output when there is no scheduler log: a manual run, or Windows' do
+      outcomes.push({ status: 'setup_error', code: 1 }, { status: 'setup_error', code: 1 })
+      allow(Gem).to receive(:win_platform?).and_return(false)
+      notifying.run('report', notify: true)
+      allow(Gem).to receive(:win_platform?).and_return(true)
+      notifying.run('report', trigger: 'schedule', notify: true)
+
+      expect(notes.map(&:last)).to eq(['Could not start: see the run output'] * 2)
     end
 
     it 'stays quiet when the run was stopped' do
