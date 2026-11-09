@@ -39,6 +39,7 @@ module RubyRaider
       def write_templates: () -> Array[String]
       def add_gitignore_lines: () -> Array[String]
       def pin_gem: () -> bool
+      def warn_unknown_pin: (IO | StringIO err) -> void
       def report: (IO | StringIO out, Array[String] created, Array[String] updated, bool pinned) -> void
     end
   end

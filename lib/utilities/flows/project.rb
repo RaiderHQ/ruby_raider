@@ -87,6 +87,7 @@ module RubyRaider
         pinned = pin_gem
         updated << 'Gemfile' if pinned
         report(out, created, updated, pinned)
+        warn_unknown_pin(err)
         0
       end
 
@@ -143,6 +144,14 @@ module RubyRaider
 
         File.write(path('Gemfile'), gemfile.sub(PIN) { "#{match[1]}~> #{FLOWS_PIN.join('.')}#{match[6]}" })
         true
+      end
+
+      # gem 'ruby_raider', '4.0.1' or path: ... isn't raised here, and an old gem has no `raider flow`
+      def warn_unknown_pin(err)
+        gemfile = read('Gemfile').to_s
+        return if gemfile.match?(PIN) || !gemfile.match?(/^\s*gem\s+["']ruby_raider["']/)
+
+        err.puts("Check that the ruby_raider line in your Gemfile allows #{FLOWS_PIN.join('.')} or later, then run bundle install")
       end
 
       def report(out, created, updated, pinned)

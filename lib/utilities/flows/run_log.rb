@@ -14,7 +14,7 @@ module RubyRaider
       # [{name, file, last: {status, finished_at, failed_step, results_dir} | nil}], the shape `raider flow list --json` prints
       def self.summaries(project)
         project.flow_names.map do |name|
-          last = new(project, name).last
+          last = new(project, name).last_result
           { 'name' => name, 'file' => "flows/#{name}_flow.rb", 'last' => last && SUMMARY.to_h { |key| [key, last[key]] } }
         end
       end
@@ -34,6 +34,9 @@ module RubyRaider
       end
 
       def last = lines.last
+
+      # The last run that ran: a busy line only says another run held the lock
+      def last_result = lines.reverse.find { |line| line['status'] != 'busy' }
 
       def find(run_id) = lines.reverse.find { |line| line['run_id'] == run_id }
 

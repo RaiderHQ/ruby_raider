@@ -17,9 +17,12 @@ module FlowProject
 
     module RaiderReporter
       Config = Struct.new(:output_dir, :clean_output_dir)
-      def self.configuration = (@configuration ||= Config.new)
+      def self.configuration = (@configuration ||= Config.new(output_dir: 'raider-results', clean_output_dir: true))
       def self.configure = yield(configuration)
     end
+
+    # What the real reporter would write to and clean, for the specs to read
+    at_exit { File.write('reporter.json', JSON.generate(RaiderReporter.configuration.to_h)) }
 
     module DriverHelper
       def driver

@@ -201,6 +201,35 @@ RSpec.describe RubyRaider::Flows::Runner do # rubocop:disable RSpec/FilePath
       expect(code).to eq(5)
     end
 
+    it 'turns INT into one TERM for the flow and marks the run stopped' do
+      ready = File.join(dir, 'ready')
+      got = File.join(dir, 'got')
+      child = "trap('TERM') { File.write(#{got.inspect}, 'TERM'); exit 0 }; File.write(#{ready.inspect}, ''); sleep 30"
+      Thread.new do
+        sleep 0.05 until File.exist?(ready)
+        Process.kill('INT', Process.pid)
+      end
+
+      code = described_class.spawn({}, [RbConfig.ruby, '-e', child], dir)
+
+      expect([code, File.read(got), described_class.stopped]).to eq([0, 'TERM', true])
+    end
+
+    it 'does not retry a stopped run' do
+      outcomes.push({ status: 'setup_error', code: 1 }, { status: 'completed' })
+      stopping = lambda do |*args|
+        described_class.stopped = true
+        spawner.call(*args)
+      end
+      stopped_runner = described_class.new(project, out: out, spawner: stopping, sleeper: ->(seconds) { sleeps << seconds })
+
+      expect(stopped_runner.run('report', retries: 2)).to eq(2)
+      expect([calls.size, sleeps]).to eq([1, []])
+      expect(out.string).to include('Flow report was stopped: no retry')
+    ensure
+      described_class.stopped = false
+    end
+
     it 'returns nil with one line on stderr when the command is not found' do
       code = nil
 
