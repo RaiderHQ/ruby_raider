@@ -21,8 +21,8 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
       def call(*argv, stdin_data: nil)
         @calls << argv
         @seen&.call(argv, stdin_data)
-        stderr, status = answers.fetch(argv[1], ['', 0])
-        RubyRaider::Flows::Os::CommandRunner::Result.new(stdout: '', stderr: stderr, exitstatus: status)
+        stderr, status, stdout = answers.fetch(argv[1], ['', 0])
+        RubyRaider::Flows::Os::CommandRunner::Result.new(stdout: stdout.to_s, stderr: stderr, exitstatus: status)
       end
 
       def on_call(&block) = @seen = block
@@ -34,7 +34,8 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
   let(:project_dir) { File.join(tmp, 'plain') }
   let(:runner) { fake_runner_class.new }
   let(:clock) { Struct.new(:now).new(Time.new(2026, 11, 9, 10, 30, 0)) }
-  let(:scheduler) { described_class.new(runner: runner, clock: clock) }
+  let(:schtasks) { 'C:\\Windows\\System32\\schtasks.exe' }
+  let(:scheduler) { described_class.new(runner: runner, clock: clock, schtasks: schtasks) }
   let(:now) { Time.utc(2026, 11, 9, 10, 0, 0) }
 
   def schedule(dir: project_dir, **options)
@@ -44,6 +45,11 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
   end
 
   def task_name(item) = "\\RubyRaider\\#{item.os_id}"
+
+  # schtasks /Query /FO CSV /NH: one row per task, full name first
+  def csv_rows(*names) = names.map { |name| %("#{name}","11/10/2026 8:00:00 AM","Ready"\r\n) }.join
+
+  def list_call = [schtasks, '/Query', '/FO', 'CSV', '/NH']
 
   # CommandLineToArgvW / MSVCRT rules for the arguments after the program name: 2n backslashes and a
   # quote give n backslashes and toggle quoting, 2n+1 give n and a literal quote, other backslashes are
@@ -84,6 +90,47 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
     args
   end
 
+  # ruby.exe's own reading (win32.c cmdvector): " quotes with the MSVCRT backslash rules, ' quotes with
+  # everything literal inside, and an unquoted * ? [ { would be globbed (refused here: never expected)
+  def ruby_split_arguments(line)
+    args = []
+    current = nil
+    quote = nil
+    index = 0
+    while index < line.length
+      char = line[index]
+      if char == '\\' && quote != "'"
+        run = line[index..][/\A\\+/].length
+        index += run
+        if line[index] == '"'
+          current = "#{current}#{'\\' * (run / 2)}"
+          if run.odd?
+            current += '"'
+            index += 1
+          end
+        else
+          current = "#{current}#{'\\' * run}"
+        end
+        next
+      elsif quote.nil? && ['"', "'"].include?(char)
+        quote = char
+        current ||= +''
+      elsif char == quote
+        quote = nil
+      elsif quote.nil? && [' ', "\t"].include?(char)
+        args << current if current
+        current = nil
+      else
+        raise "unquoted glob character #{char.inspect} in #{line.inspect}" if quote.nil? && '*?[{'.include?(char)
+
+        current = "#{current}#{char}"
+      end
+      index += 1
+    end
+    args << current if current
+    args
+  end
+
   def parsed(text) = REXML::Document.new(text)
 
   def field(text, path) = parsed(text).elements[path]&.text.to_s
@@ -101,7 +148,7 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
         </RegistrationInfo>
         <Triggers>
           <CalendarTrigger>
-            <StartBoundary>2026-11-09T08:00:00</StartBoundary>
+            <StartBoundary>2026-11-10T08:00:00</StartBoundary>
             <Enabled>true</Enabled>
             <ScheduleByDay>
               <DaysInterval>1</DaysInterval>
@@ -154,17 +201,24 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
       'a\\"b' => '"a\\\\\\"b"',
       'say "hi"' => '"say \\"hi\\""',
       'a\\\\b c' => '"a\\\\b c"',
-      '%h&$(id)' => '%h&$(id)'
+      '%h&$(id)' => '%h&$(id)',
+      "O'Brien" => %("O'Brien"),
+      'a*b' => '"a*b"',
+      'p[1]' => '"p[1]"',
+      'q?' => '"q?"',
+      '{x}' => '"{x}"'
     }.each do |arg, quoted|
       it "quotes #{arg.inspect} as #{quoted.inspect}" do
         expect(described_class.quote(arg)).to eq(quoted)
       end
     end
 
-    it 'gives back every argument when the joined line is split by CommandLineToArgvW rules' do
-      args = ['', 'C:\\path with space\\', 'a\\"b', '\\\\', '"', 'x\\', "'; rm -rf ~; '", '</string>', '%h', '$(id)', '\\', '&', hostile]
+    it 'gives back every argument when the joined line is split by CommandLineToArgvW rules and by ruby.exe' do
+      args = ['', 'C:\\path with space\\', 'a\\"b', '\\\\', '"', 'x\\', "'; rm -rf ~; '", '</string>', '%h', '$(id)', '\\', '&', hostile,
+              "C:\\Users\\O'Brien\\proj", "a=x'", "b=y'", 'p[1]', 'a*b', 'q?', '{x}', "it's \\\"x\\\" \\"]
+      line = described_class.join(args)
 
-      expect(split_arguments(described_class.join(args))).to eq(args)
+      expect([split_arguments(line), ruby_split_arguments(line)]).to eq([args, args])
     end
   end
 
@@ -189,12 +243,18 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
       expect(field(text, 'Task/Actions/Exec/WorkingDirectory')).to eq(item.working_directory)
     end
 
-    it 'runs every hour from today 00:MM, repeating hourly for a day' do
+    it 'starts at the next run, never in the past (a 08:00 rule at 10:30 starts tomorrow)' do
+      trigger = parsed(scheduler.task_xml(schedule(every: 'day', at: '11:00'))).elements['Task/Triggers/CalendarTrigger']
+
+      expect(trigger.elements['StartBoundary'].text).to eq('2026-11-09T11:00:00')
+    end
+
+    it 'runs every hour from its next run, repeating hourly for a day' do
       trigger = parsed(scheduler.task_xml(schedule(every: 'hour', at: ':15'))).elements['Task/Triggers/CalendarTrigger']
 
       expect(trigger.elements.map(&:name)).to eq(%w[Repetition StartBoundary Enabled ScheduleByDay])
       expect(%w[Repetition/Interval Repetition/Duration StartBoundary ScheduleByDay/DaysInterval].map { |path| trigger.elements[path].text })
-        .to eq(%w[PT1H P1D 2026-11-09T00:15:00 1])
+        .to eq(%w[PT1H P1D 2026-11-09T11:15:00 1])
     end
 
     it 'runs every weekday Monday to Friday, weekly' do
@@ -209,20 +269,22 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
     it 'runs every week on its one day' do
       days = %w[mon sat sun].map do |on|
         trigger = parsed(scheduler.task_xml(schedule(every: 'week', on: on))).elements['Task/Triggers/CalendarTrigger']
-        trigger.elements['ScheduleByWeek/DaysOfWeek'].elements.map(&:name)
+        [trigger.elements['ScheduleByWeek/DaysOfWeek'].elements.map(&:name), trigger.elements['StartBoundary'].text]
       end
 
-      expect(days).to eq([%w[Monday], %w[Saturday], %w[Sunday]])
+      expect(days).to eq([[%w[Monday], '2026-11-16T08:00:00'], [%w[Saturday], '2026-11-14T08:00:00'], [%w[Sunday], '2026-11-15T08:00:00']])
     end
 
     describe 'with hostile values in an input and in the project path' do
-      let(:item) { schedule(dir: File.join(tmp, "p#{hostile}<", "string> #{hostile}"), inputs: ["note=#{hostile}"]) }
+      # hostile once in the path: two lone % around other text would read as %NAME% and be refused
+      let(:item) { schedule(dir: File.join(tmp, 'p<', "string> #{hostile}"), inputs: ["note=#{hostile}"]) }
       let(:text) { scheduler.task_xml(item) }
 
       it 'round-trips them through CRT quoting and XML escaping' do
-        args = split_arguments(field(text, 'Task/Actions/Exec/Arguments'))
+        line = field(text, 'Task/Actions/Exec/Arguments')
+        args = split_arguments(line)
 
-        expect(args).to eq(item.argv.drop(1))
+        expect([args, ruby_split_arguments(line)]).to eq([item.argv.drop(1), item.argv.drop(1)])
         expect(args.last).to eq("note=#{hostile}")
         expect(field(text, 'Task/Actions/Exec/WorkingDirectory')).to eq(item.working_directory)
         expect(item.working_directory).to include('</string>', "'; rm -rf ~; '", '$(id)', '%h', '"', '\\', '&')
@@ -236,6 +298,40 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
     end
   end
 
+  describe 'with quotes and glob characters but no spaces' do
+    let(:item) { schedule(dir: File.join(tmp, 'Users', "O'Brien", 'proj'), inputs: ["a=x'", "b=y'", 'c=p[1]', 'd=a*b']) }
+
+    it 'double-quotes them so CommandLineToArgvW and ruby.exe both read the exact argv back' do
+      line = field(scheduler.task_xml(item), 'Task/Actions/Exec/Arguments')
+
+      expect([split_arguments(line), ruby_split_arguments(line)]).to eq([item.argv.drop(1), item.argv.drop(1)])
+      expect(line).to include(%("#{item.project_root}"), %("a=x'"), %("b=y'"), '"c=p[1]"', '"d=a*b"')
+    end
+  end
+
+  describe 'with %NAME% that Task Scheduler would expand' do
+    it 'refuses it in an input value before any schtasks call' do
+      item = schedule(inputs: ['note=%PATH%'])
+
+      expect { scheduler.install(item) }.to raise_error(RubyRaider::Flows::Error, /Task Scheduler would expand %PATH% as an environment variable/)
+      expect(runner.calls).to be_empty
+    end
+
+    it 'refuses it in the project path before any schtasks call' do
+      item = schedule(dir: File.join(tmp, '%PATH%', 'proj'))
+
+      expect { scheduler.install(item) }.to raise_error(RubyRaider::Flows::Error, /would expand %PATH%/)
+      expect { scheduler.task_xml(item) }.to raise_error(RubyRaider::Flows::Error, /would expand %PATH%/)
+      expect(runner.calls).to be_empty
+    end
+
+    it 'keeps a lone %' do
+      item = schedule(inputs: ['note=100% sure', 'other=%h'])
+
+      expect(split_arguments(field(scheduler.task_xml(item), 'Task/Actions/Exec/Arguments')).last(2)).to eq(['note=100% sure', 'other=%h'])
+    end
+  end
+
   describe '#install' do
     it 'writes the task as UTF-16LE with a BOM, creates it with schtasks and deletes the file' do
       item = schedule
@@ -244,7 +340,7 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
       runner.on_call { |argv, _| written = File.binread(path = argv[5]) if argv[1] == '/Create' }
 
       expect(scheduler.install(item)).to be(true)
-      expect(runner.calls).to eq([['schtasks', '/Create', '/TN', task_name(item), '/XML', path, '/F']])
+      expect(runner.calls).to eq([[schtasks, '/Create', '/TN', task_name(item), '/XML', path, '/F']])
       expect(written.byteslice(0, 2).bytes).to eq([0xFF, 0xFE])
       expect(written.byteslice(2..).force_encoding(Encoding::UTF_16LE).encode(Encoding::UTF_8)).to eq(scheduler.task_xml(item))
       expect(File.exist?(path)).to be(false)
@@ -262,25 +358,35 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
   end
 
   describe '#remove' do
-    it 'queries, then deletes the task' do
+    it 'deletes the task' do
       item = schedule
 
       expect(scheduler.remove(item.os_id)).to be(true)
-      expect(runner.calls).to eq([['schtasks', '/Query', '/TN', task_name(item)], ['schtasks', '/Delete', '/TN', task_name(item), '/F']])
+      expect(runner.calls).to eq([[schtasks, '/Delete', '/TN', task_name(item), '/F']])
     end
 
-    it 'is false when it was already gone' do
+    it 'is false when the delete fails and the task list does not show it' do
       item = schedule
-      runner.answers['/Query'] = ['ERROR: The system cannot find the file specified.', 1]
+      runner.answers['/Delete'] = ['ERROR: The system cannot find the file specified.', 1]
+      runner.answers['/Query'] = ['', 0, csv_rows('\\Other', "#{task_name(item)}_old")]
 
       expect(scheduler.remove(item.os_id)).to be(false)
-      expect(runner.calls).to eq([['schtasks', '/Query', '/TN', task_name(item)]])
+      expect(runner.calls).to eq([[schtasks, '/Delete', '/TN', task_name(item), '/F'], list_call])
     end
 
-    it 'raises with the scheduler error when the delete fails' do
+    it 'raises with the delete error when the task list still shows it' do
+      item = schedule
       runner.answers['/Delete'] = ["ERROR: Access\e is denied.\n", 1]
+      runner.answers['/Query'] = ['', 0, csv_rows('\\Other', task_name(item))]
 
-      expect { scheduler.remove(schedule.os_id) }.to raise_error(RubyRaider::Flows::Error, /Task Scheduler could not delete .*Access\? is denied\.\z/)
+      expect { scheduler.remove(item.os_id) }.to raise_error(RubyRaider::Flows::Error, /Task Scheduler could not delete .*Access\? is denied\.\z/)
+    end
+
+    it 'raises with the delete error when the task list can not be read' do
+      runner.answers['/Delete'] = ['ERROR: Access is denied.', 1]
+      runner.answers['/Query'] = ['ERROR: list failed', 1]
+
+      expect { scheduler.remove(schedule.os_id) }.to raise_error(RubyRaider::Flows::Error, /could not delete .*Access is denied/)
     end
 
     it 'refuses an os_id that is not a flow schedule id' do
@@ -290,18 +396,36 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
   end
 
   describe '#present?' do
-    it 'asks schtasks /Query' do
+    it 'is true when the task list shows the exact task name' do
       item = schedule
+      runner.answers['/Query'] = ['', 0, csv_rows('\\Other', task_name(item))]
 
       expect(scheduler.present?(item.os_id)).to be(true)
-      expect(runner.calls).to eq([['schtasks', '/Query', '/TN', task_name(item)]])
+      expect(runner.calls).to eq([list_call])
     end
 
-    it 'is false when the query fails' do
-      runner.answers['/Query'] = ['ERROR: The system cannot find the file specified.', 1]
+    it 'is false when it shows only other tasks' do
+      item = schedule
+      runner.answers['/Query'] = ['', 0, csv_rows("#{task_name(item)}_old", '\\Other')]
 
-      expect(scheduler.present?(schedule.os_id)).to be(false)
+      expect(scheduler.present?(item.os_id)).to be(false)
     end
+
+    it 'raises when the task list can not be read' do
+      runner.answers['/Query'] = ["ERROR: no\e list", 1]
+
+      expect { scheduler.present?(schedule.os_id) }.to raise_error(RubyRaider::Flows::Error, /could not list tasks: ERROR: no\? list/)
+    end
+  end
+
+  it 'runs schtasks.exe from SystemRoot by default' do
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with('SystemRoot', anything).and_return('D:\\Win')
+    item = schedule
+
+    described_class.new(runner: runner, clock: clock).remove(item.os_id)
+
+    expect(runner.calls.first.first).to eq(File.join('D:\\Win', 'System32', 'schtasks.exe'))
   end
 end
 # rubocop:enable RSpec/MultipleMemoizedHelpers

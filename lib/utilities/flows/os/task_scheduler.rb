@@ -3,6 +3,7 @@
 require 'tempfile'
 require_relative 'command_runner'
 require_relative '../schedule'
+require_relative '../next_run'
 
 module RubyRaider
   module Flows
@@ -11,18 +12,21 @@ module RubyRaider
       # The task runs ruby.exe directly (never cmd.exe or powershell), with the user's own environment and
       # no log file: the outcome lives in runs.jsonl like any flow run. Argument values get Windows CRT
       # quoting, then every value in the XML goes through one XML escaper.
-      # :reek:TooManyConstants { max_constants: 7 } -- the tool, the folder, the XML escapes and namespace, the os_id rule, quoting, day names
+      # Task Scheduler expands %NAME% in Command, Arguments and WorkingDirectory with no escape, so a value
+      # holding one is refused before schtasks runs.
+      # :reek:TooManyConstants { max_constants: 7 } -- the folder, the XML escapes and namespace, the os_id rule, quoting, %NAME%, day names
       class TaskScheduler
-        SCHTASKS = 'schtasks'
         FOLDER = '\\RubyRaider\\'
         ESCAPES = { '&' => '&amp;', '<' => '&lt;', '>' => '&gt;', '"' => '&quot;', "'" => '&apos;' }.freeze
         NAMESPACE = 'http://schemas.microsoft.com/windows/2004/02/mit/task'
         OS_ID = /\A#{Regexp.escape(Schedule::OS_ID_PREFIX)}\.[0-9a-f]{10}\.([a-z0-9_]{1,60})\z/
-        NEEDS_QUOTES = /[ \t\n\v"]/
+        # ruby.exe reads its own command line (win32.c): ' quotes too, and an unquoted * ? [ { is a glob
+        NEEDS_QUOTES = /[ \t\n\v"'*?\[{]/
+        EXPANDS = /%[^%]+%/
         DAY_NAMES = %w[Monday Tuesday Wednesday Thursday Friday Saturday Sunday].freeze
 
-        # One argument as CommandLineToArgvW / the MSVCRT read it back: quoted when empty or holding
-        # whitespace or a quote; backslashes are doubled only before a quote (or the closing quote)
+        # One argument as CommandLineToArgvW, the MSVCRT and ruby.exe read it back: quoted when empty or
+        # holding whitespace, a quote or a glob character; backslashes are doubled only before a quote (or the closing quote)
         def self.quote(arg)
           return arg if !arg.empty? && !arg.match?(NEEDS_QUOTES)
 
@@ -32,9 +36,10 @@ module RubyRaider
 
         def self.join(args) = args.map { |arg| quote(arg) }.join(' ')
 
-        def initialize(runner: CommandRunner.new, clock: Time)
+        def initialize(runner: CommandRunner.new, clock: Time, schtasks: File.join(ENV.fetch('SystemRoot', 'C:\\Windows'), 'System32', 'schtasks.exe'))
           @runner = runner
           @clock = clock
+          @schtasks = schtasks
         end
 
         def label = 'Task Scheduler'
@@ -43,6 +48,7 @@ module RubyRaider
 
         # The task XML (a UTF-8 String; install writes it as UTF-16LE with a BOM)
         def task_xml(schedule)
+          refuse_expansion(schedule)
           body = [
             element('RegistrationInfo', [text('Description', "Ruby Raider flow #{schedule.name} (#{schedule.rule_text})"),
                                          text('URI', task_name(schedule.os_id))]),
@@ -59,7 +65,7 @@ module RubyRaider
         def install(schedule)
           os_id = schedule.os_id
           file = Tempfile.new(['raider-flow-task', '.xml'], binmode: true)
-          file.write("﻿#{task_xml(schedule)}".encode(Encoding::UTF_16LE))
+          file.write("\uFEFF#{task_xml(schedule)}".encode(Encoding::UTF_16LE))
           file.close
           result = schtasks('/Create', '/TN', task_name(os_id), '/XML', file.path.to_s, '/F')
           return true if result.success?
@@ -69,22 +75,44 @@ module RubyRaider
           file&.close!
         end
 
-        # True when the task was deleted, false when it was already gone; asks first because
-        # schtasks words "not found" in the system language
+        # True when the task was deleted, false when it was already gone. schtasks words "not found" in
+        # the system language, so a failed delete is checked against the task list; a list that can not
+        # be read, or still shows the task, is an error.
         def remove(os_id)
-          return false unless present?(os_id)
-
-          result = schtasks('/Delete', '/TN', task_name(os_id), '/F')
+          name = task_name(os_id)
+          result = schtasks('/Delete', '/TN', name, '/F')
           return true if result.success?
+
+          listing = list
+          return false if listing.success? && !listed?(listing, name)
 
           raise Error, "Task Scheduler could not delete #{os_id}: #{Flows.printable(result.stderr.strip)}"
         end
 
-        def present?(os_id) = schtasks('/Query', '/TN', task_name(os_id)).success?
+        def present?(os_id)
+          name = task_name(os_id)
+          listing = list
+          return listed?(listing, name) if listing.success?
+
+          raise Error, "Task Scheduler could not list tasks: #{Flows.printable(listing.stderr.strip)}"
+        end
 
         private
 
-        def schtasks(*args) = @runner.call(SCHTASKS, *args)
+        def schtasks(*args) = @runner.call(@schtasks, *args)
+
+        # Every task, one CSV row each, the full task name in the first field
+        def list = schtasks('/Query', '/FO', 'CSV', '/NH')
+
+        def listed?(listing, name) = listing.stdout.each_line.any? { |line| line.start_with?(%("#{name}",)) }
+
+        def refuse_expansion(schedule)
+          value = [schedule.ruby, *schedule.argv.drop(1), schedule.working_directory].find { |item| item.match?(EXPANDS) }
+          return unless value
+
+          raise Error, "Task Scheduler would expand #{Flows.printable(value[EXPANDS])} as an environment variable in #{Flows.printable(value.inspect)}: " \
+                       'remove the %...% from it'
+        end
 
         def checked_os_id(os_id)
           return os_id if os_id.is_a?(String) && (match = OS_ID.match(os_id)) && Flows.valid_name?(match[1])
@@ -101,10 +129,14 @@ module RubyRaider
 
         def indent(lines) = lines.map { |line| "  #{line}" }
 
-        # Local time without an offset, from today: Task Scheduler then follows the PC's clock and DST
+        # Local time without an offset, never in the past (StartWhenAvailable would run a missed start at
+        # once): the next run's date, at the rule's own HH:MM so a DST-shifted next run does not move the
+        # daily time; an hour rule starts at its next run.
         def trigger(schedule)
-          start = format('%<date>sT%<hour>02d:%<minute>02d:00', date: @clock.now.strftime('%Y-%m-%d'), hour: schedule.hour, minute: schedule.minute)
           every = schedule.every
+          next_run = NextRun.after(schedule, @clock.now)
+          hour = every == 'hour' ? next_run.hour : schedule.hour
+          start = format('%<date>sT%<hour>02d:%<minute>02d:00', date: next_run.strftime('%Y-%m-%d'), hour: hour, minute: schedule.minute)
           repeat = every == 'hour' ? [element('Repetition', [text('Interval', 'PT1H'), text('Duration', 'P1D')])] : []
           [*repeat, text('StartBoundary', start), text('Enabled', 'true'), *calendar(schedule, every)]
         end
