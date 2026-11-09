@@ -18,7 +18,7 @@ module RubyRaider
       def self.adapter: (?runner: Os::CommandRunner, ?host_os: String) -> (Os::Launchd | Os::TaskScheduler | Os::Linux)
 
       def initialize: (Project project, ?adapter: untyped, ?store: ScheduleStore, ?out: IO | StringIO, ?err: IO | StringIO, ?now: ^() -> Time) -> void
-      def schedule: (String name, every: String?, ?at: String?, ?on: String?, ?retries: untyped, ?inputs: Array[String]) -> void
+      def schedule: (String name, every: String?, ?at: String?, ?on: String?, ?retries: untyped, ?inputs: Array[String], ?notify: bool) -> void
       def unschedule: (String name) -> void
       def schedules: (?json: bool) -> void
 
@@ -31,6 +31,7 @@ module RubyRaider
       def unlisted_rows: (Array[String] listed) -> Array[row]
       def present?: (String os_id) -> bool
       def os_state: (Schedule schedule) -> String
+      def rule: (Schedule schedule) -> String
       def last_run: (String name) -> Hash[String, untyped]?
       def line: (String name, String rule, String next_run, Hash[String, untyped]? last, String state) -> String
     end

@@ -108,6 +108,16 @@ RSpec.describe RubyRaider::Flows::Scheduler do # rubocop:disable RSpec/FilePath
       expect([adapter.calls, store.find('report').rule_text]).to eq([[[:install, os_id]], 'every weekday at 08:00'])
     end
 
+    it 'stores notify and adds --notify to the OS entry' do
+      allow(adapter).to receive(:install).and_wrap_original do |original, schedule|
+        expect(schedule.argv).to include('--notify')
+        original.call(schedule)
+      end
+      scheduler.schedule('report', every: 'day', at: '08:00', notify: true)
+
+      expect([store.find('report').notify, out.string]).to eq([true, "Scheduled report: every day at 08:00 (notify). Next run Mon 9 Nov 08:00.\n"])
+    end
+
     it 'says Replaced when the flow already had a schedule' do
       scheduler.schedule('report', every: 'day', at: '08:00')
       scheduler.schedule('report', every: 'week', at: '09:30', on: 'wed')
@@ -193,25 +203,25 @@ RSpec.describe RubyRaider::Flows::Scheduler do # rubocop:disable RSpec/FilePath
 
   describe '#schedules' do
     it 'lists each schedule with its rule, next run, last result and OS state' do
-      scheduler.schedule('report', every: 'hour', at: ':15', retries: 2, inputs: ['who=me'])
+      scheduler.schedule('report', every: 'hour', at: ':15', retries: 2, inputs: ['who=me'], notify: true)
       log_run('report', 'status' => 'failed', 'finished_at' => "2026-11-09T08:00:12Z\e[2J", 'trigger' => 'schedule',
                         'failed_step' => 'Open', 'results_dir' => 'flow-results/report/x', 'run_id' => 'abc')
       out.truncate(0)
       out.rewind
       scheduler.schedules
 
-      expect(out.string).to eq("#{'report'.ljust(30)}  every hour at :15  next Sun 8 Nov 12:15  failed  2026-11-09T08:00:12Z?[2J  ok\n")
+      expect(out.string).to eq("#{'report'.ljust(30)}  every hour at :15 (notify)  next Sun 8 Nov 12:15  failed  2026-11-09T08:00:12Z?[2J  ok\n")
     end
 
     it 'prints the JSON the desktop app reads' do
-      scheduler.schedule('report', every: 'week', at: '08:00', on: 'mon', inputs: ['who=me'])
+      scheduler.schedule('report', every: 'week', at: '08:00', on: 'mon', inputs: ['who=me'], notify: true)
       log_run('report', 'status' => 'completed', 'finished_at' => 'f', 'trigger' => 't', 'failed_step' => nil, 'results_dir' => 'r', 'run_id' => 'x')
       out.truncate(0)
       out.rewind
       scheduler.schedules(json: true)
 
       expect(JSON.parse(out.string)).to eq(
-        [{ 'name' => 'report', 'every' => 'week', 'at' => '08:00', 'on' => 'mon', 'retries' => 0, 'inputs' => ['who=me'],
+        [{ 'name' => 'report', 'every' => 'week', 'at' => '08:00', 'on' => 'mon', 'retries' => 0, 'inputs' => ['who=me'], 'notify' => true,
            'next_run_at' => Time.local(2026, 11, 9, 8, 0).iso8601, 'os_state' => 'ok',
            'last' => { 'status' => 'completed', 'finished_at' => 'f', 'trigger' => 't', 'failed_step' => nil, 'results_dir' => 'r' } }]
       )
@@ -237,7 +247,7 @@ RSpec.describe RubyRaider::Flows::Scheduler do # rubocop:disable RSpec/FilePath
       scheduler.schedules(json: true)
 
       expect(JSON.parse(out.string)).to eq(
-        [{ 'name' => 'report', 'every' => nil, 'at' => nil, 'on' => nil, 'retries' => nil, 'inputs' => nil,
+        [{ 'name' => 'report', 'every' => nil, 'at' => nil, 'on' => nil, 'retries' => nil, 'inputs' => nil, 'notify' => nil,
            'next_run_at' => nil, 'os_state' => 'missing from schedules.yml', 'last' => nil }]
       )
     end

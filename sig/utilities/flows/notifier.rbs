@@ -1,0 +1,25 @@
+module RubyRaider
+  module Flows
+    class Notifier
+      MAX: Integer
+      OSASCRIPT: Array[String]
+      NOTIFY_SEND: Array[String]
+      MARKUP: Hash[String, String]
+      TOAST_SCRIPT: String
+      POWERSHELL: Array[String]
+
+      @runner: Os::CommandRunner
+      @host_os: String
+      @err: IO | StringIO
+      @warned: bool
+
+      def initialize: (?runner: Os::CommandRunner, ?host_os: String, ?err: IO | StringIO) -> void
+      def notify: (String title, String message) -> bool
+
+      private
+
+      def clean: (untyped text) -> String
+      def failed: (String reason) -> false
+    end
+  end
+end

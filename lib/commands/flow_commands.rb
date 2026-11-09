@@ -26,11 +26,12 @@ class FlowCommands < Thor
   option :retries, type: :numeric, default: 0, desc: 'Re-run the whole flow up to N times (0-3), 30 s apart'
   option :input, type: :array, desc: 'Flow inputs as name=value (read with flow_input)'
   option :trigger, type: :string, default: 'manual', desc: 'manual, schedule or desktop'
+  option :notify, type: :boolean, desc: 'Show a desktop notification when the flow fails'
 
   def run_flow(name)
     runner = RubyRaider::Flows::Runner.new(project)
     exit(runner.run(name, headed: options[:headed], retries: options[:retries], inputs: options[:input],
-                          trigger: options[:trigger]))
+                          trigger: options[:trigger], notify: options[:notify] || false))
   rescue RubyRaider::Flows::Error => e
     stop(e)
   end
@@ -56,10 +57,11 @@ class FlowCommands < Thor
   option :on, type: :string, desc: 'mon to sun, for every week'
   option :retries, type: :numeric, default: 0, desc: 'Re-run the whole flow up to N times (0-3)'
   option :input, type: :array, desc: 'Flow inputs as name=value'
+  option :notify, type: :boolean, desc: 'Show a desktop notification when a scheduled run fails'
 
   def schedule(name)
     scheduler.schedule(name, every: options[:every], at: options[:at], on: options[:on], retries: options[:retries],
-                             inputs: options[:input] || [])
+                             inputs: options[:input] || [], notify: options[:notify] || false)
   rescue RubyRaider::Flows::Error => e
     stop(e)
   end

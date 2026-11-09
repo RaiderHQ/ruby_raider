@@ -10,7 +10,7 @@ module RubyRaider
   module Flows
     # One scheduled flow: the rule (every/at/on), how it runs (retries, inputs) and what the OS entry
     # runs (absolute ruby and bundle, GEM_HOME/GEM_PATH captured when it was scheduled). Immutable.
-    # :reek:TooManyInstanceVariables { max_instance_variables: 12 } -- the fields of a schedules.yml entry
+    # :reek:TooManyInstanceVariables { max_instance_variables: 13 } -- the fields of a schedules.yml entry
     # :reek:TooManyConstants { max_constants: 9 } -- the rule vocabulary, the OS entry parts and the yml keys
     class Schedule
       EVERY = %w[hour day weekday week].freeze
@@ -21,13 +21,13 @@ module RubyRaider
       GEM_ENV = %w[GEM_HOME GEM_PATH].freeze
       SYSTEM_PATH = %w[/usr/bin /bin].freeze
       OS_ID_PREFIX = 'dev.rubyraider.flow'
-      KEYS = %w[name every at on retries inputs os_id ruby bundle gem_env created_at].freeze
+      KEYS = %w[name every at on retries inputs notify os_id ruby bundle gem_env created_at].freeze
 
-      attr_reader :name, :every, :at, :on, :retries, :inputs, :os_id, :ruby, :bundle, :gem_env, :project_root, :created_at
+      attr_reader :name, :every, :at, :on, :retries, :inputs, :notify, :os_id, :ruby, :bundle, :gem_env, :project_root, :created_at
 
-      def self.build(project:, name:, every:, at: nil, on: nil, retries: 0, inputs: [], now: Time.now)
+      def self.build(project:, name:, every:, at: nil, on: nil, retries: 0, inputs: [], notify: false, now: Time.now)
         root = project.root
-        new(name: name, every: every, at: at, on: on, retries: retries, inputs: inputs, os_id: os_id_for(root, name),
+        new(name: name, every: every, at: at, on: on, retries: retries, inputs: inputs, notify: notify, os_id: os_id_for(root, name),
             ruby: RbConfig.ruby, bundle: Gem.bin_path('bundler', 'bundle'), gem_env: captured_gem_env,
             project_root: root, created_at: now.getutc.iso8601)
       end
@@ -55,13 +55,14 @@ module RubyRaider
         end
       end
 
-      def initialize(name:, every:, at:, on:, retries:, inputs:, os_id:, ruby:, bundle:, gem_env:, project_root:, created_at:)
+      def initialize(name:, every:, at:, on:, retries:, inputs:, os_id:, ruby:, bundle:, gem_env:, project_root:, created_at:, notify: false)
         @name = checked_name(name)
         @every = checked_every(every)
         @at = checked_at(at)
         @on = checked_on(on)
         @retries = checked_retries(retries)
         @inputs = checked_inputs(inputs)
+        @notify = checked_notify(notify)
         @os_id = checked_os_id(os_id)
         @ruby = checked_path('ruby', ruby)
         @bundle = checked_path('bundle', bundle)
@@ -86,6 +87,7 @@ module RubyRaider
       def argv
         command = [ruby, bundle, 'exec', 'raider', 'flow', 'run', name, '--project', project_root, '--trigger', 'schedule']
         command += ['--retries', retries.to_s] if retries.positive?
+        command << '--notify' if notify
         command += ['--input', *inputs] unless inputs.empty?
         command
       end
@@ -108,7 +110,7 @@ module RubyRaider
       end
 
       def to_h
-        { 'name' => name, 'every' => every, 'at' => at, 'on' => on, 'retries' => retries, 'inputs' => inputs.dup,
+        { 'name' => name, 'every' => every, 'at' => at, 'on' => on, 'retries' => retries, 'inputs' => inputs.dup, 'notify' => notify,
           'os_id' => os_id, 'ruby' => ruby, 'bundle' => bundle, 'gem_env' => gem_env.dup, 'created_at' => created_at }
       end
 
@@ -175,6 +177,13 @@ module RubyRaider
 
           pair.dup.freeze
         end.freeze
+      end
+
+      # An entry written before notify existed has no key: off
+      def checked_notify(notify)
+        return notify == true if [true, false, nil].include?(notify)
+
+        raise Error, "Invalid notify #{notify.inspect}: use true or false"
       end
 
       def checked_os_id(os_id)

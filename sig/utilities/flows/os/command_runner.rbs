@@ -13,7 +13,7 @@ module RubyRaider
           def success?: () -> bool
         end
 
-        def call: (*String argv, ?stdin_data: String?) -> Result
+        def call: (*String argv, ?stdin_data: String?, ?env: Hash[String, String]) -> Result
       end
     end
   end

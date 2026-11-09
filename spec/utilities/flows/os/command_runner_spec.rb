@@ -22,6 +22,12 @@ RSpec.describe RubyRaider::Flows::Os::CommandRunner do # rubocop:disable RSpec/F
     expect(runner.call(ruby, '-e', 'print $stdin.read.upcase', stdin_data: "a b\n").stdout).to eq("A B\n")
   end
 
+  it 'adds env values to the command environment' do
+    result = runner.call(ruby, '-e', 'print ENV["RAIDER_NOTIFY_TITLE"]', env: { 'RAIDER_NOTIFY_TITLE' => '$(id)' })
+
+    expect(result.stdout).to eq('$(id)')
+  end
+
   it 'passes arguments without a shell' do
     hostile = ["'; rm -rf ~; '", '$(id)', '%h', '</string>']
 
