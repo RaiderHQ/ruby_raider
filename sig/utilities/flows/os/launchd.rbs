@@ -36,6 +36,8 @@ module RubyRaider
         def dict: (Array[[String, Array[String]]] pairs) -> Array[String]
         def indent: (Array[String] lines) -> Array[String]
         def calendar: (Schedule schedule) -> Array[String]
+        def weekday: (String day) -> Integer
+        def discard: (String path) -> String
         def write: (String path, String text) -> void
       end
     end

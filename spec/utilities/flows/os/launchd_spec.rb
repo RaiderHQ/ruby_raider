@@ -195,6 +195,7 @@ RSpec.describe RubyRaider::Flows::Os::Launchd do # rubocop:disable RSpec/FilePat
 
       launchd.install(item)
 
+      expect(runner.calls.map { |argv| argv[1] }).to eq(%w[-lint bootout bootstrap])
       expect(File.read(plist_path(item))).to eq(launchd.plist(item))
     end
 
@@ -204,6 +205,23 @@ RSpec.describe RubyRaider::Flows::Os::Launchd do # rubocop:disable RSpec/FilePat
 
       expect { launchd.install(item) }.to raise_error(RubyRaider::Flows::Error, %r{launchd.*Bootstrap failed: 5: Input/output error\?\[2J})
       expect(Dir.children(agents)).to be_empty
+    end
+
+    it 'says so when the plist a failed bootstrap left can not be deleted' do
+      item = schedule
+      runner.answers['bootstrap'] = ['Bootstrap failed: 5', 5]
+      allow(File).to receive(:unlink).and_call_original
+      allow(File).to receive(:unlink).with(plist_path(item)).and_raise(Errno::EACCES)
+
+      expect { launchd.install(item) }.to raise_error(RubyRaider::Flows::Error, /Bootstrap failed: 5; also: Could not remove .*Permission denied/)
+    end
+
+    it 'raises a flow error and runs nothing when it can not write the plist' do
+      FileUtils.mkdir_p(File.dirname(agents))
+      File.write(agents, 'not a folder')
+
+      expect { launchd.install(schedule) }.to raise_error(RubyRaider::Flows::Error, /Could not write .*LaunchAgents/)
+      expect([runner.calls, File.read(agents)]).to eq([[], 'not a folder'])
     end
 
     it 'leaves the entry alone and raises when the plist does not lint' do
@@ -258,6 +276,11 @@ RSpec.describe RubyRaider::Flows::Os::Launchd do # rubocop:disable RSpec/FilePat
 
       expect(launchd.present?(item.os_id)).to be(true)
       expect(runner.calls).to eq([['/bin/launchctl', 'print', "gui/501/#{item.os_id}"]])
+    end
+
+    it 'refuses an os_id that is not a flow schedule id and runs nothing' do
+      expect { launchd.present?('../../evil') }.to raise_error(RubyRaider::Flows::Error, /Invalid os_id/)
+      expect(runner.calls).to be_empty
     end
 
     it 'is false when launchctl print fails' do

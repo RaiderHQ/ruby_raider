@@ -57,8 +57,7 @@ module RubyRaider
           result = launchctl('bootstrap', domain, path)
           return true if result.success?
 
-          FileUtils.rm_f(path)
-          raise Error, "launchd could not load #{os_id}: #{Flows.printable(result.stderr.strip)}"
+          raise Error, "launchd could not load #{os_id}: #{Flows.printable(result.stderr.strip)}#{discard(path)}"
         end
 
         # True when a plist or a loaded service was removed, false when it was already gone
@@ -111,16 +110,32 @@ module RubyRaider
 
         def indent(lines) = lines.map { |line| "\t#{line}" }
 
-        # launchd counts Sunday as 0; Schedule::DAYS runs mon..sun
+        # Schedule::DAYS runs mon..sun
         def calendar(schedule)
           time = [['Hour', integer(schedule.hour)], ['Minute', integer(schedule.minute)]]
           case schedule.every
           when 'hour' then dict([['Minute', integer(schedule.minute)]])
           when 'day' then dict(time)
           else
-            days = schedule.days.map { |day| dict([['Weekday', integer((Schedule::DAYS.index(day).to_i + 1) % 7)], *time]) }
+            days = schedule.days.map { |day| dict([['Weekday', integer(weekday(day))], *time]) }
             schedule.every == 'week' ? days.first : array(days)
           end
+        end
+
+        # launchd counts Sunday as 0
+        def weekday(day)
+          index = Schedule::DAYS.index(day)
+          raise Error, "Invalid day #{day.inspect}" unless index
+
+          (index + 1) % 7
+        end
+
+        # Removes the plist a failed bootstrap left; returns what to add to the error when it stays behind
+        def discard(path)
+          unlink(path)
+          ''
+        rescue Error => e
+          "; also: #{e.message}"
         end
 
         # Temp file in the same folder, checked with plutil, then renamed over the old plist
@@ -132,12 +147,14 @@ module RubyRaider
             file.write(text)
             file.flush
             file.fsync
+            file.chmod(0o644)
           end
-          File.chmod(0o644, temp)
           lint = @runner.call(PLUTIL, '-lint', temp)
           raise Error, "launchd plist for #{File.basename(path)} is invalid: #{Flows.printable("#{lint.stdout} #{lint.stderr}".strip)}" unless lint.success?
 
           File.rename(temp, path)
+        rescue SystemCallError => e
+          raise Error, "Could not write #{path}: #{e.message}"
         ensure
           FileUtils.rm_f(temp) if temp && File.exist?(temp)
         end

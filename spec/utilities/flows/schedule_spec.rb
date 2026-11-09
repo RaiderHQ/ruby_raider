@@ -161,6 +161,15 @@ RSpec.describe RubyRaider::Flows::Schedule do # rubocop:disable RSpec/FilePath
     end
   end
 
+  it 'refuses to build for a project folder with a control character in its path' do
+    odd = File.join(dir, "line\nbreak")
+    FileUtils.mkdir_p(odd)
+    project = RubyRaider::Flows::Project.new(odd)
+
+    expect { described_class.build(project: project, name: 'report', every: 'day', at: '08:00', now: now) }
+      .to raise_error(RubyRaider::Flows::Error, /Invalid project_root/)
+  end
+
   describe 'the yml shape' do
     let(:schedule) { build(every: 'week', on: 'fri', retries: 1, inputs: %w[a=1]) }
 
@@ -185,6 +194,14 @@ RSpec.describe RubyRaider::Flows::Schedule do # rubocop:disable RSpec/FilePath
 
       bad.each do |change|
         expect { described_class.from_h(schedule.to_h.merge(change), dir) }.to raise_error(RubyRaider::Flows::Error)
+      end
+    end
+
+    it 'refuses a project root with a control character or invalid UTF-8' do
+      roots = ["/p/a\nb", "/p/a\tb", "/p/\e[2J", "/p/\xFF".dup.force_encoding(Encoding::UTF_8), 'relative']
+
+      roots.each do |root|
+        expect { described_class.from_h(schedule.to_h, root) }.to raise_error(RubyRaider::Flows::Error, /project_root/)
       end
     end
 
