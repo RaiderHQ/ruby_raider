@@ -1,0 +1,9 @@
+module RubyRaider
+  module Flows
+    module Os
+      module Linux
+        def self.pick: (?CommandRunner runner) -> (Systemd | Cron)
+      end
+    end
+  end
+end
