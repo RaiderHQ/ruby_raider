@@ -173,6 +173,13 @@ RSpec.describe RubyRaider::Flows::Os::Cron do # rubocop:disable RSpec/FilePath
       expect(runner.table).to eq(block(schedule) + block(other))
     end
 
+    it 'refuses a line vixie cron would cut short and writes nothing' do
+      item = schedule(inputs: ["note=#{'x' * 900}"])
+
+      expect { cron.install(item) }.to raise_error(RubyRaider::Flows::Error, /crontab line is \d{4} bytes, over 990/)
+      expect(runner.calls).to be_empty
+    end
+
     it 'raises with the scheduler error when crontab -l fails for another reason' do
       runner.answers['-l'] = ["crontab: permission denied\e[2J", 1]
 
@@ -199,6 +206,23 @@ RSpec.describe RubyRaider::Flows::Os::Cron do # rubocop:disable RSpec/FilePath
       expect(runner.table).to eq(other)
     end
 
+    it 'removes every copy of its block' do
+      item = schedule
+      runner.table = "#{block(item)}1 * * * * a\n#{block(item)}"
+
+      expect(cron.remove(item.os_id)).to be(true)
+      expect(runner.table).to eq("1 * * * * a\n")
+    end
+
+    it 'keeps an unrelated line that follows an orphaned tag' do
+      item = schedule
+      other = schedule(name: 'nightly')
+      runner.table = "# raider-flow #{item.os_id}\n#{cron.line(other)}\n1 * * * * a\n"
+
+      expect(cron.remove(item.os_id)).to be(true)
+      expect(runner.table).to eq("#{cron.line(other)}\n1 * * * * a\n")
+    end
+
     it 'removes a tag line left without its line' do
       item = schedule
       runner.table = "1 * * * * a\n# raider-flow #{item.os_id}"
@@ -221,6 +245,18 @@ RSpec.describe RubyRaider::Flows::Os::Cron do # rubocop:disable RSpec/FilePath
     it 'refuses an os_id that is not a flow schedule id' do
       expect { cron.remove("x\n* * * * * evil") }.to raise_error(RubyRaider::Flows::Error, /Invalid os_id/)
       expect(runner.calls).to be_empty
+    end
+  end
+
+  describe '#usable?' do
+    it 'is true when crontab -l answers, even with no crontab' do
+      expect(cron.usable?).to be(true)
+    end
+
+    it 'is false when crontab -l fails for another reason' do
+      runner.answers['-l'] = ['crontab: not found', 127]
+
+      expect(cron.usable?).to be(false)
     end
   end
 

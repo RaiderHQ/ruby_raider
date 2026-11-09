@@ -4,6 +4,7 @@ module RubyRaider
       class Cron
         CRONTAB: String
         TAG: String
+        MAX_LINE: Integer
         OS_ID: Regexp
 
         @runner: CommandRunner
@@ -15,6 +16,7 @@ module RubyRaider
         def install: (Schedule schedule) -> true
         def remove: (String os_id) -> bool
         def present?: (String os_id) -> bool
+        def usable?: () -> bool
 
         private
 
