@@ -66,7 +66,7 @@ module RubyRaider
         @ruby = checked_path('ruby', ruby)
         @bundle = checked_path('bundle', bundle)
         @gem_env = checked_gem_env(gem_env)
-        @project_root = project_root.to_s.dup.freeze
+        @project_root = checked_path('project_root', project_root)
         @created_at = checked_text('created_at', created_at)
         freeze
       end
