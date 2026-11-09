@@ -11,6 +11,17 @@ module RubyRaider
   class Raider < Thor
     def self.exit_on_failure? = true
 
+    # Thor runs a regex on every argument before any command, so invalid UTF-8 would crash it with a
+    # backtrace; a flow command says which argument instead and exits 2 like its other refusals
+    def self.start(given_args = ARGV, config = {})
+      bad = given_args.find { |arg| arg.is_a?(String) && !arg.valid_encoding? }
+      if bad && %w[flow f].include?(given_args.first)
+        warn("Invalid argument #{bad.inspect}: use valid UTF-8")
+        exit(2)
+      end
+      super
+    end
+
     no_tasks do
       def current_version = File.read(File.expand_path('version', __dir__)).strip
     end
@@ -52,7 +63,7 @@ module RubyRaider
     subcommand 'utility', UtilityCommands
     map 'u' => 'utility'
 
-    desc 'flow', 'Runs flows: recordings without assertions (init, run, list)'
+    desc 'flow', 'Runs flows: recordings without assertions (init, run, list, schedule)'
     subcommand 'flow', FlowCommands
     map 'f' => 'flow'
 
