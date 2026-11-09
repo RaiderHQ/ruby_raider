@@ -2,18 +2,22 @@ module RubyRaider
   module Flows
     class Notifier
       MAX: Integer
+      TIMEOUT: Integer
       OSASCRIPT: Array[String]
       NOTIFY_SEND: Array[String]
       MARKUP: Hash[String, String]
       TOAST_SCRIPT: String
-      POWERSHELL: Array[String]
+      POWERSHELL_ARGS: Array[String]
 
       @runner: Os::CommandRunner
       @host_os: String
       @err: IO | StringIO
       @warned: bool
+      @powershell: String
 
-      def initialize: (?runner: Os::CommandRunner, ?host_os: String, ?err: IO | StringIO) -> void
+      def self.powershell: () -> String
+
+      def initialize: (?runner: Os::CommandRunner, ?host_os: String, ?err: IO | StringIO, ?powershell: String) -> void
       def notify: (String title, String message) -> bool
 
       private

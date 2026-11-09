@@ -86,7 +86,8 @@ module RubyRaider
         options = { headed: headed, inputs: input_env(inputs), trigger: checked_trigger(trigger) }
         attempts = checked_retries(retries) + 1
         status = attempt_runs(name, attempts, options)
-        notify_failure(name, status) if notify && !%w[completed busy].include?(status)
+        # Not after a stop: whoever pressed Ctrl-C already knows
+        notify_failure(name, status) if notify && !Runner.stopped && !%w[completed busy].include?(status)
         EXIT_CODES.fetch(status, 2)
       end
 
@@ -111,7 +112,7 @@ module RubyRaider
                   else
                     "Could not start: see .raider/flows/#{name}/scheduler.log"
                   end
-        (@notifier ||= Notifier.new).notify("Ruby Raider flow #{name}", Flows.printable(message)[0, Notifier::MAX].to_s)
+        (@notifier ||= Notifier.new).notify("Ruby Raider flow #{name}", message)
       end
 
       def stopped(name, status)

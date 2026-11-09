@@ -192,7 +192,7 @@ RSpec.describe RubyRaider::Flows::Runner do # rubocop:disable RSpec/FilePath
       2.times { outcomes << { status: 'failed', code: 1, failed_step: { 'number' => 3, 'title' => "Open\e[2J report" } } }
 
       expect(notifying.run('report', retries: 1, notify: true)).to eq(1)
-      expect(notes).to eq([['Ruby Raider flow report', 'Failed at step 3 (Open?[2J report)']])
+      expect(notes).to eq([['Ruby Raider flow report', "Failed at step 3 (Open\e[2J report)"]])
     end
 
     it 'points at the scheduler log on a setup error or when no line was recorded' do
@@ -202,11 +202,17 @@ RSpec.describe RubyRaider::Flows::Runner do # rubocop:disable RSpec/FilePath
       expect(notes.map(&:last)).to eq(['Could not start: see .raider/flows/report/scheduler.log'] * 2)
     end
 
-    it 'caps the message at 200 characters' do
-      outcomes << { status: 'failed', code: 1, failed_step: { 'number' => 1, 'title' => 'x' * 300 } }
-      notifying.run('report', notify: true)
+    it 'stays quiet when the run was stopped' do
+      outcomes << { status: 'failed', code: 1 }
+      stopping = lambda do |*args|
+        described_class.stopped = true
+        spawner.call(*args)
+      end
+      described_class.new(project, out: out, spawner: stopping, sleeper: ->(_) {}, notifier: notifier).run('report', notify: true)
 
-      expect(notes.first.last.size).to eq(200)
+      expect(notes).to eq([])
+    ensure
+      described_class.stopped = false
     end
 
     it 'stays quiet when the flow completed or was busy, and without --notify' do
