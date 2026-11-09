@@ -6,21 +6,22 @@ module RubyRaider
           def now: () -> Time
         end
 
-        SCHTASKS: String
         FOLDER: String
         ESCAPES: Hash[String, String]
         NAMESPACE: String
         OS_ID: Regexp
         NEEDS_QUOTES: Regexp
+        EXPANDS: Regexp
         DAY_NAMES: Array[String]
 
         @runner: CommandRunner
         @clock: _Clock
+        @schtasks: String
 
         def self.quote: (String arg) -> String
         def self.join: (Array[String] args) -> String
 
-        def initialize: (?runner: CommandRunner, ?clock: _Clock) -> void
+        def initialize: (?runner: CommandRunner, ?clock: _Clock, ?schtasks: String) -> void
         def label: () -> String
         def task_name: (untyped os_id) -> String
         def task_xml: (Schedule schedule) -> String
@@ -31,6 +32,9 @@ module RubyRaider
         private
 
         def schtasks: (*String args) -> CommandRunner::Result
+        def list: () -> CommandRunner::Result
+        def listed?: (CommandRunner::Result listing, String name) -> bool
+        def refuse_expansion: (Schedule schedule) -> void
         def checked_os_id: (untyped os_id) -> String
         def escape: (untyped value) -> String
         def text: (String name, untyped value) -> Array[String]
