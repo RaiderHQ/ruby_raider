@@ -3,6 +3,7 @@
 require 'thor'
 require 'json'
 require_relative '../utilities/flows/runner'
+require_relative '../utilities/flows/scheduler'
 
 # raider flow: recordings without assertions that run on their own.
 class FlowCommands < Thor
@@ -49,10 +50,43 @@ class FlowCommands < Thor
     stop(e)
   end
 
+  desc 'schedule NAME', 'Runs a flow on a schedule with the OS scheduler'
+  option :every, type: :string, required: true, desc: 'hour, day, weekday or week'
+  option :at, type: :string, desc: 'HH:MM (24h, local time); for every hour :MM'
+  option :on, type: :string, desc: 'mon to sun, for every week'
+  option :retries, type: :numeric, default: 0, desc: 'Re-run the whole flow up to N times (0-3)'
+  option :input, type: :array, desc: 'Flow inputs as name=value'
+
+  def schedule(name)
+    scheduler.schedule(name, every: options[:every], at: options[:at], on: options[:on], retries: options[:retries],
+                             inputs: options[:input] || [])
+  rescue RubyRaider::Flows::Error => e
+    stop(e)
+  end
+
+  desc 'unschedule NAME', 'Removes the schedule of a flow'
+
+  def unschedule(name)
+    scheduler.unschedule(name)
+  rescue RubyRaider::Flows::Error => e
+    stop(e)
+  end
+
+  desc 'schedules', 'Lists the scheduled flows with their next run and last result'
+  option :json, type: :boolean, desc: 'Print JSON for the desktop app'
+
+  def schedules
+    scheduler.schedules(json: options[:json] || false)
+  rescue RubyRaider::Flows::Error => e
+    stop(e)
+  end
+
   no_commands do
     def project
       RubyRaider::Flows::Project.new(options[:project] || Dir.pwd)
     end
+
+    def scheduler = RubyRaider::Flows::Scheduler.new(project)
 
     def list_line(flow)
       last = flow['last']

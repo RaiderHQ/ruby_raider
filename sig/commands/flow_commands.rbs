@@ -3,7 +3,11 @@ class FlowCommands < Thor
   def init: () -> void
   def run_flow: (String name) -> void
   def list: () -> void
+  def schedule: (String name) -> void
+  def unschedule: (String name) -> void
+  def schedules: () -> void
   def project: () -> RubyRaider::Flows::Project
+  def scheduler: () -> RubyRaider::Flows::Scheduler
   def list_line: (Hash[String, untyped] flow) -> String
   def stop: (RubyRaider::Flows::Error error) -> bot
 end

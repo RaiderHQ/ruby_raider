@@ -1,6 +1,8 @@
 # Type definitions for main RubyRaider entry point
 module RubyRaider
   class Raider < Thor
+    def self.start: (?Array[String] given_args, ?Hash[Symbol, untyped] config) -> void
+
     def current_version: () -> String
 
     def new: (String project_name) -> void

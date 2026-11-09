@@ -1,0 +1,38 @@
+module RubyRaider
+  module Flows
+    class Scheduler
+      NOT_SET_UP: String
+      RUBY_NOT_FOUND: String
+      LAST: Array[String]
+      TIME: String
+
+      type row = { json: Hash[String, untyped], text: String }
+
+      @project: Project
+      @adapter: untyped
+      @store: ScheduleStore
+      @out: IO | StringIO
+      @err: IO | StringIO
+      @now: ^() -> Time
+
+      def self.adapter: (?runner: Os::CommandRunner, ?host_os: String) -> (Os::Launchd | Os::TaskScheduler | Os::Linux)
+
+      def initialize: (Project project, ?adapter: untyped, ?store: ScheduleStore, ?out: IO | StringIO, ?err: IO | StringIO, ?now: ^() -> Time) -> void
+      def schedule: (String name, every: String?, ?at: String?, ?on: String?, ?retries: untyped, ?inputs: Array[String]) -> void
+      def unschedule: (String name) -> void
+      def schedules: (?json: bool) -> void
+
+      private
+
+      def adapter: () -> untyped
+      def save: (Schedule schedule) -> Schedule
+      def flow_dir: (String name) -> void
+      def row: (Schedule schedule, Time now) -> row
+      def unlisted_rows: (Array[String] listed) -> Array[row]
+      def present?: (String os_id) -> bool
+      def os_state: (Schedule schedule) -> String
+      def last_run: (String name) -> Hash[String, untyped]?
+      def line: (String name, String rule, String next_run, Hash[String, untyped]? last, String state) -> String
+    end
+  end
+end
