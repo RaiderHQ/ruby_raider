@@ -51,7 +51,7 @@ class FlowCommands < Thor
   end
 
   desc 'schedule NAME', 'Runs a flow on a schedule with the OS scheduler'
-  option :every, type: :string, required: true, desc: 'hour, day, weekday or week'
+  option :every, type: :string, desc: 'hour, day, weekday or week'
   option :at, type: :string, desc: 'HH:MM (24h, local time); for every hour :MM'
   option :on, type: :string, desc: 'mon to sun, for every week'
   option :retries, type: :numeric, default: 0, desc: 'Re-run the whole flow up to N times (0-3)'

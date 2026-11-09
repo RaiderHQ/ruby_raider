@@ -194,13 +194,13 @@ RSpec.describe RubyRaider::Flows::Scheduler do # rubocop:disable RSpec/FilePath
   describe '#schedules' do
     it 'lists each schedule with its rule, next run, last result and OS state' do
       scheduler.schedule('report', every: 'hour', at: ':15', retries: 2, inputs: ['who=me'])
-      log_run('report', 'status' => 'failed', 'finished_at' => '2026-11-09T08:00:12Z', 'trigger' => 'schedule',
-                        'failed_step' => "Open\e[2J", 'results_dir' => 'flow-results/report/x', 'run_id' => 'abc')
+      log_run('report', 'status' => 'failed', 'finished_at' => "2026-11-09T08:00:12Z\e[2J", 'trigger' => 'schedule',
+                        'failed_step' => 'Open', 'results_dir' => 'flow-results/report/x', 'run_id' => 'abc')
       out.truncate(0)
       out.rewind
       scheduler.schedules
 
-      expect(out.string).to eq("#{'report'.ljust(30)}  every hour at :15  next Sun 8 Nov 12:15  failed  2026-11-09T08:00:12Z  ok\n")
+      expect(out.string).to eq("#{'report'.ljust(30)}  every hour at :15  next Sun 8 Nov 12:15  failed  2026-11-09T08:00:12Z?[2J  ok\n")
     end
 
     it 'prints the JSON the desktop app reads' do

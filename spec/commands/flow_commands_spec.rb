@@ -80,6 +80,19 @@ RSpec.describe FlowCommands do
       end
     end
 
+    it 'exits 2 through the rule check when --every is left out' do
+      Dir.mktmpdir('flow-schedule') do |dir|
+        %w[flows/flow_helper.rb flows/support/run.rb flows/report_flow.rb].each do |file|
+          FileUtils.mkdir_p(File.dirname(File.join(dir, file)))
+          File.write(File.join(dir, file), '')
+        end
+        _out, err, status = run_raider('flow', 'schedule', 'report', '--at', '08:00', '--project', dir)
+
+        expect(status.exitstatus).to eq(2)
+        expect(err).to include('Invalid every nil: use hour, day, weekday or week')
+      end
+    end
+
     it 'exits 2 for an invalid name to unschedule' do
       Dir.mktmpdir('flow-schedule') do |dir|
         _out, err, status = run_raider('flow', 'unschedule', 'Bad-Name', '--project', dir)
