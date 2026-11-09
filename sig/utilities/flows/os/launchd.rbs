@@ -1,0 +1,43 @@
+module RubyRaider
+  module Flows
+    module Os
+      class Launchd
+        LAUNCHCTL: String
+        PLUTIL: String
+        NOFOLLOW: Integer
+        ESCAPES: Hash[String, String]
+        HEADER: String
+        OS_ID: Regexp
+
+        @runner: CommandRunner
+        @home: String
+        @uid: Integer
+
+        def initialize: (?runner: CommandRunner, ?home: String, ?uid: Integer) -> void
+        def label: () -> String
+        def plist: (Schedule schedule) -> String
+        def plist_path: (String os_id) -> String
+        def install: (Schedule schedule) -> true
+        def remove: (String os_id) -> bool
+        def present?: (String os_id) -> bool
+
+        private
+
+        def launchctl: (*String args) -> CommandRunner::Result
+        def domain: () -> String
+        def service: (String os_id) -> String
+        def unlink: (String path) -> bool
+        def agents_dir: () -> String
+        def checked_os_id: (untyped os_id) -> String
+        def escape: (untyped text) -> String
+        def string: (untyped text) -> Array[String]
+        def integer: (Integer number) -> Array[String]
+        def array: (Array[Array[String]] items) -> Array[String]
+        def dict: (Array[[String, Array[String]]] pairs) -> Array[String]
+        def indent: (Array[String] lines) -> Array[String]
+        def calendar: (Schedule schedule) -> Array[String]
+        def write: (String path, String text) -> void
+      end
+    end
+  end
+end
