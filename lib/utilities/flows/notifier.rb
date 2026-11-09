@@ -7,14 +7,16 @@ require_relative 'os/command_runner'
 module RubyRaider
   module Flows
     # A desktop notification for `raider flow run --notify`. The title and message only ever travel as argv
-    # items (osascript, notify-send) or environment values (PowerShell), never as part of a script, so a
-    # hostile flow name or step title can't run as AppleScript or PowerShell. Never raises: a notification
+    # items after `--` (osascript, notify-send: so a title like -e is not read as an option or a script) or as
+    # environment values (PowerShell), so a hostile flow name or step title can't run as AppleScript or PowerShell. Never raises: a notification
     # that can't be shown must not change how the run ends.
-    # :reek:TooManyConstants { max_constants: 6 } -- the fixed command of each OS and the message cap
+    # :reek:TooManyConstants { max_constants: 7 } -- the fixed command of each OS, the message cap and the timeout
+    # :reek:TooManyInstanceVariables { max_instance_variables: 5 } -- the injected runner, OS, stream and PowerShell path, and the warned flag
     class Notifier
       MAX = 200
+      TIMEOUT = 15
       OSASCRIPT = ['/usr/bin/osascript', '-e', 'on run argv', '-e',
-                   'display notification (item 2 of argv) with title (item 1 of argv)', '-e', 'end run'].freeze
+                   'display notification (item 2 of argv) with title (item 1 of argv)', '-e', 'end run', '--'].freeze
       NOTIFY_SEND = ['notify-send', '--app-name=Ruby Raider', '--'].freeze
       MARKUP = { '&' => '&amp;', '<' => '&lt;', '>' => '&gt;' }.freeze
       # Reads the text from the environment and sets it as XML text nodes; one line with no double quotes, so
@@ -29,12 +31,15 @@ module RubyRaider
         '$toast = [Windows.UI.Notifications.ToastNotification]::new($xml)',
         "[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe').Show($toast)"
       ].join('; ').freeze
-      POWERSHELL = ['powershell.exe', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', TOAST_SCRIPT].freeze
+      POWERSHELL_ARGS = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', TOAST_SCRIPT].freeze
 
-      def initialize(runner: Os::CommandRunner.new, host_os: RbConfig::CONFIG['host_os'], err: $stderr)
+      def self.powershell = File.join(ENV.fetch('SystemRoot', 'C:\\Windows'), 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+
+      def initialize(runner: Os::CommandRunner.new, host_os: RbConfig::CONFIG['host_os'], err: $stderr, powershell: Notifier.powershell)
         @runner = runner
         @host_os = host_os
         @err = err
+        @powershell = powershell
         @warned = false
       end
 
@@ -43,10 +48,11 @@ module RubyRaider
         title = clean(title)
         message = clean(message)
         result = case @host_os
-                 when /darwin/ then @runner.call(*OSASCRIPT, title, message)
-                 when /linux/ then @runner.call(*NOTIFY_SEND, title, message.gsub(/[&<>]/, MARKUP))
+                 when /darwin/ then @runner.call(*OSASCRIPT, title, message, timeout: TIMEOUT)
+                 when /linux/ then @runner.call(*NOTIFY_SEND, title, message.gsub(/[&<>]/, MARKUP), timeout: TIMEOUT)
                  when /mswin|mingw|cygwin/
-                   @runner.call(*POWERSHELL, env: { 'RAIDER_NOTIFY_TITLE' => title, 'RAIDER_NOTIFY_MESSAGE' => message })
+                   @runner.call(@powershell, *POWERSHELL_ARGS, env: { 'RAIDER_NOTIFY_TITLE' => title, 'RAIDER_NOTIFY_MESSAGE' => message },
+                                                               timeout: TIMEOUT)
                  end
         return false unless result
         return true if result.success?

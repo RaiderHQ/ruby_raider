@@ -16,8 +16,8 @@ RSpec.describe RubyRaider::Flows::Notifier do # rubocop:disable RSpec/FilePath
         @exitstatus = 0
       end
 
-      def call(*argv, env: {}, **)
-        @calls << { argv: argv, env: env }
+      def call(*argv, env: {}, timeout: nil, **)
+        @calls << { argv: argv, env: env, timeout: timeout }
         RubyRaider::Flows::Os::CommandRunner::Result.new(stdout: '', stderr: 'no notification server', exitstatus: exitstatus)
       end
     end.new
@@ -28,14 +28,22 @@ RSpec.describe RubyRaider::Flows::Notifier do # rubocop:disable RSpec/FilePath
     ["'; rm -rf ~; '", '" & do shell script "id" & "', '$(id)', '</text>', '-u critical', '$env:USERPROFILE', '`whoami`']
   end
 
-  def notifier(host_os) = described_class.new(runner: runner, host_os: host_os, err: err)
+  let(:powershell) { 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe' }
+
+  def notifier(host_os) = described_class.new(runner: runner, host_os: host_os, err: err, powershell: powershell)
 
   it 'passes the title and message to osascript as argv items of a fixed script on macOS' do
     expect(notifier('darwin25').notify('Ruby Raider flow report', 'Failed at step 3 (Open report)')).to be(true)
 
     expect(runner.calls).to eq([{ argv: ['/usr/bin/osascript', '-e', 'on run argv', '-e',
-                                         'display notification (item 2 of argv) with title (item 1 of argv)', '-e', 'end run',
-                                         'Ruby Raider flow report', 'Failed at step 3 (Open report)'], env: {} }])
+                                         'display notification (item 2 of argv) with title (item 1 of argv)', '-e', 'end run', '--',
+                                         'Ruby Raider flow report', 'Failed at step 3 (Open report)'], env: {}, timeout: 15 }])
+  end
+
+  it 'ends osascript option parsing before the title, so -e in a title is not a script' do
+    notifier('darwin25').notify('-e', 'property p : (1 + 2)')
+
+    expect(runner.calls.first[:argv].last(3)).to eq(['--', '-e', 'property p : (1 + 2)'])
   end
 
   it 'keeps hostile text out of the script on every OS' do
@@ -66,9 +74,17 @@ RSpec.describe RubyRaider::Flows::Notifier do # rubocop:disable RSpec/FilePath
     notifier('mswin64').notify('$env:USERPROFILE', '`whoami`')
 
     expect(runner.calls.first).to eq(
-      argv: ['powershell.exe', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', described_class::TOAST_SCRIPT],
-      env: { 'RAIDER_NOTIFY_TITLE' => '$env:USERPROFILE', 'RAIDER_NOTIFY_MESSAGE' => '`whoami`' }
+      argv: [powershell, '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', described_class::TOAST_SCRIPT],
+      env: { 'RAIDER_NOTIFY_TITLE' => '$env:USERPROFILE', 'RAIDER_NOTIFY_MESSAGE' => '`whoami`' }, timeout: 15
     )
+  end
+
+  it 'finds PowerShell under SystemRoot by default' do
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with('SystemRoot', 'C:\\Windows').and_return('D:\\Win')
+    described_class.new(runner: runner, host_os: 'mingw32', err: err).notify('t', 'm')
+
+    expect(runner.calls.first[:argv].first).to eq(File.join('D:\\Win', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe'))
   end
 
   it 'builds the toast from the environment, never from text joined into XML' do

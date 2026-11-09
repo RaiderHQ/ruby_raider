@@ -28,6 +28,14 @@ RSpec.describe RubyRaider::Flows::Os::CommandRunner do # rubocop:disable RSpec/F
     expect(result.stdout).to eq('$(id)')
   end
 
+  it 'stops a command that runs past the timeout' do
+    started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    result = runner.call(ruby, '-e', 'sleep 10', timeout: 0.3)
+
+    expect([result.success?, result.stderr]).to eq([false, "#{ruby} took longer than 0.3 s"])
+    expect(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).to be < 5
+  end
+
   it 'passes arguments without a shell' do
     hostile = ["'; rm -rf ~; '", '$(id)', '%h', '</string>']
 
