@@ -17,6 +17,7 @@ module RubyRaider
       attr_reader on: String?
       attr_reader retries: Integer
       attr_reader inputs: Array[String]
+      attr_reader notify: bool
       attr_reader os_id: String
       attr_reader ruby: String
       attr_reader bundle: String
@@ -24,12 +25,12 @@ module RubyRaider
       attr_reader project_root: String
       attr_reader created_at: String
 
-      def self.build: (project: Project, name: String, every: String, ?at: String?, ?on: String?, ?retries: untyped, ?inputs: Array[String], ?now: Time) -> Schedule
+      def self.build: (project: Project, name: String, every: String, ?at: String?, ?on: String?, ?retries: untyped, ?inputs: Array[String], ?notify: bool, ?now: Time) -> Schedule
       def self.from_h: (untyped hash, String project_root) -> Schedule
       def self.os_id_for: (String project_root, String name) -> String
       def self.captured_gem_env: () -> Hash[String, String]
 
-      def initialize: (name: untyped, every: untyped, at: untyped, on: untyped, retries: untyped, inputs: untyped, os_id: untyped, ruby: untyped, bundle: untyped, gem_env: untyped, project_root: untyped, created_at: untyped) -> void
+      def initialize: (name: untyped, every: untyped, at: untyped, on: untyped, retries: untyped, inputs: untyped, os_id: untyped, ruby: untyped, bundle: untyped, gem_env: untyped, project_root: untyped, created_at: untyped, ?notify: untyped) -> void
       def hour: () -> Integer
       def minute: () -> Integer
       def days: () -> Array[String]
@@ -49,6 +50,7 @@ module RubyRaider
       def checked_on: (untyped on) -> String?
       def checked_retries: (untyped retries) -> Integer
       def checked_inputs: (untyped inputs) -> Array[String]
+      def checked_notify: (untyped notify) -> bool
       def checked_os_id: (untyped os_id) -> String
       def checked_path: (String label, untyped path) -> String
       def checked_gem_env: (untyped gem_env) -> Hash[String, String]

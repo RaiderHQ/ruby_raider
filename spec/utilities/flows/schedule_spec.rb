@@ -109,6 +109,11 @@ RSpec.describe RubyRaider::Flows::Schedule do # rubocop:disable RSpec/FilePath
       expect(build(retries: 2, inputs: %w[a=1 b=2]).argv.last(5)).to eq(%w[--retries 2 --input a=1 b=2])
     end
 
+    it 'adds --notify before the inputs when the schedule notifies' do
+      expect(build(notify: true, retries: 1, inputs: %w[a=1]).argv.last(5)).to eq(%w[--retries 1 --notify --input a=1])
+      expect(build.argv).not_to include('--notify')
+    end
+
     it 'runs in the project and logs to the flow folder' do
       expect([build.working_directory, build.log_path]).to eq([dir, File.join(dir, '.raider/flows/report/scheduler.log')])
     end
@@ -174,7 +179,7 @@ RSpec.describe RubyRaider::Flows::Schedule do # rubocop:disable RSpec/FilePath
     let(:schedule) { build(every: 'week', on: 'fri', retries: 1, inputs: %w[a=1]) }
 
     it 'writes string keys' do
-      expect(schedule.to_h.keys).to eq(%w[name every at on retries inputs os_id ruby bundle gem_env created_at])
+      expect(schedule.to_h.keys).to eq(%w[name every at on retries inputs notify os_id ruby bundle gem_env created_at])
     end
 
     it 'reads back what it wrote' do
@@ -203,6 +208,14 @@ RSpec.describe RubyRaider::Flows::Schedule do # rubocop:disable RSpec/FilePath
       roots.each do |root|
         expect { described_class.from_h(schedule.to_h, root) }.to raise_error(RubyRaider::Flows::Error, /project_root/)
       end
+    end
+
+    it 'keeps notify, and reads an entry written before notify as off' do
+      notifying = build(notify: true)
+
+      expect(described_class.from_h(notifying.to_h, dir).notify).to be(true)
+      expect(described_class.from_h(schedule.to_h.except('notify'), dir).notify).to be(false)
+      expect { described_class.from_h(schedule.to_h.merge('notify' => 'yes'), dir) }.to raise_error(RubyRaider::Flows::Error, /notify/)
     end
 
     it 'refuses a non-hash' do

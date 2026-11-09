@@ -62,6 +62,13 @@ RSpec.describe FlowCommands do
     end
   end
 
+  it 'offers --notify on flow run and flow schedule' do
+    run_help, = run_raider('flow', 'help', 'run')
+    schedule_help, = run_raider('flow', 'help', 'schedule')
+
+    expect([run_help, schedule_help]).to all(include('--notify'))
+  end
+
   describe 'schedules' do
     # Only paths refused before the OS scheduler is asked: this machine's launchd is real
     it 'lists schedule, unschedule and schedules in raider flow help' do

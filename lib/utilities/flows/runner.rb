@@ -5,12 +5,14 @@ require 'securerandom'
 require 'time'
 require_relative 'project'
 require_relative 'run_log'
+require_relative 'notifier'
 
 module RubyRaider
   module Flows
     # `raider flow run`: a thin wrapper around `bundle exec rspec flows/<name>_flow.rb`. The flow's own
     # flows/support/run.rb records the run; this sets its env, retries the whole flow and maps the
     # recorded status to the exit code.
+    # :reek:TooManyInstanceVariables { max_instance_variables: 6 } -- the project, injected collaborators and the last run line
     class Runner
       EXIT_CODES = { 'completed' => 0, 'failed' => 1, 'setup_error' => 2, 'busy' => 3 }.freeze
       INPUT = /\A[a-z][a-z0-9_]{0,39}\z/
@@ -65,21 +67,26 @@ module RubyRaider
         nil
       end
 
-      def initialize(project, out: $stdout, spawner: Runner.method(:spawn), sleeper: ->(seconds) { sleep(seconds) })
+      # notifier: nil makes a Notifier only when a run with notify: true needs one
+      def initialize(project, out: $stdout, spawner: Runner.method(:spawn), sleeper: ->(seconds) { sleep(seconds) }, notifier: nil)
         @project = project
         @out = out
         @spawner = spawner
         @sleeper = sleeper
+        @notifier = notifier
+        @last_line = nil
       end
 
       # Returns the exit code: 0 completed, 1 a step failed, 2 setup failed, 3 already running.
-      def run(name, headed: false, retries: 0, inputs: [], trigger: 'manual')
+      # notify: true sends one desktop notification when the run ends in neither completed nor busy.
+      def run(name, headed: false, retries: 0, inputs: [], trigger: 'manual', notify: false)
         @project.flow_file(name)
         raise Error, 'Flows are not set up in this project: run raider flow init' unless @project.set_up?
 
         options = { headed: headed, inputs: input_env(inputs), trigger: checked_trigger(trigger) }
         attempts = checked_retries(retries) + 1
         status = attempt_runs(name, attempts, options)
+        notify_failure(name, status) if notify && !%w[completed busy].include?(status)
         EXIT_CODES.fetch(status, 2)
       end
 
@@ -97,6 +104,16 @@ module RubyRaider
         'setup_error'
       end
 
+      # The notifier never raises, so a notification can't change the exit code
+      def notify_failure(name, status)
+        message = if status == 'failed'
+                    "Failed at #{failed_step(@last_line&.fetch('failed_step', nil))}"
+                  else
+                    "Could not start: see .raider/flows/#{name}/scheduler.log"
+                  end
+        (@notifier ||= Notifier.new).notify("Ruby Raider flow #{name}", Flows.printable(message)[0, Notifier::MAX].to_s)
+      end
+
       def stopped(name, status)
         @out.puts("Flow #{name} was stopped: no retry")
         status
@@ -108,6 +125,7 @@ module RubyRaider
         argv = ['bundle', 'exec', 'rspec', "flows/#{name}_flow.rb", '--tag', 'flow']
         code = @spawner.call(run_env(name, attempt, run_id, options), argv, @project.root)
         line = RunLog.new(@project, name).find(run_id)
+        @last_line = line
         report(name, line, code)
         line ? line['status'].to_s : 'setup_error'
       end

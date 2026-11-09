@@ -24,10 +24,10 @@ module RubyRaider
           def success? = exitstatus.zero?
         end
 
-        # [command, command] as the first item keeps even a lone string out of a shell
-        def call(*argv, stdin_data: nil)
+        # [command, command] as the first item keeps even a lone string out of a shell; env adds to the inherited one
+        def call(*argv, stdin_data: nil, env: {})
           command = argv.first.to_s
-          stdout, stderr, status = Open3.capture3([command, command], *argv.drop(1).map(&:to_s), stdin_data: stdin_data.to_s)
+          stdout, stderr, status = Open3.capture3(env, [command, command], *argv.drop(1).map(&:to_s), stdin_data: stdin_data.to_s)
           Result.new(stdout: stdout, stderr: stderr, exitstatus: status.exitstatus || (128 + status.termsig.to_i))
         rescue SystemCallError => e
           Result.new(stdout: '', stderr: "Could not run #{command}: #{e.message}", exitstatus: MISSING)

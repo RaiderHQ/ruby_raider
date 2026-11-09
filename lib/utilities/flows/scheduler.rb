@@ -44,19 +44,19 @@ module RubyRaider
         @now = now
       end
 
-      def schedule(name, every:, at: nil, on: nil, retries: 0, inputs: [])
+      def schedule(name, every:, at: nil, on: nil, retries: 0, inputs: [], notify: false)
         @project.flow_file(name)
         raise Error, NOT_SET_UP unless @project.set_up?
 
         now = @now.call
         schedule = Schedule.build(project: @project, name: name, every: every, at: at, on: on, retries: retries,
-                                  inputs: inputs, now: now)
+                                  inputs: inputs, notify: notify, now: now)
         flow_dir(name)
         old = @store.find(name)
         adapter.install(schedule)
         save(schedule)
         prefix = old ? "Replaced the schedule for #{name}" : "Scheduled #{name}"
-        @out.puts("#{prefix}: #{schedule.rule_text}. Next run #{NextRun.after(schedule, now).strftime(TIME)}.")
+        @out.puts("#{prefix}: #{rule(schedule)}. Next run #{NextRun.after(schedule, now).strftime(TIME)}.")
       end
 
       def unschedule(name)
@@ -121,9 +121,9 @@ module RubyRaider
         state = os_state(schedule)
         last = last_run(name)
         json = { 'name' => name, 'every' => schedule.every, 'at' => schedule.at, 'on' => schedule.on,
-                 'retries' => schedule.retries, 'inputs' => schedule.inputs, 'next_run_at' => next_run.iso8601,
+                 'retries' => schedule.retries, 'inputs' => schedule.inputs, 'notify' => schedule.notify, 'next_run_at' => next_run.iso8601,
                  'os_state' => state, 'last' => last }
-        { json: json, text: line(name, schedule.rule_text, "next #{next_run.strftime(TIME)}", last, state) }
+        { json: json, text: line(name, rule(schedule), "next #{next_run.strftime(TIME)}", last, state) }
       end
 
       # Flows the OS scheduler still runs for this project although schedules.yml has no entry for them
@@ -133,7 +133,7 @@ module RubyRaider
 
           state = 'missing from schedules.yml'
           last = last_run(name)
-          json = { 'name' => name, 'every' => nil, 'at' => nil, 'on' => nil, 'retries' => nil, 'inputs' => nil,
+          json = { 'name' => name, 'every' => nil, 'at' => nil, 'on' => nil, 'retries' => nil, 'inputs' => nil, 'notify' => nil,
                    'next_run_at' => nil, 'os_state' => state, 'last' => last }
           { json: json, text: line(name, '-', '-', last, state) }
         end
@@ -156,6 +156,8 @@ module RubyRaider
       rescue Error => e
         "unknown (#{e.message})"
       end
+
+      def rule(schedule) = schedule.notify ? "#{schedule.rule_text} (notify)" : schedule.rule_text
 
       def last_run(name)
         last = RunLog.new(@project, name).last_result

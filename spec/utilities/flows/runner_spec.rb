@@ -173,6 +173,59 @@ RSpec.describe RubyRaider::Flows::Runner do # rubocop:disable RSpec/FilePath
     expect(out.string).to start_with("Flow report failed at line 1 (x?[2Jy?Flow fake completed)\n")
   end
 
+  describe '--notify' do
+    let(:notes) { [] }
+    let(:notify_result) { [true] }
+    let(:notifier) do
+      sent = notes
+      result = notify_result
+      Class.new do
+        define_method(:notify) do |title, message|
+          sent << [title, message]
+          result.first
+        end
+      end.new
+    end
+    let(:notifying) { described_class.new(project, out: out, spawner: spawner, sleeper: ->(_) {}, notifier: notifier) }
+
+    it 'sends one notification naming the failed step after the last attempt' do
+      2.times { outcomes << { status: 'failed', code: 1, failed_step: { 'number' => 3, 'title' => "Open\e[2J report" } } }
+
+      expect(notifying.run('report', retries: 1, notify: true)).to eq(1)
+      expect(notes).to eq([['Ruby Raider flow report', 'Failed at step 3 (Open?[2J report)']])
+    end
+
+    it 'points at the scheduler log on a setup error or when no line was recorded' do
+      outcomes.push({ status: 'setup_error', code: 1 }, :nothing)
+      2.times { notifying.run('report', notify: true) }
+
+      expect(notes.map(&:last)).to eq(['Could not start: see .raider/flows/report/scheduler.log'] * 2)
+    end
+
+    it 'caps the message at 200 characters' do
+      outcomes << { status: 'failed', code: 1, failed_step: { 'number' => 1, 'title' => 'x' * 300 } }
+      notifying.run('report', notify: true)
+
+      expect(notes.first.last.size).to eq(200)
+    end
+
+    it 'stays quiet when the flow completed or was busy, and without --notify' do
+      outcomes.push({}, { status: 'busy', code: 3 }, { status: 'failed', code: 1 })
+      notifying.run('report', notify: true)
+      notifying.run('report', notify: true)
+      notifying.run('report')
+
+      expect(notes).to eq([])
+    end
+
+    it 'keeps the exit code when the notification fails' do
+      notify_result[0] = false
+      outcomes << { status: 'failed', code: 1 }
+
+      expect([notifying.run('report', notify: true), notes.size]).to eq([1, 1])
+    end
+  end
+
   describe 'refusals (exit 2 through Flows::Error, nothing spawned)' do
     def refuse(name, message, **options)
       expect { runner.run(name, **options) }.to raise_error(RubyRaider::Flows::Error, message)
