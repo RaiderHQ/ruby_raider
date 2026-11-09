@@ -146,6 +146,14 @@ RSpec.describe RubyRaider::Flows::Scheduler do # rubocop:disable RSpec/FilePath
   end
 
   describe '#unschedule' do
+    it 'keeps the yml entry when the OS scheduler refuses the removal' do
+      scheduler.schedule('report', every: 'day', at: '08:00')
+      allow(adapter).to receive(:remove).and_raise(RubyRaider::Flows::Error, 'systemd units found')
+
+      expect { scheduler.unschedule('report') }.to raise_error(RubyRaider::Flows::Error, 'systemd units found')
+      expect(store.find('report')).not_to be_nil
+    end
+
     it 'removes the yml entry and the OS entry' do
       scheduler.schedule('report', every: 'day', at: '08:00')
       scheduler.unschedule('report')
