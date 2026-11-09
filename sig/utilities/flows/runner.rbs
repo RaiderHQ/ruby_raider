@@ -18,7 +18,8 @@ module RubyRaider
       private
 
       def attempt_runs: (String name, Integer attempts, Hash[Symbol, untyped] options) -> String
-      def notify_failure: (String name, String status) -> bool
+      def notify_failure: (String name, String status, String trigger) -> bool
+      def start_output: (String name, String trigger) -> String
       def stopped: (String name, String status) -> String
       def attempt_run: (String name, Integer attempt, Hash[Symbol, untyped] options) -> String
       def run_env: (String name, Integer attempt, String run_id, Hash[Symbol, untyped] options) -> Hash[String, String?]

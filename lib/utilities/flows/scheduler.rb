@@ -21,6 +21,7 @@ module RubyRaider
     class Scheduler
       NOT_SET_UP = 'Flows are not set up in this project: run raider flow init'
       RUBY_NOT_FOUND = 'Ruby not found: re-schedule'
+      FLOW_NOT_FOUND = 'flow not found: unschedule'
       LAST = %w[status finished_at trigger failed_step results_dir].freeze
       TIME = '%a %-d %b %H:%M'
 
@@ -52,6 +53,7 @@ module RubyRaider
         schedule = Schedule.build(project: @project, name: name, every: every, at: at, on: on, retries: retries,
                                   inputs: inputs, notify: notify, now: now)
         flow_dir(name)
+        @store.writable!
         old = @store.find(name)
         adapter.install(schedule)
         save(schedule)
@@ -66,7 +68,7 @@ module RubyRaider
         # from_h is strict, so a stored entry's os_id is always this one.
         label = adapter.label
         was_there = adapter.remove(Schedule.os_id_for(@project.root, name))
-        removed = @store.delete(name)
+        removed = delete(name, label)
         raise Error, "No schedule for #{name}" unless removed || was_there
 
         @out.puts(was_there ? "Unscheduled #{name}" : "Unscheduled #{name} (it was already gone from #{label})")
@@ -104,15 +106,26 @@ module RubyRaider
         raise Error, "#{e.message}: the #{label} entry was removed too, so #{schedule.name} is not scheduled"
       end
 
+      # The OS entry is gone by now: say so when the yml can't be written
+      def delete(name, label)
+        @store.delete(name)
+      rescue Error, SystemCallError => e
+        raise Error, "#{e.message}: the #{label} entry was already removed, but schedules.yml still lists #{name}"
+      end
+
       # .raider/flows/<name>/ for scheduler.log: 0700 folders that are not links, as flows/support/run.rb makes them
       def flow_dir(name)
-        [ScheduleStore::DIR, "#{ScheduleStore::DIR}/#{name}"].each do |relative|
-          dir = @project.path(relative)
-          FileUtils.mkdir_p(dir)
-          raise Error, "#{relative} must be a folder, not a link" unless File.lstat(dir).directory?
+        [ScheduleStore::DIR, "#{ScheduleStore::DIR}/#{name}"].each { |relative| private_dir(relative) }
+      end
 
-          File.chmod(0o700, dir)
-        end
+      def private_dir(relative)
+        dir = @project.path(relative)
+        FileUtils.mkdir_p(dir)
+        raise Error, "#{relative} must be a folder, not a link" unless File.lstat(dir).directory?
+
+        File.chmod(0o700, dir)
+      rescue SystemCallError => e
+        raise Error, "Could not make #{relative}: #{e.message}"
       end
 
       def row(schedule, now)
@@ -151,6 +164,7 @@ module RubyRaider
         ruby = schedule.ruby
         bundle = schedule.bundle
         return RUBY_NOT_FOUND unless File.file?(ruby) && File.executable?(ruby) && File.file?(bundle) && File.readable?(bundle)
+        return FLOW_NOT_FOUND unless File.file?(@project.path("flows/#{schedule.name}_flow.rb"))
 
         adapter.present?(schedule.os_id) ? 'ok' : "missing from #{adapter.label}"
       rescue Error => e

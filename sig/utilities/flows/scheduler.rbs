@@ -3,6 +3,7 @@ module RubyRaider
     class Scheduler
       NOT_SET_UP: String
       RUBY_NOT_FOUND: String
+      FLOW_NOT_FOUND: String
       LAST: Array[String]
       TIME: String
 
@@ -26,7 +27,9 @@ module RubyRaider
 
       def adapter: () -> untyped
       def save: (Schedule schedule) -> Schedule
+      def delete: (String name, String label) -> (Schedule | ScheduleStore::Removed)?
       def flow_dir: (String name) -> void
+      def private_dir: (String relative) -> void
       def row: (Schedule schedule, Time now) -> row
       def unlisted_rows: (Array[String] listed) -> Array[row]
       def present?: (String os_id) -> bool

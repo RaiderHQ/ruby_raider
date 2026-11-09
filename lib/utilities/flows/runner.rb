@@ -87,7 +87,7 @@ module RubyRaider
         attempts = checked_retries(retries) + 1
         status = attempt_runs(name, attempts, options)
         # Not after a stop: whoever pressed Ctrl-C already knows
-        notify_failure(name, status) if notify && !Runner.stopped && !%w[completed busy].include?(status)
+        notify_failure(name, status, options[:trigger]) if notify && !Runner.stopped && !%w[completed busy].include?(status)
         EXIT_CODES.fetch(status, 2)
       end
 
@@ -106,13 +106,14 @@ module RubyRaider
       end
 
       # The notifier never raises, so a notification can't change the exit code
-      def notify_failure(name, status)
-        message = if status == 'failed'
-                    "Failed at #{failed_step(@last_line&.fetch('failed_step', nil))}"
-                  else
-                    "Could not start: see .raider/flows/#{name}/scheduler.log"
-                  end
+      def notify_failure(name, status, trigger)
+        message = status == 'failed' ? "Failed at #{failed_step(@last_line&.fetch('failed_step', nil))}" : "Could not start: see #{start_output(name, trigger)}"
         (@notifier ||= Notifier.new).notify("Ruby Raider flow #{name}", message)
+      end
+
+      # Only a scheduled run outside Windows has a scheduler.log: Windows tasks keep none
+      def start_output(name, trigger)
+        trigger == 'schedule' && !Gem.win_platform? ? ".raider/flows/#{name}/scheduler.log" : 'the run output'
       end
 
       def stopped(name, status)

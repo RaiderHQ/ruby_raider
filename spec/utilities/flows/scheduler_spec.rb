@@ -143,6 +143,23 @@ RSpec.describe RubyRaider::Flows::Scheduler do # rubocop:disable RSpec/FilePath
       expect(adapter.calls).to be_empty
     end
 
+    it 'checks schedules.yml can be written before installing the OS entry' do
+      FileUtils.mkdir_p(File.join(dir, '.raider/flows'))
+      File.write(File.join(dir, '.raider/flows/schedules.yml'), "schedules: [\n")
+
+      expect { scheduler.schedule('report', every: 'day', at: '08:00') }
+        .to raise_error(RubyRaider::Flows::Error, /schedules.yml is not a schedules file/)
+      expect(adapter.calls).to be_empty
+    end
+
+    it 'refuses with a Flows::Error when the flow folder cannot be made' do
+      File.write(File.join(dir, '.raider'), '')
+
+      expect { scheduler.schedule('report', every: 'day', at: '08:00') }
+        .to raise_error(RubyRaider::Flows::Error, %r{\ACould not make \.raider/flows: })
+      expect(adapter.calls).to be_empty
+    end
+
     it 'makes .raider/flows/<name> a 0700 folder and refuses a link there' do
       scheduler.schedule('report', every: 'day', at: '08:00')
       expect(File.stat(File.join(dir, '.raider/flows/report')).mode & 0o777).to eq(0o700)
@@ -189,6 +206,18 @@ RSpec.describe RubyRaider::Flows::Scheduler do # rubocop:disable RSpec/FilePath
     it 'refuses a flow with no schedule anywhere, and an invalid name' do
       expect { scheduler.unschedule('report') }.to raise_error(RubyRaider::Flows::Error, 'No schedule for report')
       expect { scheduler.unschedule('Bad-Name') }.to raise_error(RubyRaider::Flows::Error, /Invalid flow name/)
+    end
+
+    it 'says the OS entry was already removed when schedules.yml can not be written' do
+      scheduler.schedule('report', every: 'day', at: '08:00')
+      allow(store).to receive(:delete).and_raise(Errno::EACCES, 'schedules.yml')
+
+      expect { scheduler.unschedule('report') }.to raise_error(RubyRaider::Flows::Error) do |error|
+        expect([error.message, error.exit_code]).to eq(
+          ['Permission denied - schedules.yml: the fakeos entry was already removed, but schedules.yml still lists report', 2]
+        )
+      end
+      expect(adapter.installed).to eq([])
     end
 
     it 'warns that an OS entry from another project path may remain when the yml entry was unreadable' do
@@ -240,6 +269,20 @@ RSpec.describe RubyRaider::Flows::Scheduler do # rubocop:disable RSpec/FilePath
 
       expect(JSON.parse(out.string).map { |row| [row['name'], row['os_state'], row['last']] })
         .to eq([['other', 'Ruby not found: re-schedule', nil], ['report', 'missing from fakeos', nil]])
+    end
+
+    it 'says flow not found when the flow file is gone, after Ruby not found and before the OS state' do
+      scheduler.schedule('report', every: 'day', at: '08:00')
+      FileUtils.touch(File.join(dir, 'flows/other_flow.rb'))
+      fields = store.find('report').to_h.transform_keys(&:to_sym)
+      other = { name: 'other', os_id: RubyRaider::Flows::Schedule.os_id_for(dir, 'other'), ruby: '/nonexistent/ruby' }
+      store.save(RubyRaider::Flows::Schedule.new(**fields, **other, project_root: dir))
+      %w[report other].each { |name| File.delete(File.join(dir, "flows/#{name}_flow.rb")) }
+      adapter.fail_present = true
+      scheduler.schedules(json: true)
+
+      expect(JSON.parse(out.string.lines.last).map { |row| [row['name'], row['os_state']] })
+        .to eq([['other', 'Ruby not found: re-schedule'], ['report', 'flow not found: unschedule']])
     end
 
     it 'adds a row for a flow the OS still schedules with no yml entry' do
