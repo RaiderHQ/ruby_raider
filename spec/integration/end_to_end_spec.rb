@@ -451,6 +451,69 @@ describe 'End-to-End Project Generation and Execution' do
   # WebDriver BiDi reports real network and console entries. raider_reporter ~> 1.0 resolves from RubyGems, or
   # from a checkout at RAIDER_REPORTER_PATH. The example with video on also needs RAIDER_FFMPEG_PATH.
   # Set TRACE_FIXTURE_DIR to keep the failing RSpec example's trace.zip (and an unzipped copy) there.
+  # raider flow init and raider flow run on a generated Selenium project, headless, against a local page
+  context 'Flows', :slow do
+    let(:project) { generate_video_project('rspec', 'selenium') }
+
+    def write_flows(project)
+      page = File.join(File.expand_path(project), 'flow_page.html')
+      File.write(page, <<~HTML)
+        <!doctype html><title>Timesheet</title>
+        <label for="hours">Hours</label><input id="hours">
+        <button onclick="document.getElementById('done').textContent = 'Saved ' + document.getElementById('hours').value">Save</button>
+        <p id="done"></p>
+      HTML
+      { 'timesheet' => "driver.find_element(label: 'Hours').send_keys(flow_input('hours', '8'))\n    " \
+                       "driver.find_element(by_role('button', name: 'Save')).click\n    " \
+                       "driver.find_element(text: \"Saved \#{flow_input('hours', '8')}\")",
+        'export' => "driver.find_element(id: 'export').click" }.each do |name, steps|
+        File.write(File.join(project, "flows/#{name}_flow.rb"), <<~RUBY)
+          # frozen_string_literal: true
+
+          require_relative 'flow_helper'
+
+          RSpec.describe '#{name}' do
+            it 'runs' do
+              driver.navigate.to 'file://#{page}'
+              #{steps}
+            end
+          end
+        RUBY
+      end
+    end
+
+    def runs(project, name)
+      File.readlines(File.join(project, ".raider/flows/#{name}/runs.jsonl")).map { |line| JSON.parse(line) }
+    end
+
+    it 'runs a flow headless into flow-results and records completed and failed runs', :aggregate_failures do
+      skip 'Google Chrome is not installed' unless browser_installed?('chrome')
+      FileUtils.rm_rf([File.join(project, 'flows'), File.join(project, '.raider/flows'), File.join(project, 'flow-results')])
+
+      init = run_in_project(project, 'bundle exec raider flow init')
+      expect(init[:exit_code]).to eq(0), init[:stdout] + init[:stderr]
+      write_flows(project)
+      env = { 'VIDEO' => 'off', 'TRACE' => 'off', 'RAIDER_TOKEN' => nil, 'RAIDER_ENDPOINT' => nil }
+      completed = run_in_project(project, 'bundle exec raider flow run timesheet --input hours=7', env:)
+      failed = run_in_project(project, 'bundle exec raider flow run export', env: env.merge('RAIDER_TIMEOUT' => '1'))
+
+      expect(completed[:exit_code]).to eq(0), completed[:stdout] + completed[:stderr]
+      expect(completed[:stdout]).to match(%r{Flow timesheet completed in .* s\nResults: flow-results/timesheet/\d{8}T\d{6}Z})
+      expect(runs(project, 'timesheet').last).to include('status' => 'completed', 'trigger' => 'manual')
+      expect(failed[:exit_code]).to eq(1), failed[:stdout] + failed[:stderr]
+      expect(runs(project, 'export').last).to include('status' => 'failed', 'failed_step' => { 'title' => 'runs', 'line' => 8 })
+      expect(File).to exist(File.join(project, runs(project, 'export').last['results_dir'], 'run.json'))
+      expect(File).not_to exist(File.join(project, 'raider-results'))
+    end
+
+    it 'passes its own RuboCop with the flow files' do
+      FileUtils.rm_rf(File.join(project, 'flows'))
+      run_in_project(project, 'bundle exec raider flow init')
+
+      expect_project_rubocop_clean(project)
+    end
+  end
+
   context 'Trace replay', :slow do
     let!(:server) { TracePageServer.new }
     let(:cache_dir) { Dir.mktmpdir('raider-cache') }
