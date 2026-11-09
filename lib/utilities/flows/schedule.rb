@@ -29,7 +29,7 @@ module RubyRaider
         root = project.root
         new(name: name, every: every, at: at, on: on, retries: retries, inputs: inputs, os_id: os_id_for(root, name),
             ruby: RbConfig.ruby, bundle: Gem.bin_path('bundler', 'bundle'), gem_env: captured_gem_env,
-            project_root: root, created_at: now.utc.iso8601)
+            project_root: root, created_at: now.getutc.iso8601)
       end
 
       # A schedules.yml entry; raises Error when it is not one this class wrote

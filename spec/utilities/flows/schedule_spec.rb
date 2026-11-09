@@ -113,6 +113,14 @@ RSpec.describe RubyRaider::Flows::Schedule do # rubocop:disable RSpec/FilePath
       expect(build.created_at).to eq('2026-11-09T10:00:00Z')
     end
 
+    it 'leaves the given time as it was' do
+      local = Time.local(2026, 11, 9, 11, 0, 0)
+      offset = local.utc_offset
+      build(now: local)
+
+      expect([local.utc?, local.utc_offset]).to eq([false, offset])
+    end
+
     it 'is frozen' do
       schedule = build(inputs: %w[a=1])
 
