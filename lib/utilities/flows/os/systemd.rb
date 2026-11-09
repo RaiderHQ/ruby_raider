@@ -94,6 +94,9 @@ module RubyRaider
 
         def present?(os_id) = systemctl('is-enabled', "#{checked_os_id(os_id)}.timer").success?
 
+        # True when the user's systemd manager answers
+        def usable? = systemctl('show-environment').success?
+
         private
 
         def systemctl(*args) = @runner.call(SYSTEMCTL, '--user', *args)
@@ -130,8 +133,9 @@ module RubyRaider
           raise Error, "Could not remove #{path}: #{e.message}"
         end
 
-        # Removes both units and reloads; returns what to add to the error when that fails too
+        # Disables the timer, removes both units and reloads; returns what to add to the error when that fails too
         def discard(os_id)
+          systemctl('disable', "#{os_id}.timer")
           %w[service timer].each { |kind| unlink(unit_path(os_id, kind)) }
           reload = systemctl('daemon-reload')
           reload.success? ? '' : "; also: reload failed: #{Flows.printable(reload.stderr.strip)}"
@@ -161,6 +165,9 @@ module RubyRaider
             file.chmod(0o644)
           end
           temp
+        rescue SystemCallError
+          FileUtils.rm_f(temp) if temp && File.file?(temp)
+          raise
         end
       end
     end

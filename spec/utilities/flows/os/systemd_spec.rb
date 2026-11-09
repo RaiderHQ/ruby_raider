@@ -218,7 +218,8 @@ RSpec.describe RubyRaider::Flows::Os::Systemd do # rubocop:disable RSpec/FilePat
       runner.answers['enable'] = ["Failed to enable unit\e[2J\n", 1]
 
       expect { systemd.install(item) }.to raise_error(RubyRaider::Flows::Error, /systemd could not enable .*Failed to enable unit\?\[2J/)
-      expect(runner.calls.map { |argv| argv[2] }).to eq(%w[daemon-reload enable daemon-reload])
+      expect(runner.calls.map { |argv| argv[2] }).to eq(%w[daemon-reload enable disable daemon-reload])
+      expect(runner.calls[2]).to eq(['systemctl', '--user', 'disable', "#{item.os_id}.timer"])
       expect(Dir.children(units)).to be_empty
     end
 
@@ -237,6 +238,16 @@ RSpec.describe RubyRaider::Flows::Os::Systemd do # rubocop:disable RSpec/FilePat
         expect { systemd.install(item) }.to raise_error(RubyRaider::Flows::Error, /systemd can not use the path/)
       end
       expect([runner.calls, File.exist?(units)]).to eq([[], false])
+    end
+
+    it 'leaves no temp file behind when writing one fails' do
+      allow(File).to receive(:open).and_call_original
+      allow(File).to receive(:open).with(/\.timer\..*\.tmp\z/, any_args).and_wrap_original do |original, path, *rest, **options|
+        original.call(path, *rest, **options) { raise Errno::ENOSPC }
+      end
+
+      expect { systemd.install(schedule) }.to raise_error(RubyRaider::Flows::Error, /Could not write .*No space left/)
+      expect([runner.calls, Dir.children(units)]).to eq([[], []])
     end
 
     it 'raises a flow error and runs nothing when it can not write the units' do
@@ -283,6 +294,15 @@ RSpec.describe RubyRaider::Flows::Os::Systemd do # rubocop:disable RSpec/FilePat
     it 'refuses an os_id that is not a flow schedule id' do
       expect { systemd.remove('../../evil') }.to raise_error(RubyRaider::Flows::Error, /Invalid os_id/)
       expect(runner.calls).to be_empty
+    end
+  end
+
+  describe '#usable?' do
+    it 'asks the user manager for its environment' do
+      expect(systemd.usable?).to be(true)
+      runner.answers['show-environment'] = ['Failed to connect to bus', 1]
+      expect(systemd.usable?).to be(false)
+      expect(runner.calls).to eq([%w[systemctl --user show-environment]] * 2)
     end
   end
 

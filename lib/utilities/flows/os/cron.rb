@@ -13,6 +13,8 @@ module RubyRaider
       class Cron
         CRONTAB = 'crontab'
         TAG = '# raider-flow '
+        # Debian's vixie cron cuts a command at MAX_COMMAND (1000) bytes without a word; stay under it
+        MAX_LINE = 990
         OS_ID = /\A#{Regexp.escape(Schedule::OS_ID_PREFIX)}\.[0-9a-f]{10}\.([a-z0-9_]{1,60})\z/
 
         def initialize(runner: CommandRunner.new)
@@ -37,8 +39,11 @@ module RubyRaider
         # Our block goes first: above any SHELL=, CRON_TZ= or MAILTO= line, and with no byte of the rest changed
         def install(schedule)
           os_id = schedule.os_id
+          entry = line(schedule)
+          raise Error, "cron can not run #{schedule.name}: its crontab line is #{entry.bytesize} bytes, over #{MAX_LINE}" if entry.bytesize > MAX_LINE
+
           rest, = without(read, os_id)
-          save("#{TAG}#{os_id}\n#{line(schedule)}\n#{rest}")
+          save("#{TAG}#{os_id}\n#{entry}\n#{rest}")
           true
         end
 
@@ -53,6 +58,14 @@ module RubyRaider
         def present?(os_id)
           tag = checked_os_id(os_id)
           without(read, tag).last
+        end
+
+        # True when crontab -l answers (an empty crontab counts)
+        def usable?
+          read
+          true
+        rescue Error
+          false
         end
 
         private
@@ -79,14 +92,20 @@ module RubyRaider
 
         def escape(word) = Shellwords.escape(word)
 
-        # The crontab without our tag line and the line after it, and whether the tag was there
+        # The crontab without any of our tag lines, each with the line after it when that line is our command,
+        # and whether a tag was there
         def without(table, os_id)
-          lines = table.lines
-          index = lines.index { |text| text.chomp == "#{TAG}#{os_id}" }
-          return [table, false] unless index
-
-          lines.slice!(index, 2)
-          [lines.join, true]
+          tag = "#{TAG}#{os_id}"
+          marker = " exec raider flow run #{OS_ID.match(os_id).to_a[1]} --project "
+          kept = []
+          found = after_tag = false
+          table.lines.each do |text|
+            ours = text.chomp == tag || (after_tag && text.include?(marker))
+            after_tag = text.chomp == tag
+            found ||= after_tag
+            kept << text unless ours
+          end
+          [kept.join, found]
         end
 
         def read
