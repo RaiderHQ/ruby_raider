@@ -53,13 +53,14 @@ module RaiderFlows
 
       # RSpec would finish the whole flow on a first Ctrl-C and exit! (no run log line) on a second. The first
       # one ends the current step instead, so the run is recorded and spec_helper still quits the driver;
-      # repeats are ignored while that happens.
+      # a second one is ignored while that happens, and a third quits at once (no run log line).
       def stop_on_interrupt
+        presses = 0
         trap('INT') do
-          next if @stopping
+          presses += 1
+          raise Interrupt, 'flow stopped' if presses == 1
 
-          @stopping = true
-          raise Interrupt, 'flow stopped'
+          presses == 2 ? say('stopping: press Ctrl-C again to quit at once') : exit!(130)
         end
       end
 
