@@ -1,0 +1,15 @@
+module RubyRaider
+  module Flows
+    module NextRun
+      WDAYS: Array[String]
+      SEARCH_DAYS: Integer
+      SEARCH_MINUTES: Integer
+
+      def self?.after: (Schedule schedule, Time now) -> Time
+      def self?.next_minute: (Integer minute, Time now) -> Time
+      def self?.next_day: (Schedule schedule, Time now) -> Time
+      def self?.local: (Date date, Integer hour, Integer minute) -> Time
+      def self?.wall: (Time time) -> Array[Integer]
+    end
+  end
+end

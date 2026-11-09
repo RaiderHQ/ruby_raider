@@ -1,0 +1,20 @@
+module RubyRaider
+  module Flows
+    module Os
+      class CommandRunner
+        MISSING: Integer
+
+        class Result
+          attr_reader stdout: String
+          attr_reader stderr: String
+          attr_reader exitstatus: Integer
+
+          def initialize: (stdout: String, stderr: String, exitstatus: Integer) -> void
+          def success?: () -> bool
+        end
+
+        def call: (*String argv, ?stdin_data: String?) -> Result
+      end
+    end
+  end
+end
