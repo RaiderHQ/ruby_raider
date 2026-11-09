@@ -33,6 +33,23 @@ RSpec.describe RubyRaider::Flows::ScheduleStore do # rubocop:disable RSpec/FileP
     expect([store.all.size, store.find('report').at]).to eq([1, '09:30'])
   end
 
+  it 'deletes every entry with the name, and returns the name and os_id of one it could not read' do
+    FileUtils.mkdir_p(File.dirname(file))
+    File.write(file, { 'schedules' => [{ 'name' => 'report', 'every' => 'yearly' }, { 'name' => 'report' }, schedule('other').to_h] }.to_yaml)
+    removed = store.delete('report')
+
+    expect([removed.class, removed.name, removed.os_id]).to eq([described_class::Removed, 'report', RubyRaider::Flows::Schedule.os_id_for(dir, 'report')])
+    expect(YAML.safe_load_file(file)['schedules'].map { |entry| entry['name'] }).to eq(%w[other])
+  end
+
+  it 'returns the readable schedule when a broken entry shares its name' do
+    store.save(schedule('report'))
+    entries = YAML.safe_load_file(file)['schedules']
+    File.write(file, { 'schedules' => [{ 'name' => 'report' }, *entries] }.to_yaml)
+
+    expect([store.delete('report').class, store.all]).to eq([RubyRaider::Flows::Schedule, []])
+  end
+
   it 'deletes an entry and returns it, or nil when it is not there' do
     store.save(schedule('report'))
 
@@ -53,6 +70,19 @@ RSpec.describe RubyRaider::Flows::ScheduleStore do # rubocop:disable RSpec/FileP
 
     expect(store.all).to eq([])
     expect { store.save(schedule('report')) }.to raise_error(RubyRaider::Flows::Error, /schedules.yml/)
+    expect { store.delete('report') }.to raise_error(RubyRaider::Flows::Error, /schedules.yml/)
+    expect(File.read(file)).to eq("schedules: [\n")
+  end
+
+  it 'will not overwrite a file it cannot read' do
+    store.save(schedule('report'))
+    before = File.read(file)
+    File.chmod(0o000, file)
+
+    expect(store.all).to eq([])
+    expect { store.save(schedule('other')) }.to raise_error(RubyRaider::Flows::Error, /schedules.yml/)
+    File.chmod(0o600, file)
+    expect(File.read(file)).to eq(before)
   end
 
   it 'does not load Ruby objects' do
@@ -84,11 +114,15 @@ RSpec.describe RubyRaider::Flows::ScheduleStore do # rubocop:disable RSpec/FileP
     expect { store.save(schedule('report')) }.to raise_error(RubyRaider::Flows::Error, /not a link/)
   end
 
-  it 'does not read a linked schedules file' do
+  it 'does not read or replace a linked schedules file' do
     FileUtils.mkdir_p(File.dirname(file))
-    File.write(File.join(dir, 'other.yml'), { 'schedules' => [schedule('report').to_h] }.to_yaml)
-    File.symlink(File.join(dir, 'other.yml'), file)
+    target = File.join(dir, 'other.yml')
+    File.write(target, { 'schedules' => [schedule('report').to_h] }.to_yaml)
+    before = File.read(target)
+    File.symlink(target, file)
 
     expect(store.all).to eq([])
+    expect { store.save(schedule('other')) }.to raise_error(RubyRaider::Flows::Error, /schedules.yml/)
+    expect([File.symlink?(file), File.read(target)]).to eq([true, before])
   end
 end
