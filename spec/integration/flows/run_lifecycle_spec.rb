@@ -1,50 +1,15 @@
 # frozen_string_literal: true
 
-require 'erb'
 require 'fileutils'
 require 'json'
 require 'open3'
 require 'time'
 require 'tmpdir'
+require_relative 'flow_project'
 
 # Runs flows/support/run.rb and flows/flow_helper.rb, as `raider flow init` writes them, under a real
-# rspec process. helpers/spec_helper.rb is a stand-in with no browser and no raider_reporter.
+# rspec process (see FlowProject: no browser, no raider_reporter).
 RSpec.describe 'flow run lifecycle' do
-  templates = File.expand_path('../../../lib/generators/templates/flows', __dir__)
-
-  stub_spec_helper = <<~RUBY
-    # frozen_string_literal: true
-
-    require 'json'
-    require 'rspec'
-
-    module RaiderReporter
-      Config = Struct.new(:output_dir, :clean_output_dir)
-      def self.configuration = (@configuration ||= Config.new)
-      def self.configure = yield(configuration)
-    end
-
-    module DriverHelper
-      def driver
-        raise 'the driver could not start' if ENV['FAKE_DRIVER_FAIL']
-
-        @driver ||= Object.new
-      end
-    end
-
-    RSpec.configure do |config|
-      config.include(DriverHelper)
-      config.before(:each) { driver }
-      # The real reporter writes run.json when it closes; the desktop sidecar names the failed step there
-      config.after(:suite) do
-        dir = RaiderReporter.configuration.output_dir
-        steps = { 'items' => [{ 'id' => 's1', 'title' => 'open' }, { 'id' => 's2', 'title' => 'click "Export"' }], 'failed' => 1 }
-        results = [{ 'file_path' => 'flows/recorded_flow.rb', 'status' => 'failed', 'steps' => steps }]
-        File.write(File.join(dir, 'run.json'), JSON.generate('results' => results)) if dir && ENV['FAKE_STEPS']
-      end
-    end
-  RUBY
-
   flows = {
     'ok' => <<~RUBY,
       require_relative 'flow_helper'
@@ -95,16 +60,7 @@ RSpec.describe 'flow run lifecycle' do
 
   let(:dir) { File.realpath(Dir.mktmpdir('flow-lifecycle')) }
 
-  before do
-    render = ->(name) { ERB.new(File.read(File.join(templates, name)), trim_mode: '-').result }
-    FileUtils.mkdir_p(File.join(dir, 'flows/support'))
-    FileUtils.mkdir_p(File.join(dir, 'helpers'))
-    File.write(File.join(dir, 'flows/flow_helper.rb'), render.call('flow_helper.tt'))
-    File.write(File.join(dir, 'flows/support/run.rb'), render.call('run.tt'))
-    File.write(File.join(dir, 'helpers/spec_helper.rb'), stub_spec_helper)
-    File.write(File.join(dir, '.rspec'), "-I .\n--require helpers/spec_helper\n")
-    flows.each { |name, source| File.write(File.join(dir, "flows/#{name}_flow.rb"), source) }
-  end
+  before { FlowProject.build(dir, flows) }
 
   after { FileUtils.rm_rf(dir) }
 

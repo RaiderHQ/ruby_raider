@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require 'thor'
-require_relative '../utilities/flows/project'
+require 'json'
+require_relative '../utilities/flows/runner'
 
 # raider flow: recordings without assertions that run on their own.
 class FlowCommands < Thor
@@ -25,18 +26,38 @@ class FlowCommands < Thor
   option :input, type: :array, desc: 'Flow inputs as name=value (read with flow_input)'
   option :trigger, type: :string, default: 'manual', desc: 'manual, schedule or desktop'
 
-  def run_flow(name); end
+  def run_flow(name)
+    runner = RubyRaider::Flows::Runner.new(project)
+    exit(runner.run(name, headed: options[:headed], retries: options[:retries], inputs: options[:input],
+                          trigger: options[:trigger]))
+  rescue RubyRaider::Flows::Error => e
+    stop(e)
+  end
 
   map 'run' => :run_flow
 
   desc 'list', 'Lists the flows with their last result'
   option :json, type: :boolean, desc: 'Print JSON for the desktop app'
 
-  def list; end
+  def list
+    summaries = RubyRaider::Flows::RunLog.summaries(project)
+    return puts(JSON.generate(summaries)) if options[:json]
+    return puts('No flows yet: write one in flows/<name>_flow.rb') if summaries.empty?
+
+    summaries.each { |flow| puts(list_line(flow)) }
+  rescue RubyRaider::Flows::Error => e
+    stop(e)
+  end
 
   no_commands do
     def project
       RubyRaider::Flows::Project.new(options[:project] || Dir.pwd)
+    end
+
+    def list_line(flow)
+      last = flow['last']
+      result = last ? "#{last['status']}  #{last['finished_at']}" : 'never run'
+      "#{flow['name'].ljust(30)}  #{result}"
     end
 
     def stop(error)

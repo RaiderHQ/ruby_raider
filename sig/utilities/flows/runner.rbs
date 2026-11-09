@@ -1,0 +1,29 @@
+module RubyRaider
+  module Flows
+    class Runner
+      EXIT_CODES: Hash[String, Integer]
+      INPUT: Regexp
+      INPUT_RULE: String
+      TRIGGERS: Array[String]
+      RETRY_WAIT: Integer
+
+      def self.spawn: (Hash[String, String?] env, Array[String] argv, String chdir) -> Integer?
+
+      def initialize: (Project project, ?out: IO | StringIO, ?spawner: untyped, ?sleeper: untyped) -> void
+      def run: (String name, ?headed: bool?, ?retries: untyped, ?inputs: Array[String]?, ?trigger: String) -> Integer
+
+      private
+
+      def attempt_runs: (String name, String file, Integer attempts, Hash[Symbol, untyped] options) -> String
+      def attempt_run: (String name, String file, Integer attempt, Hash[Symbol, untyped] options) -> String
+      def run_env: (String name, Integer attempt, String run_id, Hash[Symbol, untyped] options) -> Hash[String, String?]
+      def input_env: (Array[String]? inputs) -> Hash[String, String]
+      def checked_trigger: (String trigger) -> String
+      def checked_retries: (untyped retries) -> Integer
+      def report: (String name, Hash[String, untyped]? line, Integer? code) -> void
+      def outcome: (Hash[String, untyped] line) -> String
+      def failed_step: (untyped step) -> String
+      def duration: (Hash[String, untyped] line) -> (Float | String)
+    end
+  end
+end

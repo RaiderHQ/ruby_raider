@@ -1,0 +1,15 @@
+module RubyRaider
+  module Flows
+    class RunLog
+      MAX_BYTES: Integer
+      SUMMARY: Array[String]
+
+      def self.summaries: (Project project) -> Array[Hash[String, untyped]]
+
+      def initialize: (Project project, String name) -> void
+      def lines: () -> Array[Hash[String, untyped]]
+      def last: () -> Hash[String, untyped]?
+      def find: (String run_id) -> Hash[String, untyped]?
+    end
+  end
+end
