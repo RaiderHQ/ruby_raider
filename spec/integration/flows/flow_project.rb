@@ -35,6 +35,7 @@ module FlowProject
     RSpec.configure do |config|
       config.include(DriverHelper)
       config.before(:each) { driver }
+      config.after(:each) { File.write('driver_quit', '') }
       # The real reporter writes run.json when it closes; the desktop sidecar names the failed step there
       config.after(:suite) do
         dir = RaiderReporter.configuration.output_dir

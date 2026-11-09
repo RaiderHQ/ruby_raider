@@ -42,12 +42,25 @@ module RaiderFlows
         @started_at = now
         @secrets = []
         busy! unless lock
+        stop_on_interrupt
         # Registered as soon as the lock is held, so even a failure below leaves its line. It runs after
         # RSpec and the reporter finished (run.json is written), whatever way the run ended.
         at_exit { finish!(exit_status($ERROR_INFO)) }
         @results_dir = new_results_dir
         load_env_file
         headless
+      end
+
+      # RSpec would finish the whole flow on a first Ctrl-C and exit! (no run log line) on a second. The first
+      # one ends the current step instead, so the run is recorded and spec_helper still quits the driver;
+      # repeats are ignored while that happens.
+      def stop_on_interrupt
+        trap('INT') do
+          next if @stopping
+
+          @stopping = true
+          raise Interrupt, 'flow stopped'
+        end
       end
 
       # RAIDER_FLOW_HEADED=1 drops a HEADLESS left in the shell; config.yml headless: true still wins
@@ -64,7 +77,7 @@ module RaiderFlows
         return unless defined?(RaiderReporter)
 
         RaiderReporter.configure do |reporter|
-          reporter.output_dir = results_dir || Dir.mktmpdir('raider-flow-')
+          reporter.output_dir = results_dir || (@fallback_dir ||= Dir.mktmpdir('raider-flow-'))
           reporter.clean_output_dir = false
         end
       end

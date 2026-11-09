@@ -201,18 +201,20 @@ RSpec.describe RubyRaider::Flows::Runner do # rubocop:disable RSpec/FilePath
       expect(code).to eq(5)
     end
 
-    it 'turns INT into one TERM for the flow and marks the run stopped' do
+    it 'passes INT or TERM to the flow once, as INT, and marks the run stopped', skip: Gem.win_platform? do
       ready = File.join(dir, 'ready')
       got = File.join(dir, 'got')
-      child = "trap('TERM') { File.write(#{got.inspect}, 'TERM'); exit 0 }; File.write(#{ready.inspect}, ''); sleep 30"
+      child = "n = 0; trap('INT') { n += 1 }; trap('TERM') { n += 100 }; File.write(#{ready.inspect}, ''); " \
+              "sleep 1.5; File.write(#{got.inspect}, n.to_s)"
       Thread.new do
         sleep 0.05 until File.exist?(ready)
+        Process.kill('TERM', Process.pid)
         Process.kill('INT', Process.pid)
       end
 
       code = described_class.spawn({}, [RbConfig.ruby, '-e', child], dir)
 
-      expect([code, File.read(got), described_class.stopped]).to eq([0, 'TERM', true])
+      expect([code, File.read(got), described_class.stopped]).to eq([0, '1', true])
     end
 
     it 'does not retry a stopped run' do

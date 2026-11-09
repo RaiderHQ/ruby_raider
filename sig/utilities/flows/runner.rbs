@@ -8,10 +8,9 @@ module RubyRaider
       RETRY_WAIT: Integer
 
       def self.spawn: (Hash[String, String?] env, Array[String] argv, String chdir) -> Integer?
-      def self.wait_forwarding_signals: (Integer pid) -> Integer?
       def self.stopped: () -> bool?
       def self.stopped=: (bool) -> bool
-      def self.stop: (Integer pid) -> void
+      def self.interrupt: (Integer pid) -> void
 
       def initialize: (Project project, ?out: IO | StringIO, ?spawner: untyped, ?sleeper: untyped) -> void
       def run: (String name, ?headed: bool?, ?retries: untyped, ?inputs: Array[String]?, ?trigger: String) -> Integer
