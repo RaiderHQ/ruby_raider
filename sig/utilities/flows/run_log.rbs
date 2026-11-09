@@ -11,6 +11,7 @@ module RubyRaider
       def initialize: (Project project, String name) -> void
       def lines: () -> Array[Hash[String, untyped]]
       def last: () -> Hash[String, untyped]?
+      def last_result: () -> Hash[String, untyped]?
       def find: (String run_id) -> Hash[String, untyped]?
 
       private

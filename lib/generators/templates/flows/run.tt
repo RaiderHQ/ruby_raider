@@ -4,6 +4,7 @@ require 'English'
 require 'fileutils'
 require 'json'
 require 'time'
+require 'tmpdir'
 
 # One run of a flow: a per-flow lock, a results folder and one line in .raider/flows/<name>/runs.jsonl.
 # flows/flow_helper.rb starts it, so `raider flow run`, plain rspec, the desktop app and a schedule all
@@ -33,10 +34,11 @@ module RaiderFlows
       # At require time, before the driver or the reporter start. Exits 3 when the flow is already running.
       def start!
         # `rspec --dry-run` runs nothing, so it takes no lock and leaves no record
-        return if @root || RSpec.configuration.dry_run?
+        return if @name || RSpec.configuration.dry_run?
 
-        @root = File.realpath(ROOT)
+        root = File.realpath(ROOT)
         @name = flow_name
+        @root = root
         @started_at = now
         @secrets = []
         busy! unless lock
@@ -45,7 +47,26 @@ module RaiderFlows
         at_exit { finish!(exit_status($ERROR_INFO)) }
         @results_dir = new_results_dir
         load_env_file
-        ENV['HEADLESS'] ||= 'true' unless ENV['RAIDER_FLOW_HEADED'] == '1'
+        headless
+      end
+
+      # RAIDER_FLOW_HEADED=1 drops a HEADLESS left in the shell; config.yml headless: true still wins
+      def headless
+        if ENV['RAIDER_FLOW_HEADED'] == '1'
+          ENV.delete('HEADLESS')
+        else
+          ENV['HEADLESS'] ||= 'true'
+        end
+      end
+
+      # Flow results go to flow-results/<name>/<UTC stamp>, never raider-results, and are never cleaned
+      def configure_reporter
+        return unless defined?(RaiderReporter)
+
+        RaiderReporter.configure do |reporter|
+          reporter.output_dir = results_dir || Dir.mktmpdir('raider-flow-')
+          reporter.clean_output_dir = false
+        end
       end
 
       def steps_started!

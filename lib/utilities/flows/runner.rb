@@ -18,11 +18,17 @@ module RubyRaider
       TRIGGERS = %w[manual schedule desktop].freeze
       RETRY_WAIT = 30
 
+      class << self
+        # True once INT or TERM stopped the last spawned run: no retry after that
+        attr_accessor :stopped
+      end
+
       # Runs argv with no shell, under the project's own bundle rather than the one raider runs in.
-      # INT and TERM reach the flow too, so a stopped raider never leaves a run holding the lock.
       # nil when it could not start (bundle not on PATH): no log line then, so exit 2.
       def self.spawn(env, argv, chdir)
-        run = -> { wait_forwarding_signals(Process.spawn(env, *argv, chdir: chdir)) }
+        self.stopped = false
+        group = Gem.win_platform? ? { new_pgroup: true } : { pgroup: true }
+        run = -> { wait_forwarding_signals(Process.spawn(env, *argv, chdir: chdir, **group)) }
         defined?(Bundler) ? Bundler.with_unbundled_env(&run) : run.call
       rescue SystemCallError => e
         warn("Could not start #{argv.first}: #{e.message}")
@@ -30,15 +36,19 @@ module RubyRaider
       end
 
       def self.wait_forwarding_signals(pid)
-        previous = %w[INT TERM].to_h { |signal| [signal, trap(signal) { forward(signal, pid) }] }
+        previous = %w[INT TERM].to_h { |signal| [signal, trap(signal) { stop(pid) }] }
         Process.wait(pid)
         $CHILD_STATUS.exitstatus
       ensure
         previous&.each { |signal, handler| trap(signal, handler || 'DEFAULT') }
       end
 
-      def self.forward(signal, pid)
-        Process.kill(signal, pid)
+      # The flow runs in its own process group, so Ctrl-C reaches it once, from here, as TERM: RSpec would
+      # finish the whole flow on a first INT and exit! (no run log line) on a second. TERM ends the step
+      # and still records the run.
+      def self.stop(pid)
+        self.stopped = true
+        Process.kill('TERM', pid)
       rescue SystemCallError
         nil
       end
@@ -66,12 +76,18 @@ module RubyRaider
       def attempt_runs(name, attempts, options)
         (1..attempts).each do |attempt|
           status = attempt_run(name, attempt, options)
+          return stopped(name, status) if Runner.stopped
           return status if %w[completed busy].include?(status) || attempt == attempts
 
           @out.puts("Retrying in #{RETRY_WAIT} s (attempt #{attempt + 1} of #{attempts})")
           @sleeper.call(RETRY_WAIT)
         end
         'setup_error'
+      end
+
+      def stopped(name, status)
+        @out.puts("Flow #{name} was stopped: no retry")
+        status
       end
 
       def attempt_run(name, attempt, options)

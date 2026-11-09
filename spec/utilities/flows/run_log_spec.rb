@@ -33,6 +33,14 @@ RSpec.describe RubyRaider::Flows::RunLog do # rubocop:disable RSpec/FilePath
     expect(log.lines).to eq([])
   end
 
+  it 'lists the last run that ran, not a busy line after it' do
+    FileUtils.mkdir_p(File.join(dir, 'flows'))
+    File.write(File.join(dir, 'flows/report_flow.rb'), '')
+    File.write(file, %({"status":"failed"}\n{"status":"busy"}\n))
+
+    expect(described_class.summaries(RubyRaider::Flows::Project.new(dir)).first['last']['status']).to eq('failed')
+  end
+
   it 'is empty without a log' do
     expect(log.last).to be_nil
   end

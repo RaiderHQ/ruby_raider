@@ -13,8 +13,13 @@ RSpec.describe 'flow templates' do
     expect(helper.index('RaiderFlows::Run.start!')).to be < helper.index("require_relative '../helpers/spec_helper'")
   end
 
-  it 'sends the report to the flow results folder without cleaning it' do
-    expect(helper).to include('reporter.output_dir = RaiderFlows::Run.results_dir', 'reporter.clean_output_dir = false')
+  it 'sends the report to the flow results folder without cleaning it, even when start! refuses the run' do
+    expect(helper).to match(/begin\n  RaiderFlows::Run.start!\nensure\n  RaiderFlows::Run.configure_reporter\nend/)
+    expect(render('flows/run.tt')).to include('reporter.output_dir = results_dir ||', 'reporter.clean_output_dir = false')
+  end
+
+  it 'never retries a flow inside one run' do
+    expect(helper).to include('config.default_retry_count = 0')
   end
 
   it 'marks the start of the steps after spec_helper set up the driver' do

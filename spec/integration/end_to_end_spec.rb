@@ -447,10 +447,6 @@ describe 'End-to-End Project Generation and Execution' do
     end
   end
 
-  # Trace replay against headless Chrome, and one example on headless Firefox. The page is served over HTTP from this process (never file://), so
-  # WebDriver BiDi reports real network and console entries. raider_reporter ~> 1.0 resolves from RubyGems, or
-  # from a checkout at RAIDER_REPORTER_PATH. The example with video on also needs RAIDER_FFMPEG_PATH.
-  # Set TRACE_FIXTURE_DIR to keep the failing RSpec example's trace.zip (and an unzipped copy) there.
   # raider flow init and raider flow run on a generated Selenium project, headless, against a local page
   context 'Flows', :slow do
     let(:project) { generate_video_project('rspec', 'selenium') }
@@ -514,6 +510,10 @@ describe 'End-to-End Project Generation and Execution' do
     end
   end
 
+  # Trace replay against headless Chrome, and one example on headless Firefox. The page is served over HTTP from this process (never file://), so
+  # WebDriver BiDi reports real network and console entries. raider_reporter ~> 1.0 resolves from RubyGems, or
+  # from a checkout at RAIDER_REPORTER_PATH. The example with video on also needs RAIDER_FFMPEG_PATH.
+  # Set TRACE_FIXTURE_DIR to keep the failing RSpec example's trace.zip (and an unzipped copy) there.
   context 'Trace replay', :slow do
     let!(:server) { TracePageServer.new }
     let(:cache_dir) { Dir.mktmpdir('raider-cache') }

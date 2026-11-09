@@ -7,7 +7,7 @@
 - Flows: recordings without assertions that run on their own. `raider flow init` adds `flows/flow_helper.rb` and `flows/support/run.rb` to a Selenium web project made with 4.0 or later (and raises a `~> 4.0` Gemfile pin to `~> 4.1`); mobile and 3.x projects are refused with exit 2.
 - `raider flow run NAME` runs `flows/NAME_flow.rb` headless with `bundle exec rspec`, exiting 0 completed, 1 a step failed, 2 setup failed, 3 already running. `--headed`, `--retries N` (0 to 3, whole flow, 30 s apart), `--input name=value` (read with `flow_input`) and `--trigger manual|schedule|desktop`. `--project PATH` works from any folder.
 - Each run takes a per-flow lock, writes its report, screenshot, video and trace to `flow-results/<name>/<UTC time>/` (never cleaned between runs, last 20 kept) and appends one line to `.raider/flows/<name>/runs.jsonl` (last 50 kept). Flow runs never touch `raider-results/`.
-- Secrets for flows go in `.raider/flows/env` (`KEY=value`), loaded only from a file you own with permissions 600 and never printed or logged.
+- Secrets for flows go in `.raider/flows/env` (`KEY=value`), loaded only from a file you own with permissions 600 and kept out of the run log.
 - `raider flow list [--json]` shows each flow and its last result. `raider f` is short for `raider flow`.
 - Scheduling flows (`raider flow schedule`) is not in this release.
 

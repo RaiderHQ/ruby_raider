@@ -167,6 +167,27 @@ RSpec.describe 'flow run lifecycle' do
     expect(log('ok')).to be_empty
   end
 
+  it 'reports into the run folder and never cleans raider-results' do
+    run_flow('ok')
+    reporter = JSON.parse(File.read(File.join(dir, 'reporter.json')))
+
+    expect(reporter).to eq('output_dir' => File.join(dir, log('ok').last['results_dir']), 'clean_output_dir' => false)
+  end
+
+  it 'keeps a refused flow away from raider-results too' do
+    run_flow('ok', 'RAIDER_FLOW_NAME' => 'other')
+    reporter = JSON.parse(File.read(File.join(dir, 'reporter.json')))
+
+    expect(reporter['clean_output_dir']).to be(false)
+    expect(reporter['output_dir']).to start_with(File.realpath(Dir.tmpdir)).or start_with(Dir.tmpdir)
+  end
+
+  it 'drops a HEADLESS left in the shell for RAIDER_FLOW_HEADED=1' do
+    output, = run_flow('ok', 'RAIDER_FLOW_HEADED' => '1', 'HEADLESS' => 'true')
+
+    expect(output).to include('headless=unset')
+  end
+
   it 'exits 3 with one busy line when another run holds the lock, and never waits' do
     FileUtils.mkdir_p(File.join(dir, '.raider/flows'))
     File.open(File.join(dir, '.raider/flows/ok.lock'), File::RDWR | File::CREAT, 0o600) do |held|

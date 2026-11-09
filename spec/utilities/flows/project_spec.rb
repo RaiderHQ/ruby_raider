@@ -55,6 +55,13 @@ RSpec.describe RubyRaider::Flows::Project do # rubocop:disable RSpec/FilePath
       expect(out.string).not_to include('Run bundle install')
     end
 
+    it 'asks to check a ruby_raider line it cannot raise' do
+      selenium_project(pin: "'4.0.1'")
+
+      expect(project.init(out:, err:)).to eq(0)
+      expect(err.string).to include('Check that the ruby_raider line in your Gemfile allows 4.1 or later')
+    end
+
     it 'is idempotent' do
       selenium_project
       project.init(out:, err:)

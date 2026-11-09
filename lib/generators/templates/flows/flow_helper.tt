@@ -7,7 +7,12 @@
 require_relative 'support/run'
 
 # Before the driver starts: take the flow's lock, pick its results folder, load .raider/flows/env, go headless.
-RaiderFlows::Run.start!
+# The report goes to this run's folder even when start! refuses the run, so a flow never cleans raider-results.
+begin
+  RaiderFlows::Run.start!
+ensure
+  RaiderFlows::Run.configure_reporter
+end
 
 require_relative '../helpers/spec_helper'
 
@@ -22,16 +27,15 @@ module FlowHelper
   end
 end
 
-# Flow results go to flow-results/<name>/<UTC stamp>, never raider-results, and are never cleaned.
-RaiderReporter.configure do |reporter|
-  reporter.output_dir = RaiderFlows::Run.results_dir
-  reporter.clean_output_dir = false
-end
+# Again now that spec_helper is surely loaded
+RaiderFlows::Run.configure_reporter
 
 RSpec.configure do |config|
   config.include(FlowHelper)
   # Flows don't touch spec/examples.txt, so `rspec --only-failures` stays about tests
   config.example_status_persistence_file_path = nil
+  # A flow is not idempotent mid-way: never re-run it from step 1 inside one run (raider flow run --retries re-runs it whole)
+  config.default_retry_count = 0 if config.respond_to?(:default_retry_count=)
   config.define_derived_metadata(file_path: %r{/flows/[^/]+_flow\.rb\z}) { |metadata| metadata[:flow] = true }
   # Runs after spec_helper's hooks started the browser: a failure before this is a setup error, not a step
   config.append_before(:each) { RaiderFlows::Run.steps_started! }
