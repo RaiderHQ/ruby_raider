@@ -57,6 +57,16 @@ RSpec.describe 'flow run lifecycle' do
 
       RSpec.describe('env') { it('runs') { puts 'ran' } }
     RUBY
+    'long' => <<~RUBY,
+      require_relative 'flow_helper'
+
+      RSpec.describe 'long' do
+        it 'waits' do
+          File.write('ready', '')
+          sleep 20
+        end
+      end
+    RUBY
     'unloadable' => <<~RUBY
       require_relative 'flow_helper'
 
@@ -202,6 +212,19 @@ RSpec.describe 'flow run lifecycle' do
     end
     expect(log('ok').map { |line| line['status'] }).to eq(['busy'])
     expect(log('ok').last['results_dir']).to be_nil
+  end
+
+  it 'ends the step on the first Ctrl-C, ignores the second, quits the driver and records the run' do
+    pid = Process.spawn(clean_env, RbConfig.ruby, '-S', 'rspec', 'flows/long_flow.rb', chdir: dir, %i[out err] => File::NULL)
+    Timeout.timeout(30) { sleep 0.05 until File.exist?(File.join(dir, 'ready')) }
+    2.times do
+      Process.kill('INT', pid)
+      sleep 0.2
+    end
+    Timeout.timeout(15) { Process.wait(pid) }
+
+    expect(log('long').map { |line| line['status'] }).to eq(['setup_error'])
+    expect(File).to exist(File.join(dir, 'driver_quit'))
   end
 
   it 'releases the lock when the run ends' do
