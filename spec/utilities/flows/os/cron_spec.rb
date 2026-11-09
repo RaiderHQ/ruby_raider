@@ -223,6 +223,15 @@ RSpec.describe RubyRaider::Flows::Os::Cron do # rubocop:disable RSpec/FilePath
       expect(runner.table).to eq("#{cron.line(other)}\n1 * * * * a\n")
     end
 
+    it 'keeps a line under its tag that is not a schedule run' do
+      item = schedule
+      manual = cron.line(item).sub(' --trigger schedule', ' --trigger manual')
+      runner.table = "# raider-flow #{item.os_id}\n#{manual}\n"
+
+      expect(cron.remove(item.os_id)).to be(true)
+      expect(runner.table).to eq("#{manual}\n")
+    end
+
     it 'removes a tag line left without its line' do
       item = schedule
       runner.table = "1 * * * * a\n# raider-flow #{item.os_id}"

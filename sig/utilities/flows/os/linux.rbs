@@ -4,6 +4,7 @@ module RubyRaider
       class Linux
         @primary: Systemd | Cron
         @other: Cron?
+        @systemd: Systemd
 
         def self.pick: (?CommandRunner runner) -> Linux
 
@@ -15,6 +16,9 @@ module RubyRaider
         def present?: (String os_id) -> bool
 
         private
+
+        def stranded?: (String os_id) -> bool
+        def refuse_stranded: (String os_id) -> void
 
         def other_present?: (String os_id) -> bool
       end

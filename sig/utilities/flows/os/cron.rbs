@@ -24,6 +24,7 @@ module RubyRaider
         def weekday: (String day) -> Integer
         def escape: (String word) -> String
         def without: (String table, String os_id) -> [String, bool]
+        def our_command?: (String text, String? name) -> bool
         def read: () -> String
         def save: (String table) -> void
         def checked_os_id: (untyped os_id) -> String

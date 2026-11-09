@@ -94,6 +94,9 @@ module RubyRaider
 
         def present?(os_id) = systemctl('is-enabled', "#{checked_os_id(os_id)}.timer").success?
 
+        # True when a unit file for the schedule is on disk (no user manager needed)
+        def unit_files?(os_id) = %w[service timer].any? { |kind| File.exist?(unit_path(os_id, kind)) }
+
         # True when the user's systemd manager answers
         def usable? = systemctl('show-environment').success?
 

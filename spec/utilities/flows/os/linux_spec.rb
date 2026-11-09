@@ -94,6 +94,36 @@ RSpec.describe RubyRaider::Flows::Os::Linux do # rubocop:disable RSpec/FilePath
     end
   end
 
+  describe 'with a systemd timer, from a session where systemd does not answer' do
+    let(:units) { File.join(tmp, '.config', 'systemd', 'user') }
+
+    before do
+      runner.answers['systemctl show-environment'] = no_bus
+      FileUtils.mkdir_p(units)
+      File.write(File.join(units, "#{item.os_id}.timer"), 'x')
+    end
+
+    it 'is present' do
+      expect(pick.present?(item.os_id)).to be(true)
+    end
+
+    it 'removes the cron block, then raises so the schedule is kept, and leaves the unit' do
+      runner.table = "#{cron_block}1 * * * * a\n"
+
+      expect { pick.remove(item.os_id) }
+        .to raise_error(RubyRaider::Flows::Error, 'This schedule is a systemd timer; run raider flow unschedule report ' \
+                                                  'from a session where systemctl --user works')
+      expect([runner.table, File.exist?(File.join(units, "#{item.os_id}.timer"))]).to eq(["1 * * * * a\n", true])
+    end
+  end
+
+  it 'does not look for systemd unit files when systemd is the primary' do
+    FileUtils.mkdir_p(File.join(tmp, '.config', 'systemd', 'user'))
+    File.write(File.join(tmp, '.config', 'systemd', 'user', "#{item.os_id}.timer"), 'x')
+
+    expect(pick.remove(item.os_id)).to be(true)
+  end
+
   describe '#present?' do
     it 'is true when only the other scheduler has it' do
       runner.answers['systemctl is-enabled'] = ['disabled', 1]
