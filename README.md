@@ -198,6 +198,37 @@ Example projects log in once and restore the saved session for examples tagged `
 - The state stays in git-ignored `.raider/auth/`.
 - Skeletons (`examples:false`) get `SessionState#reuse` to wire your own login.
 
+### Flows: run without assertions (web)
+
+A flow is a recorded chore with no checks, such as logging in and downloading a report. It is done when every step ran. Flows are RSpec files under `flows/`, so they use the same driver, locators, waiting, screenshots, video and trace as your tests.
+
+```
+raider flow init                     # adds flows/flow_helper.rb, flows/support/run.rb and .gitignore lines
+raider flow run timesheet            # runs flows/timesheet_flow.rb headless
+raider flow run timesheet --headed --retries 2 --input hours=7
+raider flow list [--json]            # each flow and its last result
+```
+
+```ruby
+# flows/timesheet_flow.rb
+require_relative 'flow_helper'
+
+RSpec.describe 'Fill the timesheet' do
+  it 'saves the hours' do
+    driver.navigate.to 'https://example.com/timesheet'
+    driver.find_element(label: 'Hours').send_keys(flow_input('hours', '8'))
+    driver.find_element(by_role('button', name: 'Save')).click
+  end
+end
+```
+
+- **Exit codes:** 0 completed, 1 a step failed, 2 setup failed (bundle, driver, missing helper), 3 the flow is already running. Each flow holds its own lock in `.raider/flows/`, and a second run exits 3 straight away.
+- **Results:** each run gets its own `flow-results/<name>/<UTC time>/` (report, failure screenshot, video and trace), and `.raider/flows/<name>/runs.jsonl` gains one line: `started_at`, `finished_at`, `status` (`completed`, `failed`, `setup_error`, `busy`), `failed_step`, `attempt`, `trigger`, `results_dir`. The last 20 result folders and 50 lines are kept. Flow runs never touch `raider-results/`, and test runs never touch `flow-results/`.
+- **Inputs:** `flow_input('name', 'default')` reads `--input name=value` (`RAIDER_INPUT_NAME`). Inputs show up in your shell history and process list, so keep secrets out of them.
+- **Secrets:** put them in `.raider/flows/env` as `KEY=value` lines (`#` comments, no interpolation). The file is loaded only when you own it and it has permissions 600 (`chmod 600 .raider/flows/env`); otherwise the run warns and goes on without it. Values are never printed or logged. On Windows there are no permission bits, so the folder's access rules protect the file: keep the project in your user folder.
+- **The same record every way:** `bundle exec rspec flows/timesheet_flow.rb` writes the same run log as `raider flow run`; `raider flow run` adds retries (whole flow, 30 s apart) and the exit codes. Set `RAIDER_FLOW_HEADED=1` to watch a plain rspec run.
+- Projects made with 4.0 can add flows: `raider flow init` raises the Gemfile's `ruby_raider` pin to `~> 4.1`; run `bundle install` after it.
+
 ### Also included
 
 - **Page Object Model:** base page and component classes with example pages
@@ -270,11 +301,12 @@ The skeleton keeps the helpers, config, CI and README, and its empty suite passe
 raider new [PROJECT_NAME]       # Create a new framework project
 raider generate                 # Access scaffolding commands
 raider utility                  # Access utility commands
+raider flow                     # Run flows: init, run, list
 raider version                  # Show current version
 raider help [COMMAND]           # Describe available commands
 ```
 
-Shortcuts: `n` (new), `g` (generate), `u` (utility), `v` (version)
+Shortcuts: `n` (new), `g` (generate), `u` (utility), `f` (flow), `v` (version)
 
 ### Scaffolding Commands
 
