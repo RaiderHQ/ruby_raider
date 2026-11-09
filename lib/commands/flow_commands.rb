@@ -56,7 +56,7 @@ class FlowCommands < Thor
 
     def list_line(flow)
       last = flow['last']
-      result = last ? "#{last['status']}  #{last['finished_at']}" : 'never run'
+      result = last ? RubyRaider::Flows.printable("#{last['status']}  #{last['finished_at']}") : 'never run'
       "#{flow['name'].ljust(30)}  #{result}"
     end
 

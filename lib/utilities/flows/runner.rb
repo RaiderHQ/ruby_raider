@@ -18,13 +18,29 @@ module RubyRaider
       TRIGGERS = %w[manual schedule desktop].freeze
       RETRY_WAIT = 30
 
-      # Runs argv with no shell, under the project's own bundle rather than the one raider runs in
+      # Runs argv with no shell, under the project's own bundle rather than the one raider runs in.
+      # INT and TERM reach the flow too, so a stopped raider never leaves a run holding the lock.
+      # nil when it could not start (bundle not on PATH): no log line then, so exit 2.
       def self.spawn(env, argv, chdir)
-        run = lambda do
-          Process.wait(Process.spawn(env, *argv, chdir: chdir))
-          $CHILD_STATUS.exitstatus
-        end
+        run = -> { wait_forwarding_signals(Process.spawn(env, *argv, chdir: chdir)) }
         defined?(Bundler) ? Bundler.with_unbundled_env(&run) : run.call
+      rescue SystemCallError => e
+        warn("Could not start #{argv.first}: #{e.message}")
+        nil
+      end
+
+      def self.wait_forwarding_signals(pid)
+        previous = %w[INT TERM].to_h { |signal| [signal, trap(signal) { forward(signal, pid) }] }
+        Process.wait(pid)
+        $CHILD_STATUS.exitstatus
+      ensure
+        previous&.each { |signal, handler| trap(signal, handler || 'DEFAULT') }
+      end
+
+      def self.forward(signal, pid)
+        Process.kill(signal, pid)
+      rescue SystemCallError
+        nil
       end
 
       def initialize(project, out: $stdout, spawner: Runner.method(:spawn), sleeper: ->(seconds) { sleep(seconds) })
@@ -36,20 +52,20 @@ module RubyRaider
 
       # Returns the exit code: 0 completed, 1 a step failed, 2 setup failed, 3 already running.
       def run(name, headed: false, retries: 0, inputs: [], trigger: 'manual')
-        file = @project.flow_file(name)
+        @project.flow_file(name)
         raise Error, 'Flows are not set up in this project: run raider flow init' unless @project.set_up?
 
         options = { headed: headed, inputs: input_env(inputs), trigger: checked_trigger(trigger) }
         attempts = checked_retries(retries) + 1
-        status = attempt_runs(name, file, attempts, options)
-        EXIT_CODES.fetch(status)
+        status = attempt_runs(name, attempts, options)
+        EXIT_CODES.fetch(status, 2)
       end
 
       private
 
-      def attempt_runs(name, file, attempts, options)
+      def attempt_runs(name, attempts, options)
         (1..attempts).each do |attempt|
-          status = attempt_run(name, file, attempt, options)
+          status = attempt_run(name, attempt, options)
           return status if %w[completed busy].include?(status) || attempt == attempts
 
           @out.puts("Retrying in #{RETRY_WAIT} s (attempt #{attempt + 1} of #{attempts})")
@@ -58,19 +74,22 @@ module RubyRaider
         'setup_error'
       end
 
-      def attempt_run(name, file, attempt, options)
+      def attempt_run(name, attempt, options)
         run_id = SecureRandom.hex(8)
-        argv = ['bundle', 'exec', 'rspec', file.delete_prefix("#{@project.root}/"), '--tag', 'flow']
+        # The literal name-built path ([a-z0-9_] only), not the realpath flow_file checked
+        argv = ['bundle', 'exec', 'rspec', "flows/#{name}_flow.rb", '--tag', 'flow']
         code = @spawner.call(run_env(name, attempt, run_id, options), argv, @project.root)
         line = RunLog.new(@project, name).find(run_id)
         report(name, line, code)
         line ? line['status'].to_s : 'setup_error'
       end
 
-      # Every RAIDER_FLOW_* is set (or unset) here, so a value left in the shell never leaks into a run
+      # Every RAIDER_FLOW_* and RAIDER_INPUT_* is set (or unset) here, so a value left in the shell never leaks into a run
       def run_env(name, attempt, run_id, options)
         headed = options[:headed]
-        {
+        stale_inputs = ENV.keys.grep(/\ARAIDER_INPUT_/).to_h { |key| [key, nil] }
+        stale_inputs.merge(
+          'BUNDLE_GEMFILE' => @project.path('Gemfile'),
           'RAIDER_FLOW_NAME' => name,
           'RAIDER_FLOW_ATTEMPT' => attempt.to_s,
           'RAIDER_FLOW_TRIGGER' => options[:trigger],
@@ -78,7 +97,7 @@ module RubyRaider
           'RAIDER_FLOW_HEADED' => headed ? '1' : nil,
           'HEADLESS' => headed ? nil : 'true',
           'RETRY_COUNT' => '0'
-        }.merge(options[:inputs])
+        ).merge(options[:inputs])
       end
 
       # name=value pairs; values reach the flow only through RAIDER_INPUT_<NAME>, never argv
@@ -86,6 +105,7 @@ module RubyRaider
         Array(inputs).to_h do |pair|
           key, value = pair.to_s.split('=', 2)
           raise Error, "Invalid input #{key.to_s.inspect}: #{INPUT_RULE}" unless value && INPUT.match?(key.to_s)
+          raise Error, "Invalid input #{key.inspect}: the value contains a NUL byte" if value.include?("\0")
 
           ["RAIDER_INPUT_#{key.to_s.upcase}", value]
         end
@@ -104,11 +124,11 @@ module RubyRaider
       end
 
       def report(name, line, code)
-        return @out.puts("Flow #{name} did not record a run (exit #{code}): see the output above") unless line
+        return @out.puts("Flow #{name} did not record a run (exit #{code || 'none'}): see the output above") unless line
 
-        @out.puts("Flow #{name} #{outcome(line)}")
+        @out.puts("Flow #{name} #{Flows.printable(outcome(line))}")
         results = line['results_dir']
-        @out.puts("Results: #{results}") if results.is_a?(String) && File.directory?(@project.path(results))
+        @out.puts("Results: #{Flows.printable(results)}") if results.is_a?(String) && File.directory?(@project.path(results))
       end
 
       def outcome(line)

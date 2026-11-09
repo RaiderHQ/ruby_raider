@@ -4,6 +4,7 @@ require 'fileutils'
 require 'json'
 require 'open3'
 require 'time'
+require 'timeout'
 require 'tmpdir'
 require_relative 'flow_project'
 
@@ -50,6 +51,11 @@ RSpec.describe 'flow run lifecycle' do
           raise 'failed'
         end
       end
+    RUBY
+    'env' => <<~RUBY,
+      require_relative 'flow_helper'
+
+      RSpec.describe('env') { it('runs') { puts 'ran' } }
     RUBY
     'unloadable' => <<~RUBY
       require_relative 'flow_helper'
@@ -233,6 +239,86 @@ RSpec.describe 'flow run lifecycle' do
       expect(log('leaky').last['failed_step']['title']).to eq('types [secret] somewhere')
       expect(File.read(File.join(dir, '.raider/flows/leaky/runs.jsonl'))).not_to include('hunter2')
     end
+  end
+
+  context 'when something fails after the lock is taken' do
+    it 'still records the run when flow-results is not a folder' do
+      File.write(File.join(dir, 'flow-results'), '')
+
+      _output, code = run_flow('ok')
+
+      expect(code).not_to eq(0)
+      expect(log('ok').last).to include('status' => 'setup_error', 'results_dir' => nil)
+    end
+
+    it 'skips an env line that is not UTF-8 and runs the flow' do
+      write_env_file("RAIDER_SECRET_TOKEN=hunter2\nBAD=\xFF\n".b, 0o600)
+
+      output, code = run_flow('ok')
+
+      expect(code).to eq(0)
+      expect(output).to include('.raider/flows/env line 2 ignored', 'secret loaded=true')
+    end
+  end
+
+  it 'refuses a flow named env, whose log folder would be the secrets file' do
+    output, code = run_flow('env')
+
+    expect(code).not_to eq(0)
+    expect(output).to include('invalid flow name "env"')
+    expect(File).not_to exist(File.join(dir, '.raider/flows/env'))
+  end
+
+  it 'leaves no lock, record or results for rspec --dry-run' do
+    Open3.capture3(clean_env, RbConfig.ruby, '-S', 'rspec', '--dry-run', 'flows/ok_flow.rb', chdir: dir)
+
+    expect([log('ok'), File.exist?(File.join(dir, 'flow-results'))]).to eq([[], false])
+  end
+
+  it 'never lets the env file set RAIDER_FLOW_* and clamps the attempt to 1' do
+    write_env_file("RAIDER_FLOW_TRIGGER=schedule\n", 0o600)
+
+    output, = run_flow('ok', 'RAIDER_FLOW_ATTEMPT' => '0')
+
+    expect(output).to include('.raider/flows/env line 1 ignored')
+    expect(log('ok').last).to include('trigger' => 'manual', 'attempt' => 1)
+  end
+
+  it 'ignores a FIFO env file without waiting for a writer' do
+    FileUtils.mkdir_p(File.join(dir, '.raider/flows'))
+    File.mkfifo(File.join(dir, '.raider/flows/env'), 0o600)
+
+    output, code = Timeout.timeout(60) { run_flow('ok') }
+
+    expect(code).to eq(0)
+    expect(output).to include('ignored .raider/flows/env: it must be a regular file you own')
+  end
+
+  it 'redacts the longest secret first' do
+    write_env_file("RAIDER_SECRET_A=hunt\nRAIDER_SECRET_TOKEN=hunter2\n", 0o600)
+
+    run_flow('leaky')
+
+    expect(log('leaky').last['failed_step']['title']).to eq('types [secret] somewhere')
+  end
+
+  it 'redacts the value in use when the shell already set the key' do
+    write_env_file("RAIDER_SECRET_TOKEN=hunter2\n", 0o600)
+
+    run_flow('leaky', 'RAIDER_SECRET_TOKEN' => 'shell-secret')
+
+    expect(log('leaky').last['failed_step']['title']).to eq('types [secret] somewhere')
+  end
+
+  it 'never prunes through a linked flow-results folder' do
+    elsewhere = File.join(dir, 'elsewhere')
+    Array.new(25) { |i| FileUtils.mkdir_p(File.join(elsewhere, format('20200101T0000%02dZ', i))) }
+    FileUtils.mkdir_p(File.join(dir, 'flow-results'))
+    File.symlink(elsewhere, File.join(dir, 'flow-results/ok'))
+
+    run_flow('ok')
+
+    expect(Dir.children(elsewhere).grep(/\A2020/).size).to eq(25)
   end
 
   it 'keeps the last 50 log lines and the last 20 results folders, and only stamp-named folders' do

@@ -6,6 +6,13 @@ require 'fileutils'
 module RubyRaider
   module Flows
     NAME = /\A[a-z0-9_]{1,60}\z/
+    # .raider/flows/env is the secrets file, so no flow may log to .raider/flows/env/
+    RESERVED = %w[env].freeze
+
+    def self.valid_name?(name) = NAME.match?(name.to_s) && !RESERVED.include?(name.to_s)
+
+    # Text from a run log, safe to print: page text in a step title can't move the cursor or forge lines
+    def self.printable(text) = text.to_s.gsub(/[[:cntrl:]]/, '?')
 
     # A problem that stops a flow command; exit_code follows `raider flow run` (2 = setup failed).
     class Error < StandardError
@@ -41,7 +48,7 @@ module RubyRaider
 
       # The flow file for a name, realpath-checked inside the project.
       def flow_file(name)
-        raise Error, "Invalid flow name #{name.inspect}: use 1 to 60 of a-z, 0-9 and _" unless NAME.match?(name.to_s)
+        raise Error, "Invalid flow name #{name.inspect}: use 1 to 60 of a-z, 0-9 and _ (not env)" unless Flows.valid_name?(name)
 
         file = path("flows/#{name}_flow.rb")
         raise Error, "No flow #{name}: flows/#{name}_flow.rb not found" unless File.file?(file)
@@ -53,7 +60,7 @@ module RubyRaider
       end
 
       def flow_names
-        Dir.glob(path('flows/*_flow.rb')).map { |file| File.basename(file, '_flow.rb') }.grep(NAME).sort
+        Dir.glob(path('flows/*_flow.rb')).map { |file| File.basename(file, '_flow.rb') }.select { |name| Flows.valid_name?(name) }.sort
       end
 
       def set_up? = TEMPLATES.keys.all? { |file| File.file?(path(file)) }

@@ -1,6 +1,10 @@
 module RubyRaider
   module Flows
     NAME: Regexp
+    RESERVED: Array[String]
+
+    def self.valid_name?: (untyped name) -> bool
+    def self.printable: (untyped text) -> String
 
     class Error < StandardError
       attr_reader exit_code: Integer

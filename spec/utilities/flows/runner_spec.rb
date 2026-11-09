@@ -140,6 +140,39 @@ RSpec.describe RubyRaider::Flows::Runner do # rubocop:disable RSpec/FilePath
     expect(calls.first[:env]).to include('RAIDER_FLOW_HEADED' => '1', 'HEADLESS' => nil)
   end
 
+  it 'exits 2 for a status it does not know' do
+    outcomes << { status: 'running' }
+
+    expect(runner.run('report')).to eq(2)
+  end
+
+  it 'unsets RAIDER_INPUT_* left in the shell and points bundler at the project Gemfile' do
+    ENV['RAIDER_INPUT_STALE'] = 'leak'
+    runner.run('report')
+
+    expect(calls.first[:env]).to include('RAIDER_INPUT_STALE' => nil, 'BUNDLE_GEMFILE' => File.join(dir, 'Gemfile'))
+  ensure
+    ENV.delete('RAIDER_INPUT_STALE')
+  end
+
+  it 'passes the name-built path, not the target of a linked flow file' do
+    File.delete(File.join(dir, 'flows/report_flow.rb'))
+    File.write(File.join(dir, 'flows/a&calc.rb'), '')
+    File.symlink(File.join(dir, 'flows/a&calc.rb'), File.join(dir, 'flows/report_flow.rb'))
+
+    runner.run('report')
+
+    expect(calls.first[:argv]).to include('flows/report_flow.rb')
+  end
+
+  it 'prints control characters from the log as ?' do
+    outcomes << { status: 'failed', code: 1, failed_step: { 'title' => "x\e[2Jy\nFlow fake completed", 'line' => 1 } }
+
+    runner.run('report')
+
+    expect(out.string).to start_with("Flow report failed at line 1 (x?[2Jy?Flow fake completed)\n")
+  end
+
   describe 'refusals (exit 2 through Flows::Error, nothing spawned)' do
     def refuse(name, message, **options)
       expect { runner.run(name, **options) }.to raise_error(RubyRaider::Flows::Error, message)
@@ -151,6 +184,8 @@ RSpec.describe RubyRaider::Flows::Runner do # rubocop:disable RSpec/FilePath
     it('rejects retries above 3') { refuse('report', /Invalid retries 4/, retries: 4) }
     it('rejects an unknown trigger') { refuse('report', /Invalid trigger/, trigger: 'cron') }
     it('rejects an unsafe flow name') { refuse('../report', /Invalid flow name/) }
+    it('rejects the reserved name env') { refuse('env', /Invalid flow name "env"/) }
+    it('rejects a NUL byte in an input value') { refuse('report', /NUL byte/, inputs: ["who=a\0b"]) }
 
     it 'rejects a project without flow init' do
       File.delete(File.join(dir, 'flows/support/run.rb'))
@@ -164,6 +199,13 @@ RSpec.describe RubyRaider::Flows::Runner do # rubocop:disable RSpec/FilePath
       code = described_class.spawn({ 'X' => '; exit 7' }, [RbConfig.ruby, '-e', 'exit(ENV["X"] == "; exit 7" ? 5 : 6)'], dir)
 
       expect(code).to eq(5)
+    end
+
+    it 'returns nil with one line on stderr when the command is not found' do
+      code = nil
+
+      expect { code = described_class.spawn({}, ['raider-no-such-command'], dir) }.to output(/Could not start raider-no-such-command/).to_stderr
+      expect(code).to be_nil
     end
   end
 end

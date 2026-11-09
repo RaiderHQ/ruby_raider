@@ -2,6 +2,8 @@ module RubyRaider
   module Flows
     class RunLog
       MAX_BYTES: Integer
+      NOFOLLOW: Integer
+      NONBLOCK: Integer
       SUMMARY: Array[String]
 
       def self.summaries: (Project project) -> Array[Hash[String, untyped]]
@@ -10,6 +12,10 @@ module RubyRaider
       def lines: () -> Array[Hash[String, untyped]]
       def last: () -> Hash[String, untyped]?
       def find: (String run_id) -> Hash[String, untyped]?
+
+      private
+
+      def tail: () -> String
     end
   end
 end
