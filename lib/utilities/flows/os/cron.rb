@@ -96,17 +96,20 @@ module RubyRaider
         # and whether a tag was there
         def without(table, os_id)
           tag = "#{TAG}#{os_id}"
-          marker = " exec raider flow run #{OS_ID.match(os_id).to_a[1]} --project "
+          name = OS_ID.match(os_id).to_a[1]
           kept = []
           found = after_tag = false
           table.lines.each do |text|
-            ours = text.chomp == tag || (after_tag && text.include?(marker))
+            ours = text.chomp == tag || (after_tag && our_command?(text, name))
             after_tag = text.chomp == tag
             found ||= after_tag
             kept << text unless ours
           end
           [kept.join, found]
         end
+
+        # The line under our tag runs `raider flow run <name> --project ... --trigger schedule`
+        def our_command?(text, name) = text.include?(" exec raider flow run #{name} --project ") && text.include?(' --trigger schedule')
 
         def read
           result = @runner.call(CRONTAB, '-l')
