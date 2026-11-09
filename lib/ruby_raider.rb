@@ -5,6 +5,7 @@ require 'thor'
 # Lazy-load top-level command classes to reduce CLI startup time.
 autoload :ScaffoldingCommands, File.expand_path('commands/scaffolding_commands', __dir__)
 autoload :UtilityCommands, File.expand_path('commands/utility_commands', __dir__)
+autoload :FlowCommands, File.expand_path('commands/flow_commands', __dir__)
 
 module RubyRaider
   class Raider < Thor
@@ -50,6 +51,10 @@ module RubyRaider
     desc 'utility', 'Provides access to all the utility commands'
     subcommand 'utility', UtilityCommands
     map 'u' => 'utility'
+
+    desc 'flow', 'Runs flows: recordings without assertions (init, run, list)'
+    subcommand 'flow', FlowCommands
+    map 'f' => 'flow'
 
     no_tasks do
       # -p values arrive as strings; examples must be true or false, in any case
