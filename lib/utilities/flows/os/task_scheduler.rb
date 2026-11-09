@@ -14,25 +14,40 @@ module RubyRaider
       # quoting, then every value in the XML goes through one XML escaper.
       # Task Scheduler expands %NAME% in Command, Arguments and WorkingDirectory with no escape, so a value
       # holding one is refused before schtasks runs.
-      # :reek:TooManyConstants { max_constants: 7 } -- the folder, the XML escapes and namespace, the os_id rule, quoting, %NAME%, day names
+      # :reek:TooManyConstants { max_constants: 8 } -- the folder, the XML escapes and namespace, the os_id rule, quoting, globs, %NAME%, day names
       class TaskScheduler
         FOLDER = '\\RubyRaider\\'
         ESCAPES = { '&' => '&amp;', '<' => '&lt;', '>' => '&gt;', '"' => '&quot;', "'" => '&apos;' }.freeze
         NAMESPACE = 'http://schemas.microsoft.com/windows/2004/02/mit/task'
         OS_ID = /\A#{Regexp.escape(Schedule::OS_ID_PREFIX)}\.[0-9a-f]{10}\.([a-z0-9_]{1,60})\z/
-        # ruby.exe reads its own command line (win32.c): ' quotes too, and an unquoted * ? [ { is a glob
-        NEEDS_QUOTES = /[ \t\n\v"'*?\[{]/
+        # ruby.exe reads its own command line (w32_cmdvector in win32.c): ' quotes too, and a * ? [ { outside
+        # '...' (even inside "...") makes it glob the argument
+        NEEDS_QUOTES = /[ \t\n\v"']/
+        GLOB = /[*?\[{]/
         EXPANDS = /%[^%]+%/
         DAY_NAMES = %w[Monday Tuesday Wednesday Thursday Friday Saturday Sunday].freeze
 
-        # One argument as CommandLineToArgvW, the MSVCRT and ruby.exe read it back: quoted when empty or
-        # holding whitespace, a quote or a glob character; backslashes are doubled only before a quote (or the closing quote)
+        # One argument as ruby.exe reads it back (w32_cmdvector). With a glob character: '...', where nothing
+        # is special and nothing globs (and with a ' too: refused). Otherwise "..." when empty or holding
+        # whitespace or a quote: backslashes before " (or the closing ") are doubled plus one escapes the ",
+        # and an odd run before ' becomes 2n+1 (ruby.exe eats (n+1)/2 of them; an even run is kept as is).
         def self.quote(arg)
+          return glob_quote(arg) if arg.match?(GLOB)
           return arg if !arg.empty? && !arg.match?(NEEDS_QUOTES)
 
-          body = arg.gsub(/(\\*)"/) { "#{Regexp.last_match(1).to_s * 2}\\\"" }.sub(/(\\+)\z/) { Regexp.last_match(1).to_s * 2 }
+          body = arg.gsub(/(\\*)"/) { "#{Regexp.last_match(1).to_s * 2}\\\"" }
+                    .gsub(/(\\+)'/) { "#{odd_doubled(Regexp.last_match(1).to_s)}'" }
+                    .sub(/(\\+)\z/) { Regexp.last_match(1).to_s * 2 }
           "\"#{body}\""
         end
+
+        def self.glob_quote(arg)
+          return "'#{arg}'" unless arg.include?("'")
+
+          raise Error, "Task Scheduler can not pass #{Flows.printable(arg.inspect)} to ruby.exe: an argument with both ' and * ? [ or { would be globbed"
+        end
+
+        def self.odd_doubled(slashes) = slashes.length.odd? ? "#{slashes * 2}\\" : slashes
 
         def self.join(args) = args.map { |arg| quote(arg) }.join(' ')
 
@@ -107,7 +122,8 @@ module RubyRaider
         def listed?(listing, name) = listing.stdout.each_line.any? { |line| line.start_with?(%("#{name}",)) }
 
         def refuse_expansion(schedule)
-          value = [schedule.ruby, *schedule.argv.drop(1), schedule.working_directory].find { |item| item.match?(EXPANDS) }
+          # The joined Arguments, as Task Scheduler expands them: a %...% can span two arguments
+          value = [schedule.ruby, self.class.join(schedule.argv.drop(1)), schedule.working_directory].find { |item| item.match?(EXPANDS) }
           return unless value
 
           raise Error, "Task Scheduler would expand #{Flows.printable(value[EXPANDS])} as an environment variable in #{Flows.printable(value.inspect)}: " \

@@ -90,45 +90,95 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
     args
   end
 
-  # ruby.exe's own reading (win32.c cmdvector): " quotes with the MSVCRT backslash rules, ' quotes with
-  # everything literal inside, and an unquoted * ? [ { would be globbed (refused here: never expected)
+  # ruby.exe's own reading: a port of w32_cmdvector in ruby/win32/win32.c. Pass 1 splits on unquoted
+  # space, tab or newline (' and " both quote; a backslash counts toward escaping a quote except inside
+  # '...'), and marks a * ? [ { outside '...' (even inside "...") for globbing. Pass 2 strips the quotes:
+  # an even run of backslashes before a quote of the other kind is left as it is, every other quote eats
+  # (run + 1) / 2 backslashes. A globbed element is refused here: the quoter must never produce one.
   def ruby_split_arguments(line)
-    args = []
-    current = nil
-    quote = nil
+    elements = []
     index = 0
-    while index < line.length
-      char = line[index]
-      if char == '\\' && quote != "'"
-        run = line[index..][/\A\\+/].length
-        index += run
-        if line[index] == '"'
-          current = "#{current}#{'\\' * (run / 2)}"
-          if run.odd?
-            current += '"'
-            index += 1
-          end
-        else
-          current = "#{current}#{'\\' * run}"
-        end
-        next
-      elsif quote.nil? && ['"', "'"].include?(char)
-        quote = char
-        current ||= +''
-      elsif char == quote
-        quote = nil
-      elsif quote.nil? && [' ', "\t"].include?(char)
-        args << current if current
-        current = nil
-      else
-        raise "unquoted glob character #{char.inspect} in #{line.inspect}" if quote.nil? && '*?[{'.include?(char)
+    loop do
+      index += 1 while line[index]&.match?(/[ \t\n\v\f\r]/)
+      break if index >= line.length
 
-        current = "#{current}#{char}"
+      element, index, glob = ruby_element(line, index)
+      raise "ruby.exe would glob #{element.inspect} in #{line.inspect}" if glob
+
+      elements << element
+    end
+    elements
+  end
+
+  def ruby_element(line, index)
+    base = index
+    quote = nil
+    slashes = 0
+    glob = false
+    done = false
+    while !done && index < line.length
+      char = line[index]
+      case char
+      when '\\' then slashes += 1 unless quote == "'"
+      when ' ', "\t", "\n"
+        done = true unless quote
+        slashes = 0
+      when '*', '?', '[', '{'
+        glob = true unless quote == "'"
+        slashes = 0
+      when "'", '"'
+        if slashes.even?
+          if quote.nil? then quote = char
+          elsif quote == char
+            index += 1 if char == '"' && line[index + 1] == '"'
+            quote = nil
+          end
+        end
+        slashes = 0
+      else slashes = 0
       end
       index += 1
     end
-    args << current if current
-    args
+    length = index - base - (done ? 1 : 0)
+    [ruby_unquote(line[base, length]), index, glob]
+  end
+
+  def ruby_unquote(text)
+    chars = text.chars
+    at = 0
+    slashes = 0
+    quote = nil
+    while at < chars.length
+      char = chars[at]
+      if char == '\\'
+        at += 1
+        slashes += 1 unless quote == "'"
+        next
+      end
+      unless ["'", '"'].include?(char)
+        at += 1
+        slashes = 0
+        next
+      end
+      if slashes.even? && quote && quote != char
+        at += 1
+        slashes = 0
+        next
+      end
+      eaten = (slashes + 1) / 2
+      chars.slice!(at - eaten, eaten + (slashes.even? ? 1 : 0))
+      at -= eaten
+      if slashes.odd?
+        at += 1
+      elsif quote
+        at += 1 if quote == '"' && chars[at] == '"'
+        quote = nil
+      else
+        quote = char
+      end
+      slashes = 0
+    end
+    chars.join
   end
 
   def parsed(text) = REXML::Document.new(text)
@@ -203,22 +253,33 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
       'a\\\\b c' => '"a\\\\b c"',
       '%h&$(id)' => '%h&$(id)',
       "O'Brien" => %("O'Brien"),
-      'a*b' => '"a*b"',
-      'p[1]' => '"p[1]"',
-      'q?' => '"q?"',
-      '{x}' => '"{x}"'
+      'a*b' => "'a*b'",
+      'p[1]' => "'p[1]'",
+      'q?' => "'q?'",
+      '{x}' => "'{x}'",
+      'x{1,2}' => "'x{1,2}'",
+      'C:\\a b\\*.rb' => "'C:\\a b\\*.rb'",
+      'a*"b' => %('a*"b'),
+      "a\\'b c" => %("a\\\\\\'b c"),
+      "a\\\\'b c" => %("a\\\\'b c")
     }.each do |arg, quoted|
       it "quotes #{arg.inspect} as #{quoted.inspect}" do
         expect(described_class.quote(arg)).to eq(quoted)
       end
     end
 
-    it 'gives back every argument when the joined line is split by CommandLineToArgvW rules and by ruby.exe' do
-      args = ['', 'C:\\path with space\\', 'a\\"b', '\\\\', '"', 'x\\', "'; rm -rf ~; '", '</string>', '%h', '$(id)', '\\', '&', hostile,
-              "C:\\Users\\O'Brien\\proj", "a=x'", "b=y'", 'p[1]', 'a*b', 'q?', '{x}', "it's \\\"x\\\" \\"]
-      line = described_class.join(args)
+    # ruby.exe is the real reader; CommandLineToArgvW agrees except on '...' and on backslashes before '
+    it 'gives back every argument when the joined line is read by ruby.exe, and by CommandLineToArgvW where they agree' do
+      plain = ['', 'C:\\path with space\\', 'a\\"b', '\\\\', '"', 'x\\', "'; rm -rf ~; '", '</string>', '%h', '$(id)', '\\', '&', hostile,
+               "C:\\Users\\O'Brien\\proj", "a=x'", "b=y'", "it's \\\"x\\\" \\"]
+      ruby_only = ['p[1]', 'a*b', 'q?', '{x}', 'x{1,2}', 'C:\\a b\\*.rb', 'a*"b\\', "a\\'b c", "a\\\\'b c", "a\\\\\\'b c", "C:\\x\\'q' y"]
 
-      expect([split_arguments(line), ruby_split_arguments(line)]).to eq([args, args])
+      expect(ruby_split_arguments(described_class.join(plain + ruby_only))).to eq(plain + ruby_only)
+      expect(split_arguments(described_class.join(plain))).to eq(plain)
+    end
+
+    it "refuses an argument with both ' and a glob character" do
+      expect { described_class.quote("a'*") }.to raise_error(RubyRaider::Flows::Error, /can not pass "a'\*" to ruby\.exe/)
     end
   end
 
@@ -243,7 +304,7 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
       expect(field(text, 'Task/Actions/Exec/WorkingDirectory')).to eq(item.working_directory)
     end
 
-    it 'starts at the next run, never in the past (a 08:00 rule at 10:30 starts tomorrow)' do
+    it 'starts at the next run: an 11:00 rule at 10:30 starts today at 11:00' do
       trigger = parsed(scheduler.task_xml(schedule(every: 'day', at: '11:00'))).elements['Task/Triggers/CalendarTrigger']
 
       expect(trigger.elements['StartBoundary'].text).to eq('2026-11-09T11:00:00')
@@ -275,25 +336,28 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
       expect(days).to eq([[%w[Monday], '2026-11-16T08:00:00'], [%w[Saturday], '2026-11-14T08:00:00'], [%w[Sunday], '2026-11-15T08:00:00']])
     end
 
-    describe 'with hostile values in an input and in the project path' do
-      # hostile once in the path: two lone % around other text would read as %NAME% and be refused
-      let(:item) { schedule(dir: File.join(tmp, 'p<', "string> #{hostile}"), inputs: ["note=#{hostile}"]) }
-      let(:text) { scheduler.task_xml(item) }
+    # One at a time: a lone % in both would read as %...% across the joined Arguments and be refused
+    {
+      'an input value' => ->(spec) { spec.schedule(inputs: ["note=#{spec.hostile}"]) },
+      'the project path' => ->(spec) { spec.schedule(dir: File.join(spec.tmp, 'p<', "string> #{spec.hostile}")) }
+    }.each do |where, build|
+      describe "with hostile values in #{where}" do
+        let(:item) { build.call(self) }
+        let(:text) { scheduler.task_xml(item) }
 
-      it 'round-trips them through CRT quoting and XML escaping' do
-        line = field(text, 'Task/Actions/Exec/Arguments')
-        args = split_arguments(line)
+        it 'round-trips them through CRT quoting and XML escaping' do
+          line = field(text, 'Task/Actions/Exec/Arguments')
 
-        expect([args, ruby_split_arguments(line)]).to eq([item.argv.drop(1), item.argv.drop(1)])
-        expect(args.last).to eq("note=#{hostile}")
-        expect(field(text, 'Task/Actions/Exec/WorkingDirectory')).to eq(item.working_directory)
-        expect(item.working_directory).to include('</string>', "'; rm -rf ~; '", '$(id)', '%h', '"', '\\', '&')
-      end
+          expect([split_arguments(line), ruby_split_arguments(line)]).to eq([item.argv.drop(1), item.argv.drop(1)])
+          expect(field(text, 'Task/Actions/Exec/WorkingDirectory')).to eq(item.working_directory)
+          expect(item.argv.join).to include('</string>', "'; rm -rf ~; '", '$(id)', '%h', '"', '\\', '&')
+        end
 
-      it 'writes them only in escaped form' do
-        expect(text).not_to include('</string>', "'; rm", '" \\')
-        expect(text.scan(/&(?!amp;|lt;|gt;|quot;|apos;)/)).to be_empty
-        expect(text).to include('&lt;/string&gt;', '&apos;; rm -rf ~; &apos;', '\\&quot; \\ &amp;', '&quot; \\ &amp;', '$(id)', '%h')
+        it 'writes them only in escaped form' do
+          expect(text).not_to include('</string>', "'; rm", '" \\')
+          expect(text.scan(/&(?!amp;|lt;|gt;|quot;|apos;)/)).to be_empty
+          expect(text).to include('&lt;/string&gt;', '&apos;; rm -rf ~; &apos;', '\\&quot; \\ &amp;', '$(id)', '%h')
+        end
       end
     end
   end
@@ -301,11 +365,16 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
   describe 'with quotes and glob characters but no spaces' do
     let(:item) { schedule(dir: File.join(tmp, 'Users', "O'Brien", 'proj'), inputs: ["a=x'", "b=y'", 'c=p[1]', 'd=a*b']) }
 
-    it 'double-quotes them so CommandLineToArgvW and ruby.exe both read the exact argv back' do
+    it "quotes them so ruby.exe reads the exact argv back and globs nothing ('...' around a glob)" do
       line = field(scheduler.task_xml(item), 'Task/Actions/Exec/Arguments')
 
-      expect([split_arguments(line), ruby_split_arguments(line)]).to eq([item.argv.drop(1), item.argv.drop(1)])
-      expect(line).to include(%("#{item.project_root}"), %("a=x'"), %("b=y'"), '"c=p[1]"', '"d=a*b"')
+      expect(ruby_split_arguments(line)).to eq(item.argv.drop(1))
+      expect(line).to include(%("#{item.project_root}"), %("a=x'"), %("b=y'"), "'c=p[1]'", "'d=a*b'")
+    end
+
+    it "refuses an input with both ' and a glob character before any schtasks call" do
+      expect { scheduler.install(schedule(inputs: ["e=a'*"])) }.to raise_error(RubyRaider::Flows::Error, /ruby\.exe/)
+      expect(runner.calls).to be_empty
     end
   end
 
@@ -325,10 +394,15 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
       expect(runner.calls).to be_empty
     end
 
-    it 'keeps a lone %' do
-      item = schedule(inputs: ['note=100% sure', 'other=%h'])
+    it 'refuses a %...% formed across two arguments in the joined Arguments' do
+      expect { scheduler.install(schedule(inputs: ['a=%x', 'b=y%'])) }.to raise_error(RubyRaider::Flows::Error, /would expand %x b=y%/)
+      expect(runner.calls).to be_empty
+    end
 
-      expect(split_arguments(field(scheduler.task_xml(item), 'Task/Actions/Exec/Arguments')).last(2)).to eq(['note=100% sure', 'other=%h'])
+    it 'keeps a lone %' do
+      item = schedule(inputs: ['note=100% sure'])
+
+      expect(split_arguments(field(scheduler.task_xml(item), 'Task/Actions/Exec/Arguments')).last).to eq('note=100% sure')
     end
   end
 

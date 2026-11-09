@@ -11,6 +11,7 @@ module RubyRaider
         NAMESPACE: String
         OS_ID: Regexp
         NEEDS_QUOTES: Regexp
+        GLOB: Regexp
         EXPANDS: Regexp
         DAY_NAMES: Array[String]
 
@@ -19,6 +20,8 @@ module RubyRaider
         @schtasks: String
 
         def self.quote: (String arg) -> String
+        def self.glob_quote: (String arg) -> String
+        def self.odd_doubled: (String slashes) -> String
         def self.join: (Array[String] args) -> String
 
         def initialize: (?runner: CommandRunner, ?clock: _Clock, ?schtasks: String) -> void
