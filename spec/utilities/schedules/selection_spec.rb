@@ -52,7 +52,7 @@ RSpec.describe RubyRaider::Schedules::Selection do # rubocop:disable RSpec/FileP
     end
 
     it 'refuses a tag with a space, a semicolon, a newline or nothing in it' do
-      errors = ['smoke test', 'smoke;rm', "smoke\n;x", '', 'smoke$(id)', 1].map { |tag| error_for(tag: tag) }
+      errors = ['smoke test', 'smoke;rm', "smoke\n;x", '', 'smoke$(id)', 1, "\xFF".dup.force_encoding('UTF-8')].map { |tag| error_for(tag: tag) }
 
       expect(errors).to all(start_with('Invalid tag'))
     end

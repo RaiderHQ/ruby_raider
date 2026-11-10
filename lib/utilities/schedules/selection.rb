@@ -84,7 +84,7 @@ module RubyRaider
       end
 
       def checked_tag(tag)
-        return tag.dup.freeze if tag.is_a?(String) && TAG.match?(tag)
+        return tag.dup.freeze if tag.is_a?(String) && tag.valid_encoding? && TAG.match?(tag)
 
         raise Error, "Invalid tag #{Schedules.printable(tag.inspect)}: use letters, digits, _, : and -"
       end

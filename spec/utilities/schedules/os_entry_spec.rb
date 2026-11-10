@@ -42,10 +42,10 @@ RSpec.describe 'A test schedule OS entry' do
     files = RubyRaider::Schedules::Selection.parse(files: [hostile, 'spec/a_spec.rb'], tag: nil, root: root, host_os: 'darwin24')
     all_tests = entries(schedule)
     picked = entries(schedule(selection: files, retries: 3, notify: true, show_browser: true))
-    tagged = entries(schedule(selection: RubyRaider::Schedules::Selection.parse(files: [], tag: 'smoke', root: root, host_os: 'darwin24')))
+    tagged = entries(schedule(selection: RubyRaider::Schedules::Selection.parse(files: [], tag: 'zz_tag_sentinel', root: root, host_os: 'darwin24')))
 
     expect([picked, tagged]).to eq([all_tests, all_tests])
-    expect(all_tests.join).not_to include('spec/', 'smoke', '--retries', '--notify', 'show')
+    expect(all_tests.join).not_to include('rm -rf', '%PATH%', 'a_spec.rb', 'zz_tag_sentinel', '--retries', '--notify', 'show-browser', 'show_browser')
   end
 
   it 'names the test schedule kind and the schedule in every entry' do
