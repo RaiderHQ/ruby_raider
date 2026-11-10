@@ -1,0 +1,22 @@
+module RubyRaider
+  module Schedules
+    module SchedulerSteps
+      RUBY_NOT_FOUND: String
+
+      private
+
+      # Given by the includer
+      def adapter: () -> untyped
+      def store: () -> Store
+
+      def save: (untyped schedule) -> untyped
+      def delete: (String name, String label) -> untyped
+      def unreadable_warning: (String name, String label) -> String
+      def ruby_found?: (untyped schedule) -> bool
+      def os_entry_state: (String os_id) -> String
+      def present?: (String os_id) -> bool
+      def missed_runs_note: () -> String?
+      def line: (String name, String rule, String next_run, Hash[String, untyped]? last, String state) -> String
+    end
+  end
+end

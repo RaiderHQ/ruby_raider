@@ -8,6 +8,7 @@ require_relative 'run_log'
 require_relative 'schedule'
 require_relative 'schedule_store'
 require_relative '../schedules/adapter'
+require_relative '../schedules/scheduler_steps'
 
 module RubyRaider
   module Flows
@@ -16,8 +17,9 @@ module RubyRaider
     # so the yml never names an entry the OS scheduler refused.
     # :reek:TooManyInstanceVariables { max_instance_variables: 6 } -- the project, its store, the adapter and the injected streams and clock
     class Scheduler
+      include Schedules::SchedulerSteps
+
       NOT_SET_UP = 'Flows are not set up in this project: run raider flow init'
-      RUBY_NOT_FOUND = 'Ruby not found: re-schedule'
       FLOW_NOT_FOUND = 'flow not found: unschedule'
       LAST = %w[status finished_at trigger failed_step results_dir].freeze
       TIME = '%a %-d %b %H:%M'
@@ -66,7 +68,7 @@ module RubyRaider
         @out.puts(was_there ? "Unscheduled #{name}" : "Unscheduled #{name} (it was already gone from #{label})")
         return unless removed.is_a?(ScheduleStore::Removed)
 
-        @err.puts("The schedules.yml entry for #{name} could not be read: a #{label} entry made from a different project path may remain")
+        @err.puts(unreadable_warning(name, label))
       end
 
       def schedules(json: false)
@@ -77,7 +79,7 @@ module RubyRaider
         return @out.puts('No schedules yet: raider flow schedule <name> --every day --at 08:00') if rows.empty?
 
         rows.each { |entry| @out.puts(Flows.printable(entry[:text])) }
-        note = adapter.respond_to?(:missed_runs_note) ? adapter.missed_runs_note : nil
+        note = missed_runs_note
         @out.puts(note) if note
       end
 
@@ -85,25 +87,7 @@ module RubyRaider
 
       def adapter = @adapter ||= Scheduler.adapter
 
-      # Writes the yml; when that fails the OS entry just installed is removed, so neither names the flow
-      def save(schedule)
-        @store.save(schedule)
-      rescue Error, SystemCallError => e
-        label = adapter.label
-        begin
-          adapter.remove(schedule.os_id)
-        rescue Error => remove_error
-          raise Error, "#{e.message} (and removing the #{label} entry failed: #{remove_error.message})"
-        end
-        raise Error, "#{e.message}: the #{label} entry was removed too, so #{schedule.name} is not scheduled"
-      end
-
-      # The OS entry is gone by now: say so when the yml can't be written
-      def delete(name, label)
-        @store.delete(name)
-      rescue Error, SystemCallError => e
-        raise Error, "#{e.message}: the #{label} entry was already removed, but schedules.yml still lists #{name}"
-      end
+      attr_reader :store
 
       # .raider/flows/<name>/ for scheduler.log: 0700 folders that are not links, as flows/support/run.rb makes them
       def flow_dir(name)
@@ -144,21 +128,11 @@ module RubyRaider
         end
       end
 
-      # A flow whose state can't be read is left out: only a listed schedule gets an unknown row
-      def present?(os_id)
-        adapter.present?(os_id)
-      rescue Error
-        false
-      end
-
-      # The OS entry runs `<ruby> <bundle> ...`: ruby is executed, bundle is only read by it
       def os_state(schedule)
-        ruby = schedule.ruby
-        bundle = schedule.bundle
-        return RUBY_NOT_FOUND unless File.file?(ruby) && File.executable?(ruby) && File.file?(bundle) && File.readable?(bundle)
+        return RUBY_NOT_FOUND unless ruby_found?(schedule)
         return FLOW_NOT_FOUND unless File.file?(@project.path("flows/#{schedule.name}_flow.rb"))
 
-        adapter.present?(schedule.os_id) ? 'ok' : "missing from #{adapter.label}"
+        os_entry_state(schedule.os_id)
       rescue Error => e
         "unknown (#{e.message})"
       end
@@ -168,11 +142,6 @@ module RubyRaider
       def last_run(name)
         last = RunLog.new(@project, name).last_result
         last && LAST.to_h { |key| [key, last[key]] }
-      end
-
-      def line(name, rule, next_run, last, state)
-        result = last ? "#{last['status']}  #{last['finished_at']}" : 'never run'
-        "#{name.ljust(30)}  #{rule}  #{next_run}  #{result}  #{state}"
       end
     end
   end
