@@ -5,9 +5,9 @@ module RubyRaider
       SEARCH_DAYS: Integer
       SEARCH_MINUTES: Integer
 
-      def self?.after: (Flows::Schedule schedule, Time now) -> Time
+      def self?.after: (_OsEntry schedule, Time now) -> Time
       def self?.next_minute: (Integer minute, Time now) -> Time
-      def self?.next_day: (Flows::Schedule schedule, Time now) -> Time
+      def self?.next_day: (_OsEntry schedule, Time now) -> Time
       def self?.local: (Date date, Integer hour, Integer minute) -> Time
       def self?.wall: (Time time) -> Array[Integer]
     end

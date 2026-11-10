@@ -15,9 +15,9 @@ module RubyRaider
 
         def initialize: (kind: Kind, ?runner: CommandRunner, ?home: String, ?uid: Integer) -> void
         def label: () -> String
-        def plist: (Flows::Schedule schedule) -> String
+        def plist: (_OsEntry schedule) -> String
         def plist_path: (String os_id) -> String
-        def install: (Flows::Schedule schedule) -> true
+        def install: (_OsEntry schedule) -> true
         def remove: (String os_id) -> bool
         def present?: (String os_id) -> bool
 
@@ -35,7 +35,7 @@ module RubyRaider
         def array: (Array[Array[String]] items) -> Array[String]
         def dict: (Array[[String, Array[String]]] pairs) -> Array[String]
         def indent: (Array[String] lines) -> Array[String]
-        def calendar: (Flows::Schedule schedule) -> Array[String]
+        def calendar: (_OsEntry schedule) -> Array[String]
         def weekday: (String day) -> Integer
         def discard: (String path) -> String
         def write: (String path, String text) -> void

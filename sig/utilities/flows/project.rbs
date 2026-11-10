@@ -8,17 +8,13 @@ module RubyRaider
 
     class Error = Schedules::Error
 
-    class Project
+    class Project < Schedules::Project
       UNSUPPORTED: String
       GITIGNORE_LINES: Array[String]
       TEMPLATES: Hash[String, String]
       PIN: Regexp
       FLOWS_PIN: Array[Integer]
 
-      attr_reader root: String
-
-      def initialize: (String path) -> void
-      def path: (String relative) -> String
       def flow_file: (String name) -> String
       def flow_names: () -> Array[String]
       def set_up?: () -> bool

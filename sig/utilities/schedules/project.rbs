@@ -1,0 +1,10 @@
+module RubyRaider
+  module Schedules
+    class Project
+      attr_reader root: String
+
+      def initialize: (String path) -> void
+      def path: (String relative) -> String
+    end
+  end
+end

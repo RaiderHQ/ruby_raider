@@ -3,6 +3,7 @@
 require 'erb'
 require 'fileutils'
 require_relative '../schedules/kind'
+require_relative '../schedules/project'
 
 module RubyRaider
   module Flows
@@ -19,7 +20,7 @@ module RubyRaider
     Error = Schedules::Error
 
     # A Ruby Raider project that holds flows in flows/<name>_flow.rb.
-    class Project
+    class Project < Schedules::Project
       UNSUPPORTED = 'Flows need a Selenium web project made with Ruby Raider 4.0 or later'
       GITIGNORE_LINES = %w[flow-results/ .raider/flows/].freeze
       TEMPLATES = {
@@ -29,16 +30,6 @@ module RubyRaider
       # gem 'ruby_raider', '~> 4.0' (any quotes); captures the major and minor
       PIN = /^(\s*gem\s+(["'])ruby_raider\2\s*,\s*(["']))~>\s*(\d+)\.(\d+)(?:\.\d+)?(\3)/
       FLOWS_PIN = [4, 1].freeze
-
-      attr_reader :root
-
-      def initialize(path)
-        @root = File.realpath(path)
-      rescue SystemCallError
-        raise Error, "Project folder not found: #{path}"
-      end
-
-      def path(relative) = File.join(root, relative)
 
       # The flow file for a name, realpath-checked inside the project.
       def flow_file(name)

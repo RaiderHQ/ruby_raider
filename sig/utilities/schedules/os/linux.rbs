@@ -12,7 +12,7 @@ module RubyRaider
         def initialize: (kind: Kind, ?runner: CommandRunner, ?systemd: Systemd, ?cron: Cron) -> void
         def label: () -> String
         def missed_runs_note: () -> String?
-        def install: (Flows::Schedule schedule) -> true
+        def install: (_OsEntry schedule) -> true
         def remove: (String os_id) -> bool
         def present?: (String os_id) -> bool
 

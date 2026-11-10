@@ -27,7 +27,7 @@ module RubyRaider
 
       def adapter: () -> untyped
       def save: (Schedule schedule) -> Schedule
-      def delete: (String name, String label) -> (Schedule | ScheduleStore::Removed)?
+      def delete: (String name, String label) -> (Schedule | Schedules::Store::Removed)?
       def flow_dir: (String name) -> void
       def private_dir: (String relative) -> void
       def row: (Schedule schedule, Time now) -> row
