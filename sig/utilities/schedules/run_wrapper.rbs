@@ -1,0 +1,42 @@
+module RubyRaider
+  module Schedules
+    class RunWrapper
+      EXIT_CODES: Hash[String, Integer]
+      TRIGGERS: Array[String]
+      LOG_BYTES: Integer
+      MISSING: String
+      ZERO: Hash[String, Integer]
+      SPAWNER: ^(Hash[String, String?], Array[String], String) -> [Integer?, bool]
+
+      @project: Project
+      @out: IO | StringIO
+      @err: IO | StringIO
+      @spawner: untyped
+      @clock: ^() -> Time
+      @notifier: untyped
+      @lock: RunLock
+
+      def initialize: (Project project, ?out: IO | StringIO, ?err: IO | StringIO, ?spawner: untyped, ?clock: ^() -> Time, ?notifier: untyped) -> void
+      def run: (String name, ?trigger: String) -> Integer
+
+      private
+
+      def load: (String name) -> Schedule
+      def attempt: (Schedule schedule, Hash[String, String] record) -> Hash[Symbol, untyped]
+      def spawn: (Schedule schedule) -> Hash[Symbol, untyped]
+      def status: (Integer? code, bool stopped, Hash[String, Integer]? counts) -> String
+      def argv: (Schedule schedule) -> Array[String]
+      def env: (Schedule schedule) -> Hash[String, String?]
+      def copy_report: (Schedule schedule, RunReport? report) -> String?
+      def append: (Schedule schedule, Hash[String, String] record, Hash[Symbol, untyped] outcome) -> void
+      def finish: (Schedule schedule, Hash[String, String] record, Hash[Symbol, untyped] outcome) -> Integer
+      def append_quietly: (Schedule schedule, Hash[String, String] record, Hash[Symbol, untyped] outcome) -> void
+      def result_text: (Schedule schedule, Hash[String, String] record, Hash[Symbol, untyped] outcome) -> String
+      def failures: (Hash[String, Integer] counts) -> String
+      def notify: (Schedule schedule, Hash[String, String] record, Hash[Symbol, untyped] outcome) -> bool
+      def start_reason: (Schedule schedule, Hash[String, String] record, Hash[Symbol, untyped] outcome, long: bool) -> String
+      def rotate_log: (Schedule schedule) -> void
+      def stamp: () -> String
+    end
+  end
+end

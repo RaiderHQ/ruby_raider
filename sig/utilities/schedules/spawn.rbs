@@ -1,0 +1,10 @@
+module RubyRaider
+  module Schedules
+    module Spawn
+      def self.call: (Hash[String, String?] env, Array[String] argv, String chdir, ?forward_int: bool) -> [Integer?, bool]
+      def self.run: (Hash[String, String?] env, Array[String] argv, String chdir, Hash[Symbol, untyped] state, bool forward_int) -> Integer?
+      def self.stop: (Hash[Symbol, untyped] state, String signal, bool forward_int) -> void
+      def self.interrupt: (Hash[Symbol, untyped] state) -> void
+    end
+  end
+end

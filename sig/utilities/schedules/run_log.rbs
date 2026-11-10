@@ -1,0 +1,30 @@
+module RubyRaider
+  module Schedules
+    class RunLog
+      MAX_BYTES: Integer
+      MAX_LINES: Integer
+      FILE: String
+      NOFOLLOW: Integer
+      NONBLOCK: Integer
+
+      @project: Project
+      @parts: Array[String]
+      @file: String
+
+      def self.private_dir: (Project project, *String parts) -> String
+
+      def initialize: (Project project, String name, ?dir: String) -> void
+      def lines: () -> Array[Hash[String, untyped]]
+      def last: () -> Hash[String, untyped]?
+      def last_result: () -> Hash[String, untyped]?
+      def find: (String run_id) -> Hash[String, untyped]?
+      def append: (Hash[String, untyped] line) -> void
+
+      private
+
+      def add: (String text) -> void
+      def replace: (String text) -> void
+      def tail: () -> String
+    end
+  end
+end

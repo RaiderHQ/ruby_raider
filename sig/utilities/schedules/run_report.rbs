@@ -1,0 +1,32 @@
+module RubyRaider
+  module Schedules
+    class RunReport
+      DIR: String
+      RUN: String
+      INDEX: String
+      ATTACHMENTS: String
+      SLACK: Integer
+      MAX_RUN_BYTES: Integer
+      MAX_ATTACHMENT_BYTES: Integer
+
+      @dir: String
+      @run_json: String
+
+      attr_reader counts: Hash[String, Integer]
+
+      def self.load: (Project project, since: Time) -> RunReport?
+      def self.read_file: (String path, Integer max) -> [String, Time]?
+      def self.fresh?: (untyped run, Time? mtime, Time since) -> bool
+
+      def initialize: (String dir, String run_json, Array[untyped] results) -> void
+      def copy_to: (String target) -> bool
+
+      private
+
+      def copy_attachments: (String temp) -> void
+      def copy_file: (String source, String target) -> void
+      def regular_files: (String dir, ?String? prefix, ?Hash[String, Integer] found) -> Hash[String, Integer]?
+      def swap: (String temp, String target) -> void
+    end
+  end
+end

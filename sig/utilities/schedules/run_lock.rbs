@@ -1,0 +1,25 @@
+module RubyRaider
+  module Schedules
+    class RunLock
+      LOCK: String
+      RUNNING: String
+      MAX_RUNNING_BYTES: Integer
+
+      @project: Project
+      @lock: File?
+      @run_id: String?
+
+      def initialize: (Project project) -> void
+      def acquire: (name: String, run_id: String, started_at: String) -> bool
+      def release: () -> void
+
+      private
+
+      def lock: (String path) -> bool
+      def busy: () -> false
+      def live?: (String running) -> bool
+      def read_running: (String running) -> Hash[String, untyped]?
+      def write_running: (String running, String name, String run_id, String started_at) -> bool
+    end
+  end
+end

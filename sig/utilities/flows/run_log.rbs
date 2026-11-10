@@ -1,22 +1,11 @@
 module RubyRaider
   module Flows
-    class RunLog
-      MAX_BYTES: Integer
-      NOFOLLOW: Integer
-      NONBLOCK: Integer
+    class RunLog < Schedules::RunLog
       SUMMARY: Array[String]
 
       def self.summaries: (Project project) -> Array[Hash[String, untyped]]
 
       def initialize: (Project project, String name) -> void
-      def lines: () -> Array[Hash[String, untyped]]
-      def last: () -> Hash[String, untyped]?
-      def last_result: () -> Hash[String, untyped]?
-      def find: (String run_id) -> Hash[String, untyped]?
-
-      private
-
-      def tail: () -> String
     end
   end
 end

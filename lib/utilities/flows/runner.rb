@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require 'English'
 require 'securerandom'
 require 'time'
 require_relative 'project'
 require_relative 'run_log'
 require_relative '../schedules/notifier'
+require_relative '../schedules/spawn'
 
 module RubyRaider
   module Flows
@@ -25,46 +25,14 @@ module RubyRaider
         attr_accessor :stopped
       end
 
-      # Runs argv with no shell, under the project's own bundle rather than the one raider runs in.
-      # The flow stays in the terminal's process group (it can read the terminal, and a closed terminal
-      # ends it). Its flows/support/run.rb turns the first INT into an Interrupt that ends the step and
-      # still records the run, and ignores the rest. nil when it could not start: no log line, so exit 2.
+      # Runs argv with no shell, under the project's own bundle (Schedules::Spawn). The flow's
+      # flows/support/run.rb turns the first INT into an Interrupt that ends the step and still records the
+      # run, and ignores the rest, so every INT or TERM is passed on (once). nil when it could not start: no
+      # log line, so exit 2.
       def self.spawn(env, argv, chdir)
         self.stopped = false
-        pid = nil
-        forwarded = false
-        forward = lambda do
-          next if pid.nil? || forwarded || Gem.win_platform? # the Windows console already sent Ctrl-C to the flow
-
-          forwarded = true
-          interrupt(pid)
-        end
-        # Before spawning, so a Ctrl-C in between is not lost
-        previous = %w[INT TERM].to_h do |signal|
-          [signal, trap(signal) do
-            self.stopped = true
-            forward.call
-          end]
-        end
-        run = lambda do
-          pid = Process.spawn(env, *argv, chdir: chdir)
-          forward.call if stopped
-          Process.wait(pid)
-          $CHILD_STATUS.exitstatus
-        end
-        defined?(Bundler) ? Bundler.with_unbundled_env(&run) : run.call
-      rescue SystemCallError => e
-        warn("Could not start #{argv.first}: #{e.message}")
-        nil
-      ensure
-        previous&.each { |signal, handler| trap(signal, handler || 'DEFAULT') }
-      end
-
-      # INT, sent once: from a terminal the flow already has its own, which it ignores as a repeat
-      def self.interrupt(pid)
-        Process.kill('INT', pid)
-      rescue SystemCallError
-        nil
+        code, self.stopped = Schedules::Spawn.call(env, argv, chdir, forward_int: true)
+        code
       end
 
       # notifier: nil makes a Notifier only when a run with notify: true needs one
