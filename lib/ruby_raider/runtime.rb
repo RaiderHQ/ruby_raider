@@ -14,7 +14,9 @@ require_relative 'runtime/observer'
 require_relative 'runtime/actionability'
 require_relative 'runtime/strict'
 require_relative 'runtime/actionable'
+require_relative 'runtime/show_browser'
 
 Raider::Finders.check_api
 Raider::Finders.install
 Raider::Finders.guard
+Raider::ShowBrowser.install

@@ -1,10 +1,17 @@
 module RubyRaider
   module Schedules
     class Project
+      DRIVER_HELPER: String
+      REQUIRES_RUNTIME: Regexp
+      MAX_HELPER_BYTES: Integer
+      NO_RUNTIME: String
+
       attr_reader root: String
 
       def initialize: (String path) -> void
       def path: (String relative) -> String
+      def check_show_browser!: () -> void
+      def runtime_driver?: () -> bool
     end
   end
 end

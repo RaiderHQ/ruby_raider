@@ -1,0 +1,27 @@
+module Raider
+  module ShowBrowser
+    ENV_KEY: String
+    OPTIONS: Array[String]
+    SWITCHES: Array[String]
+    PREFIX: String
+    ARGS_KEYS: Array[Symbol | String]
+
+    def self.headless?: (untyped arg) -> bool
+    def self.without_headless: (untyped args) -> untyped
+    def self.install: (?_Env env) -> Array[Module]
+
+    def headless?: (untyped arg) -> bool
+    def without_headless: (untyped args) -> untyped
+    def install: (?_Env env) -> Array[Module]
+
+    interface _Env
+      def []: (String) -> String?
+    end
+
+    module Filter
+      def initialize: (**untyped opts) -> void
+      def add_argument: (untyped arg) -> untyped
+      def args=: (untyped value) -> untyped
+    end
+  end
+end
