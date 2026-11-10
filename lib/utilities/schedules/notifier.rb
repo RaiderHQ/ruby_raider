@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 require 'rbconfig'
-require_relative 'project'
+require_relative 'base'
 require_relative 'os/command_runner'
 
 module RubyRaider
-  module Flows
+  module Schedules
     # A desktop notification for `raider flow run --notify`. The title and message only ever travel as argv
     # items after `--` (osascript, notify-send: so a title like -e is not read as an option or a script) or as
     # environment values (PowerShell), so a hostile flow name or step title can't run as AppleScript or PowerShell. Never raises: a notification
@@ -64,10 +64,10 @@ module RubyRaider
 
       private
 
-      def clean(text) = Flows.printable(text)[0, MAX].to_s
+      def clean(text) = Schedules.printable(text)[0, MAX].to_s
 
       def failed(reason)
-        @err.puts("Could not show a desktop notification: #{Flows.printable(reason.strip)}") unless @warned
+        @err.puts("Could not show a desktop notification: #{Schedules.printable(reason.strip)}") unless @warned
         @warned = true
         false
       end

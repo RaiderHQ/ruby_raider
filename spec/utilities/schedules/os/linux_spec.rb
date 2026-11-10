@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
 require 'tmpdir'
-require_relative '../../../../lib/utilities/flows/os/linux'
+require_relative '../../../../lib/utilities/schedules/os/linux'
+require_relative '../../../../lib/utilities/flows/schedule'
 
 # Flow specs live under spec/utilities/flows, next to the code in lib/utilities/flows
 # rubocop:disable RSpec/MultipleMemoizedHelpers
-RSpec.describe RubyRaider::Flows::Os::Linux do # rubocop:disable RSpec/FilePath
+RSpec.describe RubyRaider::Schedules::Os::Linux do # rubocop:disable RSpec/FilePath
   # Plays systemctl --user and crontab: answers keyed by "systemctl verb" or "crontab -l"; never runs anything
   let(:fake_runner_class) do
     Class.new do
@@ -24,7 +25,7 @@ RSpec.describe RubyRaider::Flows::Os::Linux do # rubocop:disable RSpec/FilePath
         missing = key == 'crontab -l' && table.nil?
         stderr, status = answers.fetch(key) { missing ? ['no crontab for raider', 1] : ['', 0] }
         self.table = stdin_data if key == 'crontab -' && status.zero?
-        RubyRaider::Flows::Os::CommandRunner::Result.new(stdout: key == 'crontab -l' ? table.to_s : '', stderr: stderr, exitstatus: status)
+        RubyRaider::Schedules::Os::CommandRunner::Result.new(stdout: key == 'crontab -l' ? table.to_s : '', stderr: stderr, exitstatus: status)
       end
     end
   end
@@ -35,23 +36,23 @@ RSpec.describe RubyRaider::Flows::Os::Linux do # rubocop:disable RSpec/FilePath
     project = RubyRaider::Flows::Project.new(tmp)
     RubyRaider::Flows::Schedule.build(project: project, name: 'report', every: 'day', at: '08:00', now: Time.utc(2026, 11, 9))
   end
-  let(:cron_block) { "# raider-flow #{item.os_id}\n#{RubyRaider::Flows::Os::Cron.new.line(item)}\n" }
+  let(:cron_block) { "# raider-flow #{item.os_id}\n#{RubyRaider::Schedules::Os::Cron.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY).line(item)}\n" }
   let(:no_bus) { ['Failed to connect to bus', 1] }
 
   # The systemd units go to a temp home, never the real one
-  def pick = described_class.new(runner: runner, systemd: RubyRaider::Flows::Os::Systemd.new(runner: runner, home: tmp, config_home: nil))
+  def pick = described_class.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner, systemd: RubyRaider::Schedules::Os::Systemd.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner, home: tmp, config_home: nil))
 
   after { FileUtils.rm_rf(tmp) }
 
   it 'uses systemd when the user manager answers' do
     linux = pick
 
-    expect([linux.label, linux.missed_runs_note, described_class.pick(runner).label]).to eq(['systemd', nil, 'systemd'])
+    expect([linux.label, linux.missed_runs_note, described_class.pick(runner, kind: RubyRaider::Schedules::Kind::FLOW_LEGACY).label]).to eq(['systemd', nil, 'systemd'])
     expect(runner.calls.uniq).to eq([%w[systemctl --user show-environment]])
   end
 
   it 'falls back to cron when it does not, or systemctl is missing' do
-    [no_bus, ['Could not run systemctl', RubyRaider::Flows::Os::CommandRunner::MISSING]].each do |answer|
+    [no_bus, ['Could not run systemctl', RubyRaider::Schedules::Os::CommandRunner::MISSING]].each do |answer|
       runner.answers['systemctl show-environment'] = answer
 
       expect([pick.label, pick.missed_runs_note]).to eq(['cron', '(cron: missed runs are skipped)'])

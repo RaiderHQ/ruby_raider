@@ -1,0 +1,5 @@
+module RubyRaider
+  module Schedules
+    def self.adapter: (kind: Kind, ?runner: Os::CommandRunner, ?host_os: String) -> (Os::Launchd | Os::TaskScheduler | Os::Linux)
+  end
+end

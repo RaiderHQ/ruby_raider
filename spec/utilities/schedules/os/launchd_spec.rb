@@ -2,12 +2,13 @@
 
 require 'tmpdir'
 require 'rexml/document'
-require_relative '../../../../lib/utilities/flows/os/launchd'
+require_relative '../../../../lib/utilities/schedules/os/launchd'
+require_relative '../../../../lib/utilities/flows/schedule'
 
 # Flow specs live under spec/utilities/flows, next to the code in lib/utilities/flows
 # The fake runner, temp home and project folders sit next to the adapter under test
 # rubocop:disable RSpec/MultipleMemoizedHelpers
-RSpec.describe RubyRaider::Flows::Os::Launchd do # rubocop:disable RSpec/FilePath
+RSpec.describe RubyRaider::Schedules::Os::Launchd do # rubocop:disable RSpec/FilePath
   # Records every command and answers from a table (success unless told otherwise); never runs anything
   let(:fake_runner_class) do
     Class.new do
@@ -24,7 +25,7 @@ RSpec.describe RubyRaider::Flows::Os::Launchd do # rubocop:disable RSpec/FilePat
         @stdin << stdin_data
         @seen&.call(argv)
         stderr, status = answers.fetch(argv[1], ['', 0])
-        RubyRaider::Flows::Os::CommandRunner::Result.new(stdout: '', stderr: stderr, exitstatus: status)
+        RubyRaider::Schedules::Os::CommandRunner::Result.new(stdout: '', stderr: stderr, exitstatus: status)
       end
 
       def on_call(&block) = @seen = block
@@ -36,7 +37,7 @@ RSpec.describe RubyRaider::Flows::Os::Launchd do # rubocop:disable RSpec/FilePat
   let(:home) { File.join(tmp, 'home') }
   let(:project_dir) { File.join(tmp, 'plain') }
   let(:runner) { fake_runner_class.new }
-  let(:launchd) { described_class.new(runner: runner, home: home, uid: 501) }
+  let(:launchd) { described_class.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner, home: home, uid: 501) }
   let(:now) { Time.utc(2026, 11, 9, 10, 0, 0) }
   let(:agents) { File.join(home, 'Library', 'LaunchAgents') }
 

@@ -1,25 +1,25 @@
 module RubyRaider
-  module Flows
+  module Schedules
     module Os
       class Systemd
         SYSTEMCTL: String
         NOFOLLOW: Integer
         QUOTED: Hash[String, String]
         CALENDAR: Hash[String, String]
-        OS_ID: Regexp
         UNSAFE_PATH: Regexp
 
+        @kind: Kind
         @runner: CommandRunner
         @home: String
         @config_home: String?
 
-        def initialize: (?runner: CommandRunner, ?home: String, ?config_home: String?) -> void
+        def initialize: (kind: Kind, ?runner: CommandRunner, ?home: String, ?config_home: String?) -> void
         def label: () -> String
         def missed_runs_note: () -> nil
-        def service: (Schedule schedule) -> String
-        def timer: (Schedule schedule) -> String
-        def unit_path: (String os_id, String kind) -> String
-        def install: (Schedule schedule) -> true
+        def service: (Flows::Schedule schedule) -> String
+        def timer: (Flows::Schedule schedule) -> String
+        def unit_path: (String os_id, String unit) -> String
+        def install: (Flows::Schedule schedule) -> true
         def remove: (String os_id) -> bool
         def present?: (String os_id) -> bool
         def usable?: () -> bool

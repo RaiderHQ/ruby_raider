@@ -3,25 +3,26 @@
 require 'fileutils'
 require 'securerandom'
 require_relative 'command_runner'
-require_relative '../schedule'
+require_relative '../base'
 
 module RubyRaider
-  module Flows
+  module Schedules
     module Os
       # Linux: a oneshot service and a persistent timer per schedule in the user's systemd folder, enabled
       # with systemctl --user. Words in ExecStart= and Environment= are double-quoted with C escapes; every
       # value has % doubled (specifiers) and ExecStart= also has $ doubled (variable expansion).
-      # :reek:TooManyConstants { max_constants: 6 } -- the tool, NOFOLLOW, the escapes, the calendar days, the os_id and path rules
+      # :reek:TooManyConstants { max_constants: 5 } -- the tool, NOFOLLOW, the escapes, the calendar days, the path rule
       class Systemd
         SYSTEMCTL = 'systemctl'
         NOFOLLOW = defined?(File::NOFOLLOW) ? File::NOFOLLOW : 0
         QUOTED = { '\\' => '\\\\', '"' => '\\"', '%' => '%%' }.freeze
         CALENDAR = { 'hour' => '', 'day' => '', 'weekday' => 'Mon..Fri ' }.freeze
-        OS_ID = /\A#{Regexp.escape(Schedule::OS_ID_PREFIX)}\.[0-9a-f]{10}\.([a-z0-9_]{1,60})\z/
         # The unit parser strips whitespace at the ends of a value and reads a trailing backslash as "continued"
         UNSAFE_PATH = /\s\z|\\\z/
 
-        def initialize(runner: CommandRunner.new, home: Dir.home, config_home: ENV.fetch('XDG_CONFIG_HOME', nil))
+        # kind: the Kind whose units this adapter writes and removes
+        def initialize(kind:, runner: CommandRunner.new, home: Dir.home, config_home: ENV.fetch('XDG_CONFIG_HOME', nil))
+          @kind = kind
           @runner = runner
           @home = home
           @config_home = config_home
@@ -37,7 +38,7 @@ module RubyRaider
           log = specifiers(schedule.log_path)
           <<~UNIT
             [Unit]
-            Description=raider flow #{schedule.name}
+            Description=#{@kind.service_description(schedule.name)}
 
             [Service]
             Type=oneshot
@@ -56,7 +57,7 @@ module RubyRaider
           hour = every == 'hour' ? '*' : format('%02d', schedule.hour)
           <<~UNIT
             [Unit]
-            Description=raider flow #{schedule.name} schedule
+            Description=#{@kind.timer_description(schedule.name)}
 
             [Timer]
             OnCalendar=#{day}*-*-* #{hour}:#{format('%02d', schedule.minute)}:00
@@ -67,7 +68,7 @@ module RubyRaider
           UNIT
         end
 
-        def unit_path(os_id, kind) = File.join(units_dir, "#{checked_os_id(os_id)}.#{kind}")
+        def unit_path(os_id, unit) = File.join(units_dir, "#{checked_os_id(os_id)}.#{unit}")
 
         # Writes both units (temp files renamed into place), reloads and enables the timer; a failure leaves no unit behind
         def install(schedule)
@@ -77,17 +78,17 @@ module RubyRaider
           failure = [systemctl('daemon-reload'), systemctl('enable', '--now', "#{os_id}.timer")].find { |result| !result.success? }
           return true unless failure
 
-          message = "systemd could not enable #{os_id}: #{Flows.printable(failure.stderr.strip)}"
+          message = "systemd could not enable #{os_id}: #{Schedules.printable(failure.stderr.strip)}"
           raise Error, "#{message}#{discard(os_id)}"
         end
 
         # True when a unit file was removed, false when it was already gone
         def remove(os_id)
-          paths = %w[service timer].map { |kind| unit_path(os_id, kind) }
+          paths = %w[service timer].map { |unit| unit_path(os_id, unit) }
           systemctl('disable', '--now', "#{os_id}.timer")
           removed = paths.map { |path| unlink(path) }.any?
           reload = systemctl('daemon-reload')
-          raise Error, "systemd could not reload after removing #{os_id}: #{Flows.printable(reload.stderr.strip)}" unless reload.success?
+          raise Error, "systemd could not reload after removing #{os_id}: #{Schedules.printable(reload.stderr.strip)}" unless reload.success?
 
           removed
         end
@@ -95,7 +96,7 @@ module RubyRaider
         def present?(os_id) = systemctl('is-enabled', "#{checked_os_id(os_id)}.timer").success?
 
         # True when a unit file for the schedule is on disk (no user manager needed)
-        def unit_files?(os_id) = %w[service timer].any? { |kind| File.exist?(unit_path(os_id, kind)) }
+        def unit_files?(os_id) = %w[service timer].any? { |unit| File.exist?(unit_path(os_id, unit)) }
 
         # True when the user's systemd manager answers
         def usable? = systemctl('show-environment').success?
@@ -111,13 +112,13 @@ module RubyRaider
         end
 
         def checked_os_id(os_id)
-          return os_id if os_id.is_a?(String) && (match = OS_ID.match(os_id)) && Flows.valid_name?(match[1])
+          return os_id if @kind.name_in(os_id)
 
-          raise Error, "Invalid os_id #{Flows.printable(os_id.inspect)}: not a flow schedule"
+          raise Error, "Invalid os_id #{Schedules.printable(os_id.inspect)}: #{@kind.not_ours}"
         end
 
         def checked_path(path)
-          raise Error, "systemd can not use the path #{Flows.printable(path.inspect)}: it ends in whitespace or a backslash" if UNSAFE_PATH.match?(path)
+          raise Error, "systemd can not use the path #{Schedules.printable(path.inspect)}: it ends in whitespace or a backslash" if UNSAFE_PATH.match?(path)
         end
 
         # A word systemd gives back exactly: double quotes, \\ and \" escapes, %% for %
@@ -139,9 +140,9 @@ module RubyRaider
         # Disables the timer, removes both units and reloads; returns what to add to the error when that fails too
         def discard(os_id)
           systemctl('disable', "#{os_id}.timer")
-          %w[service timer].each { |kind| unlink(unit_path(os_id, kind)) }
+          %w[service timer].each { |unit| unlink(unit_path(os_id, unit)) }
           reload = systemctl('daemon-reload')
-          reload.success? ? '' : "; also: reload failed: #{Flows.printable(reload.stderr.strip)}"
+          reload.success? ? '' : "; also: reload failed: #{Schedules.printable(reload.stderr.strip)}"
         rescue Error => e
           "; also: #{e.message}"
         end

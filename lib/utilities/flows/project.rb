@@ -2,27 +2,21 @@
 
 require 'erb'
 require 'fileutils'
+require_relative '../schedules/kind'
 
 module RubyRaider
   module Flows
-    NAME = /\A[a-z0-9_]{1,60}\z/
-    # .raider/flows/env is the secrets file, so no flow may log to .raider/flows/env/
-    RESERVED = %w[env].freeze
+    NAME = Schedules::NAME
+    # .raider/flows/env is the secrets file, so no flow may log to .raider/flows/env/ (Kind::FLOW_LEGACY reserves it)
+    RESERVED = Schedules::Kind::FLOW_LEGACY.reserved
 
-    def self.valid_name?(name) = NAME.match?(name.to_s) && !RESERVED.include?(name.to_s)
+    def self.valid_name?(name) = Schedules::Kind::FLOW_LEGACY.valid_name?(name)
 
     # Text from a run log, safe to print: page text in a step title can't move the cursor or forge lines
-    def self.printable(text) = text.to_s.gsub(/[[:cntrl:]]/, '?')
+    def self.printable(text) = Schedules.printable(text)
 
-    # A problem that stops a flow command; exit_code follows `raider flow run` (2 = setup failed).
-    class Error < StandardError
-      attr_reader :exit_code
-
-      def initialize(message, exit_code: 2)
-        super(message)
-        @exit_code = exit_code
-      end
-    end
+    # The same class, so `rescue Flows::Error` also catches what the OS scheduler adapters raise
+    Error = Schedules::Error
 
     # A Ruby Raider project that holds flows in flows/<name>_flow.rb.
     class Project

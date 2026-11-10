@@ -1,26 +1,25 @@
 module RubyRaider
-  module Flows
+  module Schedules
     module Os
       class Cron
         CRONTAB: String
-        TAG: String
         MAX_LINE: Integer
-        OS_ID: Regexp
 
+        @kind: Kind
         @runner: CommandRunner
 
-        def initialize: (?runner: CommandRunner) -> void
+        def initialize: (kind: Kind, ?runner: CommandRunner) -> void
         def label: () -> String
         def missed_runs_note: () -> String
-        def line: (Schedule schedule) -> String
-        def install: (Schedule schedule) -> true
+        def line: (Flows::Schedule schedule) -> String
+        def install: (Flows::Schedule schedule) -> true
         def remove: (String os_id) -> bool
         def present?: (String os_id) -> bool
         def usable?: () -> bool
 
         private
 
-        def fields: (Schedule schedule) -> String
+        def fields: (Flows::Schedule schedule) -> String
         def weekday: (String day) -> Integer
         def escape: (String word) -> String
         def without: (String table, String os_id) -> [String, bool]

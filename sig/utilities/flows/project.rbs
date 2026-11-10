@@ -6,11 +6,7 @@ module RubyRaider
     def self.valid_name?: (untyped name) -> bool
     def self.printable: (untyped text) -> String
 
-    class Error < StandardError
-      attr_reader exit_code: Integer
-
-      def initialize: (String message, ?exit_code: Integer) -> void
-    end
+    class Error = Schedules::Error
 
     class Project
       UNSUPPORTED: String

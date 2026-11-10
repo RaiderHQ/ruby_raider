@@ -16,7 +16,7 @@ module RubyRaider
       @err: IO | StringIO
       @now: ^() -> Time
 
-      def self.adapter: (?runner: Os::CommandRunner, ?host_os: String) -> (Os::Launchd | Os::TaskScheduler | Os::Linux)
+      def self.adapter: (?runner: Schedules::Os::CommandRunner, ?host_os: String) -> (Schedules::Os::Launchd | Schedules::Os::TaskScheduler | Schedules::Os::Linux)
 
       def initialize: (Project project, ?adapter: untyped, ?store: ScheduleStore, ?out: IO | StringIO, ?err: IO | StringIO, ?now: ^() -> Time) -> void
       def schedule: (String name, every: String?, ?at: String?, ?on: String?, ?retries: untyped, ?inputs: Array[String], ?notify: bool) -> void

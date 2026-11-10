@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require 'stringio'
-require_relative '../../../lib/utilities/flows/notifier'
+require_relative '../../../lib/utilities/schedules/notifier'
 
 # Flow specs live under spec/utilities/flows, next to the code in lib/utilities/flows
-RSpec.describe RubyRaider::Flows::Notifier do # rubocop:disable RSpec/FilePath
+RSpec.describe RubyRaider::Schedules::Notifier do # rubocop:disable RSpec/FilePath
   # Records each command instead of running it: no real osascript, notify-send or PowerShell
   let(:runner) do
     Class.new do
@@ -18,7 +18,7 @@ RSpec.describe RubyRaider::Flows::Notifier do # rubocop:disable RSpec/FilePath
 
       def call(*argv, env: {}, timeout: nil, **)
         @calls << { argv: argv, env: env, timeout: timeout }
-        RubyRaider::Flows::Os::CommandRunner::Result.new(stdout: '', stderr: 'no notification server', exitstatus: exitstatus)
+        RubyRaider::Schedules::Os::CommandRunner::Result.new(stdout: '', stderr: 'no notification server', exitstatus: exitstatus)
       end
     end.new
   end

@@ -5,7 +5,7 @@ require 'securerandom'
 require 'time'
 require_relative 'project'
 require_relative 'run_log'
-require_relative 'notifier'
+require_relative '../schedules/notifier'
 
 module RubyRaider
   module Flows
@@ -108,7 +108,7 @@ module RubyRaider
       # The notifier never raises, so a notification can't change the exit code
       def notify_failure(name, status, trigger)
         message = status == 'failed' ? "Failed at #{failed_step(@last_line&.fetch('failed_step', nil))}" : "Could not start: see #{start_output(name, trigger)}"
-        (@notifier ||= Notifier.new).notify("Ruby Raider flow #{name}", message)
+        (@notifier ||= Schedules::Notifier.new).notify("Ruby Raider flow #{name}", message)
       end
 
       # Only a scheduled run outside Windows has a scheduler.log: Windows tasks keep none

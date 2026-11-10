@@ -11,7 +11,7 @@ module RubyRaider
     # from it; it is written whole through a temp file and a rename, so a reader never sees half a file.
     # :reek:MissingSafeMethod { exclude: [ writable! ] } -- a check that raises, with no safe twin to offer
     class ScheduleStore
-      DIR = '.raider/flows'
+      DIR = Schedule::KIND.dir
       FILE = 'schedules.yml'
       NOFOLLOW = defined?(File::NOFOLLOW) ? File::NOFOLLOW : 0
       NONBLOCK = defined?(File::NONBLOCK) ? File::NONBLOCK : 0

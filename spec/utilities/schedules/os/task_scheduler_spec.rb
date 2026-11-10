@@ -2,12 +2,13 @@
 
 require 'tmpdir'
 require 'rexml/document'
-require_relative '../../../../lib/utilities/flows/os/task_scheduler'
+require_relative '../../../../lib/utilities/schedules/os/task_scheduler'
+require_relative '../../../../lib/utilities/flows/schedule'
 
 # Flow specs live under spec/utilities/flows, next to the code in lib/utilities/flows
 # The fake runner, fixed clock and project folders sit next to the adapter under test
 # rubocop:disable RSpec/MultipleMemoizedHelpers
-RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/FilePath
+RSpec.describe RubyRaider::Schedules::Os::TaskScheduler do # rubocop:disable RSpec/FilePath
   # Records every command and answers from a table keyed by the schtasks verb; never runs anything
   let(:fake_runner_class) do
     Class.new do
@@ -22,7 +23,7 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
         @calls << argv
         @seen&.call(argv, stdin_data)
         stderr, status, stdout = answers.fetch(argv[1], ['', 0])
-        RubyRaider::Flows::Os::CommandRunner::Result.new(stdout: stdout.to_s, stderr: stderr, exitstatus: status)
+        RubyRaider::Schedules::Os::CommandRunner::Result.new(stdout: stdout.to_s, stderr: stderr, exitstatus: status)
       end
 
       def on_call(&block) = @seen = block
@@ -35,7 +36,7 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
   let(:runner) { fake_runner_class.new }
   let(:clock) { Struct.new(:now).new(Time.new(2026, 11, 9, 10, 30, 0)) }
   let(:schtasks) { 'C:\\Windows\\System32\\schtasks.exe' }
-  let(:scheduler) { described_class.new(runner: runner, clock: clock, schtasks: schtasks) }
+  let(:scheduler) { described_class.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner, clock: clock, schtasks: schtasks) }
   let(:now) { Time.utc(2026, 11, 9, 10, 0, 0) }
 
   def schedule(dir: project_dir, **options)
@@ -497,7 +498,7 @@ RSpec.describe RubyRaider::Flows::Os::TaskScheduler do # rubocop:disable RSpec/F
     allow(ENV).to receive(:fetch).with('SystemRoot', anything).and_return('D:\\Win')
     item = schedule
 
-    described_class.new(runner: runner, clock: clock).remove(item.os_id)
+    described_class.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner, clock: clock).remove(item.os_id)
 
     expect(runner.calls.first.first).to eq(File.join('D:\\Win', 'System32', 'schtasks.exe'))
   end

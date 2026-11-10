@@ -1,5 +1,5 @@
 module RubyRaider
-  module Flows
+  module Schedules
     module Os
       class Launchd
         LAUNCHCTL: String
@@ -7,17 +7,17 @@ module RubyRaider
         NOFOLLOW: Integer
         ESCAPES: Hash[String, String]
         HEADER: String
-        OS_ID: Regexp
 
+        @kind: Kind
         @runner: CommandRunner
         @home: String
         @uid: Integer
 
-        def initialize: (?runner: CommandRunner, ?home: String, ?uid: Integer) -> void
+        def initialize: (kind: Kind, ?runner: CommandRunner, ?home: String, ?uid: Integer) -> void
         def label: () -> String
-        def plist: (Schedule schedule) -> String
+        def plist: (Flows::Schedule schedule) -> String
         def plist_path: (String os_id) -> String
-        def install: (Schedule schedule) -> true
+        def install: (Flows::Schedule schedule) -> true
         def remove: (String os_id) -> bool
         def present?: (String os_id) -> bool
 
@@ -35,7 +35,7 @@ module RubyRaider
         def array: (Array[Array[String]] items) -> Array[String]
         def dict: (Array[[String, Array[String]]] pairs) -> Array[String]
         def indent: (Array[String] lines) -> Array[String]
-        def calendar: (Schedule schedule) -> Array[String]
+        def calendar: (Flows::Schedule schedule) -> Array[String]
         def weekday: (String day) -> Integer
         def discard: (String path) -> String
         def write: (String path, String text) -> void

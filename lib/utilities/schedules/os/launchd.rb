@@ -3,14 +3,14 @@
 require 'fileutils'
 require 'securerandom'
 require_relative 'command_runner'
-require_relative '../schedule'
+require_relative '../base'
 
 module RubyRaider
-  module Flows
+  module Schedules
     module Os
       # macOS: a LaunchAgent plist in ~/Library/LaunchAgents per schedule, loaded into the user's GUI
       # domain with launchctl. Every value in the plist goes through one XML escaper.
-      # :reek:TooManyConstants { max_constants: 6 } -- the two tools, NOFOLLOW, the XML escapes and header, the os_id rule
+      # :reek:TooManyConstants { max_constants: 5 } -- the two tools, NOFOLLOW, the XML escapes and header
       class Launchd
         LAUNCHCTL = '/bin/launchctl'
         PLUTIL = '/usr/bin/plutil'
@@ -21,9 +21,10 @@ module RubyRaider
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
         XML
-        OS_ID = /\A#{Regexp.escape(Schedule::OS_ID_PREFIX)}\.[0-9a-f]{10}\.([a-z0-9_]{1,60})\z/
 
-        def initialize(runner: CommandRunner.new, home: Dir.home, uid: Process.uid)
+        # kind: the Kind whose LaunchAgents this adapter writes and removes
+        def initialize(kind:, runner: CommandRunner.new, home: Dir.home, uid: Process.uid)
+          @kind = kind
           @runner = runner
           @home = home
           @uid = uid
@@ -57,7 +58,7 @@ module RubyRaider
           result = launchctl('bootstrap', domain, path)
           return true if result.success?
 
-          raise Error, "launchd could not load #{os_id}: #{Flows.printable(result.stderr.strip)}#{discard(path)}"
+          raise Error, "launchd could not load #{os_id}: #{Schedules.printable(result.stderr.strip)}#{discard(path)}"
         end
 
         # True when a plist or a loaded service was removed, false when it was already gone
@@ -90,9 +91,9 @@ module RubyRaider
         def agents_dir = File.join(@home, 'Library', 'LaunchAgents')
 
         def checked_os_id(os_id)
-          return os_id if os_id.is_a?(String) && (match = OS_ID.match(os_id)) && Flows.valid_name?(match[1])
+          return os_id if @kind.name_in(os_id)
 
-          raise Error, "Invalid os_id #{Flows.printable(os_id.inspect)}: not a flow schedule"
+          raise Error, "Invalid os_id #{Schedules.printable(os_id.inspect)}: #{@kind.not_ours}"
         end
 
         def escape(text) = text.to_s.gsub(/[&<>"']/, ESCAPES)
@@ -110,7 +111,7 @@ module RubyRaider
 
         def indent(lines) = lines.map { |line| "\t#{line}" }
 
-        # Schedule::DAYS runs mon..sun
+        # DAYS runs mon..sun
         def calendar(schedule)
           time = [['Hour', integer(schedule.hour)], ['Minute', integer(schedule.minute)]]
           case schedule.every
@@ -124,7 +125,7 @@ module RubyRaider
 
         # launchd counts Sunday as 0
         def weekday(day)
-          index = Schedule::DAYS.index(day)
+          index = DAYS.index(day)
           raise Error, "Invalid day #{day.inspect}" unless index
 
           (index + 1) % 7
@@ -150,7 +151,7 @@ module RubyRaider
             file.chmod(0o644)
           end
           lint = @runner.call(PLUTIL, '-lint', temp)
-          raise Error, "launchd plist for #{File.basename(path)} is invalid: #{Flows.printable("#{lint.stdout} #{lint.stderr}".strip)}" unless lint.success?
+          raise Error, "launchd plist for #{File.basename(path)} is invalid: #{Schedules.printable("#{lint.stdout} #{lint.stderr}".strip)}" unless lint.success?
 
           File.rename(temp, path)
         rescue SystemCallError => e

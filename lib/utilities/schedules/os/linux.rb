@@ -5,16 +5,18 @@ require_relative 'systemd'
 require_relative 'cron'
 
 module RubyRaider
-  module Flows
+  module Schedules
     module Os
       # Linux: systemd user timers when the user's systemd manager answers, cron otherwise. A schedule made over
       # ssh (no user bus, so cron) must still go when unscheduled from a desktop session, so remove and present?
       # also look in the other scheduler when it answers. The reverse (a systemd timer, unscheduled where no user
       # bus answers) can only be seen from its unit files, and can only be removed where systemctl --user works.
       class Linux
-        def self.pick(runner = CommandRunner.new) = new(runner: runner)
+        def self.pick(runner = CommandRunner.new, kind:) = new(kind: kind, runner: runner)
 
-        def initialize(runner: CommandRunner.new, systemd: Systemd.new(runner: runner), cron: Cron.new(runner: runner))
+        # kind: the Kind of the schedules this adapter installs and removes
+        def initialize(kind:, runner: CommandRunner.new, systemd: Systemd.new(kind: kind, runner: runner), cron: Cron.new(kind: kind, runner: runner))
+          @kind = kind
           # systemd is the other one only when it answers, so with cron first there is no other one
           @systemd = systemd
           @primary, @other = systemd.usable? ? [systemd, cron] : [cron, nil]
@@ -46,8 +48,7 @@ module RubyRaider
         def refuse_stranded(os_id)
           return unless stranded?(os_id)
 
-          raise Error, "This schedule is a systemd timer; run raider flow unschedule #{os_id.split('.').last} " \
-                       'from a session where systemctl --user works'
+          raise Error, @kind.stranded(os_id.split('.').last)
         end
 
         # The other scheduler failing counts as not there

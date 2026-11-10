@@ -68,16 +68,16 @@ RSpec.describe RubyRaider::Flows::Scheduler do # rubocop:disable RSpec/FilePath
   end
 
   describe '.adapter' do
-    let(:runner) { instance_double(RubyRaider::Flows::Os::CommandRunner) }
+    let(:runner) { instance_double(RubyRaider::Schedules::Os::CommandRunner) }
 
     def result(success)
-      RubyRaider::Flows::Os::CommandRunner::Result.new(stdout: '', stderr: '', exitstatus: success ? 0 : 1)
+      RubyRaider::Schedules::Os::CommandRunner::Result.new(stdout: '', stderr: '', exitstatus: success ? 0 : 1)
     end
 
     it 'picks launchd on macOS and Task Scheduler on Windows without calling them' do
       picked = %w[darwin25 mingw32 mswin64 cygwin].map { |host| described_class.adapter(runner: runner, host_os: host).class }
 
-      expect(picked).to eq([RubyRaider::Flows::Os::Launchd] + ([RubyRaider::Flows::Os::TaskScheduler] * 3))
+      expect(picked).to eq([RubyRaider::Schedules::Os::Launchd] + ([RubyRaider::Schedules::Os::TaskScheduler] * 3))
     end
 
     it 'picks the Linux adapter, which labels itself by the scheduler that answers' do
@@ -86,7 +86,7 @@ RSpec.describe RubyRaider::Flows::Scheduler do # rubocop:disable RSpec/FilePath
       picked = 2.times.map { described_class.adapter(runner: runner, host_os: 'linux-gnu') }
 
       expect(picked.map { |adapter| [adapter.class, adapter.label] })
-        .to eq([[RubyRaider::Flows::Os::Linux, 'systemd'], [RubyRaider::Flows::Os::Linux, 'cron']])
+        .to eq([[RubyRaider::Schedules::Os::Linux, 'systemd'], [RubyRaider::Schedules::Os::Linux, 'cron']])
     end
 
     it 'refuses another OS' do

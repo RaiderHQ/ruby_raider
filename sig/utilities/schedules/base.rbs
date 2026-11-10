@@ -1,0 +1,15 @@
+module RubyRaider
+  module Schedules
+    NAME: Regexp
+    DAYS: Array[String]
+
+    def self.valid_name?: (untyped name) -> bool
+    def self.printable: (untyped text) -> String
+
+    class Error < StandardError
+      attr_reader exit_code: Integer
+
+      def initialize: (String message, ?exit_code: Integer) -> void
+    end
+  end
+end

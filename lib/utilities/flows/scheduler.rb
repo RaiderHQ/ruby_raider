@@ -3,14 +3,11 @@
 require 'fileutils'
 require 'json'
 require 'rbconfig'
-require_relative 'next_run'
+require_relative '../schedules/next_run'
 require_relative 'run_log'
 require_relative 'schedule'
 require_relative 'schedule_store'
-require_relative 'os/command_runner'
-require_relative 'os/launchd'
-require_relative 'os/task_scheduler'
-require_relative 'os/linux'
+require_relative '../schedules/adapter'
 
 module RubyRaider
   module Flows
@@ -25,14 +22,9 @@ module RubyRaider
       LAST = %w[status finished_at trigger failed_step results_dir].freeze
       TIME = '%a %-d %b %H:%M'
 
-      # The OS scheduler for this machine; only Linux asks the system (is the user's systemd there?)
-      def self.adapter(runner: Os::CommandRunner.new, host_os: RbConfig::CONFIG['host_os'])
-        case host_os
-        when /darwin/ then Os::Launchd.new(runner: runner)
-        when /mswin|mingw|cygwin/ then Os::TaskScheduler.new(runner: runner)
-        when /linux/ then Os::Linux.pick(runner)
-        else raise Error, "Scheduling flows is not supported on #{host_os}"
-        end
+      # The OS scheduler for this machine, for flow schedules
+      def self.adapter(runner: Schedules::Os::CommandRunner.new, host_os: RbConfig::CONFIG['host_os'])
+        Schedules.adapter(kind: Schedule::KIND, runner: runner, host_os: host_os)
       end
 
       # adapter: nil picks the OS scheduler on first use, so a command refused earlier never touches it
@@ -58,7 +50,7 @@ module RubyRaider
         adapter.install(schedule)
         save(schedule)
         prefix = old ? "Replaced the schedule for #{name}" : "Scheduled #{name}"
-        @out.puts("#{prefix}: #{rule(schedule)}. Next run #{NextRun.after(schedule, now).strftime(TIME)}.")
+        @out.puts("#{prefix}: #{rule(schedule)}. Next run #{Schedules::NextRun.after(schedule, now).strftime(TIME)}.")
       end
 
       def unschedule(name)
@@ -130,7 +122,7 @@ module RubyRaider
 
       def row(schedule, now)
         name = schedule.name
-        next_run = NextRun.after(schedule, now)
+        next_run = Schedules::NextRun.after(schedule, now)
         state = os_state(schedule)
         last = last_run(name)
         json = { 'name' => name, 'every' => schedule.every, 'at' => schedule.at, 'on' => schedule.on,

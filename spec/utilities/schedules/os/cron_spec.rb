@@ -2,12 +2,13 @@
 
 require 'shellwords'
 require 'tmpdir'
-require_relative '../../../../lib/utilities/flows/os/cron'
+require_relative '../../../../lib/utilities/schedules/os/cron'
+require_relative '../../../../lib/utilities/flows/schedule'
 
 # Flow specs live under spec/utilities/flows, next to the code in lib/utilities/flows
 # The fake runner and project folders sit next to the adapter under test
 # rubocop:disable RSpec/MultipleMemoizedHelpers
-RSpec.describe RubyRaider::Flows::Os::Cron do # rubocop:disable RSpec/FilePath
+RSpec.describe RubyRaider::Schedules::Os::Cron do # rubocop:disable RSpec/FilePath
   # Plays crontab: -l prints the current table (or fails), - stores stdin; never runs anything
   let(:fake_runner_class) do
     Class.new do
@@ -27,7 +28,7 @@ RSpec.describe RubyRaider::Flows::Os::Cron do # rubocop:disable RSpec/FilePath
         stderr, status = answers.fetch(verb) { missing ? ['no crontab for raider', 1] : ['', 0] }
         stdout = verb == '-l' ? table.to_s : ''
         self.table = stdin_data if verb == '-' && status.zero?
-        RubyRaider::Flows::Os::CommandRunner::Result.new(stdout: stdout, stderr: stderr, exitstatus: status)
+        RubyRaider::Schedules::Os::CommandRunner::Result.new(stdout: stdout, stderr: stderr, exitstatus: status)
       end
     end
   end
@@ -36,7 +37,7 @@ RSpec.describe RubyRaider::Flows::Os::Cron do # rubocop:disable RSpec/FilePath
   let(:tmp) { File.realpath(Dir.mktmpdir('flows-cron')) }
   let(:project_dir) { File.join(tmp, 'plain') }
   let(:runner) { fake_runner_class.new }
-  let(:cron) { described_class.new(runner: runner) }
+  let(:cron) { described_class.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner) }
   let(:now) { Time.utc(2026, 11, 9, 10, 0, 0) }
 
   def schedule(dir: project_dir, name: 'report', **options)

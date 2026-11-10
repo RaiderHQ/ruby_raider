@@ -11,16 +11,17 @@ module RubyRaider
     # One scheduled flow: the rule (every/at/on), how it runs (retries, inputs) and what the OS entry
     # runs (absolute ruby and bundle, GEM_HOME/GEM_PATH captured when it was scheduled). Immutable.
     # :reek:TooManyInstanceVariables { max_instance_variables: 13 } -- the fields of a schedules.yml entry
-    # :reek:TooManyConstants { max_constants: 9 } -- the rule vocabulary, the OS entry parts and the yml keys
+    # :reek:TooManyConstants { max_constants: 10 } -- the rule vocabulary, the OS entry parts and the yml keys
     class Schedule
       EVERY = %w[hour day weekday week].freeze
-      DAYS = %w[mon tue wed thu fri sat sun].freeze
+      DAYS = Schedules::DAYS
       DAYS_RULE = 'use mon, tue, wed, thu, fri, sat or sun'
       CLOCK = /\A([01]\d|2[0-3]):([0-5]\d)\z/
       MINUTE = /\A(?:[01]\d|2[0-3])?:([0-5]\d)\z/
       GEM_ENV = %w[GEM_HOME GEM_PATH].freeze
       SYSTEM_PATH = %w[/usr/bin /bin].freeze
-      OS_ID_PREFIX = 'dev.rubyraider.flow'
+      KIND = Schedules::Kind::FLOW_LEGACY
+      OS_ID_PREFIX = KIND.os_id_prefix
       KEYS = %w[name every at on retries inputs notify os_id ruby bundle gem_env created_at].freeze
 
       attr_reader :name, :every, :at, :on, :retries, :inputs, :notify, :os_id, :ruby, :bundle, :gem_env, :project_root, :created_at
@@ -105,7 +106,7 @@ module RubyRaider
 
       def working_directory = project_root
 
-      def log_path = File.join(project_root, '.raider', 'flows', name, 'scheduler.log')
+      def log_path = File.join(project_root, KIND.dir, name, 'scheduler.log')
 
       def rule_text
         case every

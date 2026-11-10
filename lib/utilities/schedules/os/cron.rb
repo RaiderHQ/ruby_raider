@@ -2,22 +2,22 @@
 
 require 'shellwords'
 require_relative 'command_runner'
-require_relative '../schedule'
+require_relative '../base'
 
 module RubyRaider
-  module Flows
+  module Schedules
     module Os
       # Linux without a systemd user manager: one tagged block per schedule in the user's crontab, read with
       # `crontab -l` and written back with `crontab -`. Every value goes through Shellwords.escape, which also
       # escapes % as \% (cron would turn a bare % into a newline). Lines that are not ours keep every byte.
       class Cron
         CRONTAB = 'crontab'
-        TAG = '# raider-flow '
         # Debian's vixie cron cuts a command at MAX_COMMAND (1000) bytes without a word; stay under it
         MAX_LINE = 990
-        OS_ID = /\A#{Regexp.escape(Schedule::OS_ID_PREFIX)}\.[0-9a-f]{10}\.([a-z0-9_]{1,60})\z/
 
-        def initialize(runner: CommandRunner.new)
+        # kind: the Kind whose entries this crontab block holds
+        def initialize(kind:, runner: CommandRunner.new)
+          @kind = kind
           @runner = runner
         end
 
@@ -28,7 +28,7 @@ module RubyRaider
         # Minute hour day-of-month month day-of-week (the system time zone), then the command for /bin/sh
         def line(schedule)
           ruby = schedule.ruby
-          raise Error, "cron can not run ruby from #{Flows.printable(ruby)}: env would read the = as a variable" if ruby.include?('=')
+          raise Error, "cron can not run ruby from #{Schedules.printable(ruby)}: env would read the = as a variable" if ruby.include?('=')
 
           env = schedule.env.map { |key, value| "#{key}=#{value}" }
           command = ['cd', escape(schedule.working_directory), '&&', '/usr/bin/env', *[*env, *schedule.argv].map { |word| escape(word) },
@@ -43,7 +43,7 @@ module RubyRaider
           raise Error, "cron can not run #{schedule.name}: its crontab line is #{entry.bytesize} bytes, over #{MAX_LINE}" if entry.bytesize > MAX_LINE
 
           rest, = without(read, os_id)
-          save("#{TAG}#{os_id}\n#{entry}\n#{rest}")
+          save("#{@kind.cron_tag}#{os_id}\n#{entry}\n#{rest}")
           true
         end
 
@@ -84,7 +84,7 @@ module RubyRaider
 
         # cron counts Sunday as 0
         def weekday(day)
-          index = Schedule::DAYS.index(day)
+          index = DAYS.index(day)
           raise Error, "Invalid day #{day.inspect}" unless index
 
           (index + 1) % 7
@@ -95,8 +95,8 @@ module RubyRaider
         # The crontab without any of our tag lines, each with the line after it when that line is our command,
         # and whether a tag was there
         def without(table, os_id)
-          tag = "#{TAG}#{os_id}"
-          name = OS_ID.match(os_id).to_a[1]
+          tag = "#{@kind.cron_tag}#{os_id}"
+          name = @kind.os_id_pattern.match(os_id).to_a[1]
           kept = []
           found = after_tag = false
           table.lines.each do |text|
@@ -108,8 +108,8 @@ module RubyRaider
           [kept.join, found]
         end
 
-        # The line under our tag runs `raider flow run <name> --project ... --trigger schedule`
-        def our_command?(text, name) = text.include?(" exec raider flow run #{name} --project ") && text.include?(' --trigger schedule')
+        # The line under our tag runs `raider <command> run <name> --project ... --trigger schedule`
+        def our_command?(text, name) = @kind.our_command?(text, name)
 
         def read
           result = @runner.call(CRONTAB, '-l')
@@ -118,18 +118,18 @@ module RubyRaider
           stderr = result.stderr
           return '' if stderr.match?(/no crontab/i)
 
-          raise Error, "cron could not read the crontab: #{Flows.printable(stderr.strip)}"
+          raise Error, "cron could not read the crontab: #{Schedules.printable(stderr.strip)}"
         end
 
         def save(table)
           result = @runner.call(CRONTAB, '-', stdin_data: table)
-          raise Error, "cron could not save the crontab: #{Flows.printable(result.stderr.strip)}" unless result.success?
+          raise Error, "cron could not save the crontab: #{Schedules.printable(result.stderr.strip)}" unless result.success?
         end
 
         def checked_os_id(os_id)
-          return os_id if os_id.is_a?(String) && (match = OS_ID.match(os_id)) && Flows.valid_name?(match[1])
+          return os_id if @kind.name_in(os_id)
 
-          raise Error, "Invalid os_id #{Flows.printable(os_id.inspect)}: not a flow schedule"
+          raise Error, "Invalid os_id #{Schedules.printable(os_id.inspect)}: #{@kind.not_ours}"
         end
       end
     end

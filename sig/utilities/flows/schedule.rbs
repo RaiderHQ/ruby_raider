@@ -8,6 +8,7 @@ module RubyRaider
       MINUTE: Regexp
       GEM_ENV: Array[String]
       SYSTEM_PATH: Array[String]
+      KIND: Schedules::Kind
       OS_ID_PREFIX: String
       KEYS: Array[String]
 

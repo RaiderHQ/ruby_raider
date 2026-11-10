@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 require 'tmpdir'
-require_relative '../../../lib/utilities/flows/next_run'
+require_relative '../../../lib/utilities/schedules/next_run'
+require_relative '../../../lib/utilities/flows/schedule'
 
 # Flow specs live under spec/utilities/flows, next to the code in lib/utilities/flows
-RSpec.describe RubyRaider::Flows::NextRun do # rubocop:disable RSpec/FilePath
+RSpec.describe RubyRaider::Schedules::NextRun do # rubocop:disable RSpec/FilePath
   let(:dir) { File.realpath(Dir.mktmpdir('flows-next-run')) }
   let(:project) { RubyRaider::Flows::Project.new(dir) }
 

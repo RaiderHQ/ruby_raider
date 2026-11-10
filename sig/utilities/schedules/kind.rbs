@@ -1,0 +1,29 @@
+module RubyRaider
+  module Schedules
+    class Kind
+      FLOW_LEGACY: Kind
+
+      attr_reader command: String
+      attr_reader os_id_prefix: String
+      attr_reader os_id_pattern: Regexp
+      attr_reader dir: String
+      attr_reader noun: String
+      attr_reader plural: String
+      attr_reader remove_command: String
+      attr_reader reserved: Array[String]
+
+      def initialize: (command: String, dir: String, noun: String, plural: String, remove_command: String, ?reserved: Array[String]) -> void
+      def valid_name?: (untyped name) -> bool
+      def name_in: (untyped os_id) -> String?
+      def cron_tag: () -> String
+      def our_command?: (String text, String? name) -> bool
+      def task_description: (String name, String rule) -> String
+      def task_file_prefix: () -> String
+      def service_description: (String name) -> String
+      def timer_description: (String name) -> String
+      def not_ours: () -> String
+      def stranded: (String name) -> String
+      def unsupported: (String host_os) -> String
+    end
+  end
+end

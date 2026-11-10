@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
 require 'tmpdir'
-require_relative '../../../../lib/utilities/flows/os/systemd'
+require_relative '../../../../lib/utilities/schedules/os/systemd'
+require_relative '../../../../lib/utilities/flows/schedule'
 
 # Flow specs live under spec/utilities/flows, next to the code in lib/utilities/flows
 # The fake runner, temp home and project folders sit next to the adapter under test
 # rubocop:disable RSpec/MultipleMemoizedHelpers
-RSpec.describe RubyRaider::Flows::Os::Systemd do # rubocop:disable RSpec/FilePath
+RSpec.describe RubyRaider::Schedules::Os::Systemd do # rubocop:disable RSpec/FilePath
   # Records every command and answers from a table keyed by the systemctl verb; never runs anything
   let(:fake_runner_class) do
     Class.new do
@@ -21,7 +22,7 @@ RSpec.describe RubyRaider::Flows::Os::Systemd do # rubocop:disable RSpec/FilePat
         @calls << argv
         @seen&.call(argv, stdin_data)
         stderr, status = answers.fetch(argv[2], ['', 0])
-        RubyRaider::Flows::Os::CommandRunner::Result.new(stdout: '', stderr: stderr, exitstatus: status)
+        RubyRaider::Schedules::Os::CommandRunner::Result.new(stdout: '', stderr: stderr, exitstatus: status)
       end
 
       def on_call(&block) = @seen = block
@@ -33,7 +34,7 @@ RSpec.describe RubyRaider::Flows::Os::Systemd do # rubocop:disable RSpec/FilePat
   let(:home) { File.join(tmp, 'home') }
   let(:project_dir) { File.join(tmp, 'plain') }
   let(:runner) { fake_runner_class.new }
-  let(:systemd) { described_class.new(runner: runner, home: home, config_home: nil) }
+  let(:systemd) { described_class.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner, home: home, config_home: nil) }
   let(:now) { Time.utc(2026, 11, 9, 10, 0, 0) }
   let(:units) { File.join(home, '.config', 'systemd', 'user') }
 
@@ -196,8 +197,8 @@ RSpec.describe RubyRaider::Flows::Os::Systemd do # rubocop:disable RSpec/FilePat
     it 'uses an absolute XDG_CONFIG_HOME and ignores a relative one' do
       item = schedule
       config = File.join(tmp, 'xdg')
-      described_class.new(runner: runner, home: home, config_home: config).install(item)
-      described_class.new(runner: runner, home: home, config_home: 'relative').install(item)
+      described_class.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner, home: home, config_home: config).install(item)
+      described_class.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner, home: home, config_home: 'relative').install(item)
 
       expect([File.exist?(File.join(config, 'systemd', 'user', "#{item.os_id}.timer")), File.exist?(timer_path(item))]).to eq([true, true])
     end

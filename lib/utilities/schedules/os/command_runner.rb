@@ -3,7 +3,7 @@
 require 'open3'
 
 module RubyRaider
-  module Flows
+  module Schedules
     module Os
       # Runs an OS scheduler command (launchctl, schtasks, systemctl, crontab) with no shell. Adapters
       # take one, so tests pass a double and never touch the real scheduler.

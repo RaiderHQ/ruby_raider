@@ -2,11 +2,11 @@
 
 require 'tempfile'
 require_relative 'command_runner'
-require_relative '../schedule'
+require_relative '../base'
 require_relative '../next_run'
 
 module RubyRaider
-  module Flows
+  module Schedules
     module Os
       # Windows: one task per schedule in the \RubyRaider\ folder, registered from task XML with schtasks.
       # The task runs ruby.exe directly (never cmd.exe or powershell), with the user's own environment and
@@ -14,12 +14,11 @@ module RubyRaider
       # quoting, then every value in the XML goes through one XML escaper.
       # Task Scheduler expands %NAME% in Command, Arguments and WorkingDirectory with no escape, so a value
       # holding one is refused before schtasks runs.
-      # :reek:TooManyConstants { max_constants: 8 } -- the folder, the XML escapes and namespace, the os_id rule, quoting, globs, %NAME%, day names
+      # :reek:TooManyConstants { max_constants: 7 } -- the folder, the XML escapes and namespace, quoting, globs, %NAME%, day names
       class TaskScheduler
         FOLDER = '\\RubyRaider\\'
         ESCAPES = { '&' => '&amp;', '<' => '&lt;', '>' => '&gt;', '"' => '&quot;', "'" => '&apos;' }.freeze
         NAMESPACE = 'http://schemas.microsoft.com/windows/2004/02/mit/task'
-        OS_ID = /\A#{Regexp.escape(Schedule::OS_ID_PREFIX)}\.[0-9a-f]{10}\.([a-z0-9_]{1,60})\z/
         # ruby.exe reads its own command line (w32_cmdvector in win32.c): ' quotes too, and a * ? [ { outside
         # '...' (even inside "...") makes it glob the argument
         NEEDS_QUOTES = /[ \t\n\v"']/
@@ -44,14 +43,16 @@ module RubyRaider
         def self.glob_quote(arg)
           return "'#{arg}'" unless arg.include?("'")
 
-          raise Error, "Task Scheduler can not pass #{Flows.printable(arg.inspect)} to ruby.exe: an argument with both ' and * ? [ or { would be globbed"
+          raise Error, "Task Scheduler can not pass #{Schedules.printable(arg.inspect)} to ruby.exe: an argument with both ' and * ? [ or { would be globbed"
         end
 
         def self.odd_doubled(slashes) = slashes.length.odd? ? "#{slashes * 2}\\" : slashes
 
         def self.join(args) = args.map { |arg| quote(arg) }.join(' ')
 
-        def initialize(runner: CommandRunner.new, clock: Time, schtasks: File.join(ENV.fetch('SystemRoot', 'C:\\Windows'), 'System32', 'schtasks.exe'))
+        # kind: the Kind whose tasks this adapter registers and deletes
+        def initialize(kind:, runner: CommandRunner.new, clock: Time, schtasks: File.join(ENV.fetch('SystemRoot', 'C:\\Windows'), 'System32', 'schtasks.exe'))
+          @kind = kind
           @runner = runner
           @clock = clock
           @schtasks = schtasks
@@ -65,7 +66,7 @@ module RubyRaider
         def task_xml(schedule)
           refuse_expansion(schedule)
           body = [
-            element('RegistrationInfo', [text('Description', "Ruby Raider flow #{schedule.name} (#{schedule.rule_text})"),
+            element('RegistrationInfo', [text('Description', @kind.task_description(schedule.name, schedule.rule_text)),
                                          text('URI', task_name(schedule.os_id))]),
             element('Triggers', element('CalendarTrigger', trigger(schedule))),
             element('Principals', element('Principal id="Author"', [text('LogonType', 'InteractiveToken'), text('RunLevel', 'LeastPrivilege')])),
@@ -79,13 +80,13 @@ module RubyRaider
         # Registers (or replaces) the task from a UTF-16LE temp file, deleted whatever happens
         def install(schedule)
           os_id = schedule.os_id
-          file = Tempfile.new(['raider-flow-task', '.xml'], binmode: true)
+          file = Tempfile.new([@kind.task_file_prefix, '.xml'], binmode: true)
           file.write("\uFEFF#{task_xml(schedule)}".encode(Encoding::UTF_16LE))
           file.close
           result = schtasks('/Create', '/TN', task_name(os_id), '/XML', file.path.to_s, '/F')
           return true if result.success?
 
-          raise Error, "Task Scheduler could not create #{os_id}: #{Flows.printable(result.stderr.strip)}"
+          raise Error, "Task Scheduler could not create #{os_id}: #{Schedules.printable(result.stderr.strip)}"
         ensure
           file&.close!
         end
@@ -101,7 +102,7 @@ module RubyRaider
           listing = list
           return false if listing.success? && !listed?(listing, name)
 
-          raise Error, "Task Scheduler could not delete #{os_id}: #{Flows.printable(result.stderr.strip)}"
+          raise Error, "Task Scheduler could not delete #{os_id}: #{Schedules.printable(result.stderr.strip)}"
         end
 
         def present?(os_id)
@@ -109,7 +110,7 @@ module RubyRaider
           listing = list
           return listed?(listing, name) if listing.success?
 
-          raise Error, "Task Scheduler could not list tasks: #{Flows.printable(listing.stderr.strip)}"
+          raise Error, "Task Scheduler could not list tasks: #{Schedules.printable(listing.stderr.strip)}"
         end
 
         private
@@ -126,14 +127,14 @@ module RubyRaider
           value = [schedule.ruby, self.class.join(schedule.argv.drop(1)), schedule.working_directory].find { |item| item.match?(EXPANDS) }
           return unless value
 
-          raise Error, "Task Scheduler would expand #{Flows.printable(value[EXPANDS])} as an environment variable in #{Flows.printable(value.inspect)}: " \
+          raise Error, "Task Scheduler would expand #{Schedules.printable(value[EXPANDS])} as an environment variable in #{Schedules.printable(value.inspect)}: " \
                        'remove the %...% from it'
         end
 
         def checked_os_id(os_id)
-          return os_id if os_id.is_a?(String) && (match = OS_ID.match(os_id)) && Flows.valid_name?(match[1])
+          return os_id if @kind.name_in(os_id)
 
-          raise Error, "Invalid os_id #{Flows.printable(os_id.inspect)}: not a flow schedule"
+          raise Error, "Invalid os_id #{Schedules.printable(os_id.inspect)}: #{@kind.not_ours}"
         end
 
         def escape(value) = value.to_s.gsub(/[&<>"']/, ESCAPES)
@@ -160,7 +161,7 @@ module RubyRaider
         def calendar(schedule, every)
           return element('ScheduleByDay', text('DaysInterval', '1')) if %w[hour day].include?(every)
 
-          days = schedule.days.map { |day| ["<#{DAY_NAMES.fetch(Schedule::DAYS.index(day).to_i)} />"] }
+          days = schedule.days.map { |day| ["<#{DAY_NAMES.fetch(DAYS.index(day).to_i)} />"] }
           element('ScheduleByWeek', [element('DaysOfWeek', days), text('WeeksInterval', '1')])
         end
 

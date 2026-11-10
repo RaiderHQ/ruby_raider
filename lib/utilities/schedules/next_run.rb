@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require 'date'
-require_relative 'schedule'
+require_relative 'base'
 
 module RubyRaider
-  module Flows
+  module Schedules
     # When a schedule next runs, in local time, as launchd, schtasks, systemd and cron count it.
     # A day, weekday or week rule whose time falls in a spring-forward gap runs at the first minute
     # after the gap; one that falls in a fall-back hour runs at its first occurrence only.

@@ -1,5 +1,5 @@
 module RubyRaider
-  module Flows
+  module Schedules
     class Notifier
       MAX: Integer
       TIMEOUT: Integer
