@@ -99,6 +99,31 @@ RSpec.describe RubyRaider::Schedules::RunLock do # rubocop:disable RSpec/FilePat
     expect([File.symlink?(running), File.read(target)]).to eq([false, JSON.generate('pid' => Process.ppid)])
   end
 
+  it 'closes run.lock when it is not a regular file' do
+    FileUtils.mkdir_p(folder)
+    File.mkfifo(lock_file)
+    open_before = Dir.children('/dev/fd').size
+
+    expect { acquire }.to raise_error(RubyRaider::Schedules::Error, /run.lock must be a file/)
+    expect(Dir.children('/dev/fd').size).to eq(open_before)
+  end
+
+  it 'is busy, and keeps the new file, when running.json is replaced between the check and the removal' do
+    write_running(dead_pid)
+    real_rename = File.method(:rename)
+    allow(File).to receive(:rename) do |from, to|
+      real_rename.call(from, to)
+      # The desktop writes its own running.json right after ours moved the stale one aside
+      File.write(running, JSON.generate('pid' => Process.ppid, 'run_id' => 'desktop')) if to.end_with?('.stale') && !File.exist?(running)
+    end
+    seen = File.lstat(running)
+    allow(File).to receive(:lstat).and_call_original
+    allow(File).to receive(:lstat).with(a_string_ending_with('.stale')).and_return(instance_double(File::Stat, dev: seen.dev, ino: seen.ino + 1))
+
+    expect(acquire).to be(false)
+    expect([JSON.parse(File.read(running))['run_id'], Dir.children(folder).grep(/stale/)]).to eq(['desktop', []])
+  end
+
   it 'refuses a linked run.lock' do
     FileUtils.mkdir_p(folder)
     File.write(File.join(dir, 'target.lock'), '')

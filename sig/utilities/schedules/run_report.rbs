@@ -8,6 +8,8 @@ module RubyRaider
       SLACK: Integer
       MAX_RUN_BYTES: Integer
       MAX_ATTACHMENT_BYTES: Integer
+      MAX_ATTACHMENT_DEPTH: Integer
+      MAX_ATTACHMENT_FILES: Integer
 
       @dir: String
       @run_json: String
@@ -24,8 +26,8 @@ module RubyRaider
       private
 
       def copy_attachments: (String temp) -> void
-      def copy_file: (String source, String target) -> void
-      def regular_files: (String dir, ?String? prefix, ?Hash[String, Integer] found) -> Hash[String, Integer]?
+      def copy_file: (String source, String target, Integer size) -> void
+      def regular_files: (String dir, ?String? prefix, ?Hash[String, Integer] found, ?Integer depth) -> Hash[String, Integer]?
       def swap: (String temp, String target) -> void
     end
   end

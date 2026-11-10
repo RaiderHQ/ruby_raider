@@ -28,9 +28,11 @@ module RubyRaider
       def self.run(env, argv, chdir, state, forward_int)
         previous = %w[INT TERM].to_h { |signal| [signal, trap(signal) { stop(state, signal, forward_int) }] }
         wait = lambda do
-          state[:pid] = Process.spawn(env, *argv, chdir: chdir)
+          pid = state[:pid] = Process.spawn(env, *argv, chdir: chdir)
           interrupt(state) if state[:stopped]
-          Process.wait(state[:pid])
+          Process.wait(pid)
+          # Reaped: its pid may be reused, so a later signal must not reach it
+          state[:pid] = nil
           $CHILD_STATUS.exitstatus
         end
         defined?(Bundler) ? Bundler.with_unbundled_env(&wait) : wait.call

@@ -13,7 +13,7 @@ module RubyRaider
     # A run that died before that leaves the previous run's file, so it counts only when its run started at
     # (or up to SLACK before) the spawn; without a start time, when the file is not older than the spawn.
     # raider-results/ is only read, never changed, and nothing in it is read through a link.
-    # :reek:TooManyConstants { max_constants: 7 } -- the folder, its files, the caps and the slack
+    # :reek:TooManyConstants { max_constants: 9 } -- the folder, its files, the caps and the slack
     class RunReport
       DIR = 'raider-results'
       RUN = 'run.json'
@@ -22,6 +22,9 @@ module RubyRaider
       SLACK = 2
       MAX_RUN_BYTES = 256 * 1024 * 1024
       MAX_ATTACHMENT_BYTES = 50 * 1024 * 1024
+      # Past these the attachments are left out of the copy (run.json and index.html still go)
+      MAX_ATTACHMENT_DEPTH = 8
+      MAX_ATTACHMENT_FILES = 1000
 
       attr_reader :counts
 
@@ -51,7 +54,7 @@ module RubyRaider
 
       def self.fresh?(run, mtime, since)
         started = run.is_a?(Hash) ? run['started_at'] : nil
-        return mtime >= since unless started.is_a?(String)
+        return mtime >= since - SLACK unless started.is_a?(String)
 
         Time.iso8601(started) >= since - SLACK
       rescue ArgumentError
@@ -89,33 +92,34 @@ module RubyRaider
         return unless files && files.sum { |_, size| size } <= MAX_ATTACHMENT_BYTES
 
         FileUtils.mkdir_p(File.join(temp, ATTACHMENTS))
-        files.each_key { |relative| copy_file(File.join(@dir, ATTACHMENTS, relative), File.join(temp, ATTACHMENTS, relative)) }
+        files.each { |relative, size| copy_file(File.join(@dir, ATTACHMENTS, relative), File.join(temp, ATTACHMENTS, relative), size) }
       end
 
-      # Streams one file that is still a regular file when opened (not a link); anything else is skipped
-      def copy_file(source, target)
+      # Streams one file that is still a regular file when opened (not a link), at most the size counted for
+      # it, so a file that grew since does not take the copy past the cap; anything else is skipped
+      def copy_file(source, target, size)
         File.open(source, File::RDONLY | RunLog::NOFOLLOW | RunLog::NONBLOCK) do |from|
           next unless from.stat.file?
 
           FileUtils.mkdir_p(File.dirname(target))
-          File.open(target, File::WRONLY | File::CREAT | File::EXCL | RunLog::NOFOLLOW, 0o600) { |to| IO.copy_stream(from, to, MAX_ATTACHMENT_BYTES) }
+          File.open(target, File::WRONLY | File::CREAT | File::EXCL | RunLog::NOFOLLOW, 0o600) { |to| IO.copy_stream(from, to, size) }
         end
       rescue Errno::ELOOP, Errno::EMLINK, Errno::ENOENT
         nil
       end
 
       # {relative path => size} of the regular files under dir (links and anything else skipped); nil once
-      # they pass the cap or when dir is not a folder
-      def regular_files(dir, prefix = nil, found = {})
-        return nil unless File.lstat(dir).directory?
+      # they pass a cap (bytes, files or folder depth) or when dir is not a folder
+      def regular_files(dir, prefix = nil, found = {}, depth = 0)
+        return nil if depth > MAX_ATTACHMENT_DEPTH || !File.lstat(dir).directory?
 
         Dir.children(dir).sort.each do |child|
           relative = prefix ? File.join(prefix, child) : child
           stat = File.lstat(File.join(dir, child))
-          if stat.directory? then return nil unless regular_files(File.join(dir, child), relative, found)
+          if stat.directory? then return nil unless regular_files(File.join(dir, child), relative, found, depth + 1)
           elsif stat.file? then found[relative] = stat.size
           end
-          return nil if found.sum { |_, size| size } > MAX_ATTACHMENT_BYTES
+          return nil if found.size > MAX_ATTACHMENT_FILES || found.sum { |_, size| size } > MAX_ATTACHMENT_BYTES
         end
         found
       rescue SystemCallError

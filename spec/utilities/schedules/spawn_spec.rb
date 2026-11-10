@@ -79,6 +79,14 @@ RSpec.describe RubyRaider::Schedules::Spawn do # rubocop:disable RSpec/FilePath
       expect([code, state[:interrupted], Process.clock_gettime(Process::CLOCK_MONOTONIC) - started < 4]).to eq([nil, true, true])
     end
 
+    it 'forgets the pid once the child is reaped, so a late signal reaches no other process' do
+      state = { pid: nil, stopped: false, interrupted: false }
+      described_class.run({}, [RbConfig.ruby, '-e', 'exit 0'], dir, state, true)
+      described_class.stop(state, 'TERM', true)
+
+      expect(state).to eq(pid: nil, stopped: true, interrupted: false)
+    end
+
     it 'restores the previous handlers' do
       previous = trap('INT', 'IGNORE')
       described_class.call({}, [RbConfig.ruby, '-e', 'exit 0'], dir)

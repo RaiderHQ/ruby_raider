@@ -17,8 +17,12 @@ module RubyRaider
 
       def lock: (String path) -> bool
       def busy: () -> false
-      def live?: (String running) -> bool
+      def inspect_running: (String running) -> Hash[Symbol, untyped]?
+      def remove_stale: (String running, Array[Integer]? id) -> bool
+      def restore: (String aside, String running) -> void
+      def live?: (Hash[String, untyped]? data) -> bool
       def read_running: (String running) -> Hash[String, untyped]?
+      def parse_running: (File file) -> Hash[String, untyped]?
       def write_running: (String running, String name, String run_id, String started_at) -> bool
     end
   end

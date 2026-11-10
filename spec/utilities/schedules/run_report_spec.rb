@@ -51,9 +51,12 @@ RSpec.describe RubyRaider::Schedules::RunReport do # rubocop:disable RSpec/FileP
     file = File.join(results, 'run.json')
     File.utime(spawned_at + 5, spawned_at + 5, file)
     fresh = load
+
+    File.utime(spawned_at - 1, spawned_at - 1, file)
+    slack = load
     File.utime(spawned_at - 60, spawned_at - 60, file)
 
-    expect([fresh&.counts&.fetch('total'), load]).to eq([1, nil])
+    expect([fresh&.counts&.fetch('total'), slack&.counts&.fetch('total'), load]).to eq([1, 1, nil])
   end
 
   it 'is nil for a run.json that is not a report' do
@@ -95,6 +98,25 @@ RSpec.describe RubyRaider::Schedules::RunReport do # rubocop:disable RSpec/FileP
       expect(File.read(File.join(last, 'attachments/sub/trace.zip'))).to eq('zip')
       expect(Dir.children(File.dirname(last))).to eq(['last'])
       expect(File.stat(last).mode & 0o777).to eq(0o700)
+    end
+
+    it 'leaves out the attachments when there are too many files or folders too deep' do
+      stub_const("#{described_class}::MAX_ATTACHMENT_FILES", 1)
+      load.copy_to(last)
+      many = Dir.children(last).sort
+      FileUtils.rm_rf(last)
+      stub_const("#{described_class}::MAX_ATTACHMENT_FILES", 1000)
+      stub_const("#{described_class}::MAX_ATTACHMENT_DEPTH", 0)
+      load.copy_to(last)
+
+      expect([many, Dir.children(last).sort]).to eq([%w[index.html run.json], %w[index.html run.json]])
+    end
+
+    it 'copies no more of a file than was counted for it' do
+      target = File.join(dir, 'copy.png')
+      load.send(:copy_file, File.join(results, 'attachments/0-shot.png'), target, 2)
+
+      expect(File.read(target)).to eq('pn')
     end
 
     it 'leaves out the attachments when they are over the cap' do
