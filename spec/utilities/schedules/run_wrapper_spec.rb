@@ -244,6 +244,26 @@ RSpec.describe RubyRaider::Schedules::RunWrapper do # rubocop:disable RSpec/File
     end
   end
 
+  describe 'a run line that cannot be written' do
+    before do
+      FileUtils.mkdir_p(folder)
+      File.symlink(File.join(dir, 'elsewhere.jsonl'), File.join(folder, 'runs.jsonl'))
+      schedule(notify: true)
+    end
+
+    it 'keeps a stop: not notified, still stopped' do
+      outcome.merge!(code: 1, stopped: true)
+
+      expect(wrapper.run('nightly')).to eq(2)
+      expect([notices, out.string, File.exist?(File.join(dir, 'elsewhere.jsonl'))]).to eq([[], "Schedule nightly was stopped\n", false])
+      expect(err.string).to include('Could not record the run')
+    end
+
+    it 'keeps the outcome of a run that passed' do
+      expect(wrapper.run('nightly')).to eq(0)
+    end
+  end
+
   describe 'busy (exit 3, nothing spawned, raider-results untouched)' do
     before do
       schedule(notify: true)

@@ -69,7 +69,8 @@ module RubyRaider
 
         outcome = spawn(schedule)
         outcome[:copied] = copy_report(schedule, outcome[:report])
-        append(schedule, record, outcome)
+        # A line that can't be written loses only the line: the stop, counts and exit code stay
+        append_quietly(schedule, record, outcome)
         outcome.merge(recorded: true)
       rescue Error, SystemCallError => e
         { status: 'setup_error', reason: Schedules.printable(e.message) }
