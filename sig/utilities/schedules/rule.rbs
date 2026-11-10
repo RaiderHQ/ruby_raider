@@ -41,6 +41,7 @@ module RubyRaider
 
       def self.kind: () -> Kind
       def self.os_id_for: (String project_root, String name) -> String
+      def self.os_id_prefix_for: (String project_root) -> String
       def self.bundle_path: () -> String
       def self.captured_gem_env: () -> Hash[String, String]
 

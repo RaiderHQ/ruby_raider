@@ -14,7 +14,7 @@ module RubyRaider
       # quoting, then every value in the XML goes through one XML escaper.
       # Task Scheduler expands %NAME% in Command, Arguments and WorkingDirectory with no escape, so a value
       # holding one is refused before schtasks runs.
-      # :reek:TooManyConstants { max_constants: 7 } -- the folder, the XML escapes and namespace, quoting, globs, %NAME%, day names
+      # :reek:TooManyConstants { max_constants: 8 } -- the folder, the XML escapes and namespace, quoting, globs, %NAME%, day names, list rows
       class TaskScheduler
         FOLDER = '\\RubyRaider\\'
         ESCAPES = { '&' => '&amp;', '<' => '&lt;', '>' => '&gt;', '"' => '&quot;', "'" => '&apos;' }.freeze
@@ -25,6 +25,8 @@ module RubyRaider
         GLOB = /[*?\[{]/
         EXPANDS = /%[^%]+%/
         DAY_NAMES = %w[Monday Tuesday Wednesday Thursday Friday Saturday Sunday].freeze
+        # A /Query /FO CSV row of a task right in our folder: its name, which our ids never quote or escape
+        ROW = /\A"#{Regexp.escape(FOLDER)}([^"\\]*)",/
 
         # One argument as ruby.exe reads it back (w32_cmdvector). With a glob character: '...', where nothing
         # is special and nothing globs (and with a ' too: refused). Otherwise "..." when empty or holding
@@ -100,17 +102,22 @@ module RubyRaider
           return true if result.success?
 
           listing = list
-          return false if listing.success? && !listed?(listing, name)
+          return false if listing.success? && !listed?(listing.stdout, name)
 
           raise Error, "Task Scheduler could not delete #{os_id}: #{Schedules.printable(result.stderr.strip)}"
         end
 
         def present?(os_id)
           name = task_name(os_id)
-          listing = list
-          return listed?(listing, name) if listing.success?
+          listed?(tasks, name)
+        end
 
-          raise Error, "Task Scheduler could not list tasks: #{Schedules.printable(listing.stderr.strip)}"
+        # The os_ids of this kind starting with prefix that are tasks in \\RubyRaider\\, sorted (one query)
+        def list_ids(prefix)
+          tasks.dup.force_encoding(Encoding::UTF_8).scrub.each_line.filter_map do |row|
+            id = row[ROW, 1]
+            id if @kind.listed?(id, prefix)
+          end.uniq.sort
         end
 
         private
@@ -120,7 +127,15 @@ module RubyRaider
         # Every task, one CSV row each, the full task name in the first field
         def list = schtasks('/Query', '/FO', 'CSV', '/NH')
 
-        def listed?(listing, name) = listing.stdout.each_line.any? { |line| line.start_with?(%("#{name}",)) }
+        # The task list's text; an Error when it can't be read
+        def tasks
+          listing = list
+          return listing.stdout if listing.success?
+
+          raise Error, "Task Scheduler could not list tasks: #{Schedules.printable(listing.stderr.strip)}"
+        end
+
+        def listed?(text, name) = text.each_line.any? { |line| line.start_with?(%("#{name}",)) }
 
         def refuse_expansion(schedule)
           # The joined Arguments, as Task Scheduler expands them: a %...% can span two arguments

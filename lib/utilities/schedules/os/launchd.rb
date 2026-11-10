@@ -70,6 +70,21 @@ module RubyRaider
 
         def present?(os_id) = launchctl('print', service(checked_os_id(os_id))).success?
 
+        # The os_ids of this kind starting with prefix that have a plist, sorted; runs nothing
+        def list_ids(prefix)
+          dir = agents_dir
+          Dir.children(dir).filter_map do |file|
+            next unless file.valid_encoding? && file.end_with?('.plist')
+
+            id = file.delete_suffix('.plist')
+            id if @kind.listed?(id, prefix)
+          end.sort
+        rescue Errno::ENOENT
+          []
+        rescue SystemCallError => e
+          raise Error, "Could not read #{dir}: #{e.message}"
+        end
+
         private
 
         def launchctl(*args) = @runner.call(LAUNCHCTL, *args)

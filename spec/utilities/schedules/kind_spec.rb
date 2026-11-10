@@ -58,6 +58,15 @@ RSpec.describe RubyRaider::Schedules::Kind do # rubocop:disable RSpec/FilePath
       expect([tests.valid_name?('env'), tests.name_in('dev.rubyraider.schedule.0123456789.env'), tests.name_in(os_id)]).to eq([true, 'env', nil])
     end
 
+    it 'reads no os_id from text that is not valid UTF-8, and lists only ids under the prefix' do
+      prefix = 'dev.rubyraider.schedule.0123456789.'
+      broken = "#{prefix}a\xFF".dup.force_encoding(Encoding::UTF_8)
+
+      expect([tests.name_in(broken), tests.listed?(broken, prefix), tests.listed?("#{prefix}nightly", prefix),
+              tests.listed?("#{prefix}nightly", 'dev.rubyraider.schedule.9999999999.'), tests.listed?(nil, prefix)])
+        .to eq([nil, false, true, false, false])
+    end
+
     it 'knows its own command line under a cron tag, not a flow one' do
       line = '0 8 * * * cd /p && /usr/bin/env /r /b exec raider schedule run nightly --project /p --trigger schedule >> /l 2>&1'
       expect([tests.our_command?(line, 'nightly'), kind.our_command?(line, 'nightly'), tests.our_command?(line.sub(' --trigger schedule', ''), 'nightly')])

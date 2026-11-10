@@ -40,7 +40,24 @@ module RubyRaider
         # True when either scheduler has it, or systemd unit files are there though systemd does not answer
         def present?(os_id) = @primary.present?(os_id) || other_present?(os_id) || stranded?(os_id)
 
+        # Both schedulers' ids plus systemd unit files (there even when systemd does not answer); only the
+        # primary scheduler failing is an error
+        def list_ids(prefix)
+          (@primary.list_ids(prefix) + other_ids(prefix) + quietly { @systemd.list_ids(prefix) }).uniq.sort
+        end
+
         private
+
+        def other_ids(prefix)
+          other = @other
+          other&.usable? ? quietly { other.list_ids(prefix) } : []
+        end
+
+        def quietly
+          yield
+        rescue Error
+          []
+        end
 
         def stranded?(os_id) = @primary != @systemd && @systemd.unit_files?(os_id)
 

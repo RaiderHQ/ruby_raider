@@ -16,6 +16,7 @@ module RubyRaider
       def initialize: (command: String, dir: String, noun: String, plural: String, remove_command: String, ?reserved: Array[String]) -> void
       def valid_name?: (untyped name) -> bool
       def name_in: (untyped os_id) -> String?
+      def listed?: (untyped os_id, String prefix) -> bool
       def cron_tag: () -> String
       def our_command?: (String text, String? name) -> bool
       def task_description: (String name, String rule) -> String

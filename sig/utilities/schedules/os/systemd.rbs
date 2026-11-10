@@ -23,6 +23,7 @@ module RubyRaider
         def remove: (String os_id) -> bool
         def present?: (String os_id) -> bool
         def usable?: () -> bool
+        def list_ids: (String prefix) -> Array[String]
         def unit_files?: (String os_id) -> bool
 
         private

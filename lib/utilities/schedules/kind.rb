@@ -28,11 +28,15 @@ module RubyRaider
 
       # The name in an os_id of this kind, nil when it is not one
       def name_in(os_id)
-        return nil unless os_id.is_a?(String)
+        # Text from the OS (file names, schtasks, crontab) may not be valid UTF-8; a regexp would raise on it
+        return nil unless os_id.is_a?(String) && os_id.valid_encoding?
 
         name = os_id_pattern.match(os_id)&.[](1)
         name if name && valid_name?(name)
       end
+
+      # An os_id of this kind that starts with prefix (one project's: "<os_id_prefix>.<hash10>.")
+      def listed?(os_id, prefix) = !name_in(os_id).nil? && os_id.to_s.start_with?(prefix)
 
       def cron_tag = "# raider-#{command} "
 

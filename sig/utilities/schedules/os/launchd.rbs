@@ -20,6 +20,7 @@ module RubyRaider
         def install: (_OsEntry schedule) -> true
         def remove: (String os_id) -> bool
         def present?: (String os_id) -> bool
+        def list_ids: (String prefix) -> Array[String]
 
         private
 

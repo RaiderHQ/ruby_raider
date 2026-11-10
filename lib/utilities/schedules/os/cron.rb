@@ -60,6 +60,16 @@ module RubyRaider
           without(read, tag).last
         end
 
+        # The os_ids of this kind starting with prefix on our tag lines, sorted
+        def list_ids(prefix)
+          tag = @kind.cron_tag
+          read.dup.force_encoding(Encoding::UTF_8).scrub.each_line.filter_map do |text|
+            line = text.chomp
+            id = line.delete_prefix(tag)
+            id if id != line && @kind.listed?(id, prefix)
+          end.uniq.sort
+        end
+
         # True when crontab -l answers (an empty crontab counts)
         def usable?
           read

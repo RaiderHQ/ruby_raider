@@ -16,7 +16,12 @@ module RubyRaider
         def remove: (String os_id) -> bool
         def present?: (String os_id) -> bool
 
+        def list_ids: (String prefix) -> Array[String]
+
         private
+
+        def other_ids: (String prefix) -> Array[String]
+        def quietly: () { () -> Array[String] } -> Array[String]
 
         def stranded?: (String os_id) -> bool
         def refuse_stranded: (String os_id) -> void

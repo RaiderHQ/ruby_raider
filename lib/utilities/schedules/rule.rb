@@ -24,7 +24,10 @@ module RubyRaider
       # The Kind of the subclass's schedules
       def self.kind = raise(NotImplementedError, "#{self} must name its Kind")
 
-      def self.os_id_for(project_root, name) = "#{kind.os_id_prefix}.#{Digest::SHA256.hexdigest(project_root)[0, 10]}.#{name}"
+      def self.os_id_for(project_root, name) = "#{os_id_prefix_for(project_root)}#{name}"
+
+      # What every os_id of this kind for the project starts with: "<kind prefix>.<hash10>."
+      def self.os_id_prefix_for(project_root) = "#{kind.os_id_prefix}.#{Digest::SHA256.hexdigest(project_root)[0, 10]}."
 
       def self.bundle_path
         Gem.bin_path('bundler', 'bundle')

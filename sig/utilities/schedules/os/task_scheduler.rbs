@@ -13,6 +13,7 @@ module RubyRaider
         GLOB: Regexp
         EXPANDS: Regexp
         DAY_NAMES: Array[String]
+        ROW: Regexp
 
         @kind: Kind
         @runner: CommandRunner
@@ -31,12 +32,14 @@ module RubyRaider
         def install: (_OsEntry schedule) -> true
         def remove: (String os_id) -> bool
         def present?: (String os_id) -> bool
+        def list_ids: (String prefix) -> Array[String]
 
         private
 
         def schtasks: (*String args) -> CommandRunner::Result
         def list: () -> CommandRunner::Result
-        def listed?: (CommandRunner::Result listing, String name) -> bool
+        def tasks: () -> String
+        def listed?: (String text, String name) -> bool
         def refuse_expansion: (_OsEntry schedule) -> void
         def checked_os_id: (untyped os_id) -> String
         def escape: (untyped value) -> String

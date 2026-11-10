@@ -95,6 +95,21 @@ module RubyRaider
 
         def present?(os_id) = systemctl('is-enabled', "#{checked_os_id(os_id)}.timer").success?
 
+        # The os_ids of this kind starting with prefix that have a unit file, sorted (no user manager needed)
+        def list_ids(prefix)
+          dir = units_dir
+          Dir.children(dir).filter_map do |file|
+            next unless file.valid_encoding?
+
+            id = file.sub(/\.(?:service|timer)\z/, '')
+            id if id != file && @kind.listed?(id, prefix)
+          end.uniq.sort
+        rescue Errno::ENOENT
+          []
+        rescue SystemCallError => e
+          raise Error, "Could not read #{dir}: #{e.message}"
+        end
+
         # True when a unit file for the schedule is on disk (no user manager needed)
         def unit_files?(os_id) = %w[service timer].any? { |unit| File.exist?(unit_path(os_id, unit)) }
 
