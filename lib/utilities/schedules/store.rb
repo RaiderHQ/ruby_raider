@@ -69,6 +69,8 @@ module RubyRaider
 
       private
 
+      attr_reader :project
+
       def from_entry(entry)
         @schedule_class.from_h(entry, @project.root)
       rescue Error

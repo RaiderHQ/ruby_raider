@@ -1,0 +1,27 @@
+module RubyRaider
+  module Schedules
+    class Schedule < Rule
+      KIND: Kind
+      KEYS: Array[String]
+      LINUX: Regexp
+      NO_BROWSER_ON_LINUX: String
+
+      attr_reader show_browser: bool
+      attr_reader selection: Selection
+
+      def self.kind: () -> Kind
+      def self.build: (project: Project, name: String, every: String, ?at: String?, ?on: String?, ?retries: untyped, ?notify: bool, ?show_browser: bool,
+                       ?selection: Selection, ?now: Time, ?host_os: String) -> Schedule
+      def self.from_h: (untyped hash, String project_root, ?host_os: String) -> Schedule
+
+      def initialize: (name: untyped, every: untyped, at: untyped, on: untyped, retries: untyped, selection: untyped, os_id: untyped, ruby: untyped, bundle: untyped,
+                       gem_env: untyped, project_root: untyped, created_at: untyped, ?notify: untyped, ?show_browser: untyped) -> void
+      def to_h: () -> Hash[String, untyped]
+
+      private
+
+      def checked_name: (untyped name) -> String
+      def checked_selection: (untyped selection) -> Selection
+    end
+  end
+end

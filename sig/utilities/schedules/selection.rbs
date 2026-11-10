@@ -1,0 +1,36 @@
+module RubyRaider
+  module Schedules
+    class Selection
+      KINDS: Array[String]
+      KEYS: Array[String]
+      TAG: Regexp
+      MAX_FILES: Integer
+      WINDOWS: Regexp
+      FILE_RULE: String
+      WINDOWS_RULE: String
+
+      attr_reader kind: String
+      attr_reader tag: String?
+      attr_reader files: Array[String]
+
+      def self.all: () -> Selection
+      def self.parse: (files: untyped, tag: untyped, root: String, ?host_os: String) -> Selection
+      def self.from_h: (untyped hash, root: String, ?host_os: String) -> Selection
+
+      def initialize: (kind: untyped, ?tag: untyped, ?files: untyped, ?host_os: String) -> void
+      def missing_file: (String root) -> String?
+      def check!: (String root) -> self
+      def to_h: () -> Hash[String, untyped]
+
+      private
+
+      def nothing: (String label, untyped value) -> nil
+      def checked_tag: (untyped tag) -> String
+      def checked_files: (untyped files, bool windows) -> Array[String]
+      def checked_file: (untyped file, bool windows) -> String
+      def spec_path?: (untyped file, bool windows) -> bool
+      def relative?: (String file, bool windows) -> bool
+      def present?: (String root, String file) -> bool
+    end
+  end
+end

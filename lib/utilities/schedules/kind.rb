@@ -56,6 +56,10 @@ module RubyRaider
       # The schedules of `raider flow schedule` (4.1); removed with flows
       FLOW_LEGACY = new(command: 'flow', dir: '.raider/flows', noun: 'flow schedule', plural: 'flows',
                         remove_command: 'raider flow unschedule', reserved: %w[env])
+
+      # The schedules of `raider schedule`: the project's tests, all, one tag or listed spec files
+      TESTS = new(command: 'schedule', dir: '.raider/schedules', noun: 'test schedule', plural: 'tests',
+                  remove_command: 'raider schedule remove')
     end
   end
 end

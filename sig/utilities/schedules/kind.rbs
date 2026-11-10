@@ -2,6 +2,7 @@ module RubyRaider
   module Schedules
     class Kind
       FLOW_LEGACY: Kind
+      TESTS: Kind
 
       attr_reader command: String
       attr_reader os_id_prefix: String

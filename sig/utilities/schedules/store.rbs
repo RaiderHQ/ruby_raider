@@ -26,6 +26,7 @@ module RubyRaider
 
       private
 
+      attr_reader project: Project
       def from_entry: (untyped entry) -> untyped
       def named?: (untyped entry, String name) -> bool
       def read_entries: () -> Array[untyped]?
