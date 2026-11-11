@@ -85,8 +85,8 @@ describe 'Gemfile content' do
           expect(gemfile).to include("gem 'ruby_raider', '~> #{major_minor}'")
         end
 
-        it 'pins ruby_raider to the 4.1 release line' do
-          expect(gemfile).to include("gem 'ruby_raider', '~> 4.1'")
+        it 'pins ruby_raider to the 4.2 release line' do
+          expect(gemfile).to include("gem 'ruby_raider', '~> 4.2'")
         end
       end
     end

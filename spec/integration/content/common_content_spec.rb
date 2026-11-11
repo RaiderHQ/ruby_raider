@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'content_helper'
+require_relative '../../../lib/utilities/schedules/schedule_store'
 
 describe 'Common file content' do
   # --- Rakefile ---
