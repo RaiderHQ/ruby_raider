@@ -3,9 +3,8 @@
 require 'tmpdir'
 require 'rexml/document'
 require_relative '../../../../lib/utilities/schedules/os/launchd'
-require_relative '../../../../lib/utilities/flows/schedule'
+require_relative '../../../../lib/utilities/schedules/schedule'
 
-# Flow specs live under spec/utilities/flows, next to the code in lib/utilities/flows
 # The fake runner, temp home and project folders sit next to the adapter under test
 # rubocop:disable RSpec/MultipleMemoizedHelpers
 RSpec.describe RubyRaider::Schedules::Os::Launchd do # rubocop:disable RSpec/FilePath
@@ -33,18 +32,20 @@ RSpec.describe RubyRaider::Schedules::Os::Launchd do # rubocop:disable RSpec/Fil
   end
 
   let(:hostile) { %q('; rm -rf ~; ' </string> %h $(id) " \\ &) }
-  let(:tmp) { File.realpath(Dir.mktmpdir('flows-launchd')) }
+  let(:tmp) { File.realpath(Dir.mktmpdir('schedules-launchd')) }
   let(:home) { File.join(tmp, 'home') }
   let(:project_dir) { File.join(tmp, 'plain') }
   let(:runner) { fake_runner_class.new }
-  let(:launchd) { described_class.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner, home: home, uid: 501) }
+  let(:launchd) { described_class.new(kind: RubyRaider::Schedules::Kind::TESTS, runner: runner, home: home, uid: 501) }
   let(:now) { Time.utc(2026, 11, 9, 10, 0, 0) }
   let(:agents) { File.join(home, 'Library', 'LaunchAgents') }
 
-  def schedule(dir: project_dir, **options)
+  def schedule(dir: project_dir, gem_env: {}, bundle: '/opt/ruby/bin/bundle', **options)
     FileUtils.mkdir_p(dir)
-    project = RubyRaider::Flows::Project.new(File.realpath(dir))
-    RubyRaider::Flows::Schedule.build(project: project, name: 'report', every: 'day', at: '08:00', now: now, **options)
+    # Hermetic: the GEM_HOME/GEM_PATH and bundle this spec runs with never reach the entry; a spec passes its own
+    allow(RubyRaider::Schedules::Schedule).to receive_messages(captured_gem_env: gem_env, bundle_path: bundle)
+    project = RubyRaider::Schedules::Project.new(File.realpath(dir))
+    RubyRaider::Schedules::Schedule.build(project: project, name: 'report', every: 'day', at: '08:00', now: now, **options)
   end
 
   # plist XML back to Ruby: dict -> Hash, array -> Array, string -> String, integer -> Integer
@@ -117,7 +118,7 @@ RSpec.describe RubyRaider::Schedules::Os::Launchd do # rubocop:disable RSpec/Fil
     end
 
     it 'round-trips every field and never sets RunAtLoad' do
-      item = schedule(retries: 2, inputs: %w[env=staging])
+      item = schedule(retries: 2, selection: RubyRaider::Schedules::Selection.new(kind: 'tag', tag: 'smoke'))
 
       expect(parsed(launchd.plist(item))).to eq(
         'Label' => item.os_id, 'ProgramArguments' => item.argv, 'WorkingDirectory' => item.working_directory,
@@ -127,9 +128,7 @@ RSpec.describe RubyRaider::Schedules::Os::Launchd do # rubocop:disable RSpec/Fil
     end
 
     it 'keeps GEM_HOME and GEM_PATH in the environment when they were captured' do
-      allow(RubyRaider::Flows::Schedule).to receive(:captured_gem_env).and_return('GEM_HOME' => '/g/home', 'GEM_PATH' => '/g/path')
-
-      env = parsed(launchd.plist(schedule))['EnvironmentVariables']
+      env = parsed(launchd.plist(schedule(gem_env: { 'GEM_HOME' => '/g/home', 'GEM_PATH' => '/g/path' })))['EnvironmentVariables']
 
       expect(env.slice('LANG', 'GEM_HOME', 'GEM_PATH')).to eq('LANG' => 'en_US.UTF-8', 'GEM_HOME' => '/g/home', 'GEM_PATH' => '/g/path')
     end
@@ -150,15 +149,17 @@ RSpec.describe RubyRaider::Schedules::Os::Launchd do # rubocop:disable RSpec/Fil
       expect(days).to eq([0, 1, 6].map { |day| { 'Weekday' => day, 'Hour' => 8, 'Minute' => 0 } })
     end
 
-    describe 'with hostile values in an input and in the project path' do
-      let(:item) { schedule(dir: File.join(tmp, "p#{hostile}<", "string> #{hostile}"), inputs: ["note=#{hostile}"]) }
+    describe 'with hostile values in the bundle path, GEM_HOME and the project path' do
+      let(:item) do
+        schedule(dir: File.join(tmp, "p#{hostile}<", "string> #{hostile}"), bundle: "/opt/#{hostile}/bundle", gem_env: { 'GEM_HOME' => "/g/#{hostile}" })
+      end
       let(:text) { launchd.plist(item) }
 
       it 'round-trips them exactly' do
         data = parsed(text)
 
         expect([data['ProgramArguments'], data['WorkingDirectory'], data['StandardOutPath']]).to eq([item.argv, item.working_directory, item.log_path])
-        expect(data['ProgramArguments'].last).to eq("note=#{hostile}")
+        expect([data['ProgramArguments'][1], data['EnvironmentVariables']['GEM_HOME']]).to eq(["/opt/#{hostile}/bundle", "/g/#{hostile}"])
         expect(item.working_directory).to include('</string>', "'; rm -rf ~; '", '$(id)', '%h', '"', '\\', '&')
       end
 
@@ -204,7 +205,7 @@ RSpec.describe RubyRaider::Schedules::Os::Launchd do # rubocop:disable RSpec/Fil
       item = schedule
       runner.answers['bootstrap'] = ["Bootstrap failed: 5: Input/output error\e[2J\n", 5]
 
-      expect { launchd.install(item) }.to raise_error(RubyRaider::Flows::Error, %r{launchd.*Bootstrap failed: 5: Input/output error\?\[2J})
+      expect { launchd.install(item) }.to raise_error(RubyRaider::Schedules::Error, %r{launchd.*Bootstrap failed: 5: Input/output error\?\[2J})
       expect(Dir.children(agents)).to be_empty
     end
 
@@ -214,14 +215,14 @@ RSpec.describe RubyRaider::Schedules::Os::Launchd do # rubocop:disable RSpec/Fil
       allow(File).to receive(:unlink).and_call_original
       allow(File).to receive(:unlink).with(plist_path(item)).and_raise(Errno::EACCES)
 
-      expect { launchd.install(item) }.to raise_error(RubyRaider::Flows::Error, /Bootstrap failed: 5; also: Could not remove .*Permission denied/)
+      expect { launchd.install(item) }.to raise_error(RubyRaider::Schedules::Error, /Bootstrap failed: 5; also: Could not remove .*Permission denied/)
     end
 
-    it 'raises a flow error and runs nothing when it can not write the plist' do
+    it 'raises a schedule error and runs nothing when it can not write the plist' do
       FileUtils.mkdir_p(File.dirname(agents))
       File.write(agents, 'not a folder')
 
-      expect { launchd.install(schedule) }.to raise_error(RubyRaider::Flows::Error, /Could not write .*LaunchAgents/)
+      expect { launchd.install(schedule) }.to raise_error(RubyRaider::Schedules::Error, /Could not write .*LaunchAgents/)
       expect([runner.calls, File.read(agents)]).to eq([[], 'not a folder'])
     end
 
@@ -231,7 +232,7 @@ RSpec.describe RubyRaider::Schedules::Os::Launchd do # rubocop:disable RSpec/Fil
       File.write(plist_path(item), 'old')
       runner.answers['-lint'] = ['bad plist', 1]
 
-      expect { launchd.install(item) }.to raise_error(RubyRaider::Flows::Error, /bad plist/)
+      expect { launchd.install(item) }.to raise_error(RubyRaider::Schedules::Error, /bad plist/)
       expect([runner.calls.map { |argv| argv[1] }, Dir.children(agents), File.read(plist_path(item))])
         .to eq([['-lint'], [File.basename(plist_path(item))], 'old'])
     end
@@ -261,12 +262,12 @@ RSpec.describe RubyRaider::Schedules::Os::Launchd do # rubocop:disable RSpec/Fil
       item = schedule
       allow(File).to receive(:unlink).and_raise(Errno::EACCES)
 
-      expect { launchd.remove(item.os_id) }.to raise_error(RubyRaider::Flows::Error, /Could not remove .*Permission denied/)
+      expect { launchd.remove(item.os_id) }.to raise_error(RubyRaider::Schedules::Error, /Could not remove .*Permission denied/)
       expect(runner.calls).to eq([['/bin/launchctl', 'bootout', "gui/501/#{item.os_id}"]])
     end
 
-    it 'refuses an os_id that is not a flow schedule id' do
-      expect { launchd.remove('../../evil') }.to raise_error(RubyRaider::Flows::Error, /Invalid os_id/)
+    it 'refuses an os_id that is not a schedule id' do
+      expect { launchd.remove('../../evil') }.to raise_error(RubyRaider::Schedules::Error, /Invalid os_id/)
       expect(runner.calls).to be_empty
     end
   end
@@ -279,8 +280,8 @@ RSpec.describe RubyRaider::Schedules::Os::Launchd do # rubocop:disable RSpec/Fil
       expect(runner.calls).to eq([['/bin/launchctl', 'print', "gui/501/#{item.os_id}"]])
     end
 
-    it 'refuses an os_id that is not a flow schedule id and runs nothing' do
-      expect { launchd.present?('../../evil') }.to raise_error(RubyRaider::Flows::Error, /Invalid os_id/)
+    it 'refuses an os_id that is not a schedule id and runs nothing' do
+      expect { launchd.present?('../../evil') }.to raise_error(RubyRaider::Schedules::Error, /Invalid os_id/)
       expect(runner.calls).to be_empty
     end
 

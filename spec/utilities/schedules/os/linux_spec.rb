@@ -2,9 +2,8 @@
 
 require 'tmpdir'
 require_relative '../../../../lib/utilities/schedules/os/linux'
-require_relative '../../../../lib/utilities/flows/schedule'
+require_relative '../../../../lib/utilities/schedules/schedule'
 
-# Flow specs live under spec/utilities/flows, next to the code in lib/utilities/flows
 # rubocop:disable RSpec/MultipleMemoizedHelpers
 RSpec.describe RubyRaider::Schedules::Os::Linux do # rubocop:disable RSpec/FilePath
   # Plays systemctl --user and crontab: answers keyed by "systemctl verb" or "crontab -l"; never runs anything
@@ -30,24 +29,26 @@ RSpec.describe RubyRaider::Schedules::Os::Linux do # rubocop:disable RSpec/FileP
     end
   end
 
-  let(:tmp) { File.realpath(Dir.mktmpdir('flows-linux')) }
+  let(:tmp) { File.realpath(Dir.mktmpdir('schedules-linux')) }
   let(:runner) { fake_runner_class.new }
   let(:item) do
-    project = RubyRaider::Flows::Project.new(tmp)
-    RubyRaider::Flows::Schedule.build(project: project, name: 'report', every: 'day', at: '08:00', now: Time.utc(2026, 11, 9))
+    # Hermetic: the GEM_HOME/GEM_PATH and bundle this spec runs with never reach the entry
+    allow(RubyRaider::Schedules::Schedule).to receive_messages(captured_gem_env: {}, bundle_path: '/opt/ruby/bin/bundle')
+    project = RubyRaider::Schedules::Project.new(tmp)
+    RubyRaider::Schedules::Schedule.build(project: project, name: 'report', every: 'day', at: '08:00', now: Time.utc(2026, 11, 9))
   end
-  let(:cron_block) { "# raider-flow #{item.os_id}\n#{RubyRaider::Schedules::Os::Cron.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY).line(item)}\n" }
+  let(:cron_block) { "# raider-schedule #{item.os_id}\n#{RubyRaider::Schedules::Os::Cron.new(kind: RubyRaider::Schedules::Kind::TESTS).line(item)}\n" }
   let(:no_bus) { ['Failed to connect to bus', 1] }
 
   # The systemd units go to a temp home, never the real one
-  def pick = described_class.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner, systemd: RubyRaider::Schedules::Os::Systemd.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner, home: tmp, config_home: nil))
+  def pick = described_class.new(kind: RubyRaider::Schedules::Kind::TESTS, runner: runner, systemd: RubyRaider::Schedules::Os::Systemd.new(kind: RubyRaider::Schedules::Kind::TESTS, runner: runner, home: tmp, config_home: nil))
 
   after { FileUtils.rm_rf(tmp) }
 
   it 'uses systemd when the user manager answers' do
     linux = pick
 
-    expect([linux.label, linux.missed_runs_note, described_class.pick(runner, kind: RubyRaider::Schedules::Kind::FLOW_LEGACY).label]).to eq(['systemd', nil, 'systemd'])
+    expect([linux.label, linux.missed_runs_note, described_class.pick(runner, kind: RubyRaider::Schedules::Kind::TESTS).label]).to eq(['systemd', nil, 'systemd'])
     expect(runner.calls.uniq).to eq([%w[systemctl --user show-environment]])
   end
 
@@ -112,8 +113,8 @@ RSpec.describe RubyRaider::Schedules::Os::Linux do # rubocop:disable RSpec/FileP
       runner.table = "#{cron_block}1 * * * * a\n"
 
       expect { pick.remove(item.os_id) }
-        .to raise_error(RubyRaider::Flows::Error, 'This schedule is a systemd timer; run raider flow unschedule report ' \
-                                                  'from a session where systemctl --user works')
+        .to raise_error(RubyRaider::Schedules::Error, 'This schedule is a systemd timer; run raider schedule remove report ' \
+                                                      'from a session where systemctl --user works')
       expect([runner.table, File.exist?(File.join(units, "#{item.os_id}.timer"))]).to eq(["1 * * * * a\n", true])
     end
   end

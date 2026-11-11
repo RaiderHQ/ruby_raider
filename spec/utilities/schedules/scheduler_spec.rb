@@ -6,7 +6,6 @@ require 'stringio'
 require 'tmpdir'
 require 'yaml'
 require_relative '../../../lib/utilities/schedules/scheduler'
-require_relative '../../../lib/utilities/flows/schedule'
 
 # The fake adapter, store and streams sit next to the project and scheduler
 # rubocop:disable RSpec/MultipleMemoizedHelpers
@@ -386,7 +385,7 @@ RSpec.describe RubyRaider::Schedules::Scheduler do # rubocop:disable RSpec/FileP
       prefix = RubyRaider::Schedules::Schedule.os_id_prefix_for(dir)
       log_run('ghost', { 'status' => 'passed', 'finished_at' => 'f', 'trigger' => 'manual', 'counts' => {}, 'report_copy' => 'x' })
       adapter.extra.push("#{prefix}ghost", "#{prefix}ghost", RubyRaider::Schedules::Schedule.os_id_for('/elsewhere', 'stranger'),
-                         RubyRaider::Flows::Schedule.os_id_for(dir, 'legacy'), "#{prefix}../../etc", "#{prefix}a;id", "#{prefix}Caps",
+                         Class.new(RubyRaider::Schedules::Rule) { def self.kind = RubyRaider::Schedules::Kind::FLOW_LEGACY }.os_id_for(dir, 'legacy'), "#{prefix}../../etc", "#{prefix}a;id", "#{prefix}Caps",
                          "#{prefix}a\xFF".dup.force_encoding(Encoding::UTF_8), nil)
 
       rows = listed['schedules']
@@ -422,11 +421,11 @@ RSpec.describe RubyRaider::Schedules::Scheduler do # rubocop:disable RSpec/FileP
     end
 
     it 'passes a notice through, in JSON and as the first text line' do
-      scheduler.list(json: true, notice: 'Removed 1 flow schedule')
-      scheduler.list(notice: 'Removed 1 flow schedule')
+      scheduler.list(json: true, notice: 'Removed 1 old schedule')
+      scheduler.list(notice: 'Removed 1 old schedule')
 
-      expect(JSON.parse(out.string.lines.first)['notice']).to eq('Removed 1 flow schedule')
-      expect(out.string.lines.drop(1)).to eq(["Removed 1 flow schedule\n", "No schedules yet: raider schedule add <name> --every day --at 08:00\n"])
+      expect(JSON.parse(out.string.lines.first)['notice']).to eq('Removed 1 old schedule')
+      expect(out.string.lines.drop(1)).to eq(["Removed 1 old schedule\n", "No schedules yet: raider schedule add <name> --every day --at 08:00\n"])
     end
 
     it 'prints one printable line per row, then the missed runs note' do

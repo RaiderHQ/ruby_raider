@@ -3,7 +3,6 @@
 require 'stringio'
 require_relative '../../../lib/utilities/schedules/notifier'
 
-# Flow specs live under spec/utilities/flows, next to the code in lib/utilities/flows
 RSpec.describe RubyRaider::Schedules::Notifier do # rubocop:disable RSpec/FilePath
   # Records each command instead of running it: no real osascript, notify-send or PowerShell
   let(:runner) do

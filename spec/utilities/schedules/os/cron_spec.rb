@@ -3,9 +3,8 @@
 require 'shellwords'
 require 'tmpdir'
 require_relative '../../../../lib/utilities/schedules/os/cron'
-require_relative '../../../../lib/utilities/flows/schedule'
+require_relative '../../../../lib/utilities/schedules/schedule'
 
-# Flow specs live under spec/utilities/flows, next to the code in lib/utilities/flows
 # The fake runner and project folders sit next to the adapter under test
 # rubocop:disable RSpec/MultipleMemoizedHelpers
 RSpec.describe RubyRaider::Schedules::Os::Cron do # rubocop:disable RSpec/FilePath
@@ -34,16 +33,18 @@ RSpec.describe RubyRaider::Schedules::Os::Cron do # rubocop:disable RSpec/FilePa
   end
 
   let(:hostile) { %q('; rm -rf ~; ' </string> %h $(id) " \\ &) }
-  let(:tmp) { File.realpath(Dir.mktmpdir('flows-cron')) }
+  let(:tmp) { File.realpath(Dir.mktmpdir('schedules-cron')) }
   let(:project_dir) { File.join(tmp, 'plain') }
   let(:runner) { fake_runner_class.new }
-  let(:cron) { described_class.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner) }
+  let(:cron) { described_class.new(kind: RubyRaider::Schedules::Kind::TESTS, runner: runner) }
   let(:now) { Time.utc(2026, 11, 9, 10, 0, 0) }
 
-  def schedule(dir: project_dir, name: 'report', **options)
+  def schedule(dir: project_dir, name: 'report', gem_env: {}, bundle: '/opt/ruby/bin/bundle', **options)
     FileUtils.mkdir_p(dir)
-    project = RubyRaider::Flows::Project.new(File.realpath(dir))
-    RubyRaider::Flows::Schedule.build(project: project, name: name, every: 'day', at: '08:00', now: now, **options)
+    # Hermetic: the GEM_HOME/GEM_PATH and bundle this spec runs with never reach the entry; a spec passes its own
+    allow(RubyRaider::Schedules::Schedule).to receive_messages(captured_gem_env: gem_env, bundle_path: bundle)
+    project = RubyRaider::Schedules::Project.new(File.realpath(dir))
+    RubyRaider::Schedules::Schedule.build(project: project, name: name, every: 'day', at: '08:00', now: now, **options)
   end
 
   # What cron (cronie/vixie do_command.c) hands to /bin/sh: a backslash escapes the next character, an
@@ -77,7 +78,7 @@ RSpec.describe RubyRaider::Schedules::Os::Cron do # rubocop:disable RSpec/FilePa
      '>>', item.log_path, '2>&1']
   end
 
-  def block(item) = "# raider-flow #{item.os_id}\n#{cron.line(item)}\n"
+  def block(item) = "# raider-schedule #{item.os_id}\n#{cron.line(item)}\n"
 
   after { FileUtils.rm_rf(tmp) }
 
@@ -104,27 +105,30 @@ RSpec.describe RubyRaider::Schedules::Os::Cron do # rubocop:disable RSpec/FilePa
     end
 
     it 'keeps GEM_HOME and GEM_PATH in the environment when they were captured' do
-      allow(RubyRaider::Flows::Schedule).to receive(:captured_gem_env).and_return('GEM_HOME' => '/g/%home', 'GEM_PATH' => '/g/path')
+      item = schedule(gem_env: { 'GEM_HOME' => '/g/%home', 'GEM_PATH' => '/g/path' })
 
-      expect(fields_and_words(cron.line(schedule)).last).to include('GEM_HOME=/g/%home', 'GEM_PATH=/g/path')
+      expect(fields_and_words(cron.line(item)).last).to include('GEM_HOME=/g/%home', 'GEM_PATH=/g/path')
     end
 
     it 'refuses a ruby path env would read as a variable' do
       plain = schedule
-      item = RubyRaider::Flows::Schedule.from_h(plain.to_h.merge('ruby' => '/opt/a=b/ruby'), plain.project_root)
+      item = RubyRaider::Schedules::Schedule.from_h(plain.to_h.merge('ruby' => '/opt/a=b/ruby'), plain.project_root)
 
-      expect { cron.line(item) }.to raise_error(RubyRaider::Flows::Error, /cron can not run ruby from .*a=b/)
+      expect { cron.line(item) }.to raise_error(RubyRaider::Schedules::Error, /cron can not run ruby from .*a=b/)
     end
 
-    describe 'with hostile values in an input and in the project path' do
-      let(:item) { schedule(dir: File.join(tmp, "p#{hostile}<", "string> #{hostile} 100%"), inputs: ["note=#{hostile} 50%"]) }
+    describe 'with hostile values in the bundle path, GEM_HOME and the project path' do
+      let(:item) do
+        schedule(dir: File.join(tmp, "p#{hostile}<", "string> #{hostile} 100%"), bundle: "/opt/#{hostile} 50%/bundle",
+                 gem_env: { 'GEM_HOME' => "/g/#{hostile} 25%" })
+      end
       let(:text) { cron.line(item) }
 
       it 'gives back the exact command words after cron and the shell read it' do
         fields, words = fields_and_words(text)
 
         expect([fields, words]).to eq([%w[0 8 * * *], expected_words(item)])
-        expect(words).to include("note=#{hostile} 50%")
+        expect(words).to include("/opt/#{hostile} 50%/bundle", "GEM_HOME=/g/#{hostile} 25%")
         expect(item.working_directory).to include('</string>', "'; rm -rf ~; '", '$(id)', '%h', '"', '\\', '&', ' ')
       end
 
@@ -146,7 +150,7 @@ RSpec.describe RubyRaider::Schedules::Os::Cron do # rubocop:disable RSpec/FilePa
 
     it 'puts the block first and keeps every other byte, CRLF and a missing last newline included' do
       item = schedule
-      other = "SHELL=/bin/fish\r\nMAILTO=\"\"\r\n# raider-flow dev.rubyraider.flow.0123456789.other\n1 2 * * * echo % \\%\n5 5 * * * last"
+      other = "SHELL=/bin/fish\r\nMAILTO=\"\"\r\n# raider-schedule dev.rubyraider.schedule.0123456789.other\n1 2 * * * echo % \\%\n5 5 * * * last"
       runner.table = other
 
       cron.install(item)
@@ -165,7 +169,7 @@ RSpec.describe RubyRaider::Schedules::Os::Cron do # rubocop:disable RSpec/FilePa
       expect(runner.table).not_to include(daily)
     end
 
-    it 'keeps another flow block' do
+    it "keeps another schedule's block" do
       other = schedule(name: 'nightly')
       runner.table = block(other)
 
@@ -175,16 +179,16 @@ RSpec.describe RubyRaider::Schedules::Os::Cron do # rubocop:disable RSpec/FilePa
     end
 
     it 'refuses a line vixie cron would cut short and writes nothing' do
-      item = schedule(inputs: ["note=#{'x' * 900}"])
+      item = schedule(gem_env: { 'GEM_HOME' => "/g/#{'x' * 900}" })
 
-      expect { cron.install(item) }.to raise_error(RubyRaider::Flows::Error, /crontab line is \d{4} bytes, over 990/)
+      expect { cron.install(item) }.to raise_error(RubyRaider::Schedules::Error, /crontab line is \d{4} bytes, over 990/)
       expect(runner.calls).to be_empty
     end
 
     it 'raises with the scheduler error when crontab -l fails for another reason' do
       runner.answers['-l'] = ["crontab: permission denied\e[2J", 1]
 
-      expect { cron.install(schedule) }.to raise_error(RubyRaider::Flows::Error, /cron could not read .*permission denied\?\[2J/)
+      expect { cron.install(schedule) }.to raise_error(RubyRaider::Schedules::Error, /cron could not read .*permission denied\?\[2J/)
       expect(runner.calls).to eq([%w[crontab -l]])
     end
 
@@ -192,7 +196,7 @@ RSpec.describe RubyRaider::Schedules::Os::Cron do # rubocop:disable RSpec/FilePa
       runner.table = "1 * * * * a\n"
       runner.answers['-'] = ['crontab: errors in crontab file', 1]
 
-      expect { cron.install(schedule) }.to raise_error(RubyRaider::Flows::Error, /cron could not save .*errors in crontab file/)
+      expect { cron.install(schedule) }.to raise_error(RubyRaider::Schedules::Error, /cron could not save .*errors in crontab file/)
       expect(runner.table).to eq("1 * * * * a\n")
     end
   end
@@ -218,7 +222,7 @@ RSpec.describe RubyRaider::Schedules::Os::Cron do # rubocop:disable RSpec/FilePa
     it 'keeps an unrelated line that follows an orphaned tag' do
       item = schedule
       other = schedule(name: 'nightly')
-      runner.table = "# raider-flow #{item.os_id}\n#{cron.line(other)}\n1 * * * * a\n"
+      runner.table = "# raider-schedule #{item.os_id}\n#{cron.line(other)}\n1 * * * * a\n"
 
       expect(cron.remove(item.os_id)).to be(true)
       expect(runner.table).to eq("#{cron.line(other)}\n1 * * * * a\n")
@@ -227,7 +231,7 @@ RSpec.describe RubyRaider::Schedules::Os::Cron do # rubocop:disable RSpec/FilePa
     it 'keeps a line under its tag that is not a schedule run' do
       item = schedule
       manual = cron.line(item).sub(' --trigger schedule', ' --trigger manual')
-      runner.table = "# raider-flow #{item.os_id}\n#{manual}\n"
+      runner.table = "# raider-schedule #{item.os_id}\n#{manual}\n"
 
       expect(cron.remove(item.os_id)).to be(true)
       expect(runner.table).to eq("#{manual}\n")
@@ -235,14 +239,14 @@ RSpec.describe RubyRaider::Schedules::Os::Cron do # rubocop:disable RSpec/FilePa
 
     it 'removes a tag line left without its line' do
       item = schedule
-      runner.table = "1 * * * * a\n# raider-flow #{item.os_id}"
+      runner.table = "1 * * * * a\n# raider-schedule #{item.os_id}"
 
       expect(cron.remove(item.os_id)).to be(true)
       expect(runner.table).to eq("1 * * * * a\n")
     end
 
     it 'is false and writes nothing when its block is not there' do
-      runner.table = "1 * * * * a\n# raider-flow #{schedule.os_id}x\n"
+      runner.table = "1 * * * * a\n# raider-schedule #{schedule.os_id}x\n"
 
       expect(cron.remove(schedule.os_id)).to be(false)
       expect(runner.calls).to eq([%w[crontab -l]])
@@ -252,8 +256,8 @@ RSpec.describe RubyRaider::Schedules::Os::Cron do # rubocop:disable RSpec/FilePa
       expect(cron.remove(schedule.os_id)).to be(false)
     end
 
-    it 'refuses an os_id that is not a flow schedule id' do
-      expect { cron.remove("x\n* * * * * evil") }.to raise_error(RubyRaider::Flows::Error, /Invalid os_id/)
+    it 'refuses an os_id that is not a schedule id' do
+      expect { cron.remove("x\n* * * * * evil") }.to raise_error(RubyRaider::Schedules::Error, /Invalid os_id/)
       expect(runner.calls).to be_empty
     end
   end

@@ -3,7 +3,6 @@
 require 'tmpdir'
 require_relative '../../../lib/utilities/schedules/os_enumerator'
 require_relative '../../../lib/utilities/schedules/schedule'
-require_relative '../../../lib/utilities/flows/schedule'
 
 RSpec.describe RubyRaider::Schedules::OsEnumerator do # rubocop:disable RSpec/FilePath
   # Answers list_ids with what it was given, recording the prefix asked for
@@ -28,7 +27,7 @@ RSpec.describe RubyRaider::Schedules::OsEnumerator do # rubocop:disable RSpec/Fi
   let(:root) { '/projects/shop' }
   let(:prefix) { RubyRaider::Schedules::Schedule.os_id_prefix_for(root) }
   let(:other) { RubyRaider::Schedules::Schedule.os_id_prefix_for('/projects/other') }
-  let(:flow) { RubyRaider::Flows::Schedule.os_id_prefix_for(root) }
+  let(:legacy) { Class.new(RubyRaider::Schedules::Rule) { def self.kind = RubyRaider::Schedules::Kind::FLOW_LEGACY }.os_id_prefix_for(root) }
 
   def enumerator(adapter) = described_class.new(adapter, schedule_class: RubyRaider::Schedules::Schedule, root: root)
 
@@ -40,7 +39,7 @@ RSpec.describe RubyRaider::Schedules::OsEnumerator do # rubocop:disable RSpec/Fi
   end
 
   it "ignores what an adapter should not have returned: another project's, a flow's and hostile ids" do
-    hostile = ["#{other}nightly", "#{flow}nightly", "#{prefix}../../x", "#{prefix}a;rm -rf ~", "#{prefix}Bad", nil, 42,
+    hostile = ["#{other}nightly", "#{legacy}nightly", "#{prefix}../../x", "#{prefix}a;rm -rf ~", "#{prefix}Bad", nil, 42,
                "#{prefix}ok\nx", "#{prefix}a\xFF".dup.force_encoding(Encoding::UTF_8), "#{prefix}#{'a' * 61}"]
 
     expect(enumerator(fake_adapter.new(hostile + ["#{prefix}ok"])).names).to eq(%w[ok])

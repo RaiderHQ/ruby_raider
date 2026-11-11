@@ -2,9 +2,8 @@
 
 require 'tmpdir'
 require_relative '../../../../lib/utilities/schedules/os/systemd'
-require_relative '../../../../lib/utilities/flows/schedule'
+require_relative '../../../../lib/utilities/schedules/schedule'
 
-# Flow specs live under spec/utilities/flows, next to the code in lib/utilities/flows
 # The fake runner, temp home and project folders sit next to the adapter under test
 # rubocop:disable RSpec/MultipleMemoizedHelpers
 RSpec.describe RubyRaider::Schedules::Os::Systemd do # rubocop:disable RSpec/FilePath
@@ -30,18 +29,20 @@ RSpec.describe RubyRaider::Schedules::Os::Systemd do # rubocop:disable RSpec/Fil
   end
 
   let(:hostile) { %q('; rm -rf ~; ' </string> %h $(id) " \\ &) }
-  let(:tmp) { File.realpath(Dir.mktmpdir('flows-systemd')) }
+  let(:tmp) { File.realpath(Dir.mktmpdir('schedules-systemd')) }
   let(:home) { File.join(tmp, 'home') }
   let(:project_dir) { File.join(tmp, 'plain') }
   let(:runner) { fake_runner_class.new }
-  let(:systemd) { described_class.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner, home: home, config_home: nil) }
+  let(:systemd) { described_class.new(kind: RubyRaider::Schedules::Kind::TESTS, runner: runner, home: home, config_home: nil) }
   let(:now) { Time.utc(2026, 11, 9, 10, 0, 0) }
   let(:units) { File.join(home, '.config', 'systemd', 'user') }
 
-  def schedule(dir: project_dir, **options)
+  def schedule(dir: project_dir, gem_env: {}, bundle: '/opt/ruby/bin/bundle', **options)
     FileUtils.mkdir_p(dir)
-    project = RubyRaider::Flows::Project.new(File.realpath(dir))
-    RubyRaider::Flows::Schedule.build(project: project, name: 'report', every: 'day', at: '08:00', now: now, **options)
+    # Hermetic: the GEM_HOME/GEM_PATH and bundle this spec runs with never reach the entry; a spec passes its own
+    allow(RubyRaider::Schedules::Schedule).to receive_messages(captured_gem_env: gem_env, bundle_path: bundle)
+    project = RubyRaider::Schedules::Project.new(File.realpath(dir))
+    RubyRaider::Schedules::Schedule.build(project: project, name: 'report', every: 'day', at: '08:00', now: now, **options)
   end
 
   # systemd's specifier rule for a raw value: %% is %, any other % would be a specifier
@@ -111,7 +112,7 @@ RSpec.describe RubyRaider::Schedules::Os::Systemd do # rubocop:disable RSpec/Fil
 
       expect(systemd.service(item)).to eq(<<~UNIT)
         [Unit]
-        Description=raider flow report
+        Description=raider schedule report
 
         [Service]
         Type=oneshot
@@ -124,22 +125,24 @@ RSpec.describe RubyRaider::Schedules::Os::Systemd do # rubocop:disable RSpec/Fil
     end
 
     it 'keeps GEM_HOME and GEM_PATH in the environment when they were captured' do
-      allow(RubyRaider::Flows::Schedule).to receive(:captured_gem_env).and_return('GEM_HOME' => '/g/%h$x', 'GEM_PATH' => '/g/path')
+      item = schedule(gem_env: { 'GEM_HOME' => '/g/%h$x', 'GEM_PATH' => '/g/path' })
 
-      lines = value_of(systemd.service(schedule), 'Environment').flat_map { |value| systemd_words(value, dollars: false) }
+      lines = value_of(systemd.service(item), 'Environment').flat_map { |value| systemd_words(value, dollars: false) }
 
       expect(lines.last(3)).to eq(['LANG=en_US.UTF-8', 'GEM_HOME=/g/%h$x', 'GEM_PATH=/g/path'])
     end
 
-    describe 'with hostile values in an input and in the project path' do
-      let(:item) { schedule(dir: File.join(tmp, "p#{hostile}<", "string> #{hostile}"), inputs: ["note=#{hostile}"]) }
+    describe 'with hostile values in the bundle path, GEM_HOME and the project path' do
+      let(:item) do
+        schedule(dir: File.join(tmp, "p#{hostile}<", "string> #{hostile}"), bundle: "/opt/#{hostile}/bundle", gem_env: { 'GEM_HOME' => "/g/#{hostile}" })
+      end
       let(:text) { systemd.service(item) }
 
       it 'gives back the exact argv from ExecStart' do
         argv = systemd_words(value_of(text, 'ExecStart').first, dollars: true)
 
         expect(argv).to eq(item.argv)
-        expect(argv.last).to eq("note=#{hostile}")
+        expect(argv[1]).to eq("/opt/#{hostile}/bundle")
         expect(item.working_directory).to include('</string>', "'; rm -rf ~; '", '$(id)', '%h', '"', '\\', '&', ' ')
       end
 
@@ -154,7 +157,7 @@ RSpec.describe RubyRaider::Schedules::Os::Systemd do # rubocop:disable RSpec/Fil
       it 'writes them only in escaped form' do
         expect(text).to include('%%h', '$$(id)', '\\" \\\\ &')
         expect(text.scan(/(?<!%)%(?!%)/)).to be_empty
-        expect(text.lines.length).to eq(systemd.service(schedule).lines.length)
+        expect(text.lines.length).to eq(systemd.service(schedule(gem_env: { 'GEM_HOME' => '/g' })).lines.length)
       end
     end
   end
@@ -163,7 +166,7 @@ RSpec.describe RubyRaider::Schedules::Os::Systemd do # rubocop:disable RSpec/Fil
     it 'writes the exact timer for a daily schedule' do
       expect(systemd.timer(schedule)).to eq(<<~UNIT)
         [Unit]
-        Description=raider flow report schedule
+        Description=raider schedule report schedule
 
         [Timer]
         OnCalendar=*-*-* 08:00:00
@@ -197,8 +200,8 @@ RSpec.describe RubyRaider::Schedules::Os::Systemd do # rubocop:disable RSpec/Fil
     it 'uses an absolute XDG_CONFIG_HOME and ignores a relative one' do
       item = schedule
       config = File.join(tmp, 'xdg')
-      described_class.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner, home: home, config_home: config).install(item)
-      described_class.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner, home: home, config_home: 'relative').install(item)
+      described_class.new(kind: RubyRaider::Schedules::Kind::TESTS, runner: runner, home: home, config_home: config).install(item)
+      described_class.new(kind: RubyRaider::Schedules::Kind::TESTS, runner: runner, home: home, config_home: 'relative').install(item)
 
       expect([File.exist?(File.join(config, 'systemd', 'user', "#{item.os_id}.timer")), File.exist?(timer_path(item))]).to eq([true, true])
     end
@@ -218,7 +221,7 @@ RSpec.describe RubyRaider::Schedules::Os::Systemd do # rubocop:disable RSpec/Fil
       item = schedule
       runner.answers['enable'] = ["Failed to enable unit\e[2J\n", 1]
 
-      expect { systemd.install(item) }.to raise_error(RubyRaider::Flows::Error, /systemd could not enable .*Failed to enable unit\?\[2J/)
+      expect { systemd.install(item) }.to raise_error(RubyRaider::Schedules::Error, /systemd could not enable .*Failed to enable unit\?\[2J/)
       expect(runner.calls.map { |argv| argv[2] }).to eq(%w[daemon-reload enable disable daemon-reload])
       expect(runner.calls[2]).to eq(['systemctl', '--user', 'disable', "#{item.os_id}.timer"])
       expect(Dir.children(units)).to be_empty
@@ -228,7 +231,7 @@ RSpec.describe RubyRaider::Schedules::Os::Systemd do # rubocop:disable RSpec/Fil
       item = schedule
       runner.answers['daemon-reload'] = ['Failed to connect to bus', 1]
 
-      expect { systemd.install(item) }.to raise_error(RubyRaider::Flows::Error, /Failed to connect to bus/)
+      expect { systemd.install(item) }.to raise_error(RubyRaider::Schedules::Error, /Failed to connect to bus/)
       expect(Dir.children(units)).to be_empty
     end
 
@@ -236,7 +239,7 @@ RSpec.describe RubyRaider::Schedules::Os::Systemd do # rubocop:disable RSpec/Fil
       ['trailing ', 'tab\\'].each do |name|
         item = schedule(dir: File.join(tmp, name))
 
-        expect { systemd.install(item) }.to raise_error(RubyRaider::Flows::Error, /systemd can not use the path/)
+        expect { systemd.install(item) }.to raise_error(RubyRaider::Schedules::Error, /systemd can not use the path/)
       end
       expect([runner.calls, File.exist?(units)]).to eq([[], false])
     end
@@ -247,15 +250,15 @@ RSpec.describe RubyRaider::Schedules::Os::Systemd do # rubocop:disable RSpec/Fil
         original.call(path, *rest, **options) { raise Errno::ENOSPC }
       end
 
-      expect { systemd.install(schedule) }.to raise_error(RubyRaider::Flows::Error, /Could not write .*No space left/)
+      expect { systemd.install(schedule) }.to raise_error(RubyRaider::Schedules::Error, /Could not write .*No space left/)
       expect([runner.calls, Dir.children(units)]).to eq([[], []])
     end
 
-    it 'raises a flow error and runs nothing when it can not write the units' do
+    it 'raises a schedule error and runs nothing when it can not write the units' do
       FileUtils.mkdir_p(File.dirname(units))
       File.write(units, 'not a folder')
 
-      expect { systemd.install(schedule) }.to raise_error(RubyRaider::Flows::Error, /Could not write .*systemd/)
+      expect { systemd.install(schedule) }.to raise_error(RubyRaider::Schedules::Error, /Could not write .*systemd/)
       expect([runner.calls, File.read(units)]).to eq([[], 'not a folder'])
     end
   end
@@ -283,17 +286,17 @@ RSpec.describe RubyRaider::Schedules::Os::Systemd do # rubocop:disable RSpec/Fil
       item = schedule
       allow(File).to receive(:unlink).and_raise(Errno::EACCES)
 
-      expect { systemd.remove(item.os_id) }.to raise_error(RubyRaider::Flows::Error, /Could not remove .*Permission denied/)
+      expect { systemd.remove(item.os_id) }.to raise_error(RubyRaider::Schedules::Error, /Could not remove .*Permission denied/)
     end
 
     it 'raises when the reload fails' do
       runner.answers['daemon-reload'] = ['Failed to connect to bus', 1]
 
-      expect { systemd.remove(schedule.os_id) }.to raise_error(RubyRaider::Flows::Error, /Failed to connect to bus/)
+      expect { systemd.remove(schedule.os_id) }.to raise_error(RubyRaider::Schedules::Error, /Failed to connect to bus/)
     end
 
-    it 'refuses an os_id that is not a flow schedule id' do
-      expect { systemd.remove('../../evil') }.to raise_error(RubyRaider::Flows::Error, /Invalid os_id/)
+    it 'refuses an os_id that is not a schedule id' do
+      expect { systemd.remove('../../evil') }.to raise_error(RubyRaider::Schedules::Error, /Invalid os_id/)
       expect(runner.calls).to be_empty
     end
   end
@@ -321,8 +324,8 @@ RSpec.describe RubyRaider::Schedules::Os::Systemd do # rubocop:disable RSpec/Fil
       expect(systemd.present?(schedule.os_id)).to be(false)
     end
 
-    it 'refuses an os_id that is not a flow schedule id and runs nothing' do
-      expect { systemd.present?('x; rm') }.to raise_error(RubyRaider::Flows::Error, /Invalid os_id/)
+    it 'refuses an os_id that is not a schedule id and runs nothing' do
+      expect { systemd.present?('x; rm') }.to raise_error(RubyRaider::Schedules::Error, /Invalid os_id/)
       expect(runner.calls).to be_empty
     end
   end
