@@ -1,5 +1,6 @@
 raider-results
 spec/examples.txt
+.raider/schedules/
 <%- if web? -%>
 .raider/auth/
 <%- end -%>
