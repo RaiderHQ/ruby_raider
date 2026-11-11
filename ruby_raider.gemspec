@@ -18,6 +18,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rake', '~> 13.0.6'
   s.add_development_dependency 'reek', '~> 6.5'
   s.add_development_dependency 'rspec', '~> 3.11.0'
+  s.add_development_dependency 'rspec-retry', '~> 0.6'
   s.add_development_dependency 'rubocop', '~> 1.27'
   s.add_development_dependency 'rubocop-performance', '~> 1.15.0'
   s.add_development_dependency 'rubocop-rspec', '~> 2.9.0'

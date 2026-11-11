@@ -1,0 +1,9 @@
+module Raider
+  module RetryReset
+    CALLBACK: Proc
+
+    def self.install: (?untyped config) -> bool
+
+    def install: (?untyped config) -> bool
+  end
+end
