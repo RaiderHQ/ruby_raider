@@ -198,63 +198,6 @@ Example projects log in once and restore the saved session for examples tagged `
 - The state stays in git-ignored `.raider/auth/`.
 - Skeletons (`examples:false`) get `SessionState#reuse` to wire your own login.
 
-### Flows: run without assertions (web)
-
-A flow is a recorded chore with no checks, such as logging in and downloading a report. It is done when every step ran. Flows are RSpec files under `flows/`, so they use the same driver, locators, waiting, screenshots, video and trace as your tests.
-
-```
-raider flow init                     # adds flows/flow_helper.rb, flows/support/run.rb and .gitignore lines
-raider flow run timesheet            # runs flows/timesheet_flow.rb headless
-raider flow run timesheet --headed --retries 2 --input hours=7
-raider flow list [--json]            # each flow and its last result
-```
-
-```ruby
-# flows/timesheet_flow.rb
-require_relative 'flow_helper'
-
-RSpec.describe 'Fill the timesheet' do
-  it 'saves the hours' do
-    driver.navigate.to 'https://example.com/timesheet'
-    driver.find_element(label: 'Hours').send_keys(flow_input('hours', '8'))
-    driver.find_element(by_role('button', name: 'Save')).click
-  end
-end
-```
-
-- **Exit codes:** 0 completed, 1 a step failed, 2 setup failed (bundle, driver, missing helper), 3 the flow is already running. Each flow holds its own lock in `.raider/flows/`, and a second run exits 3 straight away.
-- **Results:** each run gets its own `flow-results/<name>/<UTC time>/` (report, failure screenshot, video and trace), and `.raider/flows/<name>/runs.jsonl` gains one line: `started_at`, `finished_at`, `status` (`completed`, `failed`, `setup_error`, `busy`), `failed_step`, `attempt`, `trigger`, `results_dir`. The last 20 result folders and 50 lines are kept. Flow runs never touch `raider-results/`, and test runs never touch `flow-results/`.
-- **Inputs:** `flow_input('name', 'default')` reads `--input name=value` (`RAIDER_INPUT_NAME`). Inputs show up in your shell history and process list, so keep secrets out of them.
-- **Secrets:** put them in `.raider/flows/env` as `KEY=value` lines (`#` comments, no interpolation). The file is loaded only when you own it and it has permissions 600 (`chmod 600 .raider/flows/env`); otherwise the run warns and goes on without it. Values are never written to the run log (they are replaced with `[secret]`), but your flow's own output and errors are printed as they are. On Windows there are no permission bits, so the folder's access rules protect the file: keep the project in your user folder.
-- **The same record every way:** `bundle exec rspec flows/timesheet_flow.rb` writes the same run log as `raider flow run`; `raider flow run` adds retries (whole flow, 30 s apart) and the exit codes. Set `RAIDER_FLOW_HEADED=1` to watch a plain rspec run (`headless: true` in `config/config.yml` still wins).
-- Projects made with 4.0 can add flows: `raider flow init` raises the Gemfile's `ruby_raider` pin to `~> 4.1`; run `bundle install` after it.
-
-### Scheduling flows
-
-Your computer's own scheduler runs the flow, so nothing needs to stay open. Scheduling never asks for sudo or admin rights.
-
-```bash
-raider flow schedule timesheet --every weekday --at 17:30 --input hours=7 --notify
-raider flow schedule backup --every hour --at :15
-raider flow schedule report --every week --on fri --at 09:00 --retries 2
-raider flow unschedule timesheet
-raider flow schedules [--json]       # each schedule, its next run, last result and OS state
-```
-
-- **Rules:** `--every hour|day|weekday|week`. `--at HH:MM` (24h, local time) is required for `day`, `weekday` and `week`; for `hour` use `--at :MM` (default `:00`). `--on mon|tue|wed|thu|fri|sat|sun` is required for `week` and refused otherwise. `--retries N` (0 to 3) and `--input name=value` are passed to `raider flow run`. Scheduling a flow again replaces its schedule.
-- **Schedulers:** macOS uses launchd (`~/Library/LaunchAgents/dev.rubyraider.flow.<hash>.<name>.plist`). Windows uses Task Scheduler (a task in the `\RubyRaider\` folder). Linux uses a systemd user timer in `~/.config/systemd/user`, or, when `systemctl --user` does not answer, one tagged line in your crontab. Times are local time (cron uses the system time zone).
-- **Missed runs:** launchd runs a run missed while the Mac slept once on wake. Task Scheduler runs it as soon as it can. systemd (`Persistent=true`) runs it once your user manager is back, at the next boot or login. cron skips it, and `raider flow schedules` says so.
-- **Logged in:** on macOS (a launchd agent in your GUI session) and Windows (a task that runs only while you are logged on) a run happens only while you are logged in.
-- **Linux:** systemd user timers stop when you log out unless lingering is on: `loginctl enable-linger $USER` (raider does not run it). A systemd schedule can only be removed from a session where `systemctl --user` works; until then `unschedule` refuses and keeps the entry.
-- **Per machine:** schedules live in `.raider/flows/schedules.yml`, which `raider flow init` git-ignores, so a fresh clone has none. schedules.yml is the source of truth, and the next run is worked out from the rule. Each OS entry is tied to the project's path: unschedule before you move the project.
-- **States:** `ok`, `missing from launchd` (or `Task Scheduler`, `systemd`, `cron`) when the OS entry is gone, `missing from schedules.yml` when the OS still runs a flow the file does not list, `Ruby not found: re-schedule`, `flow not found: unschedule` when `flows/<name>_flow.rb` was deleted or renamed, and `unknown (...)` when the scheduler could not be asked.
-- **Ruby:** the OS entry runs the absolute `ruby` and `bundle` paths captured when you scheduled, plus `GEM_HOME` and `GEM_PATH` on macOS and Linux. After a Ruby upgrade or move, `schedules` says `Ruby not found: re-schedule`: run `raider flow schedule` again.
-- **Logs:** on macOS and Linux the scheduler's output goes to `.raider/flows/<name>/scheduler.log`. Windows tasks run ruby.exe directly with your user environment and keep no scheduler.log; each run's result is in `runs.jsonl` as always.
-- **Notify:** `--notify` shows a desktop notification only when a run ends failed or could not start (not when it completed, was already running, or was stopped). macOS uses `osascript`, Linux `notify-send`, Windows a PowerShell toast. When a run could not start, the notification points at `.raider/flows/<name>/scheduler.log` for a scheduled run on macOS and Linux, and at the run output otherwise. A notification that can't be shown prints a warning and never changes the exit code. On Linux `notify-send` needs your desktop session bus: under cron, and in a systemd user session that has not imported it, it usually can't show, and only the warning lands in scheduler.log. `raider flow run --notify` does the same for a manual run.
-- **Secrets:** keep them in `.raider/flows/env`, never in `--input`: inputs are stored in plain text in the OS entry and in schedules.yml.
-- **Windows refusals:** Task Scheduler expands `%NAME%` with no way to escape it, so an input or path holding `%...%` is refused. An argument holding both `'` and one of `* ? [ {` is refused too, because ruby.exe would glob it.
-- **Tested on:** macOS (launchd) is tested against the real scheduler. Task Scheduler, systemd and cron are covered by unit tests with a fake scheduler only.
-
 ### Scheduling tests
 
 Your computer's own scheduler runs the project's tests: all of them, one tag, or a list of spec files. Nothing needs to stay open, and scheduling never asks for sudo or admin rights. `raider sc` is short for `raider schedule`.
@@ -299,6 +242,17 @@ raider schedule remove nightly
   - Linux (systemd): `systemctl --user disable --now <id>.timer`, delete `<id>.timer` and `<id>.service` from `~/.config/systemd/user`, then `systemctl --user daemon-reload`.
   - Linux (cron): `crontab -e` and delete the `# raider-schedule <id>` line and the line under it.
 - **Tested on:** macOS (launchd) is tested against the real scheduler: adding, a run started by launchd hidden and shown with Headless on, a failed run with a notification, a busy run, and removing. Task Scheduler, systemd and cron are covered by unit tests with a fake scheduler only.
+
+### Upgrading from 4.1
+
+- **Old schedules are removed automatically.** Schedules made with Ruby Raider 4.1 can't run in 4.2. They are removed the first time any `raider schedule` command runs in the project (the desktop app runs one when its Tests tab opens), or the next time one of them fires. One line says which were removed.
+- **Add them again** with `raider schedule add`.
+- **Leftover folders:** `flows/`, `flow-results/` and `.raider/flows/` (it holds old secrets in `env`) are left alone. You can delete them.
+- **A project moved after scheduling** can't be cleaned automatically: its entries are tied to the old path. Remove them by hand; their names start with `dev.rubyraider.flow.`:
+  - macOS: find them with `ls ~/Library/LaunchAgents | grep dev.rubyraider.flow.`, run `launchctl bootout gui/$(id -u)/<label>`, then delete `~/Library/LaunchAgents/<label>.plist` (`<label>` is `dev.rubyraider.flow.<hash>.<name>`).
+  - Windows: find them with `schtasks /Query /FO CSV | findstr dev.rubyraider.flow.`, then `schtasks /Delete /TN "\RubyRaider\<id>" /F`.
+  - Linux (systemd): find them with `ls ~/.config/systemd/user | grep dev.rubyraider.flow.`, run `systemctl --user disable --now <id>.timer`, delete `<id>.timer` and `<id>.service` from `~/.config/systemd/user`, then `systemctl --user daemon-reload`.
+  - Linux (cron): find them with `crontab -l | grep -A1 '# raider-flow '`, then `crontab -e` and delete each `# raider-flow <id>` line and the line under it.
 
 ### Also included
 
@@ -372,13 +326,12 @@ The skeleton keeps the helpers, config, CI and README, and its empty suite passe
 raider new [PROJECT_NAME]       # Create a new framework project
 raider generate                 # Access scaffolding commands
 raider utility                  # Access utility commands
-raider flow                     # Run flows: init, run, list, schedule
 raider schedule                 # Schedule the tests: add, list, remove, run
 raider version                  # Show current version
 raider help [COMMAND]           # Describe available commands
 ```
 
-Shortcuts: `n` (new), `g` (generate), `u` (utility), `f` (flow), `sc` (schedule), `v` (version)
+Shortcuts: `n` (new), `g` (generate), `u` (utility), `sc` (schedule), `v` (version)
 
 ### Scaffolding Commands
 
