@@ -4,7 +4,9 @@ class ScheduleCommands < Thor
   def list: () -> void
   def remove: (String name) -> void
   def run_schedule: (String name) -> bot
-  def project: () -> RubyRaider::Schedules::Project
+  def new_project: () -> RubyRaider::Schedules::Project
+  def cleaned_project: () -> RubyRaider::Schedules::Project
+  def cleanup: (RubyRaider::Schedules::Project project) -> String?
   def scheduler: () -> RubyRaider::Schedules::Scheduler
   def stop: (RubyRaider::Schedules::Error error) -> bot
 end

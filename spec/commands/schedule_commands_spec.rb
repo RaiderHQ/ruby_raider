@@ -6,16 +6,18 @@ require_relative '../../lib/ruby_raider'
 require_relative '../../lib/commands/schedule_commands'
 
 # Runs in this process through RubyRaider::Raider.start, so the `raider schedule` subcommand path is the real
-# one (thor 1.2.2). Every example stubs Scheduler.new and RunWrapper.new: nothing reaches the OS scheduler
-# or spawns rspec.
+# one (thor 1.2.2). Every example stubs Scheduler.new, RunWrapper.new and Legacy.new (or gives Legacy a
+# recording adapter): nothing reaches the OS scheduler or spawns rspec.
 RSpec.describe ScheduleCommands do
   let(:scheduler) { instance_double(RubyRaider::Schedules::Scheduler, add: nil, list: nil, remove: nil) }
   let(:wrapper) { instance_double(RubyRaider::Schedules::RunWrapper, run: 0) }
+  let(:legacy) { instance_double(RubyRaider::Schedules::Legacy, cleanup: nil) }
   let(:dir) { File.realpath(Dir.mktmpdir('schedule-commands')) }
 
   before do
     allow(RubyRaider::Schedules::Scheduler).to receive(:new).and_return(scheduler)
     allow(RubyRaider::Schedules::RunWrapper).to receive(:new).and_return(wrapper)
+    allow(RubyRaider::Schedules::Legacy).to receive(:new).and_return(legacy)
   end
 
   after { FileUtils.rm_rf(dir) }
@@ -107,6 +109,7 @@ RSpec.describe ScheduleCommands do
 
       expect([out, err, code]).to eq(['', "Project folder not found: /nonexistent/a?b\n", 2])
       expect(RubyRaider::Schedules::Scheduler).not_to have_received(:new)
+      expect(RubyRaider::Schedules::Legacy).not_to have_received(:new)
     end
 
     it 'exits 2 for an argument that is not valid UTF-8, through schedule and sc' do
@@ -122,8 +125,8 @@ RSpec.describe ScheduleCommands do
       raider('schedule', 'list', '--project', dir)
       raider('schedule', 'list', '--json', '--project', dir)
 
-      expect(scheduler).to have_received(:list).with(json: false).ordered
-      expect(scheduler).to have_received(:list).with(json: true).ordered
+      expect(scheduler).to have_received(:list).with(json: false, notice: nil).ordered
+      expect(scheduler).to have_received(:list).with(json: true, notice: nil).ordered
     end
 
     it 'removes by name' do
@@ -158,6 +161,101 @@ RSpec.describe ScheduleCommands do
       out, err, code = raider('schedule', 'run', 'nightly', '--trigger', 'x', '--project', dir)
 
       expect([out, err, code]).to eq(['', "Invalid trigger \"x\": use manual or schedule\n", 2])
+    end
+  end
+
+  describe 'the 4.1 cleanup' do # rubocop:disable RSpec/MultipleMemoizedHelpers
+    # Plays the OS scheduler for Legacy: one 4.1 entry of this project, removed or refused
+    let(:fake_adapter_class) do
+      Class.new do
+        attr_reader :ids, :removed
+        attr_accessor :failure
+
+        def initialize(ids)
+          @ids = ids
+          @removed = []
+        end
+
+        def list_ids(prefix) = ids.select { |id| id.start_with?(prefix) }
+
+        def remove(os_id)
+          raise failure if failure
+
+          @removed << os_id
+          true
+        end
+      end
+    end
+    let(:adapter) { fake_adapter_class.new([RubyRaider::Schedules::Legacy::OldRule.os_id_for(dir, 'tredssd')]) }
+    let(:notice) { "Removed 1 schedule made with Ruby Raider 4.1 (tredssd); it can't run in 4.2. Add it again with raider schedule add." }
+
+    before do
+      FileUtils.mkdir_p(File.join(dir, '.raider', 'flows'))
+      allow(RubyRaider::Schedules::Legacy).to receive(:new).and_wrap_original do |original, project|
+        original.call(project, adapter: adapter)
+      end
+    end
+
+    it 'runs before every command, with the project' do
+      allow(RubyRaider::Schedules::Legacy).to receive(:new).and_return(legacy)
+      [%w[add nightly --every day], %w[list], %w[remove nightly], %w[run nightly]].each do |args|
+        raider('schedule', *args, '--project', dir)
+      end
+
+      expect(RubyRaider::Schedules::Legacy).to have_received(:new).with(project_root).exactly(4).times
+      expect(legacy).to have_received(:cleanup).with(no_args).exactly(4).times
+    end
+
+    it 'cleans up before the command runs' do
+      allow(scheduler).to receive(:remove) { expect(adapter.removed.size).to eq(1) }
+
+      raider('schedule', 'remove', 'nightly', '--project', dir)
+
+      expect(scheduler).to have_received(:remove).with('nightly')
+    end
+
+    # The fake keeps listing the entry, so the second list finds it again
+    it 'writes the notice to stderr in text mode, and passes it to the JSON' do
+      _out, err, code = raider('schedule', 'list', '--project', dir)
+      _json_out, json_err, = raider('schedule', 'list', '--json', '--project', dir)
+
+      expect([err, code, json_err]).to eq(["#{notice}\n", nil, "#{notice}\n"])
+      expect(scheduler).to have_received(:list).with(json: false, notice: notice).ordered
+      expect(scheduler).to have_received(:list).with(json: true, notice: notice).ordered
+    end
+
+    it "keeps run's exit code when the cleanup fails" do
+      adapter.failure = RubyRaider::Schedules::Error.new('denied')
+      allow(wrapper).to receive(:run).and_return(1)
+
+      out, err, code = raider('schedule', 'run', 'nightly', '--project', dir)
+
+      expect([out, code]).to eq(['', 1])
+      expect(err).to eq("Could not remove 1 schedule made with Ruby Raider 4.1 (tredssd: denied); it is tried again next time.\n")
+    end
+
+    it 'is skipped, with no adapter, when .raider/flows is not a folder' do
+      allow(RubyRaider::Schedules).to receive(:adapter)
+      FileUtils.rm_rf(File.join(dir, '.raider', 'flows'))
+      outside = File.realpath(Dir.mktmpdir('schedule-commands-outside'))
+      File.symlink(outside, File.join(dir, '.raider', 'flows'))
+      results = [raider('schedule', 'run', 'nightly', '--project', dir)]
+      FileUtils.rm_rf(File.join(dir, '.raider'))
+      results << raider('schedule', 'list', '--project', dir)
+
+      expect(results).to eq([['', '', 0], ['', '', nil]])
+      expect(RubyRaider::Schedules::Legacy).not_to have_received(:new)
+      expect(RubyRaider::Schedules).not_to have_received(:adapter)
+    ensure
+      FileUtils.rm_rf(outside) if outside
+    end
+
+    it 'prints nothing when there is nothing to clean' do
+      adapter.ids.clear
+
+      out, err, code = raider('schedule', 'run', 'nightly', '--project', dir)
+
+      expect([out, err, code]).to eq(['', '', 0])
     end
   end
 

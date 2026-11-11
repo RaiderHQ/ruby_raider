@@ -13,7 +13,7 @@
 - Scheduled results go to `raider-results/` (the Dashboard), one line per run in `.raider/schedules/<name>/runs.jsonl` (last 50 kept), and a copy of the last report in `.raider/schedules/<name>/last/`. `scheduler.log` is rotated once over 1 MB.
 - `--notify` shows a desktop notification ("Ruby Raider: <name> failed") only when a run failed or could not start, with 4.1's channels.
 - `raider schedule run` exits 0 passed, 1 failed, 2 could not start or refused, 3 another run was going, scheduled or from the desktop (a busy run leaves `raider-results/` alone).
-- Flows are still available in this build; their removal is planned.
+- `raider schedule` runs your tests on a schedule. The 4.1 recording-without-checks commands are gone, and their schedules are removed automatically: the first `raider schedule` command in a project, or the old entry's next firing, removes them and prints one line. The folders they used are left for you to delete (see Upgrading from 4.1 in the README).
 
 ### 4.1.0 (2026-11-10)
 

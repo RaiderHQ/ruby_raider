@@ -5,7 +5,6 @@ require 'thor'
 # Lazy-load top-level command classes to reduce CLI startup time.
 autoload :ScaffoldingCommands, File.expand_path('commands/scaffolding_commands', __dir__)
 autoload :UtilityCommands, File.expand_path('commands/utility_commands', __dir__)
-autoload :FlowCommands, File.expand_path('commands/flow_commands', __dir__)
 autoload :ScheduleCommands, File.expand_path('commands/schedule_commands', __dir__)
 
 module RubyRaider
@@ -13,18 +12,29 @@ module RubyRaider
     def self.exit_on_failure? = true
 
     # The commands whose arguments are checked for valid UTF-8 before Thor sees them
-    GUARDED = %w[flow f schedule sc].freeze
+    GUARDED = %w[schedule sc].freeze
+    # What a Ruby Raider 4.1 OS entry runs (`raider flow run ...`): a hidden stub, not a Thor command
+    LEGACY = %w[flow f].freeze
 
-    # Thor runs a regex on every argument before any command, so invalid UTF-8 would crash it with a
-    # backtrace; a flow or schedule command says which argument instead and exits 2 like its other refusals
-
+    # The 4.1 stub goes first, whatever its argv holds. Thor runs a regex on every argument before any
+    # command, so invalid UTF-8 would crash it with a backtrace; a schedule command says which argument
+    # instead and exits 2 like its other refusals
     def self.start(given_args = ARGV, config = {})
+      exit(legacy_stub(given_args)) if LEGACY.include?(given_args.first)
       bad = given_args.find { |arg| arg.is_a?(String) && !arg.valid_encoding? }
       if bad && GUARDED.include?(given_args.first)
         warn("Invalid argument #{bad.inspect}: use valid UTF-8")
         exit(2)
       end
       super
+    end
+
+    # Removes the project's 4.1 schedules and says why the command is gone; always 2
+    def self.legacy_stub(given_args)
+      require_relative 'utilities/schedules/legacy_stub'
+      Schedules::LegacyStub.run(given_args.drop(1))
+    rescue StandardError, ScriptError
+      2
     end
 
     no_tasks do
@@ -67,10 +77,6 @@ module RubyRaider
     desc 'utility', 'Provides access to all the utility commands'
     subcommand 'utility', UtilityCommands
     map 'u' => 'utility'
-
-    desc 'flow', 'Runs flows: recordings without assertions (init, run, list, schedule)'
-    subcommand 'flow', FlowCommands
-    map 'f' => 'flow'
 
     desc 'schedule', 'Runs the tests on a schedule with the OS scheduler (add, list, remove, run)'
     subcommand 'schedule', ScheduleCommands

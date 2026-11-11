@@ -6,9 +6,9 @@ require_relative 'os/command_runner'
 
 module RubyRaider
   module Schedules
-    # A desktop notification for `raider flow run --notify`. The title and message only ever travel as argv
+    # A desktop notification for a scheduled run with --notify. The title and message only ever travel as argv
     # items after `--` (osascript, notify-send: so a title like -e is not read as an option or a script) or as
-    # environment values (PowerShell), so a hostile flow name or step title can't run as AppleScript or PowerShell. Never raises: a notification
+    # environment values (PowerShell), so a hostile schedule name or test title can't run as AppleScript or PowerShell. Never raises: a notification
     # that can't be shown must not change how the run ends.
     # :reek:TooManyConstants { max_constants: 7 } -- the fixed command of each OS, the message cap and the timeout
     # :reek:TooManyInstanceVariables { max_instance_variables: 5 } -- the injected runner, OS, stream and PowerShell path, and the warned flag

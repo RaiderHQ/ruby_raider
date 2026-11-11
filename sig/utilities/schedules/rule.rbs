@@ -1,6 +1,6 @@
 module RubyRaider
   module Schedules
-    # What an OS scheduler adapter and NextRun read from a schedule, flow or tests
+    # What an OS scheduler adapter and NextRun read from a schedule, tests or 4.1
     interface _OsEntry
       def name: () -> String
       def every: () -> String

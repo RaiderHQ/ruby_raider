@@ -3,7 +3,6 @@
 require 'rbconfig'
 require_relative '../../../../lib/utilities/schedules/os/command_runner'
 
-# Flow specs live under spec/utilities/flows, next to the code in lib/utilities/flows
 RSpec.describe RubyRaider::Schedules::Os::CommandRunner do # rubocop:disable RSpec/FilePath
   let(:runner) { described_class.new }
   let(:ruby) { RbConfig.ruby }

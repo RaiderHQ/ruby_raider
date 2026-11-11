@@ -10,7 +10,7 @@ module RubyRaider
     module Os
       # Windows: one task per schedule in the \RubyRaider\ folder, registered from task XML with schtasks.
       # The task runs ruby.exe directly (never cmd.exe or powershell), with the user's own environment and
-      # no log file: the outcome lives in runs.jsonl like any flow run. Argument values get Windows CRT
+      # no log file: the outcome lives in runs.jsonl like any scheduled run. Argument values get Windows CRT
       # quoting, then every value in the XML goes through one XML escaper.
       # Task Scheduler expands %NAME% in Command, Arguments and WorkingDirectory with no escape, so a value
       # holding one is refused before schtasks runs.

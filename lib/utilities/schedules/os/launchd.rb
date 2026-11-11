@@ -61,11 +61,13 @@ module RubyRaider
           raise Error, "launchd could not load #{os_id}: #{Schedules.printable(result.stderr.strip)}#{discard(path)}"
         end
 
-        # True when a plist or a loaded service was removed, false when it was already gone
+        # True when a plist or a loaded service was removed, false when it was already gone. The plist goes
+        # first: a job removing itself is ended by its own bootout, and its plist must be gone by then.
+        # If the unlink succeeds and the bootout fails, the job stays loaded with no plist until logout.
         def remove(os_id)
-          path = plist_path(os_id)
+          unlinked = unlink(plist_path(os_id))
           unloaded = launchctl('bootout', service(os_id)).success?
-          unlink(path) || unloaded
+          unlinked || unloaded
         end
 
         def present?(os_id) = launchctl('print', service(checked_os_id(os_id))).success?

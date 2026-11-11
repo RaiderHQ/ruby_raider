@@ -2,12 +2,11 @@
 
 require 'tmpdir'
 require_relative '../../../lib/utilities/schedules/next_run'
-require_relative '../../../lib/utilities/flows/schedule'
+require_relative '../../../lib/utilities/schedules/schedule'
 
-# Flow specs live under spec/utilities/flows, next to the code in lib/utilities/flows
 RSpec.describe RubyRaider::Schedules::NextRun do # rubocop:disable RSpec/FilePath
   let(:dir) { File.realpath(Dir.mktmpdir('flows-next-run')) }
-  let(:project) { RubyRaider::Flows::Project.new(dir) }
+  let(:project) { RubyRaider::Schedules::Project.new(dir) }
 
   around do |example|
     zone = ENV.fetch('TZ', nil)
@@ -20,7 +19,7 @@ RSpec.describe RubyRaider::Schedules::NextRun do # rubocop:disable RSpec/FilePat
   after { FileUtils.rm_rf(dir) }
 
   def rule(every, at = '08:00', on: nil)
-    RubyRaider::Flows::Schedule.build(project: project, name: 'report', every: every, at: at, on: on)
+    RubyRaider::Schedules::Schedule.build(project: project, name: 'report', every: every, at: at, on: on)
   end
 
   def next_after(schedule, *local)

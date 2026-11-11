@@ -3,9 +3,8 @@
 require 'tmpdir'
 require 'rexml/document'
 require_relative '../../../../lib/utilities/schedules/os/task_scheduler'
-require_relative '../../../../lib/utilities/flows/schedule'
+require_relative '../../../../lib/utilities/schedules/schedule'
 
-# Flow specs live under spec/utilities/flows, next to the code in lib/utilities/flows
 # The fake runner, fixed clock and project folders sit next to the adapter under test
 # rubocop:disable RSpec/MultipleMemoizedHelpers
 RSpec.describe RubyRaider::Schedules::Os::TaskScheduler do # rubocop:disable RSpec/FilePath
@@ -31,18 +30,20 @@ RSpec.describe RubyRaider::Schedules::Os::TaskScheduler do # rubocop:disable RSp
   end
 
   let(:hostile) { %q('; rm -rf ~; ' </string> %h $(id) " \\ &) }
-  let(:tmp) { File.realpath(Dir.mktmpdir('flows-schtasks')) }
+  let(:tmp) { File.realpath(Dir.mktmpdir('schedules-schtasks')) }
   let(:project_dir) { File.join(tmp, 'plain') }
   let(:runner) { fake_runner_class.new }
   let(:clock) { Struct.new(:now).new(Time.new(2026, 11, 9, 10, 30, 0)) }
   let(:schtasks) { 'C:\\Windows\\System32\\schtasks.exe' }
-  let(:scheduler) { described_class.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner, clock: clock, schtasks: schtasks) }
+  let(:scheduler) { described_class.new(kind: RubyRaider::Schedules::Kind::TESTS, runner: runner, clock: clock, schtasks: schtasks) }
   let(:now) { Time.utc(2026, 11, 9, 10, 0, 0) }
 
-  def schedule(dir: project_dir, **options)
+  def schedule(dir: project_dir, gem_env: {}, bundle: '/opt/ruby/bin/bundle', **options)
     FileUtils.mkdir_p(dir)
-    project = RubyRaider::Flows::Project.new(File.realpath(dir))
-    RubyRaider::Flows::Schedule.build(project: project, name: 'report', every: 'day', at: '08:00', now: now, **options)
+    # Hermetic: the GEM_HOME/GEM_PATH and bundle this spec runs with never reach the entry; a spec passes its own
+    allow(RubyRaider::Schedules::Schedule).to receive_messages(captured_gem_env: gem_env, bundle_path: bundle)
+    project = RubyRaider::Schedules::Project.new(File.realpath(dir))
+    RubyRaider::Schedules::Schedule.build(project: project, name: 'report', every: 'day', at: '08:00', now: now, **options)
   end
 
   def task_name(item) = "\\RubyRaider\\#{item.os_id}"
@@ -194,7 +195,7 @@ RSpec.describe RubyRaider::Schedules::Os::TaskScheduler do # rubocop:disable RSp
       <?xml version="1.0" encoding="UTF-16"?>
       <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
         <RegistrationInfo>
-          <Description>Ruby Raider flow report (every day at 08:00)</Description>
+          <Description>Ruby Raider schedule report (every day at 08:00)</Description>
           <URI>\\RubyRaider\\#{item.os_id}</URI>
         </RegistrationInfo>
         <Triggers>
@@ -280,7 +281,7 @@ RSpec.describe RubyRaider::Schedules::Os::TaskScheduler do # rubocop:disable RSp
     end
 
     it "refuses an argument with both ' and a glob character" do
-      expect { described_class.quote("a'*") }.to raise_error(RubyRaider::Flows::Error, /can not pass "a'\*" to ruby\.exe/)
+      expect { described_class.quote("a'*") }.to raise_error(RubyRaider::Schedules::Error, /can not pass "a'\*" to ruby\.exe/)
     end
   end
 
@@ -291,13 +292,14 @@ RSpec.describe RubyRaider::Schedules::Os::TaskScheduler do # rubocop:disable RSp
     end
 
     it 'carries no environment and no log file' do
-      text = scheduler.task_xml(schedule)
+      # Without the random temp folder's name, which may hold any of these words
+      text = scheduler.task_xml(schedule).gsub(tmp, '')
 
       expect(text).not_to include('scheduler.log', 'Environment', 'GEM_HOME', 'cmd', 'powershell')
     end
 
-    it 'runs ruby with the bundle path and the flow run arguments' do
-      item = schedule(retries: 2, inputs: %w[env=staging])
+    it 'runs ruby with the bundle path and the schedule run arguments' do
+      item = schedule(retries: 2, selection: RubyRaider::Schedules::Selection.new(kind: 'tag', tag: 'smoke'))
       text = scheduler.task_xml(item)
 
       expect(field(text, 'Task/Actions/Exec/Command')).to eq(item.ruby)
@@ -339,7 +341,7 @@ RSpec.describe RubyRaider::Schedules::Os::TaskScheduler do # rubocop:disable RSp
 
     # One at a time: a lone % in both would read as %...% across the joined Arguments and be refused
     {
-      'an input value' => ->(spec) { spec.schedule(inputs: ["note=#{spec.hostile}"]) },
+      'the bundle path' => ->(spec) { spec.schedule(bundle: "/opt/#{spec.hostile}/bundle") },
       'the project path' => ->(spec) { spec.schedule(dir: File.join(spec.tmp, 'p<', "string> #{spec.hostile}")) }
     }.each do |where, build|
       describe "with hostile values in #{where}" do
@@ -364,46 +366,49 @@ RSpec.describe RubyRaider::Schedules::Os::TaskScheduler do # rubocop:disable RSp
   end
 
   describe 'with quotes and glob characters but no spaces' do
-    let(:item) { schedule(dir: File.join(tmp, 'Users', "O'Brien", 'proj'), inputs: ["a=x'", "b=y'", 'c=p[1]', 'd=a*b']) }
+    let(:item) { schedule(dir: File.join(tmp, 'Users', "O'Brien", "proj'"), bundle: '/opt/p[1]/a*b/bundle') }
 
     it "quotes them so ruby.exe reads the exact argv back and globs nothing ('...' around a glob)" do
       line = field(scheduler.task_xml(item), 'Task/Actions/Exec/Arguments')
 
       expect(ruby_split_arguments(line)).to eq(item.argv.drop(1))
-      expect(line).to include(%("#{item.project_root}"), %("a=x'"), %("b=y'"), "'c=p[1]'", "'d=a*b'")
+      expect(line).to include(%("#{item.project_root}"), "'/opt/p[1]/a*b/bundle'")
     end
 
-    it "refuses an input with both ' and a glob character before any schtasks call" do
-      expect { scheduler.install(schedule(inputs: ["e=a'*"])) }.to raise_error(RubyRaider::Flows::Error, /ruby\.exe/)
+    it "refuses an argument with both ' and a glob character before any schtasks call" do
+      expect { scheduler.install(schedule(bundle: "/opt/a'*/bundle")) }.to raise_error(RubyRaider::Schedules::Error, /ruby\.exe/)
       expect(runner.calls).to be_empty
     end
   end
 
   describe 'with %NAME% that Task Scheduler would expand' do
-    it 'refuses it in an input value before any schtasks call' do
-      item = schedule(inputs: ['note=%PATH%'])
+    it 'refuses it in the bundle path before any schtasks call' do
+      item = schedule(bundle: '/opt/%PATH%/bundle')
 
-      expect { scheduler.install(item) }.to raise_error(RubyRaider::Flows::Error, /Task Scheduler would expand %PATH% as an environment variable/)
+      expect { scheduler.install(item) }.to raise_error(RubyRaider::Schedules::Error, /Task Scheduler would expand %PATH% as an environment variable/)
       expect(runner.calls).to be_empty
     end
 
     it 'refuses it in the project path before any schtasks call' do
       item = schedule(dir: File.join(tmp, '%PATH%', 'proj'))
 
-      expect { scheduler.install(item) }.to raise_error(RubyRaider::Flows::Error, /would expand %PATH%/)
-      expect { scheduler.task_xml(item) }.to raise_error(RubyRaider::Flows::Error, /would expand %PATH%/)
+      expect { scheduler.install(item) }.to raise_error(RubyRaider::Schedules::Error, /would expand %PATH%/)
+      expect { scheduler.task_xml(item) }.to raise_error(RubyRaider::Schedules::Error, /would expand %PATH%/)
       expect(runner.calls).to be_empty
     end
 
     it 'refuses a %...% formed across two arguments in the joined Arguments' do
-      expect { scheduler.install(schedule(inputs: ['a=%x', 'b=y%'])) }.to raise_error(RubyRaider::Flows::Error, /would expand %x b=y%/)
+      item = schedule(dir: File.join(tmp, 'y%'), bundle: '/opt/%x/bundle')
+
+      expect { scheduler.install(item) }.to raise_error(RubyRaider::Schedules::Error, %r{would expand %x/bundle exec raider schedule run report --project .*/y%})
       expect(runner.calls).to be_empty
     end
 
     it 'keeps a lone %' do
-      item = schedule(inputs: ['note=100% sure'])
+      item = schedule(dir: File.join(tmp, '100% sure'))
 
-      expect(split_arguments(field(scheduler.task_xml(item), 'Task/Actions/Exec/Arguments')).last).to eq('note=100% sure')
+      expect(split_arguments(field(scheduler.task_xml(item), 'Task/Actions/Exec/Arguments'))).to eq(item.argv.drop(1))
+      expect(item.project_root).to end_with('/100% sure')
     end
   end
 
@@ -427,7 +432,7 @@ RSpec.describe RubyRaider::Schedules::Os::TaskScheduler do # rubocop:disable RSp
       runner.on_call { |argv, _| path = argv[5] }
       runner.answers['/Create'] = ["ERROR: Access is denied.\e[2J\n", 1]
 
-      expect { scheduler.install(item) }.to raise_error(RubyRaider::Flows::Error, /Task Scheduler.*#{Regexp.escape(item.os_id)}.*Access is denied\.\?\[2J/)
+      expect { scheduler.install(item) }.to raise_error(RubyRaider::Schedules::Error, /Task Scheduler.*#{Regexp.escape(item.os_id)}.*Access is denied\.\?\[2J/)
       expect(File.exist?(path)).to be(false)
     end
   end
@@ -454,18 +459,18 @@ RSpec.describe RubyRaider::Schedules::Os::TaskScheduler do # rubocop:disable RSp
       runner.answers['/Delete'] = ["ERROR: Access\e is denied.\n", 1]
       runner.answers['/Query'] = ['', 0, csv_rows('\\Other', task_name(item))]
 
-      expect { scheduler.remove(item.os_id) }.to raise_error(RubyRaider::Flows::Error, /Task Scheduler could not delete .*Access\? is denied\.\z/)
+      expect { scheduler.remove(item.os_id) }.to raise_error(RubyRaider::Schedules::Error, /Task Scheduler could not delete .*Access\? is denied\.\z/)
     end
 
     it 'raises with the delete error when the task list can not be read' do
       runner.answers['/Delete'] = ['ERROR: Access is denied.', 1]
       runner.answers['/Query'] = ['ERROR: list failed', 1]
 
-      expect { scheduler.remove(schedule.os_id) }.to raise_error(RubyRaider::Flows::Error, /could not delete .*Access is denied/)
+      expect { scheduler.remove(schedule.os_id) }.to raise_error(RubyRaider::Schedules::Error, /could not delete .*Access is denied/)
     end
 
-    it 'refuses an os_id that is not a flow schedule id' do
-      expect { scheduler.remove('..\\..\\evil') }.to raise_error(RubyRaider::Flows::Error, /Invalid os_id/)
+    it 'refuses an os_id that is not a schedule id' do
+      expect { scheduler.remove('..\\..\\evil') }.to raise_error(RubyRaider::Schedules::Error, /Invalid os_id/)
       expect(runner.calls).to be_empty
     end
   end
@@ -489,7 +494,7 @@ RSpec.describe RubyRaider::Schedules::Os::TaskScheduler do # rubocop:disable RSp
     it 'raises when the task list can not be read' do
       runner.answers['/Query'] = ["ERROR: no\e list", 1]
 
-      expect { scheduler.present?(schedule.os_id) }.to raise_error(RubyRaider::Flows::Error, /could not list tasks: ERROR: no\? list/)
+      expect { scheduler.present?(schedule.os_id) }.to raise_error(RubyRaider::Schedules::Error, /could not list tasks: ERROR: no\? list/)
     end
   end
 
@@ -498,7 +503,7 @@ RSpec.describe RubyRaider::Schedules::Os::TaskScheduler do # rubocop:disable RSp
     allow(ENV).to receive(:fetch).with('SystemRoot', anything).and_return('D:\\Win')
     item = schedule
 
-    described_class.new(kind: RubyRaider::Schedules::Kind::FLOW_LEGACY, runner: runner, clock: clock).remove(item.os_id)
+    described_class.new(kind: RubyRaider::Schedules::Kind::TESTS, runner: runner, clock: clock).remove(item.os_id)
 
     expect(runner.calls.first.first).to eq(File.join('D:\\Win', 'System32', 'schtasks.exe'))
   end

@@ -1,0 +1,45 @@
+module RubyRaider
+  module Schedules
+    class Legacy
+      KIND: Kind
+      FILE: String
+      MAX_BYTES: Integer
+      NOFOLLOW: Integer
+      NONBLOCK: Integer
+
+      class OldRule < Rule
+        def self.kind: () -> Kind
+      end
+
+      @project: Project
+      @root: String
+      @adapter: untyped
+      @err: untyped
+      @yml_clean: bool
+
+      def self.folder?: (Project project) -> bool
+
+      def initialize: (Project project, ?adapter: untyped, ?err: untyped) -> void
+      def cleanup: (?last: String?) -> String?
+
+      private
+
+      def adapter: () -> untyped
+      def remove_all: (untyped current, Array[String] names) -> [Array[String], Array[[String, String]]]
+      def remove_own: (untyped current, String name) -> void
+      def notice: (Array[String] removed, Array[[String, String]] failed) -> String?
+      def removed_text: (Array[String] names) -> String
+      def failed_text: (Array[[String, String]] failed) -> String
+      def counted: (Integer count) -> String
+      def say: (String text) -> String?
+      def dir: () -> String
+      def yml: () -> String
+      def real_dirs?: () -> bool
+      def yml_names: () -> Array[String]
+      def entry_name: (untyped entry) -> String?
+      def read_entries: () -> Array[untyped]?
+      def read_text: () -> String?
+      def delete_yml: () -> void
+    end
+  end
+end

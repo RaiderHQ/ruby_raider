@@ -7,12 +7,13 @@ module RubyRaider
     # What kind of schedule an OS entry belongs to: the words that name it in each scheduler (os_id prefix,
     # cron tag, descriptions), the command it runs, where its files live and which names it takes.
     # Adapters get one, so an entry of one kind is never read or removed as another.
-    # :reek:TooManyInstanceVariables { max_instance_variables: 8 } -- the words, folder and reserved names of one kind
+    # :reek:TooManyInstanceVariables { max_instance_variables: 9 } -- the words, folder and reserved names of one kind
     class Kind
-      attr_reader :command, :os_id_prefix, :os_id_pattern, :dir, :noun, :plural, :remove_command, :reserved
+      attr_reader :command, :os_id_prefix, :os_id_pattern, :dir, :noun, :plural, :remove_command, :stranded_hint, :reserved
 
-      # command is the raider subcommand (`raider <command> run NAME`); it also names the os_id prefix and tags
-      def initialize(command:, dir:, noun:, plural:, remove_command:, reserved: [])
+      # command is the raider subcommand (`raider <command> run NAME`); it also names the os_id prefix and tags.
+      # stranded_hint: what to run for a stranded timer, when it is not `<remove_command> NAME`
+      def initialize(command:, dir:, noun:, plural:, remove_command:, stranded_hint: nil, reserved: [])
         @command = command.dup.freeze
         @os_id_prefix = "dev.rubyraider.#{command}".freeze
         @os_id_pattern = /\A#{Regexp.escape(@os_id_prefix)}\.[0-9a-f]{10}\.([a-z0-9_]{1,60})\z/
@@ -20,6 +21,7 @@ module RubyRaider
         @noun = noun.dup.freeze
         @plural = plural.dup.freeze
         @remove_command = remove_command.dup.freeze
+        @stranded_hint = stranded_hint&.dup&.freeze
         @reserved = reserved.map { |word| word.dup.freeze }.freeze
         freeze
       end
@@ -53,13 +55,16 @@ module RubyRaider
 
       def not_ours = "not a #{noun}"
 
-      def stranded(name) = "This schedule is a systemd timer; run #{remove_command} #{name} from a session where systemctl --user works"
+      def stranded(name) = "This schedule is a systemd timer; run #{stranded_hint || "#{remove_command} #{name}"} from a session where systemctl --user works"
 
       def unsupported(host_os) = "Scheduling #{plural} is not supported on #{host_os}"
 
-      # The schedules of `raider flow schedule` (4.1); removed with flows
-      FLOW_LEGACY = new(command: 'flow', dir: '.raider/flows', noun: 'flow schedule', plural: 'flows',
-                        remove_command: 'raider flow unschedule', reserved: %w[env])
+      # The schedules Ruby Raider 4.1 made (`raider flow schedule`), only ever removed now, by the cleanup every
+      # `raider schedule` command runs first (Legacy). The words the user reads never say flow; the command
+      # (os_id prefix, cron tag, the line under it) is what 4.1 wrote.
+      # remove_command is never printed for it: stranded_hint overrides it in stranded (list takes no name).
+      FLOW_LEGACY = new(command: 'flow', dir: '.raider/flows', noun: '4.1 schedule', plural: '4.1 schedules',
+                        remove_command: 'raider schedule list', stranded_hint: 'raider schedule list', reserved: %w[env])
 
       # The schedules of `raider schedule`: the project's tests, all, one tag or listed spec files
       TESTS = new(command: 'schedule', dir: '.raider/schedules', noun: 'test schedule', plural: 'tests',

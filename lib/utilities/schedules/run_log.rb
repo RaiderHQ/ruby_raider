@@ -9,7 +9,7 @@ require_relative 'kind'
 module RubyRaider
   module Schedules
     # <kind dir>/<name>/runs.jsonl: one JSON line per run, oldest first. `raider schedule run` appends to it
-    # (status and counts only, never a message); flows/support/run.rb writes the flow ones (Flows::RunLog).
+    # (status and counts only, never a message).
     # :reek:TooManyConstants { max_constants: 7 } -- the read cap, the line cap, the files and the open flags
     class RunLog
       MAX_BYTES = 1024 * 1024
