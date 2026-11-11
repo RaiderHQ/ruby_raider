@@ -27,7 +27,31 @@ RSpec.describe RubyRaider::Schedules::RunLog do # rubocop:disable RSpec/FilePath
 
     ids = log.lines.map { |line| line['run_id'] }
     expect([ids.size, ids.first, ids.last]).to eq([50, '2', '51'])
-    expect(Dir.children(folder)).to eq(['runs.jsonl'])
+    # No temp file left behind: only the log and its lock
+    expect(Dir.children(folder).sort).to eq(%w[runs.jsonl runs.jsonl.lock])
+  end
+
+  it 'waits for runs.jsonl.lock, so a busy line never overwrites a trim in progress' do
+    50.times { |n| log.append({ 'run_id' => n.to_s }) }
+    File.open(File.join(folder, 'runs.jsonl.lock'), File::RDWR) do |held|
+      held.flock(File::LOCK_EX)
+      busy = Thread.new { log.append({ 'run_id' => 'busy' }) }
+
+      expect([busy.join(0.3), log.lines.size]).to eq([nil, 50])
+      held.flock(File::LOCK_UN)
+      busy.join
+    end
+
+    expect(log.lines.map { |line| line['run_id'] }.values_at(0, -1)).to eq(%w[1 busy])
+  end
+
+  it 'refuses a linked lock and leaves its target alone' do
+    FileUtils.mkdir_p(folder)
+    target = File.join(dir, 'elsewhere.lock')
+    File.symlink(target, File.join(folder, 'runs.jsonl.lock'))
+
+    expect { log.append({ 'run_id' => 'a' }) }.to raise_error(RubyRaider::Schedules::Error, /runs.jsonl.lock must be a file, not a link/)
+    expect([File.exist?(target), File.exist?(file)]).to eq([false, false])
   end
 
   it 'refuses a linked log and leaves its target alone' do

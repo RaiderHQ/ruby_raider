@@ -38,8 +38,9 @@ module Raider
         super
       end
 
+      # The args, as Selenium's own add_argument returns them, also when the switch is dropped
       def add_argument(arg)
-        return if ShowBrowser.headless?(arg)
+        return options[:args] if ShowBrowser.headless?(arg)
 
         super
       end

@@ -9,6 +9,10 @@ module Raider
   # Installed from a before(:suite) hook, so it sees the final configuration whatever the require
   # order. Without rspec-retry it does nothing. A retry_callback the project set is kept as it is,
   # and then the project owns the reset.
+  #
+  # It relies on the after hook quitting the driver. A project whose after hook does not quit it leaves
+  # one browser open per retry (the cleared @driver is never quit); such a project should set its own
+  # retry_callback that quits and clears the driver.
   module RetryReset
     CALLBACK = proc { |_example| @driver = nil }
 

@@ -64,6 +64,7 @@ module RubyRaider
 
       # {status, counts, report?, reason?, stopped?}; the lock is held from before the spawn to the run line
       def attempt(schedule, record)
+        outcome = {}
         schedule.selection.check!(@project.root)
         return { status: 'busy' } unless @lock.acquire(name: schedule.name, run_id: record['run_id'], started_at: record['started_at'])
 
@@ -71,11 +72,22 @@ module RubyRaider
         outcome[:copied] = copy_report(schedule, outcome[:report])
         # A line that can't be written loses only the line: the stop, counts and exit code stay
         append_quietly(schedule, record, outcome)
-        outcome.merge(recorded: true)
+        outcome[:recorded] = true
+        outcome
       rescue Error, SystemCallError => e
         { status: 'setup_error', reason: Schedules.printable(e.message) }
+      rescue SignalException
+        stopped(schedule, record, outcome)
       ensure
         @lock.release
+      end
+
+      # INT or TERM outside the spawn's traps (the check, the lock, the report copy) is a stop: finish records it
+      # and the ensure frees the lock and running.json. A run whose line is written already keeps that outcome.
+      def stopped(schedule, record, outcome)
+        return outcome.merge(recorded: true) if outcome[:recorded] || RunLog.new(@project, schedule.name).find(record['run_id'])
+
+        outcome.merge(status: 'setup_error', stopped: true)
       end
 
       def spawn(schedule)
@@ -108,8 +120,15 @@ module RubyRaider
       # config/config.yml is never written.
       def env(schedule)
         show = schedule.show_browser
-        { 'BUNDLE_GEMFILE' => @project.path('Gemfile'), 'RETRY_COUNT' => (schedule.retries + 1).to_s, 'RSPEC_RETRY_RETRY_COUNT' => nil,
-          'HEADLESS' => show ? nil : 'true', 'RAIDER_SHOW_BROWSER' => show ? '1' : nil }
+        gem_env(schedule).merge('BUNDLE_GEMFILE' => @project.path('Gemfile'), 'RETRY_COUNT' => (schedule.retries + 1).to_s,
+                                'RSPEC_RETRY_RETRY_COUNT' => nil, 'HEADLESS' => show ? nil : 'true', 'RAIDER_SHOW_BROWSER' => show ? '1' : nil)
+      end
+
+      # The GEM_HOME and GEM_PATH captured at add, as the OS entry sets them (a key not captured is unset), so
+      # a run by hand from another Ruby uses the scheduled run's gems. Nothing captured: the caller's stay.
+      def gem_env(schedule)
+        captured = schedule.gem_env
+        captured.empty? ? {} : Rule::GEM_ENV.to_h { |key| [key, captured[key]] }
       end
 
       # The report's folder relative to the project, nil when there was no report of this run or it could not be copied
@@ -152,14 +171,16 @@ module RubyRaider
         return 'was stopped' if outcome[:stopped]
 
         case outcome[:status]
-        when 'passed' then "passed: #{counts['total']} tests"
+        when 'passed' then "passed: #{tests(counts['total'])}"
         when 'failed' then "failed: #{failures(counts)}"
         when 'busy' then 'is already running'
         else "could not start: #{start_reason(schedule, record, outcome, long: true)}"
         end
       end
 
-      def failures(counts) = "#{counts['failed']} of #{counts['total']} tests failed"
+      def failures(counts) = "#{counts['failed']} of #{tests(counts['total'])} failed"
+
+      def tests(total) = total == 1 ? '1 test' : "#{total} tests"
 
       # The notifier never raises, so a notification can't change the exit code
       def notify(schedule, record, outcome)

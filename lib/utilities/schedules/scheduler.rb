@@ -57,6 +57,7 @@ module RubyRaider
         schedule = Schedule.build(project: @project, name: name, every: every, at: at, on: on, retries: retries, notify: notify,
                                   show_browser: show_browser, selection: selection, now: now, host_os: @host_os)
         @project.check_show_browser! if schedule.show_browser
+        @project.check_raider_version!
         current = adapter
         schedule_dirs(name)
         @store.writable!

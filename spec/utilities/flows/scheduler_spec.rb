@@ -242,6 +242,14 @@ RSpec.describe RubyRaider::Flows::Scheduler do # rubocop:disable RSpec/FilePath
       expect(out.string).to eq("#{'report'.ljust(30)}  every hour at :15 (notify)  next Sun 8 Nov 12:15  failed  2026-11-09T08:00:12Z?[2J  ok\n")
     end
 
+    it 'fails the text list when the OS scheduler cannot be asked, as in 4.1' do
+      scheduler.schedule('report', every: 'day', at: '08:00')
+      allow(described_class).to receive(:adapter).and_raise(RubyRaider::Flows::Error, 'Scheduling flows is not supported on solaris2')
+      lister = described_class.new(project, store: store, out: out, err: err, now: -> { now })
+
+      expect { lister.schedules }.to raise_error(RubyRaider::Flows::Error, 'Scheduling flows is not supported on solaris2')
+    end
+
     it 'prints the JSON the desktop app reads' do
       scheduler.schedule('report', every: 'week', at: '08:00', on: 'mon', inputs: ['who=me'], notify: true)
       log_run('report', 'status' => 'completed', 'finished_at' => 'f', 'trigger' => 't', 'failed_step' => nil, 'results_dir' => 'r', 'run_id' => 'x')

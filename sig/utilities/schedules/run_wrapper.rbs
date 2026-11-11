@@ -23,16 +23,19 @@ module RubyRaider
 
       def load: (String name) -> Schedule
       def attempt: (Schedule schedule, Hash[String, String] record) -> Hash[Symbol, untyped]
+      def stopped: (Schedule schedule, Hash[String, String] record, Hash[Symbol, untyped] outcome) -> Hash[Symbol, untyped]
       def spawn: (Schedule schedule) -> Hash[Symbol, untyped]
       def status: (Integer? code, bool stopped, Hash[String, Integer]? counts) -> String
       def argv: (Schedule schedule) -> Array[String]
       def env: (Schedule schedule) -> Hash[String, String?]
+      def gem_env: (Schedule schedule) -> Hash[String, String?]
       def copy_report: (Schedule schedule, RunReport? report) -> String?
       def append: (Schedule schedule, Hash[String, String] record, Hash[Symbol, untyped] outcome) -> void
       def finish: (Schedule schedule, Hash[String, String] record, Hash[Symbol, untyped] outcome) -> Integer
       def append_quietly: (Schedule schedule, Hash[String, String] record, Hash[Symbol, untyped] outcome) -> void
       def result_text: (Schedule schedule, Hash[String, String] record, Hash[Symbol, untyped] outcome) -> String
       def failures: (Hash[String, Integer] counts) -> String
+      def tests: (Integer total) -> String
       def notify: (Schedule schedule, Hash[String, String] record, Hash[Symbol, untyped] outcome) -> bool
       def start_reason: (Schedule schedule, Hash[String, String] record, Hash[Symbol, untyped] outcome, long: bool) -> String
       def rotate_log: (Schedule schedule) -> void

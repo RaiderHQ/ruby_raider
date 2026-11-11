@@ -195,10 +195,15 @@ RSpec.describe RubyRaider::Flows::Schedule do # rubocop:disable RSpec/FilePath
     end
 
     it 'refuses an entry whose os_id is not this project\'s, or not in lowercase hex' do
-      upper = schedule.os_id.sub(/\.(\h{10})\./) { ".#{Regexp.last_match(1).upcase}." }
+      # A root whose hash prefix has a letter, so upcasing it always changes the os_id
+      root = File.join(dir, (0..).lazy.map { |n| "p#{n}" }.find { |name| Digest::SHA256.hexdigest(File.join(dir, name))[0, 10].match?(/[a-f]/) })
+      FileUtils.mkdir_p(root)
+      lettered = described_class.build(project: RubyRaider::Flows::Project.new(root), name: 'report', every: 'day', at: '08:00', now: now)
+      upper = lettered.os_id.sub(/\.(\h{10})\./) { ".#{Regexp.last_match(1).upcase}." }
 
+      expect(upper).not_to eq(lettered.os_id)
       expect { described_class.from_h(schedule.to_h, '/elsewhere') }.to raise_error(RubyRaider::Flows::Error, /os_id/)
-      expect { described_class.from_h(schedule.to_h.merge('os_id' => upper), dir) }.to raise_error(RubyRaider::Flows::Error, /os_id/)
+      expect { described_class.from_h(lettered.to_h.merge('os_id' => upper), root) }.to raise_error(RubyRaider::Flows::Error, /os_id/)
     end
 
     it 'refuses entries that were tampered with' do

@@ -75,6 +75,9 @@ RSpec.describe RubyRaider::Schedules::Scheduler do # rubocop:disable RSpec/FileP
       FileUtils.mkdir_p(File.dirname(File.join(dir, file)))
       File.write(File.join(dir, file), '')
     end
+    # add checks the project's bundle has `raider schedule`
+    File.write(File.join(dir, 'Gemfile'), "gem 'ruby_raider'\n")
+    File.write(File.join(dir, 'Gemfile.lock'), "GEM\n  specs:\n    ruby_raider (#{RubyRaider::Schedules::Project::OWN_VERSION})\n")
   end
 
   after { FileUtils.rm_rf(dir) }
@@ -205,6 +208,14 @@ RSpec.describe RubyRaider::Schedules::Scheduler do # rubocop:disable RSpec/FileP
         refused(/Invalid spec file/, files: ['-rf_spec.rb'])
         refused('Use --tag or spec files, not both', files: %w[spec/a_spec.rb], tag: 'smoke')
         refused(/Invalid tag/, tag: '$(id)')
+      end
+
+      it 'refuses a project whose bundle has no raider schedule, after the other checks' do
+        File.write(File.join(dir, 'Gemfile.lock'), "GEM\n  specs:\n    ruby_raider (4.0.1)\n")
+        refused(/\AScheduling needs ruby_raider \S+ or later in this project: bundle update ruby_raider\z/)
+        File.delete(File.join(dir, 'Gemfile.lock'))
+        refused(/: run bundle install first\z/)
+        refused(/Invalid every/, every: 'yearly')
       end
 
       it 'refuses a bad rule' do

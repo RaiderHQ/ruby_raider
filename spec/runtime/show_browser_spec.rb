@@ -25,8 +25,10 @@ RSpec.describe Raider::ShowBrowser do # rubocop:disable RSpec/FilePath
       set.args = ['--headless', 'set']
       keyed = klass.new('args' => ['-headless', 'keyed'])
       args = ->(options) { options.as_json.fetch(klass::KEY).fetch('args') }
+      added = klass.new
+      returned = [added.add_argument('--headless'), added.add_argument('kept')].map { |value| value.equal?(added.options[:args]) }
       [browser, { 'prepended' => klass.ancestors.count(filter), 'built' => args.call(built), 'set' => args.call(set),
-                  'keyed' => keyed.options['args'] }]
+                  'keyed' => keyed.options['args'], 'returned' => returned }]
     end
     puts JSON.generate(report)
   RUBY
@@ -52,6 +54,10 @@ RSpec.describe Raider::ShowBrowser do # rubocop:disable RSpec/FilePath
     it 'drops --headless, --headless=* and -headless from args: and add_argument and keeps every other argument' do
       expected = %w[start-maximized window-size=800,600 --headlessly headless]
       expect(report.transform_values { |browser| browser['built'] }).to eq('Chrome' => expected, 'Edge' => expected, 'Firefox' => expected)
+    end
+
+    it 'returns the args from add_argument as Selenium does, also for a dropped switch' do
+      expect(report.transform_values { |browser| browser['returned'] }).to eq('Chrome' => [true, true], 'Edge' => [true, true], 'Firefox' => [true, true])
     end
 
     it 'drops them from args= and from a string args key' do

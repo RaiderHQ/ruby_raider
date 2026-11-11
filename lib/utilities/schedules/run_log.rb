@@ -10,11 +10,14 @@ module RubyRaider
   module Schedules
     # <kind dir>/<name>/runs.jsonl: one JSON line per run, oldest first. `raider schedule run` appends to it
     # (status and counts only, never a message); flows/support/run.rb writes the flow ones (Flows::RunLog).
-    # :reek:TooManyConstants { max_constants: 6 } -- the read cap, the line cap and the open flags
+    # :reek:TooManyConstants { max_constants: 7 } -- the read cap, the line cap, the files and the open flags
     class RunLog
       MAX_BYTES = 1024 * 1024
       MAX_LINES = 50
       FILE = 'runs.jsonl'
+      # A busy run appends without the run lock: appends and the trim at MAX_LINES take this one. It is never
+      # renamed (the trim renames a new runs.jsonl into place), so a lock on it keeps excluding.
+      LOCK = 'runs.jsonl.lock'
       NOFOLLOW = defined?(File::NOFOLLOW) ? File::NOFOLLOW : 0
       NONBLOCK = defined?(File::NONBLOCK) ? File::NONBLOCK : 0
 
@@ -34,6 +37,7 @@ module RubyRaider
         @project = project
         @parts = [dir, name]
         @file = project.path("#{dir}/#{name}/#{FILE}")
+        @lock = project.path("#{dir}/#{name}/#{LOCK}")
       end
 
       # Every readable line in the last MAX_BYTES, oldest first; a broken line is skipped
@@ -57,15 +61,29 @@ module RubyRaider
       # written to a temp file that replaces the log, so a reader never sees half of it. Never through a link.
       def append(line)
         RunLog.private_dir(@project, *@parts)
-        # A line cut short by a crash is ended first, so the new line stays whole
-        raw = tail
-        text = "#{JSON.generate(line)}\n"
-        text = "\n#{text}" unless raw.empty? || raw.end_with?("\n")
-        old = raw.lines
-        old.size < MAX_LINES ? add(text) : replace(old.last(MAX_LINES - 1).join + text)
+        locked do
+          # A line cut short by a crash is ended first, so the new line stays whole
+          raw = tail
+          text = "#{JSON.generate(line)}\n"
+          text = "\n#{text}" unless raw.empty? || raw.end_with?("\n")
+          old = raw.lines
+          old.size < MAX_LINES ? add(text) : replace(old.last(MAX_LINES - 1).join + text)
+        end
       end
 
       private
+
+      # Holds runs.jsonl.lock (a regular file, never through a link) while the block reads and writes the log
+      def locked
+        File.open(@lock, File::RDWR | File::CREAT | NOFOLLOW | NONBLOCK, 0o600) do |file|
+          raise Error, "#{LOCK} must be a file" unless file.stat.file?
+
+          file.flock(File::LOCK_EX)
+          yield
+        end
+      rescue Errno::ELOOP, Errno::EMLINK
+        raise Error, "#{LOCK} must be a file, not a link"
+      end
 
       def add(text)
         File.open(@file, File::WRONLY | File::APPEND | File::CREAT | NOFOLLOW | NONBLOCK, 0o600) do |file|

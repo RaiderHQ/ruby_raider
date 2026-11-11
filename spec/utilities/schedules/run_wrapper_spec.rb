@@ -82,6 +82,13 @@ RSpec.describe RubyRaider::Schedules::RunWrapper do # rubocop:disable RSpec/File
       expect([out.string, notices]).to eq(["Schedule nightly passed: 2 tests\n", []])
     end
 
+    it 'says test for a total of one' do
+      outcome.merge!(statuses: %w[passed])
+      wrapper.run('nightly')
+
+      expect(out.string).to eq("Schedule nightly passed: 1 test\n")
+    end
+
     it 'holds running.json while rspec runs and removes it after' do
       wrapper.run('nightly')
 
@@ -137,6 +144,22 @@ RSpec.describe RubyRaider::Schedules::RunWrapper do # rubocop:disable RSpec/File
       end
     end
 
+    it 'sets the GEM_HOME and GEM_PATH captured at add, unsetting one not captured' do
+      allow(RubyRaider::Schedules::Schedule).to receive(:captured_gem_env).and_return('GEM_HOME' => '/gems/home')
+      schedule
+      wrapper.run('nightly')
+
+      expect(calls.last[:env].slice('GEM_HOME', 'GEM_PATH')).to eq('GEM_HOME' => '/gems/home', 'GEM_PATH' => nil)
+    end
+
+    it 'leaves the caller\'s GEM_HOME and GEM_PATH when none were captured' do
+      allow(RubyRaider::Schedules::Schedule).to receive(:captured_gem_env).and_return({})
+      schedule
+      wrapper.run('nightly')
+
+      expect(calls.last[:env].keys & %w[GEM_HOME GEM_PATH]).to eq([])
+    end
+
     it 'counts tries: one with no retries' do
       wrapper.run('nightly')
 
@@ -164,6 +187,14 @@ RSpec.describe RubyRaider::Schedules::RunWrapper do # rubocop:disable RSpec/File
       expect(out.string).to eq("Schedule nightly failed: 2 of 4 tests failed\n")
       expect(notices).to eq([['Ruby Raider: nightly failed', '2 of 4 tests failed']])
       expect(lines.last['counts']).to eq('total' => 4, 'passed' => 1, 'failed' => 2, 'skipped' => 1)
+    end
+
+    it 'says test for a total of one' do
+      outcome.merge!(statuses: %w[failed])
+      schedule(notify: true)
+      wrapper.run('nightly')
+
+      expect([out.string, notices.last.last]).to eq(["Schedule nightly failed: 1 of 1 test failed\n", '1 of 1 test failed'])
     end
 
     it 'does not notify without notify' do
@@ -241,6 +272,58 @@ RSpec.describe RubyRaider::Schedules::RunWrapper do # rubocop:disable RSpec/File
       expect(wrapper.run('nightly')).to eq(2)
       expect([lines.last['status'], notices]).to eq(['setup_error', []])
       expect(out.string).to eq("Schedule nightly was stopped\n")
+    end
+  end
+
+  # INT or TERM outside the spawn's own traps arrives as Interrupt or SignalException
+  describe 'a stop around the spawn' do
+    let(:running) { File.join(dir, '.raider/schedules/running.json') }
+    # Each stop is raised once: what comes after it runs normally
+    let(:stops) { [] }
+
+    def stop_after_acquire(signal)
+      stops << signal
+      allow(RubyRaider::Schedules::RunLock).to receive(:new).and_wrap_original do |original, *args|
+        original.call(*args).tap do |lock|
+          allow(lock).to receive(:acquire).and_wrap_original do |acquire, **options|
+            acquire.call(**options).tap { |held| raise(stops.shift) if held && stops.any? }
+          end
+        end
+      end
+    end
+
+    it 'records a stop while taking the lock: exit 2, one stopped line, lock and running.json freed, never notified' do
+      schedule(notify: true)
+      stop_after_acquire(Interrupt.new)
+
+      expect(wrapper.run('nightly')).to eq(2)
+      expect([calls, notices, lines.map { |line| line['status'] }, File.exist?(running)]).to eq([[], [], ['setup_error'], false])
+      expect(out.string).to eq("Schedule nightly was stopped\n")
+      expect(described_class.new(project, out: out, err: err, spawner: spawner, clock: -> { now }, notifier: notifier).run('nightly')).to eq(0)
+    end
+
+    it 'records a TERM while the report is copied after rspec ended, with the counts, as stopped' do
+      allow(RubyRaider::Schedules::RunReport).to receive(:load).and_wrap_original do |original, *args, **options|
+        original.call(*args, **options).tap { |report| allow(report).to receive(:copy_to).and_raise(SignalException.new('TERM')) }
+      end
+
+      expect(wrapper.run('nightly')).to eq(2)
+      expect(lines.map { |line| line.values_at('status', 'counts') }).to eq([['setup_error', { 'total' => 2, 'passed' => 2, 'failed' => 0, 'skipped' => 0 }]])
+      expect([out.string, File.exist?(running)]).to eq(["Schedule nightly was stopped\n", false])
+    end
+
+    it 'keeps the recorded outcome when the stop comes after the run line' do
+      stops << Interrupt.new
+      allow(RubyRaider::Schedules::RunLog).to receive(:new).and_wrap_original do |original, *args, **options|
+        original.call(*args, **options).tap do |log|
+          allow(log).to receive(:append).and_wrap_original do |append, line|
+            append.call(line).tap { raise(stops.shift) if stops.any? }
+          end
+        end
+      end
+
+      expect(wrapper.run('nightly')).to eq(0)
+      expect(lines.map { |line| line['status'] }).to eq(['passed'])
     end
   end
 

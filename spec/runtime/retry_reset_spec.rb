@@ -62,6 +62,8 @@ RSpec.describe 'Retrying a test with a fresh driver' do
     end
   RUBY
 
+  # The subprocess is a plain ruby, not bundle exec: it finds rspec and rspec-retry through the bundle env
+  # (BUNDLE_GEMFILE, RUBYOPT=-rbundler/setup) it inherits from this rspec run.
   define_method(:run_suite) do |env|
     Dir.mktmpdir('raider-retry') do |dir|
       spec = File.join(dir, 'flaky_spec.rb')
@@ -92,7 +94,7 @@ RSpec.describe 'Retrying a test with a fresh driver' do
     expect(result[:log]).to include({ 'callback' => 'project' })
   end
 
-  it 'leaves the retry on the quit driver to a project callback that does not reset it (the bug it fixes)' do
+  it 'a project callback that keeps the driver still fails on the quit session' do
     result = run_suite('RETRY' => 'before', 'RETRY_COUNT' => '2', 'OWN_CALLBACK' => 'keeps')
     expect([result[:status], installed(result), tries(result).size]).to eq([1, 'project', 1])
     expect(result[:output]).to include('Errno::ECONNREFUSED')

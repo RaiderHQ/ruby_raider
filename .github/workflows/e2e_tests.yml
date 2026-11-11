@@ -37,5 +37,8 @@ jobs:
       - name: Run command routing tests
         run: bundle exec rspec spec/commands/ --format documentation
 
+      - name: Run schedule and flow scheduler tests
+        run: bundle exec rspec spec/utilities/schedules spec/utilities/flows --tag ~slow --format documentation
+
       - name: Run menu tests
         run: bundle exec rspec spec/menus/ --format documentation

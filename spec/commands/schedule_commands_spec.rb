@@ -79,6 +79,18 @@ RSpec.describe ScheduleCommands do
 
       expect([out, err, code]).to eq(['', "Invalid every nil: use hour, day, weekday or week\n", 2])
     end
+
+    it 'exits 2 with one stderr line when the project has no Gemfile, before the OS scheduler is touched' do
+      allow(RubyRaider::Schedules::Scheduler).to receive(:new).and_wrap_original do |original, project|
+        original.call(project, adapter: instance_double(RubyRaider::Schedules::Os::Launchd), out: $stdout, err: $stderr)
+      end
+      version = File.read(File.expand_path('../../lib/version', __dir__)).strip
+
+      out, err, code = raider('schedule', 'add', 'nightly', '--every', 'day', '--at', '08:00', '--project', dir)
+
+      expect([out, err, code]).to eq(['', "Scheduling needs ruby_raider #{version} or later in this project: no Gemfile found\n", 2])
+      expect(File.exist?(File.join(dir, '.raider'))).to be(false)
+    end
   end
 
   describe 'refusals' do
@@ -155,6 +167,14 @@ RSpec.describe ScheduleCommands do
 
       expect(out).to include('schedule add NAME [SPEC_FILE ...]', 'schedule list', 'schedule remove NAME',
                              'schedule run NAME')
+    end
+
+    # Thor would also reach run_schedule from `run` by prefix; the map is what keeps `run` working if that changes
+    it 'maps run to run_schedule explicitly and shows it as run NAME' do
+      out, = raider('help', 'schedule')
+
+      expect(described_class.map).to include('run' => :run_schedule)
+      expect(out).to match(/^ +\S+ schedule run NAME +# Runs the schedule NAME now/)
     end
 
     it 'lists schedule in raider help' do

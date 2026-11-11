@@ -87,6 +87,12 @@ module RubyRaider
 
       def adapter = @adapter ||= Scheduler.adapter
 
+      # As in 4.1: an OS scheduler that can't be asked fails the list (exit 2). Only test schedules leave the note out.
+      def missed_runs_note
+        current = adapter
+        current.respond_to?(:missed_runs_note) ? current.missed_runs_note : nil
+      end
+
       attr_reader :store
 
       # .raider/flows/<name>/ for scheduler.log: 0700 folders that are not links, as flows/support/run.rb makes them

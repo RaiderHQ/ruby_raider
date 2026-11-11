@@ -73,4 +73,45 @@ RSpec.describe RubyRaider::Schedules::Project do # rubocop:disable RSpec/FilePat
       expect { project.check_show_browser! }.not_to raise_error
     end
   end
+
+  describe '#check_raider_version!' do
+    own = RubyRaider::Schedules::Project::OWN_VERSION
+    needs = "Scheduling needs ruby_raider #{own} or later in this project"
+
+    def lock(*spec_lines)
+      File.write(File.join(dir, 'Gemfile'), "gem 'ruby_raider'\n")
+      File.write(File.join(dir, 'Gemfile.lock'), "GEM\n  remote: https://rubygems.org/\n  specs:\n#{spec_lines.join("\n")}\n\nDEPENDENCIES\n  ruby_raider\n")
+    end
+
+    it 'reads this gem\'s version from lib/version' do
+      expect(own).to eq(File.read(File.expand_path('../../../lib/version', __dir__)).strip)
+    end
+
+    it 'accepts a lock at this version or later, from rubygems, a path or git' do
+      ['    ruby_raider (%s)', '    ruby_raider (99.0.0)'].each do |line|
+        lock(format(line, own), '    selenium-webdriver (4.52.0)')
+        expect { project.check_raider_version! }.not_to raise_error
+      end
+      File.write(File.join(dir, 'Gemfile.lock'), "PATH\n  remote: ../ruby_raider\n  specs:\n    ruby_raider (#{own})\n      thor\n")
+      expect { project.check_raider_version! }.not_to raise_error
+    end
+
+    it 'refuses a lock that resolves an older ruby_raider, or none' do
+      lock('    ruby_raider (4.0.1)')
+      expect { project.check_raider_version!('4.2.0') }.to raise_error(RubyRaider::Schedules::Error, 'Scheduling needs ruby_raider 4.2.0 or later in this project: bundle update ruby_raider')
+      lock('    rspec (3.13.0)', '      ruby_raider (= 9.0.0)')
+      expect { project.check_raider_version! }.to raise_error(RubyRaider::Schedules::Error, "#{needs}: bundle update ruby_raider")
+    end
+
+    it 'refuses a project with no Gemfile, or no Gemfile.lock yet' do
+      expect { project.check_raider_version! }.to raise_error(RubyRaider::Schedules::Error, "#{needs}: no Gemfile found")
+      File.write(File.join(dir, 'Gemfile'), "gem 'ruby_raider'\n")
+      expect { project.check_raider_version! }.to raise_error(RubyRaider::Schedules::Error, "#{needs}: run bundle install first")
+    end
+
+    it 'never evaluates the lock' do
+      lock("    ruby_raider (\#{`id`})", "    ruby_raider (\#{exit!})")
+      expect { project.check_raider_version! }.to raise_error(RubyRaider::Schedules::Error, "#{needs}: bundle update ruby_raider")
+    end
+  end
 end

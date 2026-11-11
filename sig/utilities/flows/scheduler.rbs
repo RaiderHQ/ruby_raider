@@ -27,6 +27,7 @@ module RubyRaider
       private
 
       def adapter: () -> untyped
+      def missed_runs_note: () -> String?
       def store: () -> ScheduleStore
       def flow_dir: (String name) -> void
       def private_dir: (String relative) -> void

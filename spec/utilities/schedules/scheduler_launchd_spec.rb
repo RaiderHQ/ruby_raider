@@ -35,7 +35,14 @@ RSpec.describe RubyRaider::Schedules::Scheduler do # rubocop:disable RSpec/FileP
 
   let(:tmp) { File.realpath(Dir.mktmpdir('schedules-launchd-wiring')) }
   let(:home) { File.join(tmp, 'home') }
-  let(:root) { File.join(tmp, 'project').tap { |dir| FileUtils.mkdir_p(dir) } }
+  let(:root) do
+    File.join(tmp, 'project').tap do |dir|
+      FileUtils.mkdir_p(dir)
+      # add checks the project's bundle has `raider schedule`
+      File.write(File.join(dir, 'Gemfile'), "gem 'ruby_raider'\n")
+      File.write(File.join(dir, 'Gemfile.lock'), "GEM\n  specs:\n    ruby_raider (#{RubyRaider::Schedules::Project::OWN_VERSION})\n")
+    end
+  end
   let(:project) { RubyRaider::Schedules::Project.new(root) }
   let(:runner) { runner_class.new }
   let(:launchd) { RubyRaider::Schedules::Os::Launchd.new(kind: RubyRaider::Schedules::Kind::TESTS, runner: runner, home: home, uid: 501) }
