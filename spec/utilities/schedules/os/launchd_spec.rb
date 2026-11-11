@@ -239,13 +239,24 @@ RSpec.describe RubyRaider::Schedules::Os::Launchd do # rubocop:disable RSpec/Fil
   end
 
   describe '#remove' do
-    it 'boots out and deletes the plist' do
+    it 'deletes the plist, then boots out' do
       item = schedule
       FileUtils.mkdir_p(agents)
       File.write(plist_path(item), 'x')
+      seen = []
+      runner.on_call { |argv| seen << [argv[1], File.exist?(plist_path(item))] }
 
       expect(launchd.remove(item.os_id)).to be(true)
-      expect([runner.calls, File.exist?(plist_path(item))]).to eq([[['/bin/launchctl', 'bootout', "gui/501/#{item.os_id}"]], false])
+      expect([runner.calls, seen]).to eq([[['/bin/launchctl', 'bootout', "gui/501/#{item.os_id}"]], [['bootout', false]]])
+    end
+
+    it 'is true when only the plist was there' do
+      item = schedule
+      FileUtils.mkdir_p(agents)
+      File.write(plist_path(item), 'x')
+      runner.answers['bootout'] = ['Boot-out failed: 3: No such process', 3]
+
+      expect([launchd.remove(item.os_id), File.exist?(plist_path(item))]).to eq([true, false])
     end
 
     it 'is true when only the service was loaded' do
@@ -263,7 +274,7 @@ RSpec.describe RubyRaider::Schedules::Os::Launchd do # rubocop:disable RSpec/Fil
       allow(File).to receive(:unlink).and_raise(Errno::EACCES)
 
       expect { launchd.remove(item.os_id) }.to raise_error(RubyRaider::Schedules::Error, /Could not remove .*Permission denied/)
-      expect(runner.calls).to eq([['/bin/launchctl', 'bootout', "gui/501/#{item.os_id}"]])
+      expect(runner.calls).to be_empty
     end
 
     it 'refuses an os_id that is not a schedule id' do
