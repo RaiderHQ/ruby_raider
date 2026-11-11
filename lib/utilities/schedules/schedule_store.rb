@@ -16,16 +16,22 @@ module RubyRaider
 
       # Appends .raider/schedules/ to the project's .gitignore (made when missing) unless that exact line is
       # there; every byte already in the file is kept. The yml holds machine paths. true when it added it.
+      # Read and written through one handle that is not a link, so a linked .gitignore is never written through.
       def ignore_in_git
-        file = project.path('.gitignore')
-        raise Error, '.gitignore must be a file' if File.exist?(file) && !File.file?(file)
+        File.open(project.path('.gitignore'), File::RDWR | File::APPEND | File::CREAT | NOFOLLOW | NONBLOCK, 0o644, binmode: true) do |file|
+          raise Error, '.gitignore must be a file' unless file.stat.file?
 
-        content = File.file?(file) ? File.binread(file) : ''.b
-        return false if content.each_line.any? { |line| line.chomp == GITIGNORE_LINE }
+          content = file.read.to_s.b
+          return false if content.each_line.any? { |line| line.chomp == GITIGNORE_LINE }
 
-        prefix = content.empty? || content.end_with?("\n") ? '' : "\n"
-        File.open(file, 'ab') { |io| io.write("#{prefix}#{GITIGNORE_LINE}\n") }
+          prefix = content.empty? || content.end_with?("\n") ? '' : "\n"
+          file.write("#{prefix}#{GITIGNORE_LINE}\n")
+        end
         true
+      rescue Errno::ELOOP, Errno::EMLINK
+        raise Error, ".gitignore is a link: add #{GITIGNORE_LINE} to it yourself"
+      rescue Errno::EISDIR
+        raise Error, '.gitignore must be a file'
       end
     end
   end

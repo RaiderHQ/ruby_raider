@@ -110,5 +110,30 @@ RSpec.describe RubyRaider::Schedules::ScheduleStore do # rubocop:disable RSpec/F
 
       expect { store.ignore_in_git }.to raise_error(RubyRaider::Schedules::Error, '.gitignore must be a file')
     end
+
+    it 'refuses a linked .gitignore and never writes through it' do
+      target = File.join(File.realpath(Dir.mktmpdir('outside')), 'ignored')
+      File.write(target, "keep\n")
+      File.symlink(target, gitignore)
+
+      expect { store.ignore_in_git }.to raise_error(RubyRaider::Schedules::Error, '.gitignore is a link: add .raider/schedules/ to it yourself')
+      expect([File.read(target), File.symlink?(gitignore)]).to eq(["keep\n", true])
+    ensure
+      FileUtils.rm_rf(File.dirname(target))
+    end
+
+    it 'refuses a dangling .gitignore link without making its target' do
+      target = File.join(dir, 'made_by_the_link')
+      File.symlink(target, gitignore)
+
+      expect { store.ignore_in_git }.to raise_error(RubyRaider::Schedules::Error, /is a link/)
+      expect(File.exist?(target)).to be(false)
+    end
+
+    it 'refuses a .gitignore that is a FIFO without blocking' do
+      File.mkfifo(gitignore)
+
+      expect { store.ignore_in_git }.to raise_error(RubyRaider::Schedules::Error, '.gitignore must be a file')
+    end
   end
 end

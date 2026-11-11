@@ -52,9 +52,12 @@ module RubyRaider
         false
       end
 
+      # nil also when there is no OS scheduler to ask (the rows already say unknown)
       def missed_runs_note
         current = adapter
         current.respond_to?(:missed_runs_note) ? current.missed_runs_note : nil
+      rescue Error
+        nil
       end
 
       def line(name, rule, next_run, last, state)
