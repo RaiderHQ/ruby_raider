@@ -247,11 +247,11 @@ raider schedule remove nightly
 
 - **Old schedules are removed automatically.** Schedules made with Ruby Raider 4.1 can't run in 4.2. They are removed the first time any `raider schedule` command runs in the project (the desktop app runs one when its Tests tab opens), or the next time one of them fires. One line says which were removed.
 - **Add them again** with `raider schedule add`.
-- **Leftover folders:** `flows/`, `flow-results/` and `.raider/flows/` (it holds old secrets in `env`) are left alone. You can delete them.
+- **Leftover folders:** `flows/`, `flow-results/` and `.raider/flows/` (it holds old secrets in `env`) are left alone. Delete them only after the line saying the old schedules were removed has appeared (run any `raider schedule` command, such as `raider schedule list`): the cleanup looks for `.raider/flows/`, and the old entries write their logs there.
 - **A project moved after scheduling** can't be cleaned automatically: its entries are tied to the old path. Remove them by hand; their names start with `dev.rubyraider.flow.`:
   - macOS: find them with `ls ~/Library/LaunchAgents | grep dev.rubyraider.flow.`, run `launchctl bootout gui/$(id -u)/<label>`, then delete `~/Library/LaunchAgents/<label>.plist` (`<label>` is `dev.rubyraider.flow.<hash>.<name>`).
   - Windows: find them with `schtasks /Query /FO CSV | findstr dev.rubyraider.flow.`, then `schtasks /Delete /TN "\RubyRaider\<id>" /F`.
-  - Linux (systemd): find them with `ls ~/.config/systemd/user | grep dev.rubyraider.flow.`, run `systemctl --user disable --now <id>.timer`, delete `<id>.timer` and `<id>.service` from `~/.config/systemd/user`, then `systemctl --user daemon-reload`.
+  - Linux (systemd): find them with `ls ~/.config/systemd/user | grep dev.rubyraider.flow.` (or `$XDG_CONFIG_HOME/systemd/user` when it is set), run `systemctl --user disable --now <id>.timer`, delete `<id>.timer` and `<id>.service` from `~/.config/systemd/user`, then `systemctl --user daemon-reload`.
   - Linux (cron): find them with `crontab -l | grep -A1 '# raider-flow '`, then `crontab -e` and delete each `# raider-flow <id>` line and the line under it.
 
 ### Also included
