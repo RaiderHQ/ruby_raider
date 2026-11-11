@@ -1,0 +1,34 @@
+module RubyRaider
+  module Schedules
+    module Os
+      class Cron
+        CRONTAB: String
+        MAX_LINE: Integer
+
+        @kind: Kind
+        @runner: CommandRunner
+
+        def initialize: (kind: Kind, ?runner: CommandRunner) -> void
+        def label: () -> String
+        def missed_runs_note: () -> String
+        def line: (_OsEntry schedule) -> String
+        def install: (_OsEntry schedule) -> true
+        def remove: (String os_id) -> bool
+        def present?: (String os_id) -> bool
+        def list_ids: (String prefix) -> Array[String]
+        def usable?: () -> bool
+
+        private
+
+        def fields: (_OsEntry schedule) -> String
+        def weekday: (String day) -> Integer
+        def escape: (String word) -> String
+        def without: (String table, String os_id) -> [String, bool]
+        def our_command?: (String text, String? name) -> bool
+        def read: () -> String
+        def save: (String table) -> void
+        def checked_os_id: (untyped os_id) -> String
+      end
+    end
+  end
+end

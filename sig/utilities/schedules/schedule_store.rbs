@@ -1,0 +1,21 @@
+module RubyRaider
+  module Schedules
+    class ScheduleStore < Store
+      DIR: String
+      GITIGNORE_LINE: String
+
+      def initialize: (Project project) -> void
+      def all: () -> Array[Schedule]
+      def find: (String name) -> Schedule?
+      def save: (Schedule schedule) -> Schedule
+      def delete: (String name) -> (Schedule | Store::Removed)?
+      def ignore_in_git: () -> bool
+
+      private
+
+      def gitignore: () -> String
+      def gitignore_text: (File file) -> String
+      def ignored?: (String content) -> bool
+    end
+  end
+end

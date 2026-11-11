@@ -1,0 +1,33 @@
+module RubyRaider
+  module Schedules
+    module Os
+      class Linux
+        @kind: Kind
+        @primary: Systemd | Cron
+        @other: Cron?
+        @systemd: Systemd
+
+        def self.pick: (?CommandRunner runner, kind: Kind) -> Linux
+
+        def initialize: (kind: Kind, ?runner: CommandRunner, ?systemd: Systemd, ?cron: Cron) -> void
+        def label: () -> String
+        def missed_runs_note: () -> String?
+        def install: (_OsEntry schedule) -> true
+        def remove: (String os_id) -> bool
+        def present?: (String os_id) -> bool
+
+        def list_ids: (String prefix) -> Array[String]
+
+        private
+
+        def other_ids: (String prefix) -> Array[String]
+        def quietly: () { () -> Array[String] } -> Array[String]
+
+        def stranded?: (String os_id) -> bool
+        def refuse_stranded: (String os_id) -> void
+
+        def other_present?: (String os_id) -> bool
+      end
+    end
+  end
+end

@@ -1,0 +1,72 @@
+module RubyRaider
+  module Schedules
+    # What an OS scheduler adapter and NextRun read from a schedule, flow or tests
+    interface _OsEntry
+      def name: () -> String
+      def every: () -> String
+      def on: () -> String?
+      def os_id: () -> String
+      def ruby: () -> String
+      def hour: () -> Integer
+      def minute: () -> Integer
+      def days: () -> Array[String]
+      def argv: () -> Array[String]
+      def env: () -> Hash[String, String]
+      def working_directory: () -> String
+      def log_path: () -> String
+      def rule_text: () -> String
+    end
+
+    class Rule
+      EVERY: Array[String]
+      DAYS: Array[String]
+      DAYS_RULE: String
+      CLOCK: Regexp
+      MINUTE: Regexp
+      GEM_ENV: Array[String]
+      SYSTEM_PATH: Array[String]
+
+      attr_reader name: String
+      attr_reader every: String
+      attr_reader at: String
+      attr_reader on: String?
+      attr_reader retries: Integer
+      attr_reader notify: bool
+      attr_reader os_id: String
+      attr_reader ruby: String
+      attr_reader bundle: String
+      attr_reader gem_env: Hash[String, String]
+      attr_reader project_root: String
+      attr_reader created_at: String
+
+      def self.kind: () -> Kind
+      def self.os_id_for: (String project_root, String name) -> String
+      def self.os_id_prefix_for: (String project_root) -> String
+      def self.bundle_path: () -> String
+      def self.captured_gem_env: () -> Hash[String, String]
+
+      def kind: () -> Kind
+      def hour: () -> Integer
+      def minute: () -> Integer
+      def days: () -> Array[String]
+      def argv: () -> Array[String]
+      def env: () -> Hash[String, String]
+      def working_directory: () -> String
+      def log_path: () -> String
+      def rule_text: () -> String
+
+      private
+
+      def checked_every: (untyped every) -> String
+      def checked_at: (untyped at) -> String
+      def clock: (untyped at) -> String
+      def checked_on: (untyped on) -> String?
+      def checked_retries: (untyped retries) -> Integer
+      def checked_flag: (String label, untyped flag) -> bool
+      def checked_os_id: (untyped os_id) -> String
+      def checked_path: (String label, untyped path) -> String
+      def checked_gem_env: (untyped gem_env) -> Hash[String, String]
+      def checked_text: (String label, untyped text) -> String
+    end
+  end
+end

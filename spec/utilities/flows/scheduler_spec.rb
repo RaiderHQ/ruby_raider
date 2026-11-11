@@ -68,16 +68,16 @@ RSpec.describe RubyRaider::Flows::Scheduler do # rubocop:disable RSpec/FilePath
   end
 
   describe '.adapter' do
-    let(:runner) { instance_double(RubyRaider::Flows::Os::CommandRunner) }
+    let(:runner) { instance_double(RubyRaider::Schedules::Os::CommandRunner) }
 
     def result(success)
-      RubyRaider::Flows::Os::CommandRunner::Result.new(stdout: '', stderr: '', exitstatus: success ? 0 : 1)
+      RubyRaider::Schedules::Os::CommandRunner::Result.new(stdout: '', stderr: '', exitstatus: success ? 0 : 1)
     end
 
     it 'picks launchd on macOS and Task Scheduler on Windows without calling them' do
       picked = %w[darwin25 mingw32 mswin64 cygwin].map { |host| described_class.adapter(runner: runner, host_os: host).class }
 
-      expect(picked).to eq([RubyRaider::Flows::Os::Launchd] + ([RubyRaider::Flows::Os::TaskScheduler] * 3))
+      expect(picked).to eq([RubyRaider::Schedules::Os::Launchd] + ([RubyRaider::Schedules::Os::TaskScheduler] * 3))
     end
 
     it 'picks the Linux adapter, which labels itself by the scheduler that answers' do
@@ -86,7 +86,7 @@ RSpec.describe RubyRaider::Flows::Scheduler do # rubocop:disable RSpec/FilePath
       picked = 2.times.map { described_class.adapter(runner: runner, host_os: 'linux-gnu') }
 
       expect(picked.map { |adapter| [adapter.class, adapter.label] })
-        .to eq([[RubyRaider::Flows::Os::Linux, 'systemd'], [RubyRaider::Flows::Os::Linux, 'cron']])
+        .to eq([[RubyRaider::Schedules::Os::Linux, 'systemd'], [RubyRaider::Schedules::Os::Linux, 'cron']])
     end
 
     it 'refuses another OS' do
@@ -240,6 +240,14 @@ RSpec.describe RubyRaider::Flows::Scheduler do # rubocop:disable RSpec/FilePath
       scheduler.schedules
 
       expect(out.string).to eq("#{'report'.ljust(30)}  every hour at :15 (notify)  next Sun 8 Nov 12:15  failed  2026-11-09T08:00:12Z?[2J  ok\n")
+    end
+
+    it 'fails the text list when the OS scheduler cannot be asked, as in 4.1' do
+      scheduler.schedule('report', every: 'day', at: '08:00')
+      allow(described_class).to receive(:adapter).and_raise(RubyRaider::Flows::Error, 'Scheduling flows is not supported on solaris2')
+      lister = described_class.new(project, store: store, out: out, err: err, now: -> { now })
+
+      expect { lister.schedules }.to raise_error(RubyRaider::Flows::Error, 'Scheduling flows is not supported on solaris2')
     end
 
     it 'prints the JSON the desktop app reads' do

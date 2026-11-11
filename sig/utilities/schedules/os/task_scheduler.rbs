@@ -1,0 +1,56 @@
+module RubyRaider
+  module Schedules
+    module Os
+      class TaskScheduler
+        interface _Clock
+          def now: () -> Time
+        end
+
+        FOLDER: String
+        ESCAPES: Hash[String, String]
+        NAMESPACE: String
+        NEEDS_QUOTES: Regexp
+        GLOB: Regexp
+        EXPANDS: Regexp
+        DAY_NAMES: Array[String]
+        ROW: Regexp
+
+        @kind: Kind
+        @runner: CommandRunner
+        @clock: _Clock
+        @schtasks: String
+
+        def self.quote: (String arg) -> String
+        def self.glob_quote: (String arg) -> String
+        def self.odd_doubled: (String slashes) -> String
+        def self.join: (Array[String] args) -> String
+
+        def initialize: (kind: Kind, ?runner: CommandRunner, ?clock: _Clock, ?schtasks: String) -> void
+        def label: () -> String
+        def task_name: (untyped os_id) -> String
+        def task_xml: (_OsEntry schedule) -> String
+        def install: (_OsEntry schedule) -> true
+        def remove: (String os_id) -> bool
+        def present?: (String os_id) -> bool
+        def list_ids: (String prefix) -> Array[String]
+
+        private
+
+        def schtasks: (*String args) -> CommandRunner::Result
+        def list: () -> CommandRunner::Result
+        def tasks: () -> String
+        def listed?: (String text, String name) -> bool
+        def refuse_expansion: (_OsEntry schedule) -> void
+        def checked_os_id: (untyped os_id) -> String
+        def escape: (untyped value) -> String
+        def text: (String name, untyped value) -> Array[String]
+        def element: (String tag, Array[untyped] children) -> Array[String]
+        def indent: (Array[String] lines) -> Array[String]
+        def trigger: (_OsEntry schedule) -> Array[untyped]
+        def calendar: (_OsEntry schedule, String every) -> Array[String]
+        def settings: () -> Array[Array[String]]
+        def action: (_OsEntry schedule) -> Array[Array[String]]
+      end
+    end
+  end
+end

@@ -1,14 +1,13 @@
 # frozen_string_literal: true
 
-require 'json'
+require_relative '../schedules/run_log'
+require_relative '../schedules/kind'
 
 module RubyRaider
   module Flows
-    # Reads .raider/flows/<name>/runs.jsonl, which the project's flows/support/run.rb appends to.
-    class RunLog
-      MAX_BYTES = 1024 * 1024
-      NOFOLLOW = defined?(File::NOFOLLOW) ? File::NOFOLLOW : 0
-      NONBLOCK = defined?(File::NONBLOCK) ? File::NONBLOCK : 0
+    # Reads .raider/flows/<name>/runs.jsonl, which the project's flows/support/run.rb appends to
+    # (Schedules::RunLog in the flow folder).
+    class RunLog < Schedules::RunLog
       SUMMARY = %w[status finished_at failed_step results_dir].freeze
 
       # [{name, file, last: {status, finished_at, failed_step, results_dir} | nil}], the shape `raider flow list --json` prints
@@ -20,41 +19,7 @@ module RubyRaider
       end
 
       def initialize(project, name)
-        @file = project.path(".raider/flows/#{name}/runs.jsonl")
-      end
-
-      # Every readable line in the last MAX_BYTES, oldest first; a broken line is skipped
-      def lines
-        tail.lines.filter_map do |line|
-          parsed = JSON.parse(line)
-          parsed if parsed.is_a?(Hash)
-        rescue JSON::ParserError
-          nil
-        end
-      end
-
-      def last = lines.last
-
-      # The last run that ran: a busy line only says another run held the lock
-      def last_result = lines.reverse.find { |line| line['status'] != 'busy' }
-
-      def find(run_id) = lines.reverse.find { |line| line['run_id'] == run_id }
-
-      private
-
-      # Read through one handle that is not a link, so the checks and the read see the same file
-      def tail
-        File.open(@file, File::RDONLY | NONBLOCK | NOFOLLOW) do |file|
-          stat = file.stat
-          return '' unless stat.file?
-
-          skip = [stat.size - MAX_BYTES, 0].max
-          file.seek(skip)
-          text = file.read.to_s.force_encoding(Encoding::UTF_8)
-          skip.positive? ? text.partition("\n").last : text
-        end
-      rescue SystemCallError
-        ''
+        super(project, name, dir: Schedules::Kind::FLOW_LEGACY.dir)
       end
     end
   end

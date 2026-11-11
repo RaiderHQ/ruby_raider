@@ -6,16 +6,21 @@ require 'thor'
 autoload :ScaffoldingCommands, File.expand_path('commands/scaffolding_commands', __dir__)
 autoload :UtilityCommands, File.expand_path('commands/utility_commands', __dir__)
 autoload :FlowCommands, File.expand_path('commands/flow_commands', __dir__)
+autoload :ScheduleCommands, File.expand_path('commands/schedule_commands', __dir__)
 
 module RubyRaider
   class Raider < Thor
     def self.exit_on_failure? = true
 
+    # The commands whose arguments are checked for valid UTF-8 before Thor sees them
+    GUARDED = %w[flow f schedule sc].freeze
+
     # Thor runs a regex on every argument before any command, so invalid UTF-8 would crash it with a
-    # backtrace; a flow command says which argument instead and exits 2 like its other refusals
+    # backtrace; a flow or schedule command says which argument instead and exits 2 like its other refusals
+
     def self.start(given_args = ARGV, config = {})
       bad = given_args.find { |arg| arg.is_a?(String) && !arg.valid_encoding? }
-      if bad && %w[flow f].include?(given_args.first)
+      if bad && GUARDED.include?(given_args.first)
         warn("Invalid argument #{bad.inspect}: use valid UTF-8")
         exit(2)
       end
@@ -66,6 +71,10 @@ module RubyRaider
     desc 'flow', 'Runs flows: recordings without assertions (init, run, list, schedule)'
     subcommand 'flow', FlowCommands
     map 'f' => 'flow'
+
+    desc 'schedule', 'Runs the tests on a schedule with the OS scheduler (add, list, remove, run)'
+    subcommand 'schedule', ScheduleCommands
+    map 'sc' => 'schedule'
 
     no_tasks do
       # -p values arrive as strings; examples must be true or false, in any case

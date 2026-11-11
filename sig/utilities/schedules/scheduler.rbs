@@ -1,0 +1,49 @@
+module RubyRaider
+  module Schedules
+    class Scheduler
+      include SchedulerSteps
+
+      KIND: Kind
+      TIME: String
+      LIST_TIME: String
+      LAST: Array[String]
+      EMPTY: String
+      UNLISTED: String
+      RULE_KEYS: Array[String]
+
+      type row = { json: Hash[String, untyped], text: String }
+
+      @project: Project
+      @adapter: untyped
+      @store: ScheduleStore
+      @out: IO | StringIO
+      @err: IO | StringIO
+      @now: ^() -> Time
+      @host_os: String
+
+      def self.adapter: (?runner: Os::CommandRunner, ?host_os: String) -> (Os::Launchd | Os::TaskScheduler | Os::Linux)
+
+      def initialize: (Project project, ?adapter: untyped, ?store: ScheduleStore, ?out: IO | StringIO, ?err: IO | StringIO, ?now: ^() -> Time,
+                       ?host_os: String) -> void
+      def add: (String name, every: String?, ?files: Array[String], ?tag: String?, ?at: String?, ?on: String?, ?retries: untyped, ?notify: bool,
+                ?show_browser: bool) -> void
+      def remove: (String name) -> void
+      def list: (?json: bool, ?notice: String?) -> void
+
+      private
+
+      attr_reader store: ScheduleStore
+
+      def adapter: () -> untyped
+      def checked_name: (untyped name) -> void
+      def schedule_dirs: (String name) -> void
+      def ignore_in_git: () -> void
+      def row: (Schedule schedule, Time now) -> row
+      def unlisted_rows: (Array[String] listed) -> Array[row]
+      def unlisted_names: () -> Array[String]
+      def os_state: (Schedule schedule) -> String
+      def rule: (Schedule schedule) -> String
+      def last_run: (String name) -> Hash[String, untyped]?
+    end
+  end
+end

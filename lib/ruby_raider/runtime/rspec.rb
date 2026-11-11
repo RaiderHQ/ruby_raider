@@ -7,6 +7,7 @@ require_relative 'matchers/element'
 require_relative 'matchers/page'
 require_relative 'matchers/presence'
 require_relative 'matchers/retrying_block'
+require_relative 'retry_reset'
 
 module Raider
   # Web-first RSpec matchers that retry until the page settles.

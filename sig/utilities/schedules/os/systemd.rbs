@@ -1,0 +1,44 @@
+module RubyRaider
+  module Schedules
+    module Os
+      class Systemd
+        SYSTEMCTL: String
+        NOFOLLOW: Integer
+        QUOTED: Hash[String, String]
+        CALENDAR: Hash[String, String]
+        UNSAFE_PATH: Regexp
+
+        @kind: Kind
+        @runner: CommandRunner
+        @home: String
+        @config_home: String?
+
+        def initialize: (kind: Kind, ?runner: CommandRunner, ?home: String, ?config_home: String?) -> void
+        def label: () -> String
+        def missed_runs_note: () -> nil
+        def service: (_OsEntry schedule) -> String
+        def timer: (_OsEntry schedule) -> String
+        def unit_path: (String os_id, String unit) -> String
+        def install: (_OsEntry schedule) -> true
+        def remove: (String os_id) -> bool
+        def present?: (String os_id) -> bool
+        def usable?: () -> bool
+        def list_ids: (String prefix) -> Array[String]
+        def unit_files?: (String os_id) -> bool
+
+        private
+
+        def systemctl: (*String args) -> CommandRunner::Result
+        def units_dir: () -> String
+        def checked_os_id: (untyped os_id) -> String
+        def checked_path: (String path) -> void
+        def quote: (String text) -> String
+        def specifiers: (String text) -> String
+        def unlink: (String path) -> bool
+        def discard: (String os_id) -> String
+        def write: (Hash[String, String] texts) -> void
+        def temp_file: (String path, String text) -> String
+      end
+    end
+  end
+end

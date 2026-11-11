@@ -1,0 +1,12 @@
+module RubyRaider
+  module Schedules
+    class OsEnumerator
+      @adapter: untyped
+      @kind: Kind
+      @prefix: String
+
+      def initialize: (untyped adapter, schedule_class: singleton(Rule), root: String) -> void
+      def names: () -> Array[String]
+    end
+  end
+end
