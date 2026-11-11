@@ -2,6 +2,18 @@
 
 ## Release Notes
 
+### 4.2.0 (unreleased)
+
+- `raider schedule add NAME [SPEC_FILE ...] --every hour|day|weekday|week [--at HH:MM | :MM] [--on mon..sun] [--tag TAG] [--show-browser] [--retries 0..3] [--notify]` runs the project's tests with the computer's own scheduler (launchd, Task Scheduler, a systemd user timer or cron, as in 4.1). `raider schedule list [--json]`, `remove NAME` and `run NAME [--trigger manual|schedule]` complete it; every command takes `--project PATH`. `raider sc` is short for `raider schedule`.
+- A schedule runs all tests, one tag (`--tag`), or up to 200 spec files given by path (relative, inside the project, ending `_spec.rb`); a tag and files can't be combined. Schedules live in `.raider/schedules/schedules.yml`, which `add` git-ignores. The OS entry holds only the schedule's name: the selection and options are read from the yml, and checked again, at each run.
+- `--show-browser` shows the browser in a scheduled run whatever the project's `headless` setting says, with no project file changed: when `RAIDER_SHOW_BROWSER=1`, the runtime drops `--headless` from the Chrome, Edge and Firefox options. Refused for projects made before 4.0 and on Linux; on macOS the user must be logged in, and Windows is unverified.
+- `--retries N` re-runs each failed test up to N times inside the same run with rspec-retry (`RETRY_COUNT = N + 1`).
+- Retried tests get a fresh browser. Before this, a retry in a generated 4.x project failed with a refused connection because the driver was already quit. The fix is in the runtime (`ruby_raider/runtime/rspec`), so it reaches every 4.x project on `bundle update ruby_raider` and also applies to manual `RETRY_COUNT=2 bundle exec rspec` runs.
+- Scheduled results go to `raider-results/` (the Dashboard), one line per run in `.raider/schedules/<name>/runs.jsonl` (last 50 kept), and a copy of the last report in `.raider/schedules/<name>/last/`. `scheduler.log` is rotated once over 1 MB.
+- `--notify` shows a desktop notification ("Ruby Raider: <name> failed") only when a run failed or could not start, with 4.1's channels.
+- `raider schedule run` exits 0 passed, 1 failed, 2 could not start or refused, 3 another scheduled run was going (a busy run leaves `raider-results/` alone).
+- Flows are still available in this build; their removal is planned.
+
 ### 4.1.0 (unreleased)
 
 - Flows: recordings without assertions that run on their own. `raider flow init` adds `flows/flow_helper.rb` and `flows/support/run.rb` to a Selenium web project made with 4.0 or later (and raises a `~> 4.0` Gemfile pin to `~> 4.1`); mobile and 3.x projects are refused with exit 2.

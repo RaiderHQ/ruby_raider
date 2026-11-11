@@ -255,6 +255,50 @@ raider flow schedules [--json]       # each schedule, its next run, last result 
 - **Windows refusals:** Task Scheduler expands `%NAME%` with no way to escape it, so an input or path holding `%...%` is refused. An argument holding both `'` and one of `* ? [ {` is refused too, because ruby.exe would glob it.
 - **Tested on:** macOS (launchd) is tested against the real scheduler. Task Scheduler, systemd and cron are covered by unit tests with a fake scheduler only.
 
+### Scheduling tests
+
+Your computer's own scheduler runs the project's tests: all of them, one tag, or a list of spec files. Nothing needs to stay open, and scheduling never asks for sudo or admin rights. `raider sc` is short for `raider schedule`.
+
+```bash
+raider schedule add nightly --every day --at 02:00 --notify
+raider schedule add smoke --every hour --at :15 --tag smoke --retries 1
+raider schedule add checkout spec/cart_spec.rb spec/checkout_spec.rb --every weekday --at 08:30 --show-browser
+raider schedule add weekly --every week --on fri --at 18:00 --project ~/code/my_tests
+raider schedule list [--json]        # each schedule, its next run, last result and OS state
+raider schedule run nightly          # run it now, the way the scheduler does
+raider schedule remove nightly
+```
+
+- **Rules:** `--every hour|day|weekday|week`. `--at HH:MM` (24h, local time) is required for `day`, `weekday` and `week`; for `hour` use `--at :MM` (default `:00`). `--on mon|tue|wed|thu|fri|sat|sun` is required for `week` and refused otherwise. Names use 1 to 60 of `a-z`, `0-9` and `_`. Adding a name again replaces its schedule.
+- **What runs:** no files and no `--tag` runs all tests. `--tag TAG` runs one tag (letters, digits, `_`, `:` and `-`). Spec files are relative paths inside the project ending in `_spec.rb`, at most 200, and they can go before or after the options. `--tag` and files can't be used together.
+- **`--project PATH`:** works from any folder. Put it after the subcommand (`raider schedule add nightly ... --project DIR`); before the subcommand Thor shows the help instead.
+- **Per machine:** schedules live in `.raider/schedules/schedules.yml`, which `add` git-ignores (it holds machine paths), so a fresh clone has none. The OS entry holds only the schedule's name: `raider schedule run NAME --project DIR --trigger schedule`. The selection, retries, notify and show-the-browser setting are read from schedules.yml at each run, which checks every entry again before anything starts.
+- **Show the browser:** scheduled runs are hidden (`HEADLESS=true`) unless you add `--show-browser`. It shows the browser whatever `headless` says in `config/config.yml`, and no driver change is needed: the runtime handles it (`RAIDER_SHOW_BROWSER=1` drops `--headless`). Neither config.yml nor `helpers/driver_helper.rb` is written.
+
+| Project Headless (config.yml) | Show the browser off | Show the browser on |
+|---|---|---|
+| off / absent | `HEADLESS=true`: hidden | `RAIDER_SHOW_BROWSER=1`, `HEADLESS` removed: visible |
+| on | `HEADLESS=true`: hidden | `RAIDER_SHOW_BROWSER=1`: visible (the runtime drops `--headless`) |
+
+- **Where a browser can show:** on macOS while you are logged in (a launchd agent runs in your GUI session). On Windows the task runs in your session while you are logged on; a visible browser there is not verified yet. On Linux `--show-browser` is refused ("Show the browser isn't available for scheduled runs on Linux"): systemd user units and cron have no display. A project made before 4.0 is refused too ("Show the browser needs a project made with Ruby Raider 4.0 or later").
+- **Retries:** `--retries N` (0 to 3) re-runs each failed test up to N times inside the same run, with rspec-retry (`RETRY_COUNT` is N + 1). From 4.2 the runtime gives a retried test a fresh browser. Before 4.2, a retry in a generated project failed with a refused connection, because the driver was already quit. The fix is in the gem (`ruby_raider/runtime/rspec`), so it also applies to manual runs such as `RETRY_COUNT=2 bundle exec rspec`; `bundle update ruby_raider` brings it to existing projects.
+- **Results:** a run is a normal `bundle exec rspec`, so its report goes to `raider-results/` and shows on the Dashboard. Each run also adds one line to `.raider/schedules/<name>/runs.jsonl` (`status` `passed`, `failed`, `setup_error` or `busy`, the counts and the trigger; the last 50 lines are kept), and the last report is copied to `.raider/schedules/<name>/last/` (run.json and index.html, plus the attachments when they come to 50 MB or less).
+- **Exit codes:** `raider schedule run` exits 0 passed, 1 failed, 2 could not start or refused, 3 another scheduled run was going. Only one scheduled run per project goes at a time, and a busy run leaves `raider-results/` alone. Other commands exit 0, or 2 with one line on stderr. Thor's own usage errors (a missing NAME, a bad `--retries`) exit 1 with Thor's text.
+- **Notify:** `--notify` shows a desktop notification only when a run failed or could not start (not when it passed, was busy or was stopped). The title is "Ruby Raider: <name> failed"; the body says how many tests failed, or why the run could not start. macOS uses `osascript`, Linux `notify-send`, Windows a PowerShell toast. A notification that can't be shown prints a warning and never changes the exit code. On Linux `notify-send` needs your desktop session bus, so under cron, and in a systemd user session that has not imported it, it usually can't show.
+- **Schedulers:** macOS uses launchd (`~/Library/LaunchAgents/dev.rubyraider.schedule.<hash>.<name>.plist`). Windows uses Task Scheduler (a task in the `\RubyRaider\` folder). Linux uses a systemd user timer in `~/.config/systemd/user`, or, when `systemctl --user` does not answer, one tagged line in your crontab. Times are local time (cron uses the system time zone).
+- **Missed runs:** launchd runs a run missed while the Mac slept once on wake. Task Scheduler runs it as soon as it can. systemd (`Persistent=true`) runs it once your user manager is back, at the next boot or login. cron skips it, and `raider schedule list` says so.
+- **Logged in:** on macOS and Windows a run happens only while you are logged in. On Linux, systemd user timers stop when you log out unless lingering is on: `loginctl enable-linger $USER` (raider does not run it). A systemd schedule can only be removed from a session where `systemctl --user` works; until then `remove` refuses and keeps the entry.
+- **States:** `ok`, `missing from launchd` (or `Task Scheduler`, `systemd`, `cron`) when the OS entry is gone, `missing from schedules.yml` when the OS still runs a schedule the file does not list, `Ruby not found: re-schedule`, `test file not found: <file>` when a listed spec file was deleted or renamed, and `unknown (...)` when the scheduler could not be asked.
+- **Ruby:** the OS entry runs the absolute `ruby` and `bundle` paths captured when you added it, plus `GEM_HOME` and `GEM_PATH` on macOS and Linux. After a Ruby upgrade or move, run `raider schedule add` again.
+- **Logs:** on macOS and Linux the scheduler's output goes to `.raider/schedules/<name>/scheduler.log`, moved to `scheduler.log.1` at the start of a scheduled run once it is over 1 MB. Windows tasks keep no scheduler.log; each run's result is in `runs.jsonl` as always.
+- **Windows refusals:** Task Scheduler and ruby.exe would expand `%...%`, `*`, `?`, `[` or `{`, so a spec file or path holding them is refused: rename the file or use a tag.
+- **Moving the project:** each OS entry is tied to the project's path (`<hash>` is made from it). Run `raider schedule remove` before you move the project. Entries made before a move keep the old path's id, so `list` in the new place can't find them. Remove them by hand; their names start with `dev.rubyraider.schedule.`:
+  - macOS: `launchctl bootout gui/$UID/<label>`, then delete `~/Library/LaunchAgents/<label>.plist`.
+  - Windows: `schtasks /Delete /TN \RubyRaider\<id> /F`.
+  - Linux (systemd): `systemctl --user disable --now <id>.timer`, delete `<id>.timer` and `<id>.service` from `~/.config/systemd/user`, then `systemctl --user daemon-reload`.
+  - Linux (cron): `crontab -e` and delete the `# raider-schedule <id>` line and the line under it.
+- **Tested on:** macOS (launchd) is tested against the real scheduler: adding, a run started by launchd hidden and shown with Headless on, a failed run with a notification, a busy run, and removing. Task Scheduler, systemd and cron are covered by unit tests with a fake scheduler only.
+
 ### Also included
 
 - **Page Object Model:** base page and component classes with example pages
@@ -328,11 +372,12 @@ raider new [PROJECT_NAME]       # Create a new framework project
 raider generate                 # Access scaffolding commands
 raider utility                  # Access utility commands
 raider flow                     # Run flows: init, run, list, schedule
+raider schedule                 # Schedule the tests: add, list, remove, run
 raider version                  # Show current version
 raider help [COMMAND]           # Describe available commands
 ```
 
-Shortcuts: `n` (new), `g` (generate), `u` (utility), `f` (flow), `v` (version)
+Shortcuts: `n` (new), `g` (generate), `u` (utility), `f` (flow), `sc` (schedule), `v` (version)
 
 ### Scaffolding Commands
 
