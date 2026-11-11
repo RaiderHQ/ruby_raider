@@ -94,6 +94,14 @@ RSpec.describe RubyRaider::Schedules::Project do # rubocop:disable RSpec/FilePat
       end
       File.write(File.join(dir, 'Gemfile.lock'), "PATH\n  remote: ../ruby_raider\n  specs:\n    ruby_raider (#{own})\n      thor\n")
       expect { project.check_raider_version! }.not_to raise_error
+      File.write(File.join(dir, 'Gemfile.lock'), "GIT\n  remote: https://github.com/RaiderHQ/ruby_raider\n  specs:\n    ruby_raider (#{own})\n")
+      expect { project.check_raider_version! }.not_to raise_error
+    end
+
+    it 'reads a lock with Windows line endings' do
+      lock("    ruby_raider (#{own})")
+      File.write(File.join(dir, 'Gemfile.lock'), File.read(File.join(dir, 'Gemfile.lock')).gsub("\n", "\r\n"))
+      expect { project.check_raider_version! }.not_to raise_error
     end
 
     it 'refuses a lock that resolves an older ruby_raider, or none' do

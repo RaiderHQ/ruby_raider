@@ -11,8 +11,8 @@ module RubyRaider
       DRIVER_HELPER = 'helpers/driver_helper.rb'
       # This gem's version, read as Raider#current_version reads it
       OWN_VERSION = File.read(File.expand_path('../../version', __dir__)).strip.freeze
-      # The ruby_raider spec line of a GEM, PATH or GIT section; never evaluated
-      LOCKED_RAIDER = /^ {4}ruby_raider \(([0-9]+(?:\.[0-9A-Za-z]+)*)\)$/
+      # The ruby_raider spec line of a GEM, PATH or GIT section (LF or CRLF); never evaluated
+      LOCKED_RAIDER = /^ {4}ruby_raider \(([0-9]+(?:\.[0-9A-Za-z]+)*)\)\r?$/
       MAX_LOCK_BYTES = 5_000_000
       # Every 4.x Selenium driver_helper loads the runtime, which honours RAIDER_SHOW_BROWSER
       REQUIRES_RUNTIME = %r{^[ \t]*require[ \t]+(['"])ruby_raider/runtime\1}n
