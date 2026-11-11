@@ -292,7 +292,8 @@ RSpec.describe RubyRaider::Schedules::Os::TaskScheduler do # rubocop:disable RSp
     end
 
     it 'carries no environment and no log file' do
-      text = scheduler.task_xml(schedule)
+      # Without the random temp folder's name, which may hold any of these words
+      text = scheduler.task_xml(schedule).gsub(tmp, '')
 
       expect(text).not_to include('scheduler.log', 'Environment', 'GEM_HOME', 'cmd', 'powershell')
     end

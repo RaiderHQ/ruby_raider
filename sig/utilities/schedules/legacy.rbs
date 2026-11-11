@@ -15,7 +15,9 @@ module RubyRaider
       @root: String
       @adapter: untyped
       @err: untyped
-      @yml_found: bool
+      @yml_clean: bool
+
+      def self.folder?: (Project project) -> bool
 
       def initialize: (Project project, ?adapter: untyped, ?err: untyped) -> void
       def cleanup: (?last: String?) -> String?
@@ -34,7 +36,8 @@ module RubyRaider
       def yml: () -> String
       def real_dirs?: () -> bool
       def yml_names: () -> Array[String]
-      def read_entries: () -> Array[Hash[untyped, untyped]]
+      def entry_name: (untyped entry) -> String?
+      def read_entries: () -> Array[untyped]?
       def read_text: () -> String?
       def delete_yml: () -> void
     end

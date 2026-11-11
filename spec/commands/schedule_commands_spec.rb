@@ -190,6 +190,7 @@ RSpec.describe ScheduleCommands do
     let(:notice) { "Removed 1 schedule made with Ruby Raider 4.1 (tredssd); it can't run in 4.2. Add it again with raider schedule add." }
 
     before do
+      FileUtils.mkdir_p(File.join(dir, '.raider', 'flows'))
       allow(RubyRaider::Schedules::Legacy).to receive(:new).and_wrap_original do |original, project|
         original.call(project, adapter: adapter)
       end
@@ -231,6 +232,22 @@ RSpec.describe ScheduleCommands do
 
       expect([out, code]).to eq(['', 1])
       expect(err).to eq("Could not remove 1 schedule made with Ruby Raider 4.1 (tredssd: denied); it is tried again next time.\n")
+    end
+
+    it 'is skipped, with no adapter, when .raider/flows is not a folder' do
+      allow(RubyRaider::Schedules).to receive(:adapter)
+      FileUtils.rm_rf(File.join(dir, '.raider', 'flows'))
+      outside = File.realpath(Dir.mktmpdir('schedule-commands-outside'))
+      File.symlink(outside, File.join(dir, '.raider', 'flows'))
+      results = [raider('schedule', 'run', 'nightly', '--project', dir)]
+      FileUtils.rm_rf(File.join(dir, '.raider'))
+      results << raider('schedule', 'list', '--project', dir)
+
+      expect(results).to eq([['', '', 0], ['', '', nil]])
+      expect(RubyRaider::Schedules::Legacy).not_to have_received(:new)
+      expect(RubyRaider::Schedules).not_to have_received(:adapter)
+    ensure
+      FileUtils.rm_rf(outside) if outside
     end
 
     it 'prints nothing when there is nothing to clean' do

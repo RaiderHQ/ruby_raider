@@ -62,6 +62,7 @@ module RubyRaider
       # The schedules Ruby Raider 4.1 made (`raider flow schedule`), only ever removed now, by the cleanup every
       # `raider schedule` command runs first (Legacy). The words the user reads never say flow; the command
       # (os_id prefix, cron tag, the line under it) is what 4.1 wrote.
+      # remove_command is never printed for it: stranded_hint overrides it in stranded (list takes no name).
       FLOW_LEGACY = new(command: 'flow', dir: '.raider/flows', noun: '4.1 schedule', plural: '4.1 schedules',
                         remove_command: 'raider schedule list', stranded_hint: 'raider schedule list', reserved: %w[env])
 

@@ -34,8 +34,9 @@ class ScheduleCommands < Thor
   option :json, type: :boolean, desc: 'Print JSON for the desktop app'
 
   def list
-    current = scheduler
-    current.list(json: options[:json] || false, notice: @notice)
+    project = new_project
+    notice = cleanup(project)
+    RubyRaider::Schedules::Scheduler.new(project).list(json: options[:json] || false, notice: notice)
   rescue RubyRaider::Schedules::Error => e
     stop(e)
   end
@@ -61,11 +62,15 @@ class ScheduleCommands < Thor
   map 'run' => :run_schedule
 
   no_commands do
-    # The project, once its 4.1 schedules are cleaned up; the notice (on stderr already) is kept for list --json
-    def cleaned_project
-      project = RubyRaider::Schedules::Project.new(options[:project] || Dir.pwd)
-      @notice = RubyRaider::Schedules::Legacy.new(project).cleanup
-      project
+    def new_project = RubyRaider::Schedules::Project.new(options[:project] || Dir.pwd)
+
+    # The project, once its 4.1 schedules are cleaned up
+    def cleaned_project = new_project.tap { |project| cleanup(project) }
+
+    # Removes the project's 4.1 schedules; the notice (on stderr already), nil when there was nothing to remove.
+    # Without the 4.1 folder (Legacy.folder?) there is none, so that costs one lstat.
+    def cleanup(project)
+      RubyRaider::Schedules::Legacy.new(project).cleanup if RubyRaider::Schedules::Legacy.folder?(project)
     end
 
     def scheduler = RubyRaider::Schedules::Scheduler.new(cleaned_project)

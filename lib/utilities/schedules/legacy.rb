@@ -11,9 +11,13 @@ module RubyRaider
     # Every `raider schedule` command runs it first, and so does the hidden stub an old OS entry reaches.
     # It only ever acts on this project's os_ids, each recomputed from the project's real path and a name
     # (from the old schedules.yml or the OS scheduler); an os_id stored in the yml is never used. It deletes
-    # the old schedules.yml once every entry is gone, and nothing else. Never raises.
+    # the old schedules.yml once every entry is gone, and nothing else, and only when the file is a 4.1
+    # schedules file all of whose entries are this project's: a file it can't read, or one with an entry
+    # of another path (a moved project), stays, since its os_ids are what the user needs to remove by hand.
+    # An adapter's error text is passed through as is on purpose: it names the os_id the README says to look for.
+    # Never raises.
     # :reek:TooManyConstants { max_constants: 6 } -- the kind, file, size cap, open flags and the old rule
-    # :reek:TooManyInstanceVariables { max_instance_variables: 5 } -- the project, its root, adapter, stream and whether the yml was there
+    # :reek:TooManyInstanceVariables { max_instance_variables: 5 } -- the project, its root, adapter, stream and whether the yml may go
     class Legacy
       KIND = Kind::FLOW_LEGACY
       FILE = 'schedules.yml'
@@ -32,7 +36,15 @@ module RubyRaider
         @root = project.root
         @adapter = adapter
         @err = err
-        @yml_found = false
+        @yml_clean = false
+      end
+
+      # True when the project has a real .raider/flows folder (4.1 always made one; this never deletes it):
+      # without one there is nothing to clean, so `raider schedule` skips the cleanup for one lstat
+      def self.folder?(project)
+        File.lstat(File.join(project.root, KIND.dir)).directory?
+      rescue SystemCallError
+        false
       end
 
       # Removes every 4.1 schedule of the project, then its schedules.yml. Prints and returns the notice, nil
@@ -122,43 +134,60 @@ module RubyRaider
       def real_dirs? = [File.join(@root, '.raider'), dir].all? { |path| File.lstat(path).directory? }
 
       # The names of the yml's entries that 4.1 would read as this project's: valid, with the os_id it
-      # computes for this project; anything else in the file, or a file that is not a schedules file, gives none
+      # computes for this project; anything else in the file, or a file that is not a schedules file, gives
+      # none. The yml may go only when it was a schedules file and every entry was one of these.
       def yml_names
         entries = read_entries
-        entries.filter_map do |entry|
-          name = entry['name']
-          name if name.is_a?(String) && KIND.valid_name?(name) && entry['os_id'] == OldRule.os_id_for(@root, name)
-        end.uniq
+        return [] unless entries
+
+        names = entries.map { |entry| entry_name(entry) }
+        @yml_clean = names.all?
+        names.compact.uniq
       end
 
+      def entry_name(entry)
+        return nil unless entry.is_a?(Hash)
+
+        name = entry['name']
+        name if name.is_a?(String) && KIND.valid_name?(name) && entry['os_id'] == OldRule.os_id_for(@root, name)
+      end
+
+      # The entries of a schedules file ([] for an empty document); nil when there is none or it is not one
       def read_entries
         text = read_text
-        data = text && YAML.safe_load(text)
+        return nil unless text
+
+        data = YAML.safe_load(text)
+        return [] unless data
+
         entries = data.is_a?(Hash) ? data['schedules'] : nil
-        entries.is_a?(Array) ? entries.grep(Hash) : []
+        entries.is_a?(Array) ? entries : nil
       rescue Psych::Exception
-        []
+        nil
       end
 
-      # The yml through one handle that is not a link, a regular file up to MAX_BYTES; nil otherwise
+      # The yml through one handle that is not a link, a regular file up to MAX_BYTES; nil otherwise.
+      # The folders are lstat'ed and then the file opened (and later unlinked) by path, so a folder swapped
+      # for a link in between is followed: that takes write access to the project, and Ruby has no
+      # openat/unlinkat to close the window.
       def read_text
         return nil unless real_dirs?
 
         File.open(yml, File::RDONLY | NONBLOCK | NOFOLLOW) do |file|
           next nil unless file.stat.file?
 
-          @yml_found = true
-          text = file.read(MAX_BYTES + 1).to_s
+          text = file.read(MAX_BYTES + 1) || +'' # an empty file reads nil
           text.bytesize > MAX_BYTES ? nil : text.force_encoding(Encoding::UTF_8)
         end
       rescue SystemCallError
         nil
       end
 
-      # The yml only, when it was read as a regular file and the folders and it still are (a link or folder stays)
+      # The yml only, when it was read as a clean schedules file and the folders and it still are real
+      # (a link or folder stays)
       def delete_yml
         path = yml
-        File.unlink(path) if @yml_found && real_dirs? && File.lstat(path).file?
+        File.unlink(path) if @yml_clean && real_dirs? && File.lstat(path).file?
       rescue SystemCallError
         nil
       end

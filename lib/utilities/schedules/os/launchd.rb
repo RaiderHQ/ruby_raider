@@ -63,6 +63,7 @@ module RubyRaider
 
         # True when a plist or a loaded service was removed, false when it was already gone. The plist goes
         # first: a job removing itself is ended by its own bootout, and its plist must be gone by then.
+        # If the unlink succeeds and the bootout fails, the job stays loaded with no plist until logout.
         def remove(os_id)
           unlinked = unlink(plist_path(os_id))
           unloaded = launchctl('bootout', service(os_id)).success?

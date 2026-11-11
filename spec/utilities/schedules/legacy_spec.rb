@@ -38,15 +38,17 @@ RSpec.describe RubyRaider::Schedules::Legacy do # rubocop:disable RSpec/FilePath
     end
   end
 
-  # Plays launchctl, crontab and systemctl: records argv, keeps the crontab, answers from a table by verb
+  # Plays launchctl, crontab, systemctl and schtasks: records argv, keeps the crontab, answers from a table by
+  # verb (outputs: the stdout of a verb other than crontab -l)
   let(:fake_runner_class) do
     Class.new do
-      attr_reader :calls, :answers
+      attr_reader :calls, :answers, :outputs
       attr_accessor :table
 
       def initialize
         @calls = []
         @answers = {}
+        @outputs = {}
       end
 
       def call(*argv, stdin_data: nil)
@@ -54,7 +56,8 @@ RSpec.describe RubyRaider::Schedules::Legacy do # rubocop:disable RSpec/FilePath
         key = argv.first == '/bin/launchctl' ? argv[1] : argv.reject { |arg| arg == '--user' }.first(2).join(' ')
         stderr, status = answers.fetch(key) { key == 'crontab -l' && table.nil? ? ['no crontab for raider', 1] : ['', 0] }
         self.table = stdin_data if key == 'crontab -' && status.zero?
-        RubyRaider::Schedules::Os::CommandRunner::Result.new(stdout: key == 'crontab -l' ? table.to_s : '', stderr: stderr, exitstatus: status)
+        stdout = key == 'crontab -l' ? table.to_s : outputs.fetch(key, '')
+        RubyRaider::Schedules::Os::CommandRunner::Result.new(stdout: stdout, stderr: stderr, exitstatus: status)
       end
     end
   end
@@ -144,6 +147,15 @@ RSpec.describe RubyRaider::Schedules::Legacy do # rubocop:disable RSpec/FilePath
     expect(adapter.calls.flatten.grep(/1255a248a3/)).to be_empty
   end
 
+  it "keeps the yml of a moved project, whose entries carry the old path's os_ids" do
+    old_dir = project_dir('old')
+    write_yml(a_dir, entries: %w[alpha beta].map { |name| { 'name' => name, 'os_id' => os_id(old_dir, name) } })
+    adapter = fake_adapter_class.new([os_id(old_dir, 'alpha'), os_id(old_dir, 'beta')])
+
+    expect([cleanup(a_dir, adapter), err.string, File.exist?(yml(a_dir))]).to eq([nil, '', true])
+    expect(adapter.calls.map(&:first)).to eq([:list_ids])
+  end
+
   describe 'with cron' do
     let(:cron) { RubyRaider::Schedules::Os::Cron.new(kind: kind, runner: runner) }
 
@@ -157,6 +169,43 @@ RSpec.describe RubyRaider::Schedules::Legacy do # rubocop:disable RSpec/FilePath
 
       expect(cleanup(a_dir, cron)).to eq(removed_notice('report'))
       expect(runner.table).to eq("#{pair(b_dir, 'report')}MAILTO=\"\"\n5 * * * * /usr/bin/backup  --keep\n")
+    end
+  end
+
+  describe 'on Linux, with systemd' do
+    let(:units) { File.join(home, '.config', 'systemd', 'user') }
+    let(:linux) do
+      systemd = RubyRaider::Schedules::Os::Systemd.new(kind: kind, runner: runner, home: home, config_home: nil)
+      RubyRaider::Schedules::Os::Linux.new(kind: kind, runner: runner, systemd: systemd)
+    end
+
+    def unit(dir, name, type) = File.join(units, "#{os_id(dir, name)}.#{type}")
+
+    it "removes only this project's units when another project has one with the same name" do
+      write_yml(a_dir, 'report')
+      FileUtils.mkdir_p(units)
+      [a_dir, b_dir].product(%w[timer service]).each { |dir, type| File.write(unit(dir, 'report', type), "#{dir} #{type}") }
+
+      expect(cleanup(a_dir, linux)).to eq(removed_notice('report'))
+      expect(runner.calls.flatten.grep(/dev\.rubyraider/)).to eq(["#{os_id(a_dir, 'report')}.timer"])
+      expect(%w[timer service].map { |type| File.exist?(unit(a_dir, 'report', type)) }).to eq([false, false])
+      expect(%w[timer service].map { |type| File.read(unit(b_dir, 'report', type)) }).to eq(["#{b_dir} timer", "#{b_dir} service"])
+    end
+  end
+
+  describe 'with Task Scheduler' do
+    let(:schtasks) { 'C:\\Windows\\System32\\schtasks.exe' }
+    let(:task_scheduler) { RubyRaider::Schedules::Os::TaskScheduler.new(kind: kind, runner: runner, schtasks: schtasks) }
+
+    def task(dir, name) = "\\RubyRaider\\#{os_id(dir, name)}"
+
+    it "deletes only this project's task when another project has one with the same name" do
+      write_yml(a_dir, 'report')
+      runner.outputs["#{schtasks} /Query"] = [task(b_dir, 'report'), task(a_dir, 'report')]
+                                             .map { |name| %("#{name}","11/10/2026 8:00:00 AM","Ready"\r\n) }.join
+
+      expect(cleanup(a_dir, task_scheduler)).to eq(removed_notice('report'))
+      expect(runner.calls.select { |argv| argv[1] == '/Delete' }).to eq([[schtasks, '/Delete', '/TN', task(a_dir, 'report'), '/F']])
     end
   end
 
@@ -250,6 +299,16 @@ RSpec.describe RubyRaider::Schedules::Legacy do # rubocop:disable RSpec/FilePath
       expect([cleanup(a_dir, adapter), err.string, File.exist?(yml(a_dir))]).to eq([nil, '', false])
     end
 
+    it 'deletes an empty schedules file' do
+      results = ['', "schedules: []\n"].map do |text|
+        FileUtils.mkdir_p(File.dirname(yml(a_dir)))
+        File.write(yml(a_dir), text)
+        [cleanup(a_dir, fake_adapter_class.new), File.exist?(yml(a_dir))]
+      end
+
+      expect([results, err.string]).to eq([[[nil, false], [nil, false]], ''])
+    end
+
     it 'does nothing where there is no OS scheduler' do
       write_yml(a_dir, 'report')
       allow(RubyRaider::Schedules).to receive(:adapter).and_raise(RubyRaider::Schedules::Error, 'Scheduling 4.1 schedules is not supported on solaris')
@@ -285,14 +344,13 @@ RSpec.describe RubyRaider::Schedules::Legacy do # rubocop:disable RSpec/FilePath
     it 'skips entries that are not 4.1 ones, and a file that is too big or not YAML' do
       write_yml(a_dir, entries: [{ 'name' => 123, 'os_id' => os_id(a_dir, '123') }, { 'name' => 'env', 'os_id' => os_id(a_dir, 'env') },
                                  { 'name' => 'Caps', 'os_id' => os_id(a_dir, 'Caps') }, { 'name' => 'nameless' }, 'report'])
-      results = [cleanup(a_dir, adapter)]
-      ["schedules: [\n", "schedules:\n  - name: #{'a' * 1_000_001}\n"].each do |text|
-        FileUtils.mkdir_p(File.dirname(yml(a_dir)))
+      results = [[cleanup(a_dir, adapter), File.exist?(yml(a_dir))]]
+      ["schedules: [\n", "schedules:\n  - name: #{'a' * 1_000_001}\n", "schedules: report\n", "- report\n"].each do |text|
         File.write(yml(a_dir), text)
-        results << cleanup(a_dir, adapter)
+        results << [cleanup(a_dir, adapter), File.exist?(yml(a_dir))]
       end
 
-      expect(results).to eq([nil, nil, nil])
+      expect(results).to all(eq([nil, true]))
       expect(adapter.calls.map(&:first).uniq).to eq([:list_ids])
     end
   end
