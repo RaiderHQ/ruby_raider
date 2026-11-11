@@ -420,12 +420,12 @@ RSpec.describe RubyRaider::Schedules::Scheduler do # rubocop:disable RSpec/FileP
       expect(listed(json: false)).to eq("No schedules yet: raider schedule add <name> --every day --at 08:00\n")
     end
 
-    it 'passes a notice through, in JSON and as the first text line' do
+    it 'passes a notice through in JSON, and leaves it out of the text (it is on stderr already)' do
       scheduler.list(json: true, notice: 'Removed 1 old schedule')
       scheduler.list(notice: 'Removed 1 old schedule')
 
       expect(JSON.parse(out.string.lines.first)['notice']).to eq('Removed 1 old schedule')
-      expect(out.string.lines.drop(1)).to eq(["Removed 1 old schedule\n", "No schedules yet: raider schedule add <name> --every day --at 08:00\n"])
+      expect([out.string.lines.drop(1), err.string]).to eq([["No schedules yet: raider schedule add <name> --every day --at 08:00\n"], ''])
     end
 
     it 'prints one printable line per row, then the missed runs note' do

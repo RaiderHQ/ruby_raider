@@ -6,7 +6,7 @@ require_relative 'kind'
 
 module RubyRaider
   module Schedules
-    # What every schedule shares, flow or tests: the rule (every/at/on), retries and notify, and what the OS
+    # What every schedule shares, tests or 4.1: the rule (every/at/on), retries and notify, and what the OS
     # entry runs (absolute ruby and bundle, GEM_HOME/GEM_PATH captured when it was scheduled). A subclass
     # names its Kind (self.kind), checks its own name and fields in its initialize, and freezes.
     # :reek:TooManyConstants { max_constants: 7 } -- the rule vocabulary and the OS entry parts

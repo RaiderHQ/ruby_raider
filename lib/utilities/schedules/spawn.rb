@@ -4,7 +4,7 @@ require 'English'
 
 module RubyRaider
   module Schedules
-    # Runs one rspec (or flow) process with an argv array and no shell, under the project's own bundle rather
+    # Runs one rspec process with an argv array and no shell, under the project's own bundle rather
     # than the one raider runs in, and stops it the way a person would: with exactly one INT.
     #
     # rspec stops gracefully on its first INT (it finishes the example, prints the summary and runs at_exit

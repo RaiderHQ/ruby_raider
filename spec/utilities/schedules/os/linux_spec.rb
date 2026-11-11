@@ -117,6 +117,18 @@ RSpec.describe RubyRaider::Schedules::Os::Linux do # rubocop:disable RSpec/FileP
                                                       'from a session where systemctl --user works')
       expect([runner.table, File.exist?(File.join(units, "#{item.os_id}.timer"))]).to eq(["1 * * * * a\n", true])
     end
+
+    it 'names raider schedule list, with no name, for a 4.1 timer' do
+      legacy = RubyRaider::Schedules::Kind::FLOW_LEGACY
+      os_id = "#{legacy.os_id_prefix}.0123456789.report"
+      File.write(File.join(units, "#{os_id}.timer"), 'x')
+      linux = described_class.new(kind: legacy, runner: runner,
+                                  systemd: RubyRaider::Schedules::Os::Systemd.new(kind: legacy, runner: runner, home: tmp, config_home: nil))
+
+      expect { linux.remove(os_id) }
+        .to raise_error(RubyRaider::Schedules::Error, 'This schedule is a systemd timer; run raider schedule list ' \
+                                                      'from a session where systemctl --user works')
+    end
   end
 
   it 'does not look for systemd unit files when systemd is the primary' do

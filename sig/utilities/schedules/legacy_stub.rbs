@@ -1,0 +1,15 @@
+module RubyRaider
+  module Schedules
+    module LegacyStub
+      EXIT: Integer
+      REMOVED: String
+      OPTION: String
+
+      def self.run: (Array[untyped] argv, ?err: untyped) -> Integer
+      def self.clean: (String root, String? name, untyped err) -> void
+      def self.project_root: (Array[untyped] argv) -> String?
+      def self.project_value: (Array[untyped] argv) -> untyped
+      def self.own_name: (Array[untyped] argv) -> String?
+    end
+  end
+end

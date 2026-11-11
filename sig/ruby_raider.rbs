@@ -2,8 +2,10 @@
 module RubyRaider
   class Raider < Thor
     GUARDED: Array[String]
+    LEGACY: Array[String]
 
     def self.start: (?Array[String] given_args, ?Hash[Symbol, untyped] config) -> void
+    def self.legacy_stub: (Array[String] given_args) -> Integer
 
     def current_version: () -> String
 

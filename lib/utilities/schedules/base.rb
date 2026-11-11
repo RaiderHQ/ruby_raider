@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 module RubyRaider
-  # The OS scheduler (launchd, Task Scheduler, systemd, cron) shared by test schedules and legacy flow
-  # schedules. What differs between them is a Kind.
+  # The OS scheduler (launchd, Task Scheduler, systemd, cron) shared by test schedules and the 4.1 ones
+  # the cleanup removes. What differs between them is a Kind.
   module Schedules
     NAME = /\A[a-z0-9_]{1,60}\z/
     # Schedule::DAYS order, as every adapter counts it
@@ -14,7 +14,7 @@ module RubyRaider
     # are not valid in its encoding become ? too (a regexp would raise on them)
     def self.printable(text) = text.to_s.scrub('?').gsub(/[[:cntrl:]]/, '?')
 
-    # A problem that stops a schedule or flow command; exit_code follows `raider flow run` (2 = setup failed).
+    # A problem that stops a schedule command; exit_code follows `raider schedule run` (2 = setup failed).
     class Error < StandardError
       attr_reader :exit_code
 

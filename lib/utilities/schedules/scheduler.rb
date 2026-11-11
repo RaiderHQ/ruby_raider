@@ -79,14 +79,13 @@ module RubyRaider
         @err.puts(unreadable_warning(name, label)) if removed.is_a?(Store::Removed)
       end
 
-      # notice: a one-time line for the top of the list (PR B's cleanup); nil until then
+      # notice: the 4.1 cleanup's line (Legacy) for the JSON; as text it is already on stderr
       def list(json: false, notice: nil)
         now = @now.call
         listed = @store.all
         rows = listed.map { |schedule| row(schedule, now) } + unlisted_rows(listed.map(&:name))
         return @out.puts(JSON.generate({ 'notice' => notice, 'schedules' => rows.map { |entry| entry[:json] } })) if json
 
-        @out.puts(Schedules.printable(notice)) if notice
         return @out.puts(EMPTY) if rows.empty?
 
         rows.each { |entry| @out.puts(Schedules.printable(entry[:text])) }

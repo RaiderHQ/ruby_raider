@@ -6,18 +6,23 @@ RSpec.describe RubyRaider::Schedules::Kind do # rubocop:disable RSpec/FilePath
   let(:kind) { described_class::FLOW_LEGACY }
   let(:os_id) { 'dev.rubyraider.flow.0123456789.report' }
 
-  it 'keeps the 4.1 flow words' do
+  it 'keeps the 4.1 words in its OS entries and says 4.1 schedule to the user' do
     expect([kind.os_id_prefix, kind.cron_tag, kind.dir, kind.task_file_prefix, kind.service_description('report'),
             kind.timer_description('report'), kind.task_description('report', 'every day at 08:00'), kind.not_ours,
             kind.unsupported('solaris')])
       .to eq(['dev.rubyraider.flow', '# raider-flow ', '.raider/flows', 'raider-flow-task', 'raider flow report',
-              'raider flow report schedule', 'Ruby Raider flow report (every day at 08:00)', 'not a flow schedule',
-              'Scheduling flows is not supported on solaris'])
+              'raider flow report schedule', 'Ruby Raider flow report (every day at 08:00)', 'not a 4.1 schedule',
+              'Scheduling 4.1 schedules is not supported on solaris'])
   end
 
-  it 'names the flow unschedule command for a stranded timer' do
+  it 'names raider schedule list, with no name, for a stranded timer' do
     expect(kind.stranded('report'))
-      .to eq('This schedule is a systemd timer; run raider flow unschedule report from a session where systemctl --user works')
+      .to eq('This schedule is a systemd timer; run raider schedule list from a session where systemctl --user works')
+  end
+
+  it 'says no flow word to the user' do
+    expect([kind.noun, kind.plural, kind.remove_command, kind.not_ours, kind.stranded('report'), kind.unsupported('solaris')])
+      .to all(satisfy { |text| !text.match?(/\bflows?\b/i) })
   end
 
   it 'reads the name from an os_id of its own kind only' do

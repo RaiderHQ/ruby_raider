@@ -125,7 +125,7 @@ module RubyRaider
         FileUtils.rm_f(temp) if temp && File.exist?(temp)
       end
 
-      # A 0700 folder inside the project that is not a link, as flows/support/run.rb makes it
+      # A 0700 folder inside the project that is not a link
       def private_dir
         dir = @project.path(@dir)
         FileUtils.mkdir_p(dir)

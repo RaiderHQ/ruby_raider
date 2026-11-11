@@ -4,7 +4,7 @@ require_relative 'base'
 
 module RubyRaider
   module Schedules
-    # The steps every scheduler shares, flow (4.1) or tests: the yml written after the OS entry with a
+    # The steps every scheduler shares (4.1 shared them too): the yml written after the OS entry with a
     # rollback, the yml entry removed after the OS one, and the parts of a list row that ask the OS.
     # The includer gives `adapter` and `store`.
     module SchedulerSteps

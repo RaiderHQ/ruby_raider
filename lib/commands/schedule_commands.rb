@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
 require 'thor'
+require_relative '../utilities/schedules/legacy'
 require_relative '../utilities/schedules/scheduler'
 require_relative '../utilities/schedules/run_wrapper'
 
 # raider schedule: runs the project's tests (all, one tag or listed spec files) with the OS scheduler.
 # Spec files are positional, never an array option, so they mix with the options in any order.
+# Every command first removes the project's 4.1 schedules (Legacy), which never changes its exit code or stdout.
 class ScheduleCommands < Thor
   def self.exit_on_failure? = true
 
@@ -32,7 +34,8 @@ class ScheduleCommands < Thor
   option :json, type: :boolean, desc: 'Print JSON for the desktop app'
 
   def list
-    scheduler.list(json: options[:json] || false)
+    current = scheduler
+    current.list(json: options[:json] || false, notice: @notice)
   rescue RubyRaider::Schedules::Error => e
     stop(e)
   end
@@ -50,7 +53,7 @@ class ScheduleCommands < Thor
   option :trigger, type: :string, default: 'manual', desc: 'manual or schedule (what the OS entry passes)'
 
   def run_schedule(name)
-    exit(RubyRaider::Schedules::RunWrapper.new(project).run(name, trigger: options[:trigger]))
+    exit(RubyRaider::Schedules::RunWrapper.new(cleaned_project).run(name, trigger: options[:trigger]))
   rescue RubyRaider::Schedules::Error => e
     stop(e)
   end
@@ -58,9 +61,14 @@ class ScheduleCommands < Thor
   map 'run' => :run_schedule
 
   no_commands do
-    def project = RubyRaider::Schedules::Project.new(options[:project] || Dir.pwd)
+    # The project, once its 4.1 schedules are cleaned up; the notice (on stderr already) is kept for list --json
+    def cleaned_project
+      project = RubyRaider::Schedules::Project.new(options[:project] || Dir.pwd)
+      @notice = RubyRaider::Schedules::Legacy.new(project).cleanup
+      project
+    end
 
-    def scheduler = RubyRaider::Schedules::Scheduler.new(project)
+    def scheduler = RubyRaider::Schedules::Scheduler.new(cleaned_project)
 
     # One stderr line, whatever the message holds (a --project path can carry a newline)
     def stop(error)
