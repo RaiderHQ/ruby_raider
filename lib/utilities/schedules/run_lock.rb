@@ -11,8 +11,8 @@ module RubyRaider
     # Who is running the project's tests now, decided before rspec spawns (a busy run must never wipe
     # raider-results/):
     # - .raider/schedules/run.lock, held with flock among `raider schedule run`s; never removed;
-    # - .raider/schedules/running.json {pid, name, run_id, started_at}, which the desktop writes for its own
-    #   runs too. A live pid there that is not ours means busy. It is read and written only as a regular file
+    # - .raider/schedules/running.json {pid, name, run_id, started_at}, which the desktop is to write for its
+    #   own runs too. A live pid there that is not ours means busy. It is read and written only as a regular file
     #   (O_NOFOLLOW), made with O_EXCL, and its pid is only checked, never signalled.
     class RunLock
       LOCK = 'run.lock'

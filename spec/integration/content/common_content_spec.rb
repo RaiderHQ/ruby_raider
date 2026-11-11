@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'content_helper'
+require_relative '../../../lib/utilities/schedules/schedule_store'
 
 describe 'Common file content' do
   # --- Rakefile ---
@@ -77,6 +78,10 @@ describe 'Common file content' do
     it 'includes raider-results' do
       expect(gitignore).to include('raider-results')
     end
+
+    it 'ignores .raider/schedules/ with the exact line raider schedule add looks for' do
+      expect(gitignore.lines.map(&:chomp)).to include(RubyRaider::Schedules::ScheduleStore::GITIGNORE_LINE)
+    end
   end
 
   shared_examples 'web gitignore for saved logins' do |project_name|
@@ -89,8 +94,9 @@ describe 'Common file content' do
   end
 
   shared_examples 'mobile gitignore without saved logins' do |project_name|
-    it 'has no .raider line' do
-      expect(read_generated(project_name, '.gitignore')).not_to include('.raider')
+    it 'has no .raider line but .raider/schedules/' do
+      lines = read_generated(project_name, '.gitignore').lines.map(&:strip)
+      expect(lines.grep(/\A\.raider/)).to eq(['.raider/schedules/'])
     end
   end
 
