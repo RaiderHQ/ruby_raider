@@ -155,7 +155,7 @@ module RubyRaider
 
         os_entry_state(schedule.os_id)
       rescue Error => e
-        "unknown (#{e.message})"
+        "unknown (#{Schedules.printable(e.message)})"
       end
 
       def rule(schedule)

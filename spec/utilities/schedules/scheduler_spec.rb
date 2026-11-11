@@ -359,7 +359,7 @@ RSpec.describe RubyRaider::Schedules::Scheduler do # rubocop:disable RSpec/FileP
         entries.find { |entry| entry['name'] == 'file' }['selection'] = { 'kind' => 'files', 'files' => %w[spec/a_spec.rb spec/gone_spec.rb spec/x_spec.rb] }
       end
       allow(adapter).to receive(:present?).and_wrap_original do |original, id|
-        raise RubyRaider::Schedules::Error, 'task list unreadable' if id.end_with?('.unknown')
+        raise RubyRaider::Schedules::Error, "task list \xFFunreadable\e".dup.force_encoding(Encoding::UTF_8) if id.end_with?('.unknown')
         raise 'asked the OS for a schedule whose file is gone' if id.end_with?('.file')
 
         original.call(id)
@@ -367,7 +367,7 @@ RSpec.describe RubyRaider::Schedules::Scheduler do # rubocop:disable RSpec/FileP
 
       expect(listed['schedules'].to_h { |row| [row['name'], row['os_state']] })
         .to eq('file' => 'test file not found: spec/gone_spec.rb', 'gone' => 'missing from fakeos', 'ok' => 'ok',
-               'ruby' => 'Ruby not found: re-schedule', 'unknown' => 'unknown (task list unreadable)')
+               'ruby' => 'Ruby not found: re-schedule', 'unknown' => 'unknown (task list ?unreadable?)')
     end
 
     it "adds a row for each of this project's OS entries that schedules.yml lacks, and ignores every other id" do

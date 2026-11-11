@@ -125,7 +125,7 @@ module RubyRaider
           result = @runner.call(CRONTAB, '-l')
           return result.stdout if result.success?
 
-          stderr = result.stderr
+          stderr = result.stderr.scrub('?')
           return '' if stderr.match?(/no crontab/i)
 
           raise Error, "cron could not read the crontab: #{Schedules.printable(stderr.strip)}"

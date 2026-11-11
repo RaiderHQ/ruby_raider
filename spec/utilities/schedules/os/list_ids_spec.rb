@@ -157,6 +157,12 @@ RSpec.describe 'Schedules adapters #list_ids' do
       runner.answers['crontab -l'] = ['', 1, 'permission denied']
       expect { adapter.list_ids(prefix) }.to raise_error(RubyRaider::Schedules::Error, /could not read the crontab/)
     end
+
+    it 'raises an Error, not an encoding error, when crontab -l fails with bytes that are not UTF-8' do
+      runner.answers['crontab -l'] = ['', 1, "refus\xE9\e[2J".dup.force_encoding(Encoding::UTF_8)]
+
+      expect { adapter.list_ids(prefix) }.to raise_error(RubyRaider::Schedules::Error, 'cron could not read the crontab: refus??[2J')
+    end
   end
 
   describe RubyRaider::Schedules::Os::Linux do

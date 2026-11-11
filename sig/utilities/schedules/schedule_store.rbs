@@ -10,6 +10,12 @@ module RubyRaider
       def save: (Schedule schedule) -> Schedule
       def delete: (String name) -> (Schedule | Store::Removed)?
       def ignore_in_git: () -> bool
+
+      private
+
+      def gitignore: () -> String
+      def gitignore_text: (File file) -> String
+      def ignored?: (String content) -> bool
     end
   end
 end

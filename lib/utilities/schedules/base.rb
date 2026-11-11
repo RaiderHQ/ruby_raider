@@ -10,8 +10,9 @@ module RubyRaider
 
     def self.valid_name?(name) = NAME.match?(name.to_s)
 
-    # Text from a log or a command, safe to print: it can't move the cursor or forge lines
-    def self.printable(text) = text.to_s.gsub(/[[:cntrl:]]/, '?')
+    # Text from a log or a command, safe to print: it can't move the cursor or forge lines, and bytes that
+    # are not valid in its encoding become ? too (a regexp would raise on them)
+    def self.printable(text) = text.to_s.scrub('?').gsub(/[[:cntrl:]]/, '?')
 
     # A problem that stops a schedule or flow command; exit_code follows `raider flow run` (2 = setup failed).
     class Error < StandardError

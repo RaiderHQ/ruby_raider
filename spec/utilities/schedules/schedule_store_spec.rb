@@ -130,6 +130,18 @@ RSpec.describe RubyRaider::Schedules::ScheduleStore do # rubocop:disable RSpec/F
       expect(File.exist?(target)).to be(false)
     end
 
+    it 'leaves a read-only .gitignore that has the line alone, and says so when it lacks it' do
+      File.write(gitignore, ".raider/schedules/\n")
+      File.chmod(0o444, gitignore)
+      expect(store.ignore_in_git).to be(false)
+
+      File.chmod(0o644, gitignore)
+      File.write(gitignore, "a/\n")
+      File.chmod(0o444, gitignore)
+      expect { store.ignore_in_git }.to raise_error(Errno::EACCES)
+      expect(File.read(gitignore)).to eq("a/\n")
+    end
+
     it 'refuses a .gitignore that is a FIFO without blocking' do
       File.mkfifo(gitignore)
 
