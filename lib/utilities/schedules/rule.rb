@@ -29,8 +29,12 @@ module RubyRaider
       # What every os_id of this kind for the project starts with: "<kind prefix>.<hash10>."
       def self.os_id_prefix_for(project_root) = "#{kind.os_id_prefix}.#{Digest::SHA256.hexdigest(project_root)[0, 10]}."
 
+      # The absolute bundle of this Ruby. Gem.bin_path can also answer nil (seen on CI with a bare env).
       def self.bundle_path
-        Gem.bin_path('bundler', 'bundle')
+        path = Gem.bin_path('bundler', 'bundle')
+        return path if path.is_a?(String) && File.absolute_path?(path)
+
+        raise Error, "Bundler not found for this Ruby (no bundle executable, got #{path.inspect}): gem install bundler, then try again"
       rescue Gem::GemNotFoundException, Gem::MissingSpecError => e
         raise Error, "Bundler not found for this Ruby (#{e.message}): gem install bundler, then try again"
       end

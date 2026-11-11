@@ -122,6 +122,14 @@ RSpec.describe RubyRaider::Flows::Schedule do # rubocop:disable RSpec/FilePath
       end
     end
 
+    it 'refuses when this Ruby answers no bundle, or a relative one' do
+      [nil, 'bin/bundle'].each do |answer|
+        allow(Gem).to receive(:bin_path).with('bundler', 'bundle').and_return(answer)
+
+        expect(error_for).to eq("Bundler not found for this Ruby (no bundle executable, got #{answer.inspect}): gem install bundler, then try again")
+      end
+    end
+
     it 'runs in the project and logs to the flow folder' do
       expect([build.working_directory, build.log_path]).to eq([dir, File.join(dir, '.raider/flows/report/scheduler.log')])
     end
@@ -161,6 +169,8 @@ RSpec.describe RubyRaider::Flows::Schedule do # rubocop:disable RSpec/FilePath
     end
 
     it 'reads ENV when Bundler is not loaded' do
+      # The bundle is looked up through RubyGems, which reads ENV too: pin it, so only gem_env reads the stub
+      allow(Gem).to receive(:bin_path).with('bundler', 'bundle').and_return('/gems/bin/bundle')
       hide_const('Bundler')
       stub_const('ENV', { 'GEM_HOME' => '/env/home' })
 
