@@ -187,6 +187,15 @@ describe 'Generated Readme content' do
         expect(readme).to include('raider-results/index.html')
         expect(readme).not_to match(/allure/i)
       end
+
+      it 'documents the tags input of the GitHub workflow for web projects only' do
+        hand_run = 'Run tests in Raider Hideout'
+        if automation == 'selenium'
+          expect(readme).to include(hand_run, '`tags` input', 'leave it blank to run all tests')
+        else
+          expect(readme).not_to include(hand_run, '`tags` input')
+        end
+      end
     end
   end
 

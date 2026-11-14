@@ -8,9 +8,15 @@ on:
       browser:
         type: choice
         description: Which browser to test
-        required: true
+        required: false
+        default: chrome
         options:
           - chrome
+      tags:
+        type: string
+        description: "RSpec tags to run, separated by commas or spaces, for example smoke or ~slow. Leave blank to run all tests."
+        required: false
+        default: ''
 
 jobs:
   build:
@@ -44,9 +50,29 @@ jobs:
         continue-on-error: true
 
       - name: Run tests
-        run: bundle exec raider-reporter exec -- bundle exec rspec spec --format documentation
+        shell: bash
+        # TAGS comes from the tags input through env only, and each tag is checked before rspec starts.
+        run: |
+          tag_args=()
+          value_re='^[A-Za-z0-9@_:,.~! -]{0,200}$'
+          tag_re='^[~!]?@?[A-Za-z0-9_][A-Za-z0-9_:.-]{0,99}$'
+          if [[ ! "$TAGS" =~ $value_re ]]; then
+            echo "::error::The tags input may only hold letters, digits, @ _ : , . ~ ! - and spaces (200 at most)."
+            exit 2
+          fi
+          read -r -a tags <<< "${TAGS//,/ }"
+          for tag in "${tags[@]}"; do
+            if [[ ! "$tag" =~ $tag_re ]]; then
+              echo "::error::Not a tag: ${tag}. Use letters, digits, _ : . -, an optional @, and ~ in front to exclude."
+              exit 2
+            fi
+            if [[ "$tag" == '!'* ]]; then tag="~${tag:1}"; fi
+            tag_args+=(--tag "$tag")
+          done
+          bundle exec raider-reporter exec -- bundle exec rspec spec --format documentation "${tag_args[@]}"
         # RAIDER_ENDPOINT: your Raider Hideout URL (repository variable); RAIDER_TOKEN: a project token (secret).
         env:
+          TAGS: ${{ inputs.tags }}
           HEADLESS: true
           RAIDER_TOKEN: ${{ secrets.RAIDER_TOKEN }}
           RAIDER_ENDPOINT: ${{ vars.RAIDER_ENDPOINT }}
