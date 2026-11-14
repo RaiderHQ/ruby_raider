@@ -2,6 +2,12 @@
 
 ## Release Notes
 
+### 4.3.0 (unreleased)
+
+- The generated GitHub workflow (`.github/workflows/test_pipeline.yml`, web projects) can be started by hand with no inputs, for example from Raider Hideout's Run tests: the `browser` input defaults to `chrome` and is no longer required.
+- It takes an optional `tags` input: RSpec tags separated by commas or spaces (`smoke`, `@smoke`, `smoke, fast`, `~slow`, `type:api`; `!slow` means `~slow`), each passed to rspec as `--tag`. Blank, or a push or pull request run, runs all tests exactly as before. The value reaches the step only through an env var and each tag is checked first; anything else fails the step before rspec starts.
+- Existing projects: in `.github/workflows/test_pipeline.yml`, add `required: false` and `default: chrome` to the `browser` input, add the `tags` input, and replace the Run tests step with the one from a project made with `raider new` (its `shell: bash`, the `run` script and `TAGS: ${{ inputs.tags }}` in its `env`). Mobile (`appium_pipeline.yml`) and Azure pipelines are unchanged; leave Hideout's Tag input blank for them.
+
 ### 4.2.0
 
 - `raider schedule add NAME [SPEC_FILE ...] --every hour|day|weekday|week [--at HH:MM | :MM] [--on mon..sun] [--tag TAG] [--show-browser] [--retries 0..3] [--notify]` runs the project's tests with the computer's own scheduler (launchd, Task Scheduler, a systemd user timer or cron, as in 4.1). `raider schedule list [--json]`, `remove NAME` and `run NAME [--trigger manual|schedule]` complete it; every command takes `--project PATH`. `raider sc` is short for `raider schedule`.

@@ -498,6 +498,9 @@ every pull request. It downloads the test app and starts a simulator or emulator
 <%- else -%>
 `.github/workflows/test_pipeline.yml` runs the suite headless on GitHub Actions on every push to `main` or `master`
 and on every pull request, and uploads `raider-results/`.
+You can also start it by hand: Actions → Rspec Tests → Run workflow, or Run tests in Raider Hideout. Its optional
+`tags` input takes RSpec tags separated by commas or spaces, for example `smoke` or `smoke, ~slow` (`~` excludes);
+leave it blank to run all tests.
 <%- end -%>
 
 Every run writes a report; see [Reporting](#reporting).

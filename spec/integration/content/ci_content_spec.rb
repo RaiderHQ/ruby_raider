@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'open3'
+require 'tmpdir'
 require 'yaml'
 require_relative 'content_helper'
 require_relative '../../../lib/ruby_raider/ffmpeg'
@@ -237,8 +239,85 @@ describe 'CI pipeline content' do
     end
   end
 
+  shared_examples 'github dispatch inputs' do |project_name|
+    subject(:pipeline) { read_generated(project_name, '.github/workflows/test_pipeline.yml') }
+
+    let(:inputs) { YAML.safe_load(pipeline)[true]['workflow_dispatch']['inputs'] }
+    let(:test_step) { YAML.safe_load(pipeline)['jobs']['build']['steps'].find { |step| step['name'] == 'Run tests' } }
+
+    it 'defaults the browser input to chrome, so a dispatch may leave it out' do
+      expect(inputs['browser']).to include('type' => 'choice', 'required' => false, 'default' => 'chrome',
+                                           'options' => ['chrome'])
+    end
+
+    it 'takes an optional tags string that defaults to blank' do
+      expect(inputs['tags']).to include('type' => 'string', 'required' => false, 'default' => '')
+      expect(inputs.keys).to contain_exactly('browser', 'tags')
+    end
+
+    it 'passes tags to the test step only through env, never pasted into the script' do
+      expect(test_step['env']).to include('TAGS' => '${{ inputs.tags }}')
+      expect(test_step['shell']).to eq('bash')
+      expect(test_step['run']).not_to include('${{')
+    end
+  end
+
+  # Runs the rendered Run tests script with a stub `bundle` that records its arguments.
+  shared_examples 'github tags script' do |project_name|
+    subject(:pipeline) { read_generated(project_name, '.github/workflows/test_pipeline.yml') }
+
+    let(:script) { YAML.safe_load(pipeline)['jobs']['build']['steps'].find { |step| step['name'] == 'Run tests' }['run'] }
+    let(:default_argv) { %w[exec raider-reporter exec -- bundle exec rspec spec --format documentation] }
+
+    def run_script(script, tags)
+      Dir.mktmpdir do |dir|
+        stub = File.join(dir, 'bundle')
+        File.write(stub, "#!/bin/sh\nfor arg in \"$@\"; do printf '%s\\n' \"$arg\"; done > \"#{dir}/argv\"\n")
+        File.chmod(0o755, stub)
+        env = { 'PATH' => "#{dir}:#{ENV.fetch('PATH')}" }
+        env['TAGS'] = tags # nil unsets an inherited TAGS
+        output, status = Open3.capture2e(env, 'bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', script, chdir: dir)
+        argv = File.exist?("#{dir}/argv") ? File.read("#{dir}/argv").split("\n") : nil
+        { output:, status: status.exitstatus, argv:, pwned: File.exist?(File.join(dir, 'pwned')) }
+      end
+    end
+
+    [nil, '', '  ', ' , ,'].each do |tags|
+      it "runs exactly today's command when tags is #{tags.inspect}" do
+        expect(run_script(script, tags)).to include(status: 0, argv: default_argv, pwned: false)
+      end
+    end
+
+    {
+      'smoke' => %w[--tag smoke],
+      '@smoke' => %w[--tag @smoke],
+      'smoke,fast' => %w[--tag smoke --tag fast],
+      ' smoke  fast, ' => %w[--tag smoke --tag fast],
+      '~slow' => %w[--tag ~slow],
+      '!slow' => %w[--tag ~slow],
+      '~@slow, type:api' => %w[--tag ~@slow --tag type:api],
+      'priority:1.5' => %w[--tag priority:1.5],
+      'kind::api' => %w[--tag kind::api]
+    }.each do |tags, expected|
+      it "passes #{tags.inspect} to rspec as #{expected.join(' ')}" do
+        expect(run_script(script, tags)).to include(status: 0, argv: default_argv + expected)
+      end
+    end
+
+    ['$(touch pwned)', '`id`', 'a;b', 'smoke && id', '*', "'x'", '"x"', '-r x', '--require x', "smoke\nid",
+     "smoke\tfast", 'a!b', '~', '@', 'a:', 'a:b:c', ':a', 'a|b', 'a/b', 'x' * 201].each do |tags|
+      it "refuses #{tags.inspect} before rspec starts" do
+        result = run_script(script, tags)
+        expect(result).to include(status: 2, argv: nil, pwned: false)
+        expect(result[:output]).to include('::error::')
+      end
+    end
+  end
+
   context 'with rspec and selenium' do
     name = "#{FrameworkIndex::RSPEC}_#{AutomationIndex::SELENIUM}"
+    include_examples 'github dispatch inputs', name
+    include_examples 'github tags script', name
     include_examples 'github ffmpeg cache', name, 'test_pipeline.yml', %w[build]
     include_examples 'valid github pipeline', name
     include_examples 'github rspec pipeline', name
