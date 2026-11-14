@@ -55,7 +55,7 @@ jobs:
         run: |
           tag_args=()
           value_re='^[A-Za-z0-9@_:,.~! -]{0,200}$'
-          tag_re='^[~!]?@?[A-Za-z0-9_][A-Za-z0-9_:.-]{0,99}$'
+          tag_re='^[~!]?@?[A-Za-z0-9_][A-Za-z0-9_.-]*(::?[A-Za-z0-9_.-]+)?$'
           if [[ ! "$TAGS" =~ $value_re ]]; then
             echo "::error::The tags input may only hold letters, digits, @ _ : , . ~ ! - and spaces (200 at most)."
             exit 2
@@ -63,7 +63,7 @@ jobs:
           read -r -a tags <<< "${TAGS//,/ }"
           for tag in "${tags[@]}"; do
             if [[ ! "$tag" =~ $tag_re ]]; then
-              echo "::error::Not a tag: ${tag}. Use letters, digits, _ : . -, an optional @, and ~ in front to exclude."
+              echo "::error::Not a tag: ${tag}. Use letters, digits, _ . -, an optional @, ~ in front to exclude, and :value after the name."
               exit 2
             fi
             if [[ "$tag" == '!'* ]]; then tag="~${tag:1}"; fi

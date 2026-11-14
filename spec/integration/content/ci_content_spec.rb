@@ -275,16 +275,16 @@ describe 'CI pipeline content' do
         File.write(stub, "#!/bin/sh\nfor arg in \"$@\"; do printf '%s\\n' \"$arg\"; done > \"#{dir}/argv\"\n")
         File.chmod(0o755, stub)
         env = { 'PATH' => "#{dir}:#{ENV.fetch('PATH')}" }
-        env['TAGS'] = tags unless tags.nil?
-        output, status = Open3.capture2e(env, 'bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', script)
+        env['TAGS'] = tags # nil unsets an inherited TAGS
+        output, status = Open3.capture2e(env, 'bash', '--noprofile', '--norc', '-eo', 'pipefail', '-c', script, chdir: dir)
         argv = File.exist?("#{dir}/argv") ? File.read("#{dir}/argv").split("\n") : nil
-        { output:, status: status.exitstatus, argv: }
+        { output:, status: status.exitstatus, argv:, pwned: File.exist?(File.join(dir, 'pwned')) }
       end
     end
 
     [nil, '', '  ', ' , ,'].each do |tags|
       it "runs exactly today's command when tags is #{tags.inspect}" do
-        expect(run_script(script, tags)).to include(status: 0, argv: default_argv)
+        expect(run_script(script, tags)).to include(status: 0, argv: default_argv, pwned: false)
       end
     end
 
@@ -296,7 +296,8 @@ describe 'CI pipeline content' do
       '~slow' => %w[--tag ~slow],
       '!slow' => %w[--tag ~slow],
       '~@slow, type:api' => %w[--tag ~@slow --tag type:api],
-      'priority:1.5' => %w[--tag priority:1.5]
+      'priority:1.5' => %w[--tag priority:1.5],
+      'kind::api' => %w[--tag kind::api]
     }.each do |tags, expected|
       it "passes #{tags.inspect} to rspec as #{expected.join(' ')}" do
         expect(run_script(script, tags)).to include(status: 0, argv: default_argv + expected)
@@ -304,10 +305,10 @@ describe 'CI pipeline content' do
     end
 
     ['$(touch pwned)', '`id`', 'a;b', 'smoke && id', '*', "'x'", '"x"', '-r x', '--require x', "smoke\nid",
-     "smoke\tfast", 'a!b', '~', '@', 'a|b', 'a/b', 'x' * 201].each do |tags|
+     "smoke\tfast", 'a!b', '~', '@', 'a:', 'a:b:c', ':a', 'a|b', 'a/b', 'x' * 201].each do |tags|
       it "refuses #{tags.inspect} before rspec starts" do
         result = run_script(script, tags)
-        expect(result).to include(status: 2, argv: nil)
+        expect(result).to include(status: 2, argv: nil, pwned: false)
         expect(result[:output]).to include('::error::')
       end
     end
